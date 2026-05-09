@@ -52,9 +52,7 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     /// The caller must ensure that the given address is valid in this vector.
     pub unsafe fn get(&self, addr: A) -> &Inst {
         // TODO use unwrap_unchecked instead
-        self.inner
-            .get(addr.into_inner())
-            .expect("addrs to always be valid")
+        unsafe { self.inner.get_unchecked(addr.into_inner()) }
     }
 
     /// Returns a mutable reference to some instance by its address `addr`.
@@ -64,9 +62,7 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     /// The caller must ensure that the given address is valid in this vector.
     pub unsafe fn get_mut(&mut self, addr: A) -> &mut Inst {
         // TODO use unwrap_unchecked instead
-        self.inner
-            .get_mut(addr.into_inner())
-            .expect("addrs to always be valid")
+        unsafe { self.inner.get_unchecked_mut(addr.into_inner()) }
     }
 
     /// Inserts a new instance into the current [`Store`](crate::Store) and returns its address.

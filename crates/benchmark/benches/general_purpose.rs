@@ -127,11 +127,14 @@ macro_rules! bench_wasm {
 
                 let bid = BenchmarkId::new("our", n);
                 group.bench_with_input(bid, &n, |b, &s| {
-                    b.iter(|| {
+                    let wasm_resumable = unsafe { store.create_resumable(our_fn, vec![wasm::Value::I32(s)], None).unwrap().as_wasm().unwrap() };
+                    b.iter_batched(|| {
+                        wasm_resumable.clone()
+                    }, |cloned_wasm_resumable| {
                         // SAFETY: Only one store is used. Therefore, this must always be
                         // the correct one.
-                        unsafe { store.invoke_simple_typed::<$arg_type, $return_type>(our_fn, s) }.unwrap();
-                    })
+                        unsafe { store.resume_wasm(cloned_wasm_resumable) }
+                    }, criterion::BatchSize::SmallInput)
                 });
             }
             group.finish();

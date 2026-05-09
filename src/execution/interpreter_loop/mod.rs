@@ -158,10 +158,8 @@ macro_rules! dispatch_macro {
 
         use crate::execution::interpreter_loop::dispatch_tables::HasBaseDispatchTable;
 
-        let instruction_handler: crate::execution::interpreter_loop::InstructionHandlerFn<T> = unsafe {
-            *T::DISPATCH_TABLE
-                .get(usize::from(first_instr_byte))
-                .unwrap_unchecked() };
+        let instruction_handler: crate::execution::interpreter_loop::InstructionHandlerFn<T> =
+            unsafe { *T::DISPATCH_TABLE.get_unchecked(usize::from(first_instr_byte)) };
 
         // SAFETY: All possible instruction handler functions use the same safety requirements, as
         // they are defined through the same macro: The caller ensures that the resumable is valid

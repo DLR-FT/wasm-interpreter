@@ -78,6 +78,7 @@ impl<'wasm> WasmReader<'wasm> {
         Ok(result)
     }
 
+    #[inline(always)]
     pub fn read_f64(&mut self) -> Result<u64, ValidationError> {
         let bytes = self.strip_bytes::<8>()?;
         Ok(u64::from_le_bytes(bytes))
@@ -159,6 +160,7 @@ impl<'wasm> WasmReader<'wasm> {
         Ok(result)
     }
 
+    #[inline(always)]
     pub fn read_var_i33_as_u32(&mut self) -> Result<u32, ValidationError> {
         /// Because up to 5 bytes (each storing 7 bits) may be used to store 32 bits,
         /// some bits in the last byte will be left unused. This is a bitmask for
@@ -234,11 +236,13 @@ impl<'wasm> WasmReader<'wasm> {
         u32::try_from(result).map_err(|_| ValidationError::I33IsNegative)
     }
 
+    #[inline(always)]
     pub fn read_f32(&mut self) -> Result<u32, ValidationError> {
         let bytes = self.strip_bytes::<4>()?;
         Ok(u32::from_le_bytes(bytes))
     }
 
+    #[inline(always)]
     pub fn read_var_i64(&mut self) -> Result<i64, ValidationError> {
         /// Because up to 10 bytes (each storing 7 bits) may be used to store 64 bits,
         /// some bits in the last byte will be left unused. This is a bitmask for

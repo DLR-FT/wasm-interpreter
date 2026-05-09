@@ -16,7 +16,7 @@ use crate::{addrs::FuncAddr, value_stack::Stack, Hostcode, Value};
 ///   referenced by function address
 /// - program counter must be valid for the bytecode of function referenced by the function address
 /// - stp must point to the correct sidetable entry for the function referenced by function address
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WasmResumable {
     pub(crate) stack: Stack,
     pub(crate) pc: usize,
