@@ -7,7 +7,7 @@
 //! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::ValidationError).
 
 use alloc::vec::Vec;
-use core::{array, num::NonZeroU64};
+use core::{array, hint::unreachable_unchecked, num::NonZeroU64};
 
 use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, TableAddr},
@@ -18,7 +18,7 @@ use crate::{
             types::{memarg::MemArg, opcode},
             WasmReader,
         },
-        sidetable::Sidetable,
+        sidetable::{Sidetable, SidetableRef},
         utils::ToUsizeExt,
     },
     execution::{
@@ -71,7 +71,8 @@ pub enum InterpreterLoopOutcome {
     },
 }
 
-type InstructionHandlerFn<T> = unsafe fn(Args<T>) -> Result<InterpreterLoopOutcome, RuntimeError>;
+type InstructionHandlerFn<T> =
+    unsafe fn(Args<T>) -> (Result<InterpreterLoopOutcome, RuntimeError>, WasmResumable);
 
 // A placeholder instruction for unassigned instruction bytes. This function is by definition dead
 // code!
@@ -89,18 +90,19 @@ define_instruction!(unset, opcode::NOP, |Args { .. }: &mut Args<T>| {
 /// The given resumable must be valid in the given [`Store`].
 #[inline(never)]
 pub(super) unsafe fn run<T: Config>(
-    resumable: &mut WasmResumable,
+    resumable: WasmResumable,
     store: &mut Store<T>,
-) -> Result<InterpreterLoopOutcome, RuntimeError> {
+) -> Result<(InterpreterLoopOutcome, WasmResumable), RuntimeError> {
     let current_func_addr = resumable.current_func_addr;
     let pc = resumable.pc;
     // SAFETY: The caller ensures that the resumable and thus also its function
     // address is valid in the current store.
     let func_inst = unsafe { store.inner.functions.get(current_func_addr) };
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
-        unreachable!(
-            "the interpreter loop shall only be executed with native wasm functions as root call"
-        );
+        unsafe { unreachable_unchecked() }
+        // unreachable!(
+        //     "the interpreter loop shall only be executed with native wasm functions as root call"
+        // );
     };
     let current_module = wasm_func_inst.module_addr;
 
@@ -111,7 +113,7 @@ pub(super) unsafe fn run<T: Config>(
     let wasm_bytecode = module.wasm_bytecode;
     let mut wasm = WasmReader::new(wasm_bytecode);
 
-    let mut current_sidetable: &Sidetable = &module.sidetable;
+    let mut current_sidetable: SidetableRef = &module.sidetable;
 
     // let current_function_end_marker =
     // wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
@@ -135,7 +137,9 @@ pub(super) unsafe fn run<T: Config>(
         prev_pc: 0, // this is set in dispatch function
     };
 
-    dispatch_wrapper(args)
+    // Throw away the resumable in case of an error. This is not done inside the instruction handlers because of Drop overhead.
+    let (result, resumable) = dispatch_wrapper(args);
+    result.map(|outcome| (outcome, resumable))
 }
 
 macro_rules! dispatch_macro {
@@ -172,7 +176,9 @@ macro_rules! dispatch_macro {
 pub(crate) use dispatch_macro;
 
 // #[inline(always)]
-fn dispatch_wrapper<T: Config>(args: Args<T>) -> Result<InterpreterLoopOutcome, RuntimeError> {
+fn dispatch_wrapper<T: Config>(
+    args: Args<T>,
+) -> (Result<InterpreterLoopOutcome, RuntimeError>, WasmResumable) {
     let _: InstructionHandlerFn<T> = dispatch_wrapper::<T>;
     dispatch_macro!(args)
 }
@@ -182,7 +188,7 @@ fn do_sidetable_control_transfer(
     wasm: &mut WasmReader,
     stack: &mut Stack,
     current_stp: &mut usize,
-    current_sidetable: &Sidetable,
+    current_sidetable: SidetableRef,
 ) -> Result<(), RuntimeError> {
     let sidetable_entry = &current_sidetable[*current_stp];
 
@@ -405,10 +411,10 @@ pub(crate) fn from_lanes<const M: usize, const N: usize, T: LittleEndianBytes<M>
     array::from_fn(|_| bytes.next().unwrap())
 }
 
-pub(crate) struct Args<'sidetable, 'wasm, 'other, 'resumable, 'user_data, T> {
+pub(crate) struct Args<'sidetable, 'wasm, 'other, 'user_data, T> {
     wasm: WasmReader<'wasm>,
-    resumable: &'resumable mut WasmResumable,
-    current_sidetable: &'sidetable Sidetable,
+    resumable: WasmResumable,
+    current_sidetable: SidetableRef<'sidetable>,
     store_inner: &'other mut StoreInner,
     modules: &'sidetable AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: ModuleAddr,
@@ -429,8 +435,10 @@ macro_rules! define_instruction {
         // #[inline(never)]
         pub(crate) unsafe fn $name<T: crate::config::Config>(
             mut args: Args<T>,
-        ) -> Result<crate::execution::interpreter_loop::InterpreterLoopOutcome, crate::RuntimeError>
-        {
+        ) -> (
+            Result<crate::execution::interpreter_loop::InterpreterLoopOutcome, crate::RuntimeError>,
+            crate::execution::resumable::WasmResumable,
+        ) {
             let instruction_handler = $contents;
 
             let maybe_interpreter_loop_outcome: Result<
@@ -438,7 +446,12 @@ macro_rules! define_instruction {
                 crate::RuntimeError,
             > = instruction_handler(&mut args);
 
-            if let Some(interpreter_loop_outcome) = maybe_interpreter_loop_outcome? {
+            let maybe_outcome = match maybe_interpreter_loop_outcome {
+                Ok(maybe_outcome) => maybe_outcome,
+                Err(err) => return (Err(err), args.resumable),
+            };
+
+            if let Some(interpreter_loop_outcome) = maybe_outcome {
                 if let crate::execution::interpreter_loop::InterpreterLoopOutcome::OutOfFuel {
                     ..
                 } = interpreter_loop_outcome
@@ -447,11 +460,10 @@ macro_rules! define_instruction {
                 }
 
                 args.resumable.pc = args.wasm.pc;
-                return Ok(interpreter_loop_outcome);
+                return (Ok(interpreter_loop_outcome), args.resumable);
             }
 
             crate::execution::interpreter_loop::dispatch_macro!(args)
-            // become crate::execution::interpreter_loop::dispatch(args)
         }
     };
 
@@ -521,7 +533,10 @@ fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> Option<Interpreter
 /// [`Args`](crate::execution::interpreter_loop::Args).
 pub(crate) unsafe fn fc_extensions<T: crate::config::Config>(
     mut args: Args<T>,
-) -> Result<crate::execution::interpreter_loop::InterpreterLoopOutcome, crate::RuntimeError> {
+) -> (
+    Result<crate::execution::interpreter_loop::InterpreterLoopOutcome, crate::RuntimeError>,
+    WasmResumable,
+) {
     // should we call instruction hook here as well? multibyte instruction
     let second_instr = args.wasm.read_var_u32().unwrap_validated();
 
@@ -545,7 +560,10 @@ pub(crate) unsafe fn fc_extensions<T: crate::config::Config>(
 #[inline(never)]
 pub(crate) unsafe fn fd_extensions<T: crate::config::Config>(
     mut args: Args<T>,
-) -> Result<crate::execution::interpreter_loop::InterpreterLoopOutcome, crate::RuntimeError> {
+) -> (
+    Result<crate::execution::interpreter_loop::InterpreterLoopOutcome, crate::RuntimeError>,
+    WasmResumable,
+) {
     // Should we call instruction hook here as well? Multibyte instruction
     let second_instr = args.wasm.read_var_u32().unwrap_validated();
 

@@ -1386,7 +1386,7 @@ impl<'b, T: Config> Store<'b, T> {
         mut resumable: WasmResumable,
     ) -> Result<RunState, RuntimeError> {
         // SAFETY: The caller guarantees that the resumable comes from the current store.
-        let result = unsafe { interpreter_loop::run(&mut resumable, self) }?;
+        let (result, resumable) = unsafe { interpreter_loop::run(resumable, self) }?;
 
         let run_state = match result {
             InterpreterLoopOutcome::ExecutionReturned => RunState::Finished {

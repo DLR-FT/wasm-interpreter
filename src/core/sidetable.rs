@@ -32,6 +32,7 @@ use alloc::vec::Vec;
 // A sidetable
 
 pub type Sidetable = Vec<SidetableEntry>;
+pub type SidetableRef<'a> = &'a [SidetableEntry];
 
 /// Entry to translate the current branches implicit target into an explicit offset to the instruction pointer, as well as the side table pointer
 ///

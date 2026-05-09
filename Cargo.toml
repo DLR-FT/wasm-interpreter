@@ -7,7 +7,8 @@ members = [
   "crates/interop",
   "crates/linker",
   "crates/log_wrapper",
-  "crates/registry", "crates/testing",
+  "crates/registry",
+  "crates/testing",
 ]
 resolver = "2"
 

@@ -681,8 +681,9 @@ impl LocalIdx {
     ///
     /// The caller must ensure that there is a valid local index in the
     /// [`WasmReader`].
+    #[inline(always)]
     pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
+        let index = unsafe { wasm.read_var_u32().unwrap_unchecked() };
         Self(index)
     }
 }
