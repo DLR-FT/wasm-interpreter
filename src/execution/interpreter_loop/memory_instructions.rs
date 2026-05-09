@@ -25,7 +25,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -60,7 +60,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -95,7 +95,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -130,7 +130,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -166,7 +166,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -202,7 +202,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -237,7 +237,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -272,7 +272,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -307,7 +307,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -342,7 +342,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -377,7 +377,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -412,7 +412,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -447,7 +447,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -482,7 +482,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -517,7 +517,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -554,7 +554,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -598,7 +598,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -642,7 +642,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -686,7 +686,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -730,7 +730,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -774,7 +774,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -820,7 +820,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -856,7 +856,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -892,7 +892,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -928,7 +928,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -966,7 +966,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
 
         // SAFETY: The current module address must come from the current
@@ -1004,7 +1004,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1043,7 +1043,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let memarg = MemArg::read(wasm).unwrap_validated();
@@ -1082,7 +1082,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let memarg = MemArg::read(wasm).unwrap_validated();
@@ -1120,7 +1120,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let memarg = MemArg::read(wasm).unwrap_validated();
@@ -1158,7 +1158,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let memarg = MemArg::read(wasm).unwrap_validated();
@@ -1197,7 +1197,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
 
         let data_to_store: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1233,7 +1233,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
 
         let data_to_store: u64 = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1269,7 +1269,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
 
         let data_to_store: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1305,7 +1305,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
 
         let data_to_store: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1342,7 +1342,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1378,7 +1378,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
 
         let data_to_store: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1416,7 +1416,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
 
         let data_to_store: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1454,7 +1454,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
 
         let data_to_store: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1492,7 +1492,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
 
         let data_to_store: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1530,7 +1530,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         let memarg = MemArg::read(wasm).unwrap_validated();
 
         let data_to_store: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1570,7 +1570,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let memarg = MemArg::read(wasm).unwrap_validated();
@@ -1607,7 +1607,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let memarg = MemArg::read(wasm).unwrap_validated();
@@ -1644,7 +1644,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let memarg = MemArg::read(wasm).unwrap_validated();
@@ -1681,7 +1681,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let memarg = MemArg::read(wasm).unwrap_validated();
@@ -1719,7 +1719,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         // Note: This zero byte is reserved for the multiple memories
         // proposal.
         let _zero = wasm.read_u8().unwrap_validated();
@@ -1753,7 +1753,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         // Note: This zero byte is reserved for the multiple memories
         // proposal.
         let _zero = wasm.read_u8().unwrap_validated();
@@ -1818,7 +1818,7 @@ define_instruction!(
          modules,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         //  mappings:
         //      n => number of bytes to update
         //      val => the value to set each byte to (must be < 256)
@@ -1891,7 +1891,7 @@ define_instruction!(
          modules,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         //  mappings:
         //      n => number of bytes to copy
         //      s => source address to copy from
@@ -1972,7 +1972,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         //  mappings:
         //      n => number of bytes to copy
         //      s =            }> starting pointer in the data segment
@@ -2050,7 +2050,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid
         // data index next.
         let data_idx = unsafe { DataIdx::read_unchecked(wasm) };

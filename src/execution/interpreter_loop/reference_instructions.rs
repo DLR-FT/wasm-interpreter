@@ -11,7 +11,7 @@ define_instruction!(
     opcode::REF_NULL,
     |Args {
          wasm, resumable, ..
-     }| {
+     }: &mut Args<T>| {
         let reftype = RefType::read(wasm).unwrap_validated();
 
         resumable
@@ -25,7 +25,7 @@ define_instruction!(
 define_instruction!(
     ref_is_null,
     opcode::REF_IS_NULL,
-    |Args { resumable, .. }| {
+    |Args { resumable, .. }: &mut Args<T>| {
         let rref: Ref = resumable.stack.pop_value().try_into().unwrap_validated();
         let is_null = matches!(rref, Ref::Null(_));
 
@@ -46,7 +46,7 @@ define_instruction!(
          modules,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees a valid function index to be
         // next.
         let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };

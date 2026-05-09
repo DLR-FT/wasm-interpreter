@@ -75,7 +75,7 @@ type InstructionHandlerFn<T> = unsafe fn(Args<T>) -> Result<InterpreterLoopOutco
 
 // A placeholder instruction for unassigned instruction bytes. This function is by definition dead
 // code!
-define_instruction!(unset, opcode::NOP, |Args { .. }| {
+define_instruction!(unset, opcode::NOP, |Args { .. }: &mut Args<T>| {
     unreachable_validated!()
 });
 
@@ -102,19 +102,19 @@ pub(super) unsafe fn run<T: Config>(
             "the interpreter loop shall only be executed with native wasm functions as root call"
         );
     };
-    let mut current_module = wasm_func_inst.module_addr;
+    let current_module = wasm_func_inst.module_addr;
 
     // Start reading the function's instructions
     // SAFETY: This module address was just read from the current store. Every
     // store guarantees all addresses contained in it to be valid within itself.
     let module = unsafe { store.modules.get(current_module) };
     let wasm_bytecode = module.wasm_bytecode;
-    let wasm = &mut WasmReader::new(wasm_bytecode);
+    let mut wasm = WasmReader::new(wasm_bytecode);
 
     let mut current_sidetable: &Sidetable = &module.sidetable;
 
-    let mut current_function_end_marker =
-        wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
+    // let current_function_end_marker =
+    // wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
 
     let store_inner = &mut store.inner;
     let user_data = &mut store.user_data;
@@ -127,8 +127,8 @@ pub(super) unsafe fn run<T: Config>(
         store_inner,
         modules: &store.modules,
         wasm,
-        current_module: &mut current_module,
-        current_function_end_marker: &mut current_function_end_marker,
+        current_module,
+        // current_function_end_marker,
         current_sidetable: &mut current_sidetable,
         resumable,
         user_data,
@@ -172,7 +172,7 @@ macro_rules! dispatch_macro {
 pub(crate) use dispatch_macro;
 
 // #[inline(always)]
-fn dispatch_wrapper<T: Config>(mut args: Args<T>) -> Result<InterpreterLoopOutcome, RuntimeError> {
+fn dispatch_wrapper<T: Config>(args: Args<T>) -> Result<InterpreterLoopOutcome, RuntimeError> {
     let _: InstructionHandlerFn<T> = dispatch_wrapper::<T>;
     dispatch_macro!(args)
 }
@@ -405,14 +405,14 @@ pub(crate) fn from_lanes<const M: usize, const N: usize, T: LittleEndianBytes<M>
     array::from_fn(|_| bytes.next().unwrap())
 }
 
-pub(crate) struct Args<'a, 'sidetable, 'wasm, 'other, 'resumable, 'user_data, T> {
-    wasm: &'a mut WasmReader<'wasm>,
+pub(crate) struct Args<'sidetable, 'wasm, 'other, 'resumable, 'user_data, T> {
+    wasm: WasmReader<'wasm>,
     resumable: &'resumable mut WasmResumable,
-    current_sidetable: &'a mut &'sidetable Sidetable,
+    current_sidetable: &'sidetable Sidetable,
     store_inner: &'other mut StoreInner,
     modules: &'sidetable AddrVec<ModuleAddr, ModuleInst<'wasm>>,
-    current_module: &'a mut ModuleAddr,
-    current_function_end_marker: &'a mut usize,
+    current_module: ModuleAddr,
+    // current_function_end_marker: usize,
     user_data: &'user_data mut T,
     prev_pc: usize,
 }
@@ -428,27 +428,15 @@ macro_rules! define_instruction {
         // Disable inlining to inspect the emitted code of individual instruction handlers:
         // #[inline(never)]
         pub(crate) unsafe fn $name<T: crate::config::Config>(
-            args: Args<T>,
+            mut args: Args<T>,
         ) -> Result<crate::execution::interpreter_loop::InterpreterLoopOutcome, crate::RuntimeError>
         {
-            let new_args = Args::<T> {
-                wasm: args.wasm,
-                resumable: args.resumable,
-                current_sidetable: args.current_sidetable,
-                store_inner: args.store_inner,
-                modules: args.modules,
-                current_module: args.current_module,
-                current_function_end_marker: args.current_function_end_marker,
-                user_data: args.user_data,
-                prev_pc: args.prev_pc,
-            };
-
             let instruction_handler = $contents;
 
             let maybe_interpreter_loop_outcome: Result<
                 Option<crate::execution::interpreter_loop::InterpreterLoopOutcome>,
                 crate::RuntimeError,
-            > = instruction_handler(new_args);
+            > = instruction_handler(&mut args);
 
             if let Some(interpreter_loop_outcome) = maybe_interpreter_loop_outcome? {
                 if let crate::execution::interpreter_loop::InterpreterLoopOutcome::OutOfFuel {
@@ -468,7 +456,7 @@ macro_rules! define_instruction {
     };
 
     ($name:ident, $opcode:expr, $contents:expr) => {
-        define_instruction!(no_fuel_check, $name, $opcode, |args: Args<T>| {
+        define_instruction!(no_fuel_check, $name, $opcode, |args: &mut Args<T>| {
             if let Some(outcome) = crate::execution::interpreter_loop::decrement_fuel(
                 T::get_flat_cost($opcode),
                 &mut args.resumable.maybe_fuel,
@@ -481,7 +469,7 @@ macro_rules! define_instruction {
     };
 
     (fc_fuel_check, $name: ident, $opcode: expr, $contents:expr) => {
-        define_instruction!(no_fuel_check, $name, $opcode, |args: Args<T>| {
+        define_instruction!(no_fuel_check, $name, $opcode, |args: &mut Args<T>| {
             if let Some(outcome) = crate::execution::interpreter_loop::decrement_fuel(
                 T::get_fc_extension_flat_cost($opcode),
                 &mut args.resumable.maybe_fuel,
@@ -494,7 +482,7 @@ macro_rules! define_instruction {
     };
 
     (fd_fuel_check, $name: ident, $opcode: expr, $contents:expr) => {
-        define_instruction!(no_fuel_check, $name, $opcode, |args: Args<T>| {
+        define_instruction!(no_fuel_check, $name, $opcode, |args: &mut Args<T>| {
             if let Some(outcome) = crate::execution::interpreter_loop::decrement_fuel(
                 T::get_fd_extension_flat_cost($opcode),
                 &mut args.resumable.maybe_fuel,
@@ -532,7 +520,7 @@ fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> Option<Interpreter
 /// in the [`StoreInner`](crate::execution::store::StoreInner) that is also contained in the
 /// [`Args`](crate::execution::interpreter_loop::Args).
 pub(crate) unsafe fn fc_extensions<T: crate::config::Config>(
-    args: Args<T>,
+    mut args: Args<T>,
 ) -> Result<crate::execution::interpreter_loop::InterpreterLoopOutcome, crate::RuntimeError> {
     // should we call instruction hook here as well? multibyte instruction
     let second_instr = args.wasm.read_var_u32().unwrap_validated();
@@ -556,7 +544,7 @@ pub(crate) unsafe fn fc_extensions<T: crate::config::Config>(
 /// [`Args`](crate::execution::interpreter_loop::Args).
 #[inline(never)]
 pub(crate) unsafe fn fd_extensions<T: crate::config::Config>(
-    args: Args<T>,
+    mut args: Args<T>,
 ) -> Result<crate::execution::interpreter_loop::InterpreterLoopOutcome, crate::RuntimeError> {
     // Should we call instruction hook here as well? Multibyte instruction
     let second_instr = args.wasm.read_var_u32().unwrap_validated();

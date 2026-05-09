@@ -24,7 +24,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid table index
         // next.
         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
@@ -69,7 +69,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be valid table index
         // next.
         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
@@ -114,7 +114,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be valid table
         // index next.
         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
@@ -153,7 +153,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
@@ -222,7 +222,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
@@ -296,7 +296,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
         let table_x_idx = unsafe { TableIdx::read_unchecked(wasm) };
@@ -420,7 +420,7 @@ define_instruction!(
          modules,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid
         // element index next.
         let elem_idx = unsafe { ElemIdx::read_unchecked(wasm) };
@@ -492,7 +492,7 @@ define_instruction!(
          current_module,
          store_inner,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there a valid element
         // index next.
         let elem_idx = unsafe { ElemIdx::read_unchecked(wasm) };

@@ -12,7 +12,7 @@ define_instruction!(
     opcode::LOCAL_GET,
     |Args {
          resumable, wasm, ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid local index
         // next.
         let local_idx = unsafe { LocalIdx::read_unchecked(wasm) };
@@ -28,7 +28,7 @@ define_instruction!(
     opcode::LOCAL_SET,
     |Args {
          resumable, wasm, ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid local index
         // next.
         let local_idx = unsafe { LocalIdx::read_unchecked(wasm) };
@@ -44,7 +44,7 @@ define_instruction!(
     opcode::LOCAL_TEE,
     |Args {
          resumable, wasm, ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid local index
         // next.
         let local_idx = unsafe { LocalIdx::read_unchecked(wasm) };
@@ -65,7 +65,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid global
         // index next.
         let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };
@@ -103,7 +103,7 @@ define_instruction!(
          wasm,
          current_module,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid global
         // index next.
         let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };

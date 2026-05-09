@@ -16,110 +16,129 @@ use crate::{
 
 define_instruction!(nop, opcode::NOP, |_args| Ok(None));
 
-define_instruction!(unreachable, opcode::UNREACHABLE, |Args { .. }| {
-    Err(TrapError::ReachedUnreachable.into())
-});
+define_instruction!(
+    unreachable,
+    opcode::UNREACHABLE,
+    |Args { .. }: &mut Args<T>| { Err(TrapError::ReachedUnreachable.into()) }
+);
 
-define_instruction!(block, opcode::BLOCK, |Args { wasm, .. }| {
+define_instruction!(block, opcode::BLOCK, |Args { wasm, .. }: &mut Args<T>| {
     // SAFETY: Validation guarantess there to be a valid block type
     // next.
     let _ = unsafe { BlockType::read_unchecked(wasm) };
     Ok(None)
 });
 
-define_instruction!(end, opcode::END, |Args {
-                                           store_inner,
-                                           modules,
-                                           resumable,
-                                           wasm,
-                                           current_module,
-                                           current_function_end_marker,
-                                           current_sidetable,
-                                           ..
-                                       }| {
-    // There might be multiple ENDs in a single function. We want to
-    // exit only when the outermost block (aka function block) ends.
-    if wasm.pc != *current_function_end_marker {
-        return Ok(None);
+define_instruction!(
+    end,
+    opcode::END,
+    |Args {
+         store_inner,
+         modules,
+         resumable,
+         wasm,
+         current_module,
+         // current_function_end_marker,
+         current_sidetable,
+         ..
+     }: &mut Args<T>| {
+        // There might be multiple ENDs in a single function. We want to
+        // exit only when the outermost block (aka function block) ends.
+        let FuncInst::WasmFunc(current_wasm_func_inst) =
+            (unsafe { store_inner.functions.get(resumable.current_func_addr) })
+        else {
+            unreachable!();
+        };
+        let current_function_end_marker =
+            current_wasm_func_inst.code_expr.from() + current_wasm_func_inst.code_expr.len();
+        if wasm.pc != current_function_end_marker {
+            return Ok(None);
+        }
+
+        let Some((maybe_return_func_addr, maybe_return_address, maybe_return_stp)) =
+            resumable.stack.pop_call_frame()
+        else {
+            // We finished this entire invocation if this was the base call frame.
+            return Ok(Some(InterpreterLoopOutcome::ExecutionReturned));
+        };
+        // If there are one or more call frames, we need to continue
+        // from where the callee was called from.
+
+        trace!("end of function reached, returning to previous call frame");
+        resumable.current_func_addr = maybe_return_func_addr;
+
+        // SAFETY: The current function address must come from the given
+        // resumable or the current store, because these are the only
+        // parameters to this function. The resumable, including its
+        // function address, is guaranteed to be valid in the current
+        // store by the caller, and the store can only contain addresses
+        // that are valid within itself.
+        let current_function = unsafe { store_inner.functions.get(resumable.current_func_addr) };
+        let FuncInst::WasmFunc(current_wasm_func_inst) = current_function else {
+            unreachable!(
+                "function addresses on the stack always correspond to native wasm functions"
+            )
+        };
+        *current_module = current_wasm_func_inst.module_addr;
+
+        // SAFETY: The current module address must come from the current
+        // store, because it is the only parameter to this function that
+        // can contain module addresses. All stores guarantee all
+        // addresses in them to be valid within themselves.
+        let module = unsafe { modules.get(*current_module) };
+
+        wasm.full_wasm_binary = module.wasm_bytecode;
+        wasm.pc = maybe_return_address;
+        resumable.stp = maybe_return_stp;
+
+        *current_sidetable = &module.sidetable;
+
+        // *current_function_end_marker =
+        // current_wasm_func_inst.code_expr.from() + current_wasm_func_inst.code_expr.len();
+
+        trace!("Instruction: END");
+
+        Ok(None)
     }
+);
 
-    let Some((maybe_return_func_addr, maybe_return_address, maybe_return_stp)) =
-        resumable.stack.pop_call_frame()
-    else {
-        // We finished this entire invocation if this was the base call frame.
-        return Ok(Some(InterpreterLoopOutcome::ExecutionReturned));
-    };
-    // If there are one or more call frames, we need to continue
-    // from where the callee was called from.
-
-    trace!("end of function reached, returning to previous call frame");
-    resumable.current_func_addr = maybe_return_func_addr;
-
-    // SAFETY: The current function address must come from the given
-    // resumable or the current store, because these are the only
-    // parameters to this function. The resumable, including its
-    // function address, is guaranteed to be valid in the current
-    // store by the caller, and the store can only contain addresses
-    // that are valid within itself.
-    let current_function = unsafe { store_inner.functions.get(resumable.current_func_addr) };
-    let FuncInst::WasmFunc(current_wasm_func_inst) = current_function else {
-        unreachable!("function addresses on the stack always correspond to native wasm functions")
-    };
-    *current_module = current_wasm_func_inst.module_addr;
-
-    // SAFETY: The current module address must come from the current
-    // store, because it is the only parameter to this function that
-    // can contain module addresses. All stores guarantee all
-    // addresses in them to be valid within themselves.
-    let module = unsafe { modules.get(*current_module) };
-
-    wasm.full_wasm_binary = module.wasm_bytecode;
-    wasm.pc = maybe_return_address;
-    resumable.stp = maybe_return_stp;
-
-    *current_sidetable = &module.sidetable;
-
-    *current_function_end_marker =
-        current_wasm_func_inst.code_expr.from() + current_wasm_func_inst.code_expr.len();
-
-    trace!("Instruction: END");
-
-    Ok(None)
-});
-
-define_instruction!(r#loop, opcode::LOOP, |Args { wasm, .. }| {
+define_instruction!(r#loop, opcode::LOOP, |Args { wasm, .. }: &mut Args<T>| {
     // SAFETY: Validation guarantees there to be a valid block type
     // next.
     let _ = unsafe { BlockType::read_unchecked(wasm) };
     Ok(None)
 });
 
-define_instruction!(r#if, opcode::IF, |Args {
-                                           resumable,
-                                           wasm,
-                                           current_sidetable,
-                                           ..
-                                       }| {
-    // SAFETY: Validation guarantees there to be a valid block type
-    // next.
-    let _block_type = unsafe { BlockType::read_unchecked(wasm) };
+define_instruction!(
+    r#if,
+    opcode::IF,
+    |Args {
+         resumable,
+         wasm,
+         current_sidetable,
+         ..
+     }: &mut Args<T>| {
+        // SAFETY: Validation guarantees there to be a valid block type
+        // next.
+        let _block_type = unsafe { BlockType::read_unchecked(wasm) };
 
-    let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
-    if test_val != 0 {
-        resumable.stp += 1;
-    } else {
-        do_sidetable_control_transfer(
-            wasm,
-            &mut resumable.stack,
-            &mut resumable.stp,
-            current_sidetable,
-        )?;
+        if test_val != 0 {
+            resumable.stp += 1;
+        } else {
+            do_sidetable_control_transfer(
+                wasm,
+                &mut resumable.stack,
+                &mut resumable.stp,
+                current_sidetable,
+            )?;
+        }
+        trace!("Instruction: IF");
+
+        Ok(None)
     }
-    trace!("Instruction: IF");
-
-    Ok(None)
-});
+);
 
 define_instruction!(
     r#else,
@@ -129,7 +148,7 @@ define_instruction!(
          resumable,
          current_sidetable,
          ..
-     }| {
+     }: &mut Args<T>| {
         do_sidetable_control_transfer(
             wasm,
             &mut resumable.stack,
@@ -140,23 +159,27 @@ define_instruction!(
     }
 );
 
-define_instruction!(br, opcode::BR, |Args {
-                                         resumable,
-                                         wasm,
-                                         current_sidetable,
-                                         ..
-                                     }| {
-    // SAFETY: Validation guarantees there to be a valid label index
-    // next.
-    let _label_idx = unsafe { read_label_idx_unchecked(wasm) };
-    do_sidetable_control_transfer(
-        wasm,
-        &mut resumable.stack,
-        &mut resumable.stp,
-        current_sidetable,
-    )?;
-    Ok(None)
-});
+define_instruction!(
+    br,
+    opcode::BR,
+    |Args {
+         resumable,
+         wasm,
+         current_sidetable,
+         ..
+     }: &mut Args<T>| {
+        // SAFETY: Validation guarantees there to be a valid label index
+        // next.
+        let _label_idx = unsafe { read_label_idx_unchecked(wasm) };
+        do_sidetable_control_transfer(
+            wasm,
+            &mut resumable.stack,
+            &mut resumable.stp,
+            current_sidetable,
+        )?;
+        Ok(None)
+    }
+);
 
 define_instruction!(
     br_if,
@@ -166,7 +189,7 @@ define_instruction!(
          wasm,
          current_sidetable,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid label index
         // next.
         let _label_idx = unsafe { read_label_idx_unchecked(wasm) };
@@ -196,7 +219,7 @@ define_instruction!(
          wasm,
          current_sidetable,
          ..
-     }| {
+     }: &mut Args<T>| {
         let label_vec = wasm
             .read_vec(|wasm| {
                 // SAFETY: Validation guarantees that there is a
@@ -237,7 +260,7 @@ define_instruction!(
          wasm,
          current_sidetable,
          ..
-     }| {
+     }: &mut Args<T>| {
         // same as BR
         do_sidetable_control_transfer(
             wasm,
@@ -258,10 +281,10 @@ define_instruction!(
          resumable,
          wasm,
          current_module,
-         current_function_end_marker,
+         // current_function_end_marker,
          current_sidetable,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid function
         // index next.
         let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
@@ -333,8 +356,8 @@ define_instruction!(
 
                 resumable.stp = wasm_func_to_call_inst.stp;
                 *current_sidetable = &module.sidetable;
-                *current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
-                    + wasm_func_to_call_inst.code_expr.len();
+                // *current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
+                // + wasm_func_to_call_inst.code_expr.len();
             }
         }
         trace!("Instruction: CALL");
@@ -353,10 +376,10 @@ define_instruction!(
          resumable,
          wasm,
          current_module,
-         current_function_end_marker,
+         // current_function_end_marker,
          current_sidetable,
          ..
-     }| {
+     }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid type index
         // next.
         let given_type_idx = unsafe { TypeIdx::read_unchecked(wasm) };
@@ -450,8 +473,8 @@ define_instruction!(
 
                 resumable.stp = wasm_func_to_call_inst.stp;
                 *current_sidetable = &module.sidetable;
-                *current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
-                    + wasm_func_to_call_inst.code_expr.len();
+                // *current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
+                // + wasm_func_to_call_inst.code_expr.len();
             }
         }
         trace!("Instruction: CALL_INDIRECT");
