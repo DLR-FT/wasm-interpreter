@@ -20,14 +20,14 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid table index
         // next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::read_unchecked(&mut *wasm.get_reader()) };
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -41,14 +41,19 @@ define_instruction!(
         // store. Therefore, it is valid in the current store.
         let tab = unsafe { store_inner.tables.get(table_addr) };
 
-        let i: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let i: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         let val = tab
             .elem
             .get(i.cast_unsigned().into_usize())
             .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
-        resumable.stack.push_value::<T>((*val).into())?;
+        wasm.resumable.stack.push_value::<T>((*val).into())?;
         trace!(
             "Instruction: table.get '{}' [{}] -> [{}]",
             table_idx,
@@ -65,14 +70,14 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be valid table index
         // next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::read_unchecked(&mut *wasm.get_reader()) };
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -86,8 +91,18 @@ define_instruction!(
         // store. Therefore, it is valid in the current store.
         let tab = unsafe { store_inner.tables.get_mut(table_addr) };
 
-        let val: Ref = resumable.stack.pop_value().try_into().unwrap_validated();
-        let i: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let val: Ref = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let i: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         tab.elem
             .get_mut(i.cast_unsigned().into_usize())
@@ -109,7 +124,7 @@ define_instruction!(
     opcode::fc_extensions::TABLE_SIZE,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
@@ -117,7 +132,7 @@ define_instruction!(
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be valid table
         // index next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::read_unchecked(&mut *wasm.get_reader()) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -135,7 +150,7 @@ define_instruction!(
 
         let sz = tab.elem.len() as u32;
 
-        resumable.stack.push_value::<T>(Value::I32(sz))?;
+        wasm.resumable.stack.push_value::<T>(Value::I32(sz))?;
 
         trace!("Instruction: table.size '{}' [] -> [{}]", table_idx, sz);
         Ok(None)
@@ -147,7 +162,6 @@ define_instruction!(
     table_grow,
     opcode::fc_extensions::TABLE_GROW,
     |Args {
-         resumable,
          wasm,
          modules,
          current_module,
@@ -156,7 +170,7 @@ define_instruction!(
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::read_unchecked(&mut *wasm.get_reader()) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -174,15 +188,20 @@ define_instruction!(
 
         let sz = tab.elem.len() as u32;
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let n: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::TABLE_GROW)
             + u64::from(n)
                 * T::get_fc_extension_cost_per_element(opcode::fc_extensions::TABLE_GROW);
-        if let Some(fuel) = &mut resumable.maybe_fuel {
+        if let Some(fuel) = &mut wasm.resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
             } else {
-                resumable
+                wasm.resumable
                     .stack
                     .push_value::<T>(Value::I32(n))
                     .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -194,17 +213,22 @@ define_instruction!(
             }
         }
 
-        let val: Ref = resumable.stack.pop_value().try_into().unwrap_validated();
+        let val: Ref = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
         // for now we execute it always according to the following match expr.
         // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the resumable.stack per spec
         match tab.grow(n, val) {
             Ok(_) => {
-                resumable.stack.push_value::<T>(Value::I32(sz))?;
+                wasm.resumable.stack.push_value::<T>(Value::I32(sz))?;
             }
             Err(_) => {
-                resumable.stack.push_value::<T>(Value::I32(u32::MAX))?;
+                wasm.resumable.stack.push_value::<T>(Value::I32(u32::MAX))?;
             }
         }
         Ok(None)
@@ -216,7 +240,6 @@ define_instruction!(
     table_fill,
     opcode::fc_extensions::TABLE_FILL,
     |Args {
-         resumable,
          wasm,
          modules,
          current_module,
@@ -225,7 +248,7 @@ define_instruction!(
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::read_unchecked(&mut *wasm.get_reader()) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -241,15 +264,20 @@ define_instruction!(
         // store.
         let tab = unsafe { store_inner.tables.get_mut(table_addr) };
 
-        let len: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let len: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::TABLE_FILL)
             + u64::from(len)
                 * T::get_fc_extension_cost_per_element(opcode::fc_extensions::TABLE_FILL);
-        if let Some(fuel) = &mut resumable.maybe_fuel {
+        if let Some(fuel) = &mut wasm.resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
             } else {
-                resumable
+                wasm.resumable
                     .stack
                     .push_value::<T>(Value::I32(len))
                     .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -261,8 +289,18 @@ define_instruction!(
             }
         }
 
-        let val: Ref = resumable.stack.pop_value().try_into().unwrap_validated();
-        let dst: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let val: Ref = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let dst: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         let end = (dst.into_usize())
             .checked_add(len.into_usize())
@@ -290,7 +328,6 @@ define_instruction!(
     table_copy,
     opcode::fc_extensions::TABLE_COPY,
     |Args {
-         resumable,
          wasm,
          modules,
          current_module,
@@ -299,10 +336,10 @@ define_instruction!(
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
-        let table_x_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_x_idx = unsafe { TableIdx::read_unchecked(&mut *wasm.get_reader()) };
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
-        let table_y_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_y_idx = unsafe { TableIdx::read_unchecked(&mut *wasm.get_reader()) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -326,15 +363,20 @@ define_instruction!(
         // store.
         let tab_y_elem_len = unsafe { store_inner.tables.get(table_addr_y) }.elem.len();
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated(); // size
+        let n: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated(); // size
         let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::TABLE_COPY)
             + u64::from(n)
                 * T::get_fc_extension_cost_per_element(opcode::fc_extensions::TABLE_COPY);
-        if let Some(fuel) = &mut resumable.maybe_fuel {
+        if let Some(fuel) = &mut wasm.resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
             } else {
-                resumable
+                wasm.resumable
                     .stack
                     .push_value::<T>(Value::I32(n))
                     .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -346,8 +388,18 @@ define_instruction!(
             }
         }
 
-        let s: u32 = resumable.stack.pop_value().try_into().unwrap_validated(); // source
-        let d: u32 = resumable.stack.pop_value().try_into().unwrap_validated(); // destination
+        let s: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated(); // source
+        let d: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated(); // destination
 
         let src_res = match s.checked_add(n) {
             Some(res) => {
@@ -414,7 +466,6 @@ define_instruction!(
     table_init_fn,
     opcode::fc_extensions::TABLE_INIT,
     |Args {
-         resumable,
          wasm,
          store_inner,
          modules,
@@ -423,20 +474,25 @@ define_instruction!(
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid
         // element index next.
-        let elem_idx = unsafe { ElemIdx::read_unchecked(wasm) };
+        let elem_idx = unsafe { ElemIdx::read_unchecked(&mut *wasm.get_reader()) };
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::read_unchecked(&mut *wasm.get_reader()) };
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated(); // size
+        let n: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated(); // size
         let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::TABLE_INIT)
             + u64::from(n)
                 * T::get_fc_extension_cost_per_element(opcode::fc_extensions::TABLE_INIT);
-        if let Some(fuel) = &mut resumable.maybe_fuel {
+        if let Some(fuel) = &mut wasm.resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
             } else {
-                resumable
+                wasm.resumable
                     .stack
                     .push_value::<T>(Value::I32(n))
                     .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -448,8 +504,18 @@ define_instruction!(
             }
         }
 
-        let s: i32 = resumable.stack.pop_value().try_into().unwrap_validated(); // offset
-        let d: i32 = resumable.stack.pop_value().try_into().unwrap_validated(); // dst
+        let s: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated(); // offset
+        let d: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated(); // dst
 
         // SAFETY: All requirements are met:
         // 1. The current module address must come from the
@@ -495,7 +561,7 @@ define_instruction!(
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there a valid element
         // index next.
-        let elem_idx = unsafe { ElemIdx::read_unchecked(wasm) };
+        let elem_idx = unsafe { ElemIdx::read_unchecked(&mut *wasm.get_reader()) };
 
         // SAFETY: All requirements are met:
         // 1. The current module address must come from the

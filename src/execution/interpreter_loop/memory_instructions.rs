@@ -21,13 +21,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -44,7 +49,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data = mem_inst.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I32(data))?;
+        wasm.resumable.stack.push_value::<T>(Value::I32(data))?;
         trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -56,13 +61,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -79,7 +89,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I64(data))?;
+        wasm.resumable.stack.push_value::<T>(Value::I64(data))?;
         trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -91,13 +101,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -114,7 +129,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::F32(data))?;
+        wasm.resumable.stack.push_value::<T>(Value::F32(data))?;
         trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -126,13 +141,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -149,7 +169,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::F64(data))?;
+        wasm.resumable.stack.push_value::<T>(Value::F64(data))?;
         trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -161,13 +181,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -182,11 +202,18 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let data: u128 = memory.mem.load(idx)?;
-        resumable.stack.push_value::<T>(data.to_le_bytes().into())?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(data.to_le_bytes().into())?;
         Ok(None)
     }
 );
@@ -198,13 +225,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -221,7 +253,9 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: i8 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I32(data as u32))?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(Value::I32(data as u32))?;
         trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -233,13 +267,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -256,7 +295,9 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u8 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I32(data as u32))?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(Value::I32(data as u32))?;
         trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -268,13 +309,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -291,7 +337,9 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: i16 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I32(data as u32))?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(Value::I32(data as u32))?;
         trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -303,13 +351,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -326,7 +379,9 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u16 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I32(data as u32))?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(Value::I32(data as u32))?;
         trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -338,13 +393,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -361,7 +421,9 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: i8 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I64(data as u64))?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -373,13 +435,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -396,7 +463,9 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u8 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I64(data as u64))?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -408,13 +477,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -431,7 +505,9 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: i16 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I64(data as u64))?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -443,13 +519,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -466,7 +547,9 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u16 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I64(data as u64))?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -478,13 +561,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -501,7 +589,9 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: i32 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I64(data as u64))?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -513,13 +603,18 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -536,7 +631,9 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u32 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value::<T>(Value::I64(data as u64))?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
         Ok(None)
     }
@@ -549,13 +646,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD8X8_S,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -570,7 +667,12 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -581,7 +683,7 @@ define_instruction!(
 
         let extended_lanes = half_lanes.map(|lane| lane as i16);
 
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(extended_lanes)))?;
         Ok(None)
@@ -593,13 +695,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD8X8_U,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -614,7 +716,12 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -625,7 +732,7 @@ define_instruction!(
 
         let extended_lanes = half_lanes.map(|lane| lane as u16);
 
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(extended_lanes)))?;
         Ok(None)
@@ -637,13 +744,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD16X4_S,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -658,7 +765,12 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -669,7 +781,7 @@ define_instruction!(
 
         let extended_lanes = half_lanes.map(|lane| lane as i32);
 
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(extended_lanes)))?;
         Ok(None)
@@ -681,13 +793,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD16X4_U,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -702,7 +814,12 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -713,7 +830,7 @@ define_instruction!(
 
         let extended_lanes = half_lanes.map(|lane| lane as u32);
 
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(extended_lanes)))?;
         Ok(None)
@@ -725,13 +842,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD32X2_S,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -746,7 +863,12 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -757,7 +879,7 @@ define_instruction!(
 
         let extended_lanes = half_lanes.map(|lane| lane as i64);
 
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(extended_lanes)))?;
         Ok(None)
@@ -769,13 +891,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD32X2_U,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -790,7 +912,12 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -801,7 +928,7 @@ define_instruction!(
 
         let extended_lanes = half_lanes.map(|lane| lane as u64);
 
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(extended_lanes)))?;
         Ok(None)
@@ -815,13 +942,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD8_SPLAT,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -835,11 +962,16 @@ define_instruction!(
         // current store. Therefore, it is valid in the current
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = memory.mem.load::<1, u8>(idx)?;
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes([lane; 16])))?;
         Ok(None)
@@ -851,13 +983,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD16_SPLAT,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -871,11 +1003,16 @@ define_instruction!(
         // current store. Therefore, it is valid in the current
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = memory.mem.load::<2, u16>(idx)?;
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes([lane; 8])))?;
         Ok(None)
@@ -887,13 +1024,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD32_SPLAT,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -907,11 +1044,16 @@ define_instruction!(
         // current store. Therefore, it is valid in the current
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = memory.mem.load::<4, u32>(idx)?;
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes([lane; 4])))?;
         Ok(None)
@@ -923,13 +1065,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD64_SPLAT,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -943,11 +1085,16 @@ define_instruction!(
         // current store. Therefore, it is valid in the current
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = memory.mem.load::<8, u64>(idx)?;
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes([lane; 2])))?;
         Ok(None)
@@ -961,13 +1108,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD32_ZERO,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -983,11 +1130,16 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let data = memory.mem.load::<4, u32>(idx)? as u128;
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(data.to_le_bytes()))?;
         Ok(None)
@@ -999,13 +1151,13 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD64_ZERO,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1020,11 +1172,16 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let data = memory.mem.load::<8, u64>(idx)? as u128;
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(data.to_le_bytes()))?;
         Ok(None)
@@ -1038,15 +1195,25 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD8_LANE,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let data: [u8; 16] = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1061,10 +1228,10 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.get_reader().read_u8().unwrap_validated());
         let mut lanes: [u8; 16] = to_lanes(data);
         *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<1, u8>(idx)?;
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(lanes)))?;
         Ok(None)
@@ -1077,15 +1244,25 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD16_LANE,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let data: [u8; 16] = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1100,10 +1277,10 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.get_reader().read_u8().unwrap_validated());
         let mut lanes: [u16; 8] = to_lanes(data);
         *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<2, u16>(idx)?;
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(lanes)))?;
         Ok(None)
@@ -1115,15 +1292,25 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD32_LANE,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let data: [u8; 16] = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1138,10 +1325,10 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.get_reader().read_u8().unwrap_validated());
         let mut lanes: [u32; 4] = to_lanes(data);
         *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<4, u32>(idx)?;
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(lanes)))?;
         Ok(None)
@@ -1153,15 +1340,25 @@ define_instruction!(
     opcode::fd_extensions::V128_LOAD64_LANE,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let data: [u8; 16] = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1176,10 +1373,10 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.get_reader().read_u8().unwrap_validated());
         let mut lanes: [u64; 2] = to_lanes(data);
         *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<8, u64>(idx)?;
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(lanes)))?;
         Ok(None)
@@ -1193,15 +1390,25 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
 
-        let data_to_store: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1229,15 +1436,25 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
 
-        let data_to_store: u64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: u64 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1265,15 +1482,25 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
 
-        let data_to_store: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: F32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1301,15 +1528,25 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
 
-        let data_to_store: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: F64 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1337,13 +1574,13 @@ define_instruction!(
     opcode::fd_extensions::V128_STORE,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1358,8 +1595,18 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
 
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data: [u8; 16] = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         memory.mem.store(idx, u128::from_le_bytes(data))?;
@@ -1374,15 +1621,25 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
 
-        let data_to_store: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         let wrapped_data = data_to_store as i8;
 
@@ -1412,15 +1669,25 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
 
-        let data_to_store: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         let wrapped_data = data_to_store as i16;
 
@@ -1450,15 +1717,25 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
 
-        let data_to_store: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: i64 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         let wrapped_data = data_to_store as i8;
 
@@ -1488,15 +1765,25 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
 
-        let data_to_store: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: i64 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         let wrapped_data = data_to_store as i16;
 
@@ -1526,15 +1813,25 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
 
-        let data_to_store: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: i64 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         let wrapped_data = data_to_store as i32;
 
@@ -1565,15 +1862,25 @@ define_instruction!(
     opcode::fd_extensions::V128_STORE8_LANE,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let data: [u8; 16] = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1588,7 +1895,7 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.get_reader().read_u8().unwrap_validated());
 
         let lane = *to_lanes::<1, 16, u8>(data).get(lane_idx).unwrap_validated();
 
@@ -1602,15 +1909,25 @@ define_instruction!(
     opcode::fd_extensions::V128_STORE16_LANE,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let data: [u8; 16] = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1625,7 +1942,7 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.get_reader().read_u8().unwrap_validated());
 
         let lane = *to_lanes::<2, 8, u16>(data).get(lane_idx).unwrap_validated();
 
@@ -1639,15 +1956,25 @@ define_instruction!(
     opcode::fd_extensions::V128_STORE32_LANE,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let data: [u8; 16] = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1662,7 +1989,7 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.get_reader().read_u8().unwrap_validated());
 
         let lane = *to_lanes::<4, 4, u32>(data).get(lane_idx).unwrap_validated();
 
@@ -1676,15 +2003,25 @@ define_instruction!(
     opcode::fd_extensions::V128_STORE64_LANE,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
          ..
      }: &mut Args<T>| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let memarg = MemArg::read(wasm).unwrap_validated();
+        let data: [u8; 16] = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let relative_address: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let memarg = MemArg::read(&mut *wasm.get_reader()).unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1699,7 +2036,7 @@ define_instruction!(
         // store.
         let memory = unsafe { store_inner.memories.get(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.get_reader().read_u8().unwrap_validated());
 
         let lane = *to_lanes::<8, 2, u64>(data).get(lane_idx).unwrap_validated();
 
@@ -1715,14 +2052,14 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
         // Note: This zero byte is reserved for the multiple memories
         // proposal.
-        let _zero = wasm.read_u8().unwrap_validated();
+        let _zero = wasm.get_reader().read_u8().unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1735,7 +2072,7 @@ define_instruction!(
         // store. Therefore, it is valid in the current store.
         let mem = unsafe { store_inner.memories.get(mem_addr) };
         let size = mem.size() as u32;
-        resumable.stack.push_value::<T>(Value::I32(size))?;
+        wasm.resumable.stack.push_value::<T>(Value::I32(size))?;
         trace!("Instruction: memory.size [] -> [{}]", size);
         Ok(None)
     }
@@ -1749,14 +2086,14 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          ..
      }: &mut Args<T>| {
         // Note: This zero byte is reserved for the multiple memories
         // proposal.
-        let _zero = wasm.read_u8().unwrap_validated();
+        let _zero = wasm.get_reader().read_u8().unwrap_validated();
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -1771,15 +2108,20 @@ define_instruction!(
 
         let sz: u32 = mem.size() as u32;
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let n: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         // decrement fuel, but push n back if it fails
         let cost = T::get_flat_cost(opcode::MEMORY_GROW)
             + u64::from(n) * T::get_cost_per_element(opcode::MEMORY_GROW);
-        if let Some(fuel) = &mut resumable.maybe_fuel {
+        if let Some(fuel) = &mut wasm.resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
             } else {
-                resumable
+                wasm.resumable
                     .stack
                     .push_value::<T>(Value::I32(n))
                     .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -1799,7 +2141,9 @@ define_instruction!(
             Ok(_) => sz,
             Err(_) => u32::MAX,
         };
-        resumable.stack.push_value::<T>(Value::I32(pushed_value))?;
+        wasm.resumable
+            .stack
+            .push_value::<T>(Value::I32(pushed_value))?;
         trace!("Instruction: memory.grow [{}] -> [{}]", n, pushed_value);
         Ok(None)
     }
@@ -1812,7 +2156,6 @@ define_instruction!(
     memory_fill,
     opcode::fc_extensions::MEMORY_FILL,
     |Args {
-         resumable,
          wasm,
          store_inner,
          modules,
@@ -1826,7 +2169,7 @@ define_instruction!(
 
         // Note: This zero byte is reserved for the multiple
         // memories proposal.
-        let _zero = wasm.read_u8().unwrap_validated();
+        let _zero = wasm.get_reader().read_u8().unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1841,16 +2184,21 @@ define_instruction!(
         // store.
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let n: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         // decrement fuel, but push n back if it fails
         let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::MEMORY_FILL)
             + u64::from(n)
                 * T::get_fc_extension_cost_per_element(opcode::fc_extensions::MEMORY_FILL);
-        if let Some(fuel) = &mut resumable.maybe_fuel {
+        if let Some(fuel) = &mut wasm.resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
             } else {
-                resumable
+                wasm.resumable
                     .stack
                     .push_value::<T>(Value::I32(n))
                     .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -1862,13 +2210,23 @@ define_instruction!(
             }
         }
 
-        let val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let val: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         if !(0..=255).contains(&val) {
             warn!("Value for memory.fill does not fit in a byte ({val})");
         }
 
-        let d: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let d: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         mem.mem
             .fill(d.cast_unsigned().into_usize(), val as u8, n.into_usize())?;
@@ -1885,7 +2243,6 @@ define_instruction!(
     memory_copy,
     opcode::fc_extensions::MEMORY_COPY,
     |Args {
-         resumable,
          wasm,
          store_inner,
          modules,
@@ -1898,8 +2255,8 @@ define_instruction!(
         //      d => destination address to copy to
         // Note: These zero bytes are reserved for the multiple
         // memories proposal.
-        let _zero = wasm.read_u8().unwrap_validated();
-        let _zero = wasm.read_u8().unwrap_validated();
+        let _zero = wasm.get_reader().read_u8().unwrap_validated();
+        let _zero = wasm.get_reader().read_u8().unwrap_validated();
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1914,16 +2271,21 @@ define_instruction!(
         // exist.
         let dst_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let n: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         // decrement fuel, but push n back if it fails
         let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::MEMORY_COPY)
             + u64::from(n)
                 * T::get_fc_extension_cost_per_element(opcode::fc_extensions::MEMORY_COPY);
-        if let Some(fuel) = &mut resumable.maybe_fuel {
+        if let Some(fuel) = &mut wasm.resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
             } else {
-                resumable
+                wasm.resumable
                     .stack
                     .push_value::<T>(Value::I32(n))
                     .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -1935,8 +2297,18 @@ define_instruction!(
             }
         }
 
-        let s: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let d: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let s: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let d: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: This source memory address was just read from
         // the current store. Therefore, it must also be valid
@@ -1967,7 +2339,7 @@ define_instruction!(
     opcode::fc_extensions::MEMORY_INIT,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          store_inner,
@@ -1979,22 +2351,27 @@ define_instruction!(
         //      d => destination address to copy to
         // SAFETY: Validation guarantees there to be a valid
         // data index next.
-        let data_idx = unsafe { DataIdx::read_unchecked(wasm) };
+        let data_idx = unsafe { DataIdx::read_unchecked(&mut *wasm.get_reader()) };
 
         // Note: This zero byte is reserved for the multiple memories
         // proposal.
-        let _zero = wasm.read_u8().unwrap_validated();
+        let _zero = wasm.get_reader().read_u8().unwrap_validated();
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let n: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         // decrement fuel, but push n back if it fails
         let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::MEMORY_INIT)
             + u64::from(n)
                 * T::get_fc_extension_cost_per_element(opcode::fc_extensions::MEMORY_INIT);
-        if let Some(fuel) = &mut resumable.maybe_fuel {
+        if let Some(fuel) = &mut wasm.resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
             } else {
-                resumable
+                wasm.resumable
                     .stack
                     .push_value::<T>(Value::I32(n))
                     .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -2006,8 +2383,18 @@ define_instruction!(
             }
         }
 
-        let s: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let d: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let s: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
+        let d: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         // SAFETY: All requirements are met:
         // 1. The current module address must come from the
@@ -2053,7 +2440,7 @@ define_instruction!(
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid
         // data index next.
-        let data_idx = unsafe { DataIdx::read_unchecked(wasm) };
+        let data_idx = unsafe { DataIdx::read_unchecked(&mut *wasm.get_reader()) };
         // SAFETY: All requirements are met:
         // 1. The current module address must come from the
         //    current store, because it is the only parameter to

@@ -19,13 +19,13 @@ define_instruction!(nop, opcode::NOP, |_args| Ok(None));
 define_instruction!(
     unreachable,
     opcode::UNREACHABLE,
-    |Args { .. }: &mut Args<T>| { Err(TrapError::ReachedUnreachable.into()) }
+    |Args { wasm, .. }: &mut Args<T>| { Err(TrapError::ReachedUnreachable.into()) }
 );
 
 define_instruction!(block, opcode::BLOCK, |Args { wasm, .. }: &mut Args<T>| {
     // SAFETY: Validation guarantess there to be a valid block type
     // next.
-    let _ = unsafe { BlockType::read_unchecked(wasm) };
+    let _ = unsafe { BlockType::read_unchecked(&mut *wasm.get_reader()) };
     Ok(None)
 });
 
@@ -35,7 +35,7 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          // current_function_end_marker,
@@ -45,18 +45,18 @@ define_instruction!(
         // There might be multiple ENDs in a single function. We want to
         // exit only when the outermost block (aka function block) ends.
         let FuncInst::WasmFunc(current_wasm_func_inst) =
-            (unsafe { store_inner.functions.get(resumable.current_func_addr) })
+            (unsafe { store_inner.functions.get(wasm.resumable.current_func_addr) })
         else {
             unreachable!();
         };
         let current_function_end_marker =
             current_wasm_func_inst.code_expr.from() + current_wasm_func_inst.code_expr.len();
-        if wasm.pc != current_function_end_marker {
+        if wasm.resumable.pc != current_function_end_marker {
             return Ok(None);
         }
 
         let Some((maybe_return_func_addr, maybe_return_address, maybe_return_stp)) =
-            resumable.stack.pop_call_frame()
+            wasm.resumable.stack.pop_call_frame()
         else {
             // We finished this entire invocation if this was the base call frame.
             return Ok(Some(InterpreterLoopOutcome::ExecutionReturned));
@@ -65,15 +65,16 @@ define_instruction!(
         // from where the callee was called from.
 
         trace!("end of function reached, returning to previous call frame");
-        resumable.current_func_addr = maybe_return_func_addr;
+        wasm.resumable.current_func_addr = maybe_return_func_addr;
 
         // SAFETY: The current function address must come from the given
         // resumable or the current store, because these are the only
-        // parameters to this function. The resumable, including its
+        // parameters to this function. The  including its
         // function address, is guaranteed to be valid in the current
         // store by the caller, and the store can only contain addresses
         // that are valid within itself.
-        let current_function = unsafe { store_inner.functions.get(resumable.current_func_addr) };
+        let current_function =
+            unsafe { store_inner.functions.get(wasm.resumable.current_func_addr) };
         let FuncInst::WasmFunc(current_wasm_func_inst) = current_function else {
             unreachable!(
                 "function addresses on the stack always correspond to native wasm functions"
@@ -87,9 +88,9 @@ define_instruction!(
         // addresses in them to be valid within themselves.
         let module = unsafe { modules.get(*current_module) };
 
-        wasm.full_wasm_binary = module.wasm_bytecode;
-        wasm.pc = maybe_return_address;
-        resumable.stp = maybe_return_stp;
+        wasm.bytecode = module.wasm_bytecode;
+        wasm.resumable.pc = maybe_return_address;
+        wasm.resumable.stp = maybe_return_stp;
 
         *current_sidetable = &module.sidetable;
 
@@ -105,7 +106,7 @@ define_instruction!(
 define_instruction!(r#loop, opcode::LOOP, |Args { wasm, .. }: &mut Args<T>| {
     // SAFETY: Validation guarantees there to be a valid block type
     // next.
-    let _ = unsafe { BlockType::read_unchecked(wasm) };
+    let _ = unsafe { BlockType::read_unchecked(&mut *wasm.get_reader()) };
     Ok(None)
 });
 
@@ -113,26 +114,25 @@ define_instruction!(
     r#if,
     opcode::IF,
     |Args {
-         resumable,
          wasm,
          current_sidetable,
          ..
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid block type
         // next.
-        let _block_type = unsafe { BlockType::read_unchecked(wasm) };
+        let _block_type = unsafe { BlockType::read_unchecked(&mut *wasm.get_reader()) };
 
-        let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let test_val: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         if test_val != 0 {
-            resumable.stp += 1;
+            wasm.resumable.stp += 1;
         } else {
-            do_sidetable_control_transfer(
-                wasm,
-                &mut resumable.stack,
-                &mut resumable.stp,
-                current_sidetable,
-            )?;
+            do_sidetable_control_transfer(wasm, current_sidetable)?;
         }
         trace!("Instruction: IF");
 
@@ -145,16 +145,10 @@ define_instruction!(
     opcode::ELSE,
     |Args {
          wasm,
-         resumable,
          current_sidetable,
          ..
      }: &mut Args<T>| {
-        do_sidetable_control_transfer(
-            wasm,
-            &mut resumable.stack,
-            &mut resumable.stp,
-            current_sidetable,
-        )?;
+        do_sidetable_control_transfer(wasm, current_sidetable)?;
         Ok(None)
     }
 );
@@ -163,20 +157,14 @@ define_instruction!(
     br,
     opcode::BR,
     |Args {
-         resumable,
          wasm,
          current_sidetable,
          ..
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid label index
         // next.
-        let _label_idx = unsafe { read_label_idx_unchecked(wasm) };
-        do_sidetable_control_transfer(
-            wasm,
-            &mut resumable.stack,
-            &mut resumable.stp,
-            current_sidetable,
-        )?;
+        let _label_idx = unsafe { read_label_idx_unchecked(&mut *wasm.get_reader()) };
+        do_sidetable_control_transfer(wasm, current_sidetable)?;
         Ok(None)
     }
 );
@@ -185,26 +173,25 @@ define_instruction!(
     br_if,
     opcode::BR_IF,
     |Args {
-         resumable,
          wasm,
          current_sidetable,
          ..
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid label index
         // next.
-        let _label_idx = unsafe { read_label_idx_unchecked(wasm) };
+        let _label_idx = unsafe { read_label_idx_unchecked(&mut *wasm.get_reader()) };
 
-        let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let test_val: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         if test_val != 0 {
-            do_sidetable_control_transfer(
-                wasm,
-                &mut resumable.stack,
-                &mut resumable.stp,
-                current_sidetable,
-            )?;
+            do_sidetable_control_transfer(wasm, current_sidetable)?;
         } else {
-            resumable.stp += 1;
+            wasm.resumable.stp += 1;
         }
         trace!("Instruction: BR_IF");
         Ok(None)
@@ -215,12 +202,12 @@ define_instruction!(
     br_table,
     opcode::BR_TABLE,
     |Args {
-         resumable,
          wasm,
          current_sidetable,
          ..
      }: &mut Args<T>| {
         let label_vec = wasm
+            .get_reader()
             .read_vec(|wasm| {
                 // SAFETY: Validation guarantees that there is a
                 // valid vec of label indices.
@@ -230,24 +217,24 @@ define_instruction!(
 
         // SAFETY: Validation guarantees there to be another label index
         // for the default case.
-        let _default_label_idx = unsafe { read_label_idx_unchecked(wasm) };
+        let _default_label_idx = unsafe { read_label_idx_unchecked(&mut *wasm.get_reader()) };
 
         // TODO is this correct?
-        let case_val_i32: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let case_val_i32: i32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let case_val = case_val_i32.cast_unsigned().into_usize();
 
         if case_val >= label_vec.len() {
-            resumable.stp += label_vec.len();
+            wasm.resumable.stp += label_vec.len();
         } else {
-            resumable.stp += case_val;
+            wasm.resumable.stp += case_val;
         }
 
-        do_sidetable_control_transfer(
-            wasm,
-            &mut resumable.stack,
-            &mut resumable.stp,
-            current_sidetable,
-        )?;
+        do_sidetable_control_transfer(wasm, current_sidetable)?;
         Ok(None)
     }
 );
@@ -256,18 +243,12 @@ define_instruction!(
     r#return,
     opcode::RETURN,
     |Args {
-         resumable,
          wasm,
          current_sidetable,
          ..
      }: &mut Args<T>| {
         // same as BR
-        do_sidetable_control_transfer(
-            wasm,
-            &mut resumable.stack,
-            &mut resumable.stp,
-            current_sidetable,
-        )?;
+        do_sidetable_control_transfer(wasm, current_sidetable)?;
         Ok(None)
     }
 );
@@ -278,7 +259,7 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          // current_function_end_marker,
@@ -287,16 +268,16 @@ define_instruction!(
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid function
         // index next.
-        let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
+        let func_idx = unsafe { FuncIdx::read_unchecked(&mut *wasm.get_reader()) };
 
         // SAFETY: The current function address must come from the given
         // resumable or the current store, because these are the only
-        // parameters to this function. The resumable, including its
+        // parameters to this function. The  including its
         // function address, is guaranteed to be valid in the current
         // store by the caller, and the store can only contain addresses
         // that are valid within itself.
         let FuncInst::WasmFunc(current_wasm_func_inst) =
-            (unsafe { store_inner.functions.get(resumable.current_func_addr) })
+            (unsafe { store_inner.functions.get(wasm.resumable.current_func_addr) })
         else {
             unreachable!()
         };
@@ -319,7 +300,8 @@ define_instruction!(
 
         match func_to_call_inst {
             FuncInst::HostFunc(host_func_to_call_inst) => {
-                let params = resumable
+                let params = wasm
+                    .resumable
                     .stack
                     .pop_tail_iter(host_func_to_call_inst.function_type.params.valtypes.len())
                     .collect();
@@ -333,15 +315,15 @@ define_instruction!(
             FuncInst::WasmFunc(wasm_func_to_call_inst) => {
                 let remaining_locals = &wasm_func_to_call_inst.locals;
 
-                resumable.stack.push_call_frame::<T>(
-                    resumable.current_func_addr,
+                wasm.resumable.stack.push_call_frame::<T>(
+                    wasm.resumable.current_func_addr,
                     &wasm_func_to_call_inst.function_type,
                     remaining_locals,
-                    wasm.pc,
-                    resumable.stp,
+                    wasm.resumable.pc,
+                    wasm.resumable.stp,
                 )?;
 
-                resumable.current_func_addr = *func_to_call_addr;
+                wasm.resumable.current_func_addr = *func_to_call_addr;
                 *current_module = wasm_func_to_call_inst.module_addr;
 
                 // SAFETY: The current module address was just set to an
@@ -350,11 +332,12 @@ define_instruction!(
                 // current store.
                 let module = unsafe { modules.get(*current_module) };
 
-                wasm.full_wasm_binary = module.wasm_bytecode;
-                wasm.move_start_to(wasm_func_to_call_inst.code_expr)
+                wasm.bytecode = module.wasm_bytecode;
+                wasm.get_reader()
+                    .move_start_to(wasm_func_to_call_inst.code_expr)
                     .expect("code expression spans to always be valid");
 
-                resumable.stp = wasm_func_to_call_inst.stp;
+                wasm.resumable.stp = wasm_func_to_call_inst.stp;
                 *current_sidetable = &module.sidetable;
                 // *current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                 // + wasm_func_to_call_inst.code_expr.len();
@@ -373,7 +356,7 @@ define_instruction!(
     |Args {
          store_inner,
          modules,
-         resumable,
+
          wasm,
          current_module,
          // current_function_end_marker,
@@ -382,10 +365,10 @@ define_instruction!(
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees there to be a valid type index
         // next.
-        let given_type_idx = unsafe { TypeIdx::read_unchecked(wasm) };
+        let given_type_idx = unsafe { TypeIdx::read_unchecked(&mut *wasm.get_reader()) };
         // SAFETY: Validation guarantees there to be a valid table index
         // next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::read_unchecked(&mut *wasm.get_reader()) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -403,7 +386,12 @@ define_instruction!(
         // the current module.
         let func_ty = unsafe { module.types.get(given_type_idx) };
 
-        let i: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let i: u32 = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
 
         let r = tab
             .elem
@@ -437,7 +425,8 @@ define_instruction!(
 
         match func_to_call_inst {
             FuncInst::HostFunc(host_func_to_call_inst) => {
-                let params = resumable
+                let params = wasm
+                    .resumable
                     .stack
                     .pop_tail_iter(host_func_to_call_inst.function_type.params.valtypes.len())
                     .collect();
@@ -451,15 +440,15 @@ define_instruction!(
             FuncInst::WasmFunc(wasm_func_to_call_inst) => {
                 let remaining_locals = &wasm_func_to_call_inst.locals;
 
-                resumable.stack.push_call_frame::<T>(
-                    resumable.current_func_addr,
+                wasm.resumable.stack.push_call_frame::<T>(
+                    wasm.resumable.current_func_addr,
                     &wasm_func_to_call_inst.function_type,
                     remaining_locals,
-                    wasm.pc,
-                    resumable.stp,
+                    wasm.resumable.pc,
+                    wasm.resumable.stp,
                 )?;
 
-                resumable.current_func_addr = func_to_call_addr;
+                wasm.resumable.current_func_addr = func_to_call_addr;
                 *current_module = wasm_func_to_call_inst.module_addr;
 
                 // SAFETY: The current module address was just set to an
@@ -467,11 +456,12 @@ define_instruction!(
                 // this address must automatically be valid in the
                 // current store.
                 let module = unsafe { modules.get(*current_module) };
-                wasm.full_wasm_binary = module.wasm_bytecode;
-                wasm.move_start_to(wasm_func_to_call_inst.code_expr)
+                wasm.bytecode = module.wasm_bytecode;
+                wasm.get_reader()
+                    .move_start_to(wasm_func_to_call_inst.code_expr)
                     .expect("code expression spans to always be valid");
 
-                resumable.stp = wasm_func_to_call_inst.stp;
+                wasm.resumable.stp = wasm_func_to_call_inst.stp;
                 *current_sidetable = &module.sidetable;
                 // *current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                 // + wasm_func_to_call_inst.code_expr.len();

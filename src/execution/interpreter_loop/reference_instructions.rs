@@ -9,12 +9,10 @@ use crate::{
 define_instruction!(
     ref_null,
     opcode::REF_NULL,
-    |Args {
-         wasm, resumable, ..
-     }: &mut Args<T>| {
-        let reftype = RefType::read(wasm).unwrap_validated();
+    |Args { wasm, .. }: &mut Args<T>| {
+        let reftype = RefType::read(&mut *wasm.get_reader()).unwrap_validated();
 
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::Ref(Ref::Null(reftype)))?;
         trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
@@ -25,13 +23,18 @@ define_instruction!(
 define_instruction!(
     ref_is_null,
     opcode::REF_IS_NULL,
-    |Args { resumable, .. }: &mut Args<T>| {
-        let rref: Ref = resumable.stack.pop_value().try_into().unwrap_validated();
+    |Args { wasm, .. }: &mut Args<T>| {
+        let rref: Ref = wasm
+            .resumable
+            .stack
+            .pop_value()
+            .try_into()
+            .unwrap_validated();
         let is_null = matches!(rref, Ref::Null(_));
 
         let res = if is_null { 1 } else { 0 };
         trace!("Instruction: ref.is_null [{}] -> [{}]", rref, res);
-        resumable.stack.push_value::<T>(Value::I32(res))?;
+        wasm.resumable.stack.push_value::<T>(Value::I32(res))?;
         Ok(None)
     }
 );
@@ -42,14 +45,14 @@ define_instruction!(
     opcode::REF_FUNC,
     |Args {
          wasm,
-         resumable,
+
          modules,
          current_module,
          ..
      }: &mut Args<T>| {
         // SAFETY: Validation guarantees a valid function index to be
         // next.
-        let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
+        let func_idx = unsafe { FuncIdx::read_unchecked(&mut *wasm.get_reader()) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -59,7 +62,7 @@ define_instruction!(
         // SAFETY: Validation guarantees the function index to be valid
         // in the current module.
         let func_addr = unsafe { current_module.func_addrs.get(func_idx) };
-        resumable
+        wasm.resumable
             .stack
             .push_value::<T>(Value::Ref(Ref::Func(*func_addr)))?;
         Ok(None)

@@ -7,7 +7,12 @@
 //! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::ValidationError).
 
 use alloc::vec::Vec;
-use core::{array, hint::unreachable_unchecked, num::NonZeroU64};
+use core::{
+    array,
+    hint::unreachable_unchecked,
+    num::NonZeroU64,
+    ops::{Deref, DerefMut},
+};
 
 use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, TableAddr},
@@ -76,7 +81,7 @@ type InstructionHandlerFn<T> =
 
 // A placeholder instruction for unassigned instruction bytes. This function is by definition dead
 // code!
-define_instruction!(unset, opcode::NOP, |Args { .. }: &mut Args<T>| {
+define_instruction!(unset, opcode::NOP, |Args { wasm, .. }: &mut Args<T>| {
     unreachable_validated!()
 });
 
@@ -128,11 +133,13 @@ pub(super) unsafe fn run<T: Config>(
     let args = Args {
         store_inner,
         modules: &store.modules,
-        wasm,
+        wasm: Wasm {
+            bytecode: wasm_bytecode,
+            resumable,
+        },
         current_module,
         // current_function_end_marker,
         current_sidetable: &mut current_sidetable,
-        resumable,
         user_data,
         prev_pc: 0, // this is set in dispatch function
     };
@@ -148,11 +155,11 @@ macro_rules! dispatch_macro {
 
         // call the instruction hook
         args.user_data
-            .instruction_hook(args.wasm.full_wasm_binary, args.wasm.pc);
+            .instruction_hook(args.wasm.bytecode, args.wasm.resumable.pc);
 
-        args.prev_pc = args.wasm.pc;
+        args.prev_pc = args.wasm.resumable.pc;
 
-        let first_instr_byte = args.wasm.read_u8().unwrap_validated();
+        let first_instr_byte = args.wasm.get_reader().read_u8().unwrap_validated();
 
         #[cfg(debug_assertions)]
         trace!(
@@ -185,22 +192,24 @@ fn dispatch_wrapper<T: Config>(
 
 //helper function for avoiding code duplication at intraprocedural jumps
 fn do_sidetable_control_transfer(
-    wasm: &mut WasmReader,
-    stack: &mut Stack,
-    current_stp: &mut usize,
+    wasm: &mut Wasm,
     current_sidetable: SidetableRef,
 ) -> Result<(), RuntimeError> {
-    let sidetable_entry = unsafe { current_sidetable.get_unchecked(*current_stp) };
+    let sidetable_entry = unsafe { current_sidetable.get_unchecked(wasm.resumable.stp) };
 
-    stack.remove_in_between(sidetable_entry.popcnt, sidetable_entry.valcnt);
+    wasm.resumable
+        .stack
+        .remove_in_between(sidetable_entry.popcnt, sidetable_entry.valcnt);
 
-    *current_stp = unsafe {
-        current_stp
+    wasm.resumable.stp = unsafe {
+        wasm.resumable
+            .stp
             .checked_add_signed(sidetable_entry.delta_stp)
             .unwrap_unchecked()
     };
-    wasm.pc = unsafe {
-        wasm.pc
+    wasm.resumable.pc = unsafe {
+        wasm.resumable
+            .pc
             .checked_add_signed(sidetable_entry.delta_pc)
             .unwrap_unchecked()
     };
@@ -417,9 +426,47 @@ pub(crate) fn from_lanes<const M: usize, const N: usize, T: LittleEndianBytes<M>
     array::from_fn(|_| bytes.next().unwrap())
 }
 
+pub struct Wasm<'wasm> {
+    pub bytecode: &'wasm [u8],
+    pub resumable: WasmResumable,
+}
+
+impl<'wasm> Wasm<'wasm> {
+    pub fn get_reader<'s>(&'s mut self) -> WasmReaderGuard<'wasm, 's> {
+        WasmReaderGuard(
+            WasmReader {
+                full_wasm_binary: self.bytecode,
+                pc: self.resumable.pc,
+            },
+            &mut self.resumable.pc,
+        )
+    }
+}
+
+pub struct WasmReaderGuard<'a, 'b>(WasmReader<'a>, &'b mut usize);
+
+impl<'wasm> Deref for WasmReaderGuard<'wasm, '_> {
+    type Target = WasmReader<'wasm>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'wasm> DerefMut for WasmReaderGuard<'wasm, '_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<'a, 'b> Drop for WasmReaderGuard<'a, 'b> {
+    fn drop(&mut self) {
+        *self.1 = self.0.pc;
+    }
+}
+
 pub(crate) struct Args<'sidetable, 'wasm, 'other, 'user_data, T> {
-    wasm: WasmReader<'wasm>,
-    resumable: WasmResumable,
+    wasm: Wasm<'wasm>,
     current_sidetable: SidetableRef<'sidetable>,
     store_inner: &'other mut StoreInner,
     modules: &'sidetable AddrVec<ModuleAddr, ModuleInst<'wasm>>,
@@ -454,7 +501,7 @@ macro_rules! define_instruction {
 
             let maybe_outcome = match maybe_interpreter_loop_outcome {
                 Ok(maybe_outcome) => maybe_outcome,
-                Err(err) => return (Err(err), args.resumable),
+                Err(err) => return (Err(err), args.wasm.resumable),
             };
 
             if let Some(interpreter_loop_outcome) = maybe_outcome {
@@ -462,11 +509,10 @@ macro_rules! define_instruction {
                     ..
                 } = interpreter_loop_outcome
                 {
-                    args.wasm.pc = args.prev_pc;
+                    args.wasm.resumable.pc = args.prev_pc;
                 }
 
-                args.resumable.pc = args.wasm.pc;
-                return (Ok(interpreter_loop_outcome), args.resumable);
+                return (Ok(interpreter_loop_outcome), args.wasm.resumable);
             }
 
             crate::execution::interpreter_loop::dispatch_macro!(args)
@@ -477,7 +523,7 @@ macro_rules! define_instruction {
         define_instruction!(no_fuel_check, $name, $opcode, |args: &mut Args<T>| {
             if let Some(outcome) = crate::execution::interpreter_loop::decrement_fuel(
                 T::get_flat_cost($opcode),
-                &mut args.resumable.maybe_fuel,
+                &mut args.wasm.resumable.maybe_fuel,
             ) {
                 return Ok(Some(outcome));
             }
@@ -490,7 +536,7 @@ macro_rules! define_instruction {
         define_instruction!(no_fuel_check, $name, $opcode, |args: &mut Args<T>| {
             if let Some(outcome) = crate::execution::interpreter_loop::decrement_fuel(
                 T::get_fc_extension_flat_cost($opcode),
-                &mut args.resumable.maybe_fuel,
+                &mut args.wasm.resumable.maybe_fuel,
             ) {
                 return Ok(Some(outcome));
             }
@@ -503,7 +549,7 @@ macro_rules! define_instruction {
         define_instruction!(no_fuel_check, $name, $opcode, |args: &mut Args<T>| {
             if let Some(outcome) = crate::execution::interpreter_loop::decrement_fuel(
                 T::get_fd_extension_flat_cost($opcode),
-                &mut args.resumable.maybe_fuel,
+                &mut args.wasm.resumable.maybe_fuel,
             ) {
                 return Ok(Some(outcome));
             }
@@ -544,7 +590,7 @@ pub(crate) unsafe fn fc_extensions<T: crate::config::Config>(
     WasmResumable,
 ) {
     // should we call instruction hook here as well? multibyte instruction
-    let second_instr = args.wasm.read_var_u32().unwrap_validated();
+    let second_instr = args.wasm.get_reader().read_var_u32().unwrap_validated();
 
     let instruction_fn: InstructionHandlerFn<T> = *T::FC_DISPATCH_TABLE
         .get(second_instr.into_usize())
@@ -571,7 +617,7 @@ pub(crate) unsafe fn fd_extensions<T: crate::config::Config>(
     WasmResumable,
 ) {
     // Should we call instruction hook here as well? Multibyte instruction
-    let second_instr = args.wasm.read_var_u32().unwrap_validated();
+    let second_instr = args.wasm.get_reader().read_var_u32().unwrap_validated();
 
     let instruction_fn: InstructionHandlerFn<T> = *T::FD_DISPATCH_TABLE
         .get(second_instr.into_usize())
