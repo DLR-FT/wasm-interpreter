@@ -121,9 +121,7 @@ impl<I: Idx, T> IdxVec<I, T> {
 
         // TODO use `unwrap_unchecked` when we are sure everything is sound and
         // our validation is properly tested
-        self.inner
-            .get(index)
-            .expect("this to be a valid index due to the safety guarantees made by the caller")
+        unsafe { self.inner.get_unchecked(index) }
     }
 
     #[allow(unused)] // reason = "temporary until used by new index types"
@@ -136,10 +134,7 @@ impl<I: Idx, T> IdxVec<I, T> {
     pub fn iter_enumerated(&self) -> impl Iterator<Item = (I, &T)> {
         self.inner.iter().enumerate().map(|(index, t)| {
             (
-                I::new(
-                    u32::try_from(index)
-                        .expect("this vector to contain a maximum of 2^32-1 elements"),
-                ),
+                I::new(unsafe { u32::try_from(index).unwrap_unchecked() }),
                 t,
             )
         })
@@ -368,6 +363,7 @@ impl FuncIdx {
     /// The caller must ensure that there is a valid function index in the
     /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
     /// through [`Self::read_and_validate`].
+    #[inline(always)]
     pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
         let index = wasm.read_var_u32().unwrap();
         Self::new(index)
@@ -699,7 +695,8 @@ pub fn read_label_idx(wasm: &mut WasmReader) -> Result<u32, ValidationError> {
 ///
 /// The caller must ensure that there is a valid label index in the
 /// [`WasmReader`].
+#[inline(always)]
 pub unsafe fn read_label_idx_unchecked(wasm: &mut WasmReader) -> u32 {
     // TODO use `unwrap_unchecked` instead
-    wasm.read_var_u32().unwrap()
+    unsafe { wasm.read_var_u32().unwrap_unchecked() }
 }

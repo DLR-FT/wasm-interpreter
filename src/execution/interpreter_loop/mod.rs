@@ -10,6 +10,7 @@ use alloc::vec::Vec;
 use core::{
     array,
     hint::unreachable_unchecked,
+    marker::PhantomData,
     num::NonZeroU64,
     ops::{Deref, DerefMut},
 };
@@ -23,7 +24,7 @@ use crate::{
             types::{memarg::MemArg, opcode},
             WasmReader,
         },
-        sidetable::{Sidetable, SidetableRef},
+        sidetable::{Sidetable, SidetableEntry, SidetableRef},
         utils::ToUsizeExt,
     },
     execution::{
@@ -139,9 +140,10 @@ pub(super) unsafe fn run<T: Config>(
         },
         current_module,
         // current_function_end_marker,
-        current_sidetable: &mut current_sidetable,
-        user_data,
-        prev_pc: 0, // this is set in dispatch function
+        current_sidetable: current_sidetable.as_ptr(),
+        _phantom: PhantomData::<T>,
+        // user_data,
+        // prev_pc: 0, // this is set in dispatch function
     };
 
     // Throw away the resumable in case of an error. This is not done inside the instruction handlers because of Drop overhead.
@@ -154,10 +156,10 @@ macro_rules! dispatch_macro {
         let mut args: Args<T> = $args;
 
         // call the instruction hook
-        args.user_data
-            .instruction_hook(args.wasm.bytecode, args.wasm.resumable.pc);
+        // args.user_data
+        // .instruction_hook(args.wasm.bytecode, args.wasm.resumable.pc);
 
-        args.prev_pc = args.wasm.resumable.pc;
+        // args.prev_pc = args.wasm.resumable.pc;
 
         let first_instr_byte = args.wasm.get_reader().read_u8().unwrap_validated();
 
@@ -191,11 +193,12 @@ fn dispatch_wrapper<T: Config>(
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps
+#[inline(always)]
 fn do_sidetable_control_transfer(
     wasm: &mut Wasm,
-    current_sidetable: SidetableRef,
+    current_sidetable: *const SidetableEntry,
 ) -> Result<(), RuntimeError> {
-    let sidetable_entry = unsafe { current_sidetable.get_unchecked(wasm.resumable.stp) };
+    let sidetable_entry = unsafe { &*current_sidetable.add(wasm.resumable.stp) };
 
     wasm.resumable
         .stack
@@ -427,11 +430,12 @@ pub(crate) fn from_lanes<const M: usize, const N: usize, T: LittleEndianBytes<M>
 }
 
 pub struct Wasm<'wasm> {
-    pub bytecode: &'wasm [u8],
     pub resumable: WasmResumable,
+    pub bytecode: &'wasm [u8],
 }
 
 impl<'wasm> Wasm<'wasm> {
+    #[inline(always)]
     pub fn get_reader<'s>(&'s mut self) -> WasmReaderGuard<'wasm, 's> {
         WasmReaderGuard(
             WasmReader {
@@ -448,32 +452,36 @@ pub struct WasmReaderGuard<'a, 'b>(WasmReader<'a>, &'b mut usize);
 impl<'wasm> Deref for WasmReaderGuard<'wasm, '_> {
     type Target = WasmReader<'wasm>;
 
+    #[inline(always)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<'wasm> DerefMut for WasmReaderGuard<'wasm, '_> {
+    #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
 impl<'a, 'b> Drop for WasmReaderGuard<'a, 'b> {
+    #[inline(always)]
     fn drop(&mut self) {
         *self.1 = self.0.pc;
     }
 }
 
-pub(crate) struct Args<'sidetable, 'wasm, 'other, 'user_data, T> {
+pub(crate) struct Args<'sidetable, 'wasm, 'other, T> {
     wasm: Wasm<'wasm>,
-    current_sidetable: SidetableRef<'sidetable>,
+    current_sidetable: *const SidetableEntry,
     store_inner: &'other mut StoreInner,
     modules: &'sidetable AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: ModuleAddr,
+    _phantom: PhantomData<T>,
     // current_function_end_marker: usize,
-    user_data: &'user_data mut T,
-    prev_pc: usize,
+    // user_data: &'user_data mut T,
+    // prev_pc: usize,
 }
 
 macro_rules! define_instruction {
@@ -509,7 +517,7 @@ macro_rules! define_instruction {
                     ..
                 } = interpreter_loop_outcome
                 {
-                    args.wasm.resumable.pc = args.prev_pc;
+                    // args.wasm.resumable.pc = args.prev_pc;
                 }
 
                 return (Ok(interpreter_loop_outcome), args.wasm.resumable);

@@ -92,7 +92,7 @@ define_instruction!(
         wasm.resumable.pc = maybe_return_address;
         wasm.resumable.stp = maybe_return_stp;
 
-        *current_sidetable = &module.sidetable;
+        *current_sidetable = module.sidetable.as_ptr();
 
         // *current_function_end_marker =
         // current_wasm_func_inst.code_expr.from() + current_wasm_func_inst.code_expr.len();
@@ -132,7 +132,7 @@ define_instruction!(
         if test_val != 0 {
             wasm.resumable.stp += 1;
         } else {
-            do_sidetable_control_transfer(wasm, current_sidetable)?;
+            do_sidetable_control_transfer(wasm, *current_sidetable)?;
         }
         trace!("Instruction: IF");
 
@@ -148,7 +148,7 @@ define_instruction!(
          current_sidetable,
          ..
      }: &mut Args<T>| {
-        do_sidetable_control_transfer(wasm, current_sidetable)?;
+        do_sidetable_control_transfer(wasm, *current_sidetable)?;
         Ok(None)
     }
 );
@@ -164,7 +164,7 @@ define_instruction!(
         // SAFETY: Validation guarantees there to be a valid label index
         // next.
         let _label_idx = unsafe { read_label_idx_unchecked(&mut *wasm.get_reader()) };
-        do_sidetable_control_transfer(wasm, current_sidetable)?;
+        do_sidetable_control_transfer(wasm, *current_sidetable)?;
         Ok(None)
     }
 );
@@ -189,7 +189,7 @@ define_instruction!(
             .unwrap_validated();
 
         if test_val != 0 {
-            do_sidetable_control_transfer(wasm, current_sidetable)?;
+            do_sidetable_control_transfer(wasm, *current_sidetable)?;
         } else {
             wasm.resumable.stp += 1;
         }
@@ -234,7 +234,7 @@ define_instruction!(
             wasm.resumable.stp += case_val;
         }
 
-        do_sidetable_control_transfer(wasm, current_sidetable)?;
+        do_sidetable_control_transfer(wasm, *current_sidetable)?;
         Ok(None)
     }
 );
@@ -248,7 +248,7 @@ define_instruction!(
          ..
      }: &mut Args<T>| {
         // same as BR
-        do_sidetable_control_transfer(wasm, current_sidetable)?;
+        do_sidetable_control_transfer(wasm, *current_sidetable)?;
         Ok(None)
     }
 );
@@ -279,7 +279,7 @@ define_instruction!(
         let FuncInst::WasmFunc(current_wasm_func_inst) =
             (unsafe { store_inner.functions.get(wasm.resumable.current_func_addr) })
         else {
-            unreachable!()
+            unsafe { core::hint::unreachable_unchecked() }
         };
 
         // SAFETY: The current module address must come from the current
@@ -333,12 +333,14 @@ define_instruction!(
                 let module = unsafe { modules.get(*current_module) };
 
                 wasm.bytecode = module.wasm_bytecode;
-                wasm.get_reader()
-                    .move_start_to(wasm_func_to_call_inst.code_expr)
-                    .expect("code expression spans to always be valid");
+                unsafe {
+                    wasm.get_reader()
+                        .move_start_to(wasm_func_to_call_inst.code_expr)
+                        .unwrap_unchecked()
+                }
 
                 wasm.resumable.stp = wasm_func_to_call_inst.stp;
-                *current_sidetable = &module.sidetable;
+                *current_sidetable = module.sidetable.as_ptr();
                 // *current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                 // + wasm_func_to_call_inst.code_expr.len();
             }
@@ -462,7 +464,7 @@ define_instruction!(
                     .expect("code expression spans to always be valid");
 
                 wasm.resumable.stp = wasm_func_to_call_inst.stp;
-                *current_sidetable = &module.sidetable;
+                *current_sidetable = module.sidetable.as_ptr();
                 // *current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                 // + wasm_func_to_call_inst.code_expr.len();
             }

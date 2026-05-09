@@ -107,7 +107,8 @@ impl Stack {
     pub fn push_value<C: Config>(&mut self, value: Value) -> Result<(), RuntimeError> {
         // check for value stack exhaustion
         if self.values.len() > C::MAX_VALUE_STACK_SIZE {
-            return Err(RuntimeError::StackExhaustion);
+            unsafe { unreachable_unchecked() };
+            // return Err(RuntimeError::StackExhaustion);
         }
 
         // push the value
@@ -183,6 +184,7 @@ impl Stack {
     /// Push a call frame to the call stack
     ///
     /// Takes the current [`Self::values`]'s length as [`CallFrame::value_stack_base_idx`].
+    #[inline(always)]
     pub fn push_call_frame<C: Config>(
         &mut self,
         return_func_addr: FuncAddr,
@@ -193,7 +195,7 @@ impl Stack {
     ) -> Result<(), RuntimeError> {
         // check for call stack exhaustion
         if self.call_frame_count() > C::MAX_CALL_STACK_SIZE {
-            return Err(RuntimeError::StackExhaustion);
+            unsafe { unreachable_unchecked() }
         }
 
         debug_assert!(
@@ -235,6 +237,7 @@ impl Stack {
     ///
     /// Note that this is providing the values in reverse order compared to popping `n` values
     /// (which would yield the element closest to the **top** of the value stack first).
+    #[inline(always)]
     pub fn pop_tail_iter(&mut self, n: usize) -> Drain<'_, Value> {
         let start = self.values.len() - n;
         self.values.drain(start..)
