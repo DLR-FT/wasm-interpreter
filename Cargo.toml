@@ -73,3 +73,13 @@ log.workspace = true
 [features]
 default = []
 log = ["log_wrapper/log"]
+
+[profile.release]
+# codegen-units = 1
+debug = true
+
+[profile.bench]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

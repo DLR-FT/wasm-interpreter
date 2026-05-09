@@ -1,3 +1,4 @@
+use core::hint::unreachable_unchecked;
 use core::mem::MaybeUninit;
 
 use alloc::vec::{Drain, Vec};
@@ -249,10 +250,23 @@ impl Stack {
     /// - after the operation, [`Stack`] will contain `remove_count` fewer elements
     /// - `keep_count` topmost elements will be identical before and after the operation
     /// - all elements below the `remove_count + keep_count` topmost stack entry remain
+    #[inline(always)]
     pub fn remove_in_between(&mut self, remove_count: usize, keep_count: usize) {
         let len = self.values.len();
+        if len < keep_count || len < remove_count || len < keep_count + remove_count {
+            unsafe { core::hint::unreachable_unchecked() };
+        }
+
+        let src = len - keep_count;
+        let dest = src - remove_count;
+
+        if src < dest {
+            unsafe { core::hint::unreachable_unchecked() };
+        }
+
         self.values
             .copy_within(len - keep_count.., len - keep_count - remove_count);
+
         self.values.truncate(len - remove_count);
     }
 }

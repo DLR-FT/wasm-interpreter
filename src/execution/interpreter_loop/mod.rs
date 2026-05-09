@@ -190,14 +190,20 @@ fn do_sidetable_control_transfer(
     current_stp: &mut usize,
     current_sidetable: SidetableRef,
 ) -> Result<(), RuntimeError> {
-    let sidetable_entry = &current_sidetable[*current_stp];
+    let sidetable_entry = unsafe { current_sidetable.get_unchecked(*current_stp) };
 
     stack.remove_in_between(sidetable_entry.popcnt, sidetable_entry.valcnt);
 
-    *current_stp = current_stp.checked_add_signed(sidetable_entry.delta_stp)
-        .expect("that adding the delta stp never causes the stp to go out of bounds unless there is a bug in the sidetable generation");
-    wasm.pc = wasm.pc.checked_add_signed(sidetable_entry.delta_pc)
-    .expect("that adding the delta pc never causes the pc to go out of bounds unless there is a bug in the sidetable generation");
+    *current_stp = unsafe {
+        current_stp
+            .checked_add_signed(sidetable_entry.delta_stp)
+            .unwrap_unchecked()
+    };
+    wasm.pc = unsafe {
+        wasm.pc
+            .checked_add_signed(sidetable_entry.delta_pc)
+            .unwrap_unchecked()
+    };
 
     Ok(())
 }
