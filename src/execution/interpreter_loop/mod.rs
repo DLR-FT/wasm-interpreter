@@ -132,7 +132,7 @@ pub(super) unsafe fn run<T: Config>(
         #[cfg(debug_assertions)]
         trace!(
             "Executing instruction {}",
-            opcode_byte_to_str(first_instr_byte)
+            crate::opcodes::opcode_byte_to_str(first_instr_byte)
         );
 
         let args = Args {
