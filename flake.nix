@@ -148,6 +148,7 @@
                   cargo-watch
                   critcmp # compare criterion.rs benchmark results
                   wabt
+                  rust-bindgen # for using the wasm3 crate in benchmarks
 
                   strictdoc
 
