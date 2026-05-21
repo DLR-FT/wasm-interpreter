@@ -1,14 +1,16 @@
+use core::ops::ControlFlow;
+
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{indices::FuncIdx, reader::types::opcode},
-    execution::interpreter_loop::{define_instruction, Args},
+    execution::interpreter_loop::{define_instruction_fn, Args},
     value::Ref,
     RefType, Value,
 };
 
-define_instruction!(
+define_instruction_fn!(
     ref_null,
-    opcode::REF_NULL,
+    fuel_check = flat(opcode::REF_NULL),
     |Args {
          wasm, resumable, ..
      }| {
@@ -16,13 +18,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::Ref(Ref::Null(reftype)))?;
         trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     ref_is_null,
-    opcode::REF_IS_NULL,
+    fuel_check = flat(opcode::REF_IS_NULL),
     |Args { resumable, .. }| {
         let rref: Ref = resumable.stack.pop_value().try_into().unwrap_validated();
         let is_null = matches!(rref, Ref::Null(_));
@@ -30,14 +32,14 @@ define_instruction!(
         let res = if is_null { 1 } else { 0 };
         trace!("Instruction: ref.is_null [{}] -> [{}]", rref, res);
         resumable.stack.push_value(Value::I32(res))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
-define_instruction!(
+define_instruction_fn!(
     ref_func,
-    opcode::REF_FUNC,
+    fuel_check = flat(opcode::REF_FUNC),
     |Args {
          wasm,
          resumable,
@@ -60,6 +62,6 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::Ref(Ref::Func(*func_addr)))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );

@@ -6,18 +6,18 @@ use crate::{
         utils::ToUsizeExt,
     },
     execution::interpreter_loop::{
-        calculate_mem_address, data_drop, define_instruction, from_lanes, memory_init, to_lanes,
+        calculate_mem_address, data_drop, define_instruction_fn, from_lanes, memory_init, to_lanes,
         Args, InterpreterLoopOutcome,
     },
     value::{F32, F64},
     Value,
 };
-use core::{array, num::NonZeroU64};
+use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 // t.load
-define_instruction!(
+define_instruction_fn!(
     i32_load,
-    opcode::I32_LOAD,
+    fuel_check = flat(opcode::I32_LOAD),
     |Args {
          store_inner,
          modules,
@@ -46,13 +46,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I32(data))?;
         trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i64_load,
-    opcode::I64_LOAD,
+    fuel_check = flat(opcode::I64_LOAD),
     |Args {
          store_inner,
          modules,
@@ -81,13 +81,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I64(data))?;
         trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     f32_load,
-    opcode::F32_LOAD,
+    fuel_check = flat(opcode::F32_LOAD),
     |Args {
          store_inner,
          modules,
@@ -116,13 +116,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::F32(data))?;
         trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     f64_load,
-    opcode::F64_LOAD,
+    fuel_check = flat(opcode::F64_LOAD),
     |Args {
          store_inner,
          modules,
@@ -151,14 +151,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::F64(data))?;
         trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load,
-    opcode::fd_extensions::V128_LOAD,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD),
     |Args {
          wasm,
          resumable,
@@ -187,14 +186,14 @@ define_instruction!(
 
         let data: u128 = memory.mem.load(idx)?;
         resumable.stack.push_value(data.to_le_bytes().into())?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // t.loadN_sx
-define_instruction!(
+define_instruction_fn!(
     i32_load8_s,
-    opcode::I32_LOAD8_S,
+    fuel_check = flat(opcode::I32_LOAD8_S),
     |Args {
          store_inner,
          modules,
@@ -223,13 +222,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I32(data as u32))?;
         trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i32_load8_u,
-    opcode::I32_LOAD8_U,
+    fuel_check = flat(opcode::I32_LOAD8_U),
     |Args {
          store_inner,
          modules,
@@ -258,13 +257,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I32(data as u32))?;
         trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i32_load16_s,
-    opcode::I32_LOAD16_S,
+    fuel_check = flat(opcode::I32_LOAD16_S),
     |Args {
          store_inner,
          modules,
@@ -293,13 +292,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I32(data as u32))?;
         trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i32_load16_u,
-    opcode::I32_LOAD16_U,
+    fuel_check = flat(opcode::I32_LOAD16_U),
     |Args {
          store_inner,
          modules,
@@ -328,13 +327,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I32(data as u32))?;
         trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i64_load8_s,
-    opcode::I64_LOAD8_S,
+    fuel_check = flat(opcode::I64_LOAD8_S),
     |Args {
          store_inner,
          modules,
@@ -363,13 +362,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I64(data as u64))?;
         trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i64_load8_u,
-    opcode::I64_LOAD8_U,
+    fuel_check = flat(opcode::I64_LOAD8_U),
     |Args {
          store_inner,
          modules,
@@ -398,13 +397,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I64(data as u64))?;
         trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i64_load16_s,
-    opcode::I64_LOAD16_S,
+    fuel_check = flat(opcode::I64_LOAD16_S),
     |Args {
          store_inner,
          modules,
@@ -433,13 +432,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I64(data as u64))?;
         trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i64_load16_u,
-    opcode::I64_LOAD16_U,
+    fuel_check = flat(opcode::I64_LOAD16_U),
     |Args {
          store_inner,
          modules,
@@ -468,13 +467,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I64(data as u64))?;
         trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i64_load32_s,
-    opcode::I64_LOAD32_S,
+    fuel_check = flat(opcode::I64_LOAD32_S),
     |Args {
          store_inner,
          modules,
@@ -503,13 +502,13 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I64(data as u64))?;
         trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i64_load32_u,
-    opcode::I64_LOAD32_U,
+    fuel_check = flat(opcode::I64_LOAD32_U),
     |Args {
          store_inner,
          modules,
@@ -538,15 +537,14 @@ define_instruction!(
 
         resumable.stack.push_value(Value::I64(data as u64))?;
         trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // v128.loadNxM_sx
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load8x8_s,
-    opcode::fd_extensions::V128_LOAD8X8_S,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8X8_S),
     |Args {
          wasm,
          resumable,
@@ -584,13 +582,12 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load8x8_u,
-    opcode::fd_extensions::V128_LOAD8X8_U,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8X8_U),
     |Args {
          wasm,
          resumable,
@@ -628,13 +625,12 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load16x4_s,
-    opcode::fd_extensions::V128_LOAD16X4_S,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16X4_S),
     |Args {
          wasm,
          resumable,
@@ -672,13 +668,12 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load16x4_u,
-    opcode::fd_extensions::V128_LOAD16X4_U,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16X4_U),
     |Args {
          wasm,
          resumable,
@@ -716,13 +711,12 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load32x2_s,
-    opcode::fd_extensions::V128_LOAD32X2_S,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32X2_S),
     |Args {
          wasm,
          resumable,
@@ -760,13 +754,12 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load32x2_u,
-    opcode::fd_extensions::V128_LOAD32X2_U,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32X2_U),
     |Args {
          wasm,
          resumable,
@@ -804,15 +797,14 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // v128.loadN_splat
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load8_splat,
-    opcode::fd_extensions::V128_LOAD8_SPLAT,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8_SPLAT),
     |Args {
          wasm,
          resumable,
@@ -842,13 +834,12 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(from_lanes([lane; 16])))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load16_splat,
-    opcode::fd_extensions::V128_LOAD16_SPLAT,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16_SPLAT),
     |Args {
          wasm,
          resumable,
@@ -878,13 +869,12 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(from_lanes([lane; 8])))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load32_splat,
-    opcode::fd_extensions::V128_LOAD32_SPLAT,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32_SPLAT),
     |Args {
          wasm,
          resumable,
@@ -914,13 +904,12 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(from_lanes([lane; 4])))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load64_splat,
-    opcode::fd_extensions::V128_LOAD64_SPLAT,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD64_SPLAT),
     |Args {
          wasm,
          resumable,
@@ -950,15 +939,14 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(from_lanes([lane; 2])))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // v128.loadN_zero
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load32_zero,
-    opcode::fd_extensions::V128_LOAD32_ZERO,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32_ZERO),
     |Args {
          wasm,
          resumable,
@@ -990,13 +978,12 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(data.to_le_bytes()))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load64_zero,
-    opcode::fd_extensions::V128_LOAD64_ZERO,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD64_ZERO),
     |Args {
          wasm,
          resumable,
@@ -1027,15 +1014,14 @@ define_instruction!(
         resumable
             .stack
             .push_value(Value::V128(data.to_le_bytes()))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // v128.loadN_lane
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load8_lane,
-    opcode::fd_extensions::V128_LOAD8_LANE,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8_LANE),
     |Args {
          wasm,
          resumable,
@@ -1065,14 +1051,13 @@ define_instruction!(
         let mut lanes: [u8; 16] = to_lanes(data);
         *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<1, u8>(idx)?;
         resumable.stack.push_value(Value::V128(from_lanes(lanes)))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load16_lane,
-    opcode::fd_extensions::V128_LOAD16_LANE,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16_LANE),
     |Args {
          wasm,
          resumable,
@@ -1102,13 +1087,12 @@ define_instruction!(
         let mut lanes: [u16; 8] = to_lanes(data);
         *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<2, u16>(idx)?;
         resumable.stack.push_value(Value::V128(from_lanes(lanes)))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load32_lane,
-    opcode::fd_extensions::V128_LOAD32_LANE,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32_LANE),
     |Args {
          wasm,
          resumable,
@@ -1138,13 +1122,12 @@ define_instruction!(
         let mut lanes: [u32; 4] = to_lanes(data);
         *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<4, u32>(idx)?;
         resumable.stack.push_value(Value::V128(from_lanes(lanes)))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_load64_lane,
-    opcode::fd_extensions::V128_LOAD64_LANE,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD64_LANE),
     |Args {
          wasm,
          resumable,
@@ -1174,14 +1157,14 @@ define_instruction!(
         let mut lanes: [u64; 2] = to_lanes(data);
         *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<8, u64>(idx)?;
         resumable.stack.push_value(Value::V128(from_lanes(lanes)))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // t.store
-define_instruction!(
+define_instruction_fn!(
     i32_store,
-    opcode::I32_STORE,
+    fuel_check = flat(opcode::I32_STORE),
     |Args {
          store_inner,
          modules,
@@ -1211,13 +1194,13 @@ define_instruction!(
         mem.mem.store(idx, data_to_store)?;
 
         trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i64_store,
-    opcode::I64_STORE,
+    fuel_check = flat(opcode::I64_STORE),
     |Args {
          store_inner,
          modules,
@@ -1247,13 +1230,13 @@ define_instruction!(
         mem.mem.store(idx, data_to_store)?;
 
         trace!("Instruction: i64.store [{relative_address} {data_to_store}] -> []");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     f32_store,
-    opcode::F32_STORE,
+    fuel_check = flat(opcode::F32_STORE),
     |Args {
          store_inner,
          modules,
@@ -1283,13 +1266,13 @@ define_instruction!(
         mem.mem.store(idx, data_to_store)?;
 
         trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     f64_store,
-    opcode::F64_STORE,
+    fuel_check = flat(opcode::F64_STORE),
     |Args {
          store_inner,
          modules,
@@ -1319,14 +1302,13 @@ define_instruction!(
         mem.mem.store(idx, data_to_store)?;
 
         trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_store,
-    opcode::fd_extensions::V128_STORE,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_STORE),
     |Args {
          wasm,
          resumable,
@@ -1355,14 +1337,14 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         memory.mem.store(idx, u128::from_le_bytes(data))?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // t.storeN
-define_instruction!(
+define_instruction_fn!(
     i32_store8,
-    opcode::I32_STORE8,
+    fuel_check = flat(opcode::I32_STORE8),
     |Args {
          store_inner,
          modules,
@@ -1394,13 +1376,13 @@ define_instruction!(
         mem.mem.store(idx, wrapped_data)?;
 
         trace!("Instruction: i32.store8 [{relative_address} {wrapped_data}] -> []");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i32_store16,
-    opcode::I32_STORE16,
+    fuel_check = flat(opcode::I32_STORE16),
     |Args {
          store_inner,
          modules,
@@ -1432,13 +1414,13 @@ define_instruction!(
         mem.mem.store(idx, wrapped_data)?;
 
         trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i64_store8,
-    opcode::I64_STORE8,
+    fuel_check = flat(opcode::I64_STORE8),
     |Args {
          store_inner,
          modules,
@@ -1470,13 +1452,13 @@ define_instruction!(
         mem.mem.store(idx, wrapped_data)?;
 
         trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i64_store16,
-    opcode::I64_STORE16,
+    fuel_check = flat(opcode::I64_STORE16),
     |Args {
          store_inner,
          modules,
@@ -1508,13 +1490,13 @@ define_instruction!(
         mem.mem.store(idx, wrapped_data)?;
 
         trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     i64_store32,
-    opcode::I64_STORE32,
+    fuel_check = flat(opcode::I64_STORE32),
     |Args {
          store_inner,
          modules,
@@ -1546,15 +1528,14 @@ define_instruction!(
         mem.mem.store(idx, wrapped_data)?;
 
         trace!("Instruction: i64.store32 [{relative_address} {data_to_store}] -> []");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // v128.storeN_lane
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_store8_lane,
-    opcode::fd_extensions::V128_STORE8_LANE,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_STORE8_LANE),
     |Args {
          wasm,
          resumable,
@@ -1585,13 +1566,12 @@ define_instruction!(
         let lane = *to_lanes::<1, 16, u8>(data).get(lane_idx).unwrap_validated();
 
         memory.mem.store::<1, u8>(idx, lane)?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_store16_lane,
-    opcode::fd_extensions::V128_STORE16_LANE,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_STORE16_LANE),
     |Args {
          wasm,
          resumable,
@@ -1622,13 +1602,12 @@ define_instruction!(
         let lane = *to_lanes::<2, 8, u16>(data).get(lane_idx).unwrap_validated();
 
         memory.mem.store::<2, u16>(idx, lane)?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_store32_lane,
-    opcode::fd_extensions::V128_STORE32_LANE,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_STORE32_LANE),
     |Args {
          wasm,
          resumable,
@@ -1659,13 +1638,12 @@ define_instruction!(
         let lane = *to_lanes::<4, 4, u32>(data).get(lane_idx).unwrap_validated();
 
         memory.mem.store::<4, u32>(idx, lane)?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
-define_instruction!(
-    fd_fuel_check,
+define_instruction_fn!(
     v128_store64_lane,
-    opcode::fd_extensions::V128_STORE64_LANE,
+    fuel_check = flat_fd(opcode::fd_extensions::V128_STORE64_LANE),
     |Args {
          wasm,
          resumable,
@@ -1696,14 +1674,14 @@ define_instruction!(
         let lane = *to_lanes::<8, 2, u64>(data).get(lane_idx).unwrap_validated();
 
         memory.mem.store::<8, u64>(idx, lane)?;
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // memory.size
-define_instruction!(
+define_instruction_fn!(
     memory_size,
-    opcode::MEMORY_SIZE,
+    fuel_check = flat(opcode::MEMORY_SIZE),
     |Args {
          store_inner,
          modules,
@@ -1729,15 +1707,14 @@ define_instruction!(
         let size = mem.size() as u32;
         resumable.stack.push_value(Value::I32(size))?;
         trace!("Instruction: memory.size [] -> [{}]", size);
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // memory.grow
-define_instruction!(
-    no_fuel_check,
+define_instruction_fn!(
     memory_grow,
-    opcode::MEMORY_GROW,
+    fuel_check = omit,
     |Args {
          store_inner,
          modules,
@@ -1773,7 +1750,7 @@ define_instruction!(
             } else {
                 resumable.stack.push_value(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
 
-                return Ok(Some(InterpreterLoopOutcome::OutOfFuel {
+                return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
                     required_fuel: NonZeroU64::new(cost - *fuel).expect(
                         "the last check guarantees that the current fuel is smaller than cost",
                     ),
@@ -1790,16 +1767,15 @@ define_instruction!(
         };
         resumable.stack.push_value(Value::I32(pushed_value))?;
         trace!("Instruction: memory.grow [{}] -> [{}]", n, pushed_value);
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // memory.fill
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
-define_instruction!(
-    no_fuel_check,
+define_instruction_fn!(
     memory_fill,
-    opcode::fc_extensions::MEMORY_FILL,
+    fuel_check = omit,
     |Args {
          resumable,
          wasm,
@@ -1840,7 +1816,7 @@ define_instruction!(
                 *fuel -= cost;
             } else {
                 resumable.stack.push_value(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
-                return Ok(Some(InterpreterLoopOutcome::OutOfFuel {
+                return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
                     required_fuel: NonZeroU64::new(cost - *fuel).expect(
                         "the last check guarantees that the current fuel is smaller than cost",
                     ),
@@ -1860,16 +1836,15 @@ define_instruction!(
             .fill(d.cast_unsigned().into_usize(), val as u8, n.into_usize())?;
 
         trace!("Instruction: memory.fill");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // memory.copy
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
-define_instruction!(
-    no_fuel_check,
+define_instruction_fn!(
     memory_copy,
-    opcode::fc_extensions::MEMORY_COPY,
+    fuel_check = omit,
     |Args {
          resumable,
          wasm,
@@ -1910,7 +1885,7 @@ define_instruction!(
                 *fuel -= cost;
             } else {
                 resumable.stack.push_value(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
-                return Ok(Some(InterpreterLoopOutcome::OutOfFuel {
+                return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
                     required_fuel: NonZeroU64::new(cost - *fuel).expect(
                         "the last check guarantees that the current fuel is smaller than cost",
                     ),
@@ -1937,17 +1912,16 @@ define_instruction!(
             n.into_usize(),
         )?;
         trace!("Instruction: memory.copy");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // memory.init
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
 // Copy a region from a data segment into memory
-define_instruction!(
-    no_fuel_check,
+define_instruction_fn!(
     memory_init_fn,
-    opcode::fc_extensions::MEMORY_INIT,
+    fuel_check = omit,
     |Args {
          wasm,
          resumable,
@@ -1978,7 +1952,7 @@ define_instruction!(
                 *fuel -= cost;
             } else {
                 resumable.stack.push_value(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
-                return Ok(Some(InterpreterLoopOutcome::OutOfFuel {
+                return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
                     required_fuel: NonZeroU64::new(cost - *fuel).expect(
                         "the last check guarantees that the current fuel is smaller than cost",
                     ),
@@ -2015,15 +1989,14 @@ define_instruction!(
                 d,
             )?
         };
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // data.drop
-define_instruction!(
-    fc_fuel_check,
+define_instruction_fn!(
     data_drop_fn,
-    opcode::fc_extensions::DATA_DROP,
+    fuel_check = flat_fc(opcode::fc_extensions::DATA_DROP),
     |Args {
          wasm,
          modules,
@@ -2047,6 +2020,6 @@ define_instruction!(
         //    current module instance, which is also part of the
         //    current store.
         unsafe { data_drop(modules, &mut store_inner.data, *current_module, data_idx) };
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );

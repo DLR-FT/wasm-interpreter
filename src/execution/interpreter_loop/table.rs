@@ -1,4 +1,4 @@
-use core::num::NonZeroU64;
+use core::{num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
     assert_validated::UnwrapValidatedExt,
@@ -8,15 +8,15 @@ use crate::{
         utils::ToUsizeExt,
     },
     execution::interpreter_loop::{
-        define_instruction, elem_drop, table_init, Args, InterpreterLoopOutcome,
+        define_instruction_fn, elem_drop, table_init, Args, InterpreterLoopOutcome,
     },
     value::Ref,
     TrapError, Value,
 };
 
-define_instruction!(
+define_instruction_fn!(
     table_get,
-    opcode::TABLE_GET,
+    fuel_check = flat(opcode::TABLE_GET),
     |Args {
          store_inner,
          modules,
@@ -55,13 +55,13 @@ define_instruction!(
             i,
             val
         );
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     table_set,
-    opcode::TABLE_SET,
+    fuel_check = flat(opcode::TABLE_SET),
     |Args {
          store_inner,
          modules,
@@ -99,14 +99,13 @@ define_instruction!(
             i,
             val
         );
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
-    fc_fuel_check,
+define_instruction_fn!(
     table_size,
-    opcode::fc_extensions::TABLE_SIZE,
+    fuel_check = flat_fc(opcode::fc_extensions::TABLE_SIZE),
     |Args {
          wasm,
          resumable,
@@ -138,14 +137,13 @@ define_instruction!(
         resumable.stack.push_value(Value::I32(sz))?;
 
         trace!("Instruction: table.size '{}' [] -> [{}]", table_idx, sz);
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
-    no_fuel_check,
+define_instruction_fn!(
     table_grow,
-    opcode::fc_extensions::TABLE_GROW,
+    fuel_check = omit,
     |Args {
          resumable,
          wasm,
@@ -183,7 +181,7 @@ define_instruction!(
                 *fuel -= cost;
             } else {
                 resumable.stack.push_value(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
-                return Ok(Some(InterpreterLoopOutcome::OutOfFuel {
+                return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
                     required_fuel: NonZeroU64::new(cost - *fuel).expect(
                         "the last check guarantees that the current fuel is smaller than cost",
                     ),
@@ -204,14 +202,13 @@ define_instruction!(
                 resumable.stack.push_value(Value::I32(u32::MAX))?;
             }
         }
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
-    no_fuel_check,
+define_instruction_fn!(
     table_fill,
-    opcode::fc_extensions::TABLE_FILL,
+    fuel_check = omit,
     |Args {
          resumable,
          wasm,
@@ -250,7 +247,7 @@ define_instruction!(
                     .stack
                     .push_value(Value::I32(len))
                     .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
-                return Ok(Some(InterpreterLoopOutcome::OutOfFuel {
+                return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
                     required_fuel: NonZeroU64::new(cost - *fuel).expect(
                         "the last check guarantees that the current fuel is smaller than cost",
                     ),
@@ -277,15 +274,14 @@ define_instruction!(
             val,
             len
         );
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
 // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
-define_instruction!(
-    no_fuel_check,
+define_instruction_fn!(
     table_copy,
-    opcode::fc_extensions::TABLE_COPY,
+    fuel_check = omit,
     |Args {
          resumable,
          wasm,
@@ -332,7 +328,7 @@ define_instruction!(
                 *fuel -= cost;
             } else {
                 resumable.stack.push_value(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
-                return Ok(Some(InterpreterLoopOutcome::OutOfFuel {
+                return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
                     required_fuel: NonZeroU64::new(cost - *fuel).expect(
                         "the last check guarantees that the current fuel is smaller than cost",
                     ),
@@ -395,7 +391,7 @@ define_instruction!(
             s,
             n
         );
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
@@ -403,10 +399,9 @@ define_instruction!(
 // https://webassembly.github.io/spec/core/binary/instructions.html#table-instructions
 // in binary format it seems that elemidx is first ???????
 // this is ONLY for passive elements
-define_instruction!(
-    no_fuel_check,
+define_instruction_fn!(
     table_init_fn,
-    opcode::fc_extensions::TABLE_INIT,
+    fuel_check = omit,
     |Args {
          resumable,
          wasm,
@@ -431,7 +426,7 @@ define_instruction!(
                 *fuel -= cost;
             } else {
                 resumable.stack.push_value(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
-                return Ok(Some(InterpreterLoopOutcome::OutOfFuel {
+                return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
                     required_fuel: NonZeroU64::new(cost - *fuel).expect(
                         "the last check guarantees that the current fuel is smaller than cost",
                     ),
@@ -469,14 +464,13 @@ define_instruction!(
                 d,
             )?
         };
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
-    fc_fuel_check,
+define_instruction_fn!(
     elem_drop_fn,
-    opcode::fc_extensions::ELEM_DROP,
+    fuel_check = flat_fc(opcode::fc_extensions::ELEM_DROP),
     |Args {
          wasm,
          modules,
@@ -508,6 +502,6 @@ define_instruction!(
                 elem_idx,
             );
         }
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );

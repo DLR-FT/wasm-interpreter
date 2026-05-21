@@ -1,15 +1,17 @@
+use core::ops::ControlFlow;
+
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{GlobalIdx, LocalIdx},
         reader::types::opcode,
     },
-    execution::interpreter_loop::{define_instruction, Args},
+    execution::interpreter_loop::{define_instruction_fn, Args},
 };
 
-define_instruction!(
+define_instruction_fn!(
     local_get,
-    opcode::LOCAL_GET,
+    fuel_check = flat(opcode::LOCAL_GET),
     |Args {
          resumable, wasm, ..
      }| {
@@ -19,13 +21,13 @@ define_instruction!(
         let value = *resumable.stack.get_local(local_idx);
         resumable.stack.push_value(value)?;
         trace!("Instruction: local.get {} [] -> [t]", local_idx);
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     local_set,
-    opcode::LOCAL_SET,
+    fuel_check = flat(opcode::LOCAL_SET),
     |Args {
          resumable, wasm, ..
      }| {
@@ -35,13 +37,13 @@ define_instruction!(
         let value = resumable.stack.pop_value();
         *resumable.stack.get_local_mut(local_idx) = value;
         trace!("Instruction: local.set {} [t] -> []", local_idx);
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     local_tee,
-    opcode::LOCAL_TEE,
+    fuel_check = flat(opcode::LOCAL_TEE),
     |Args {
          resumable, wasm, ..
      }| {
@@ -51,13 +53,13 @@ define_instruction!(
         let value = resumable.stack.peek_value().unwrap_validated();
         *resumable.stack.get_local_mut(local_idx) = value;
         trace!("Instruction: local.tee {} [t] -> [t]", local_idx);
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     global_get,
-    opcode::GLOBAL_GET,
+    fuel_check = flat(opcode::GLOBAL_GET),
     |Args {
          store_inner,
          modules,
@@ -89,13 +91,13 @@ define_instruction!(
             global_idx,
             global.value
         );
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );
 
-define_instruction!(
+define_instruction_fn!(
     global_set,
-    opcode::GLOBAL_SET,
+    fuel_check = flat(opcode::GLOBAL_SET),
     |Args {
          store_inner,
          modules,
@@ -121,6 +123,6 @@ define_instruction!(
 
         global.value = resumable.stack.pop_value();
         trace!("Instruction: GLOBAL_SET");
-        Ok(None)
+        Ok(ControlFlow::Continue(()))
     }
 );

@@ -7,17 +7,14 @@
 //! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::ValidationError).
 
 use alloc::vec::Vec;
-use core::{array, num::NonZeroU64};
+use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{DataIdx, ElemIdx, MemIdx, TableIdx},
-        reader::{
-            types::{memarg::MemArg, opcode},
-            WasmReader,
-        },
+        reader::{types::memarg::MemArg, WasmReader},
         sidetable::Sidetable,
         utils::ToUsizeExt,
     },
@@ -37,14 +34,14 @@ use crate::{
 
 use super::{little_endian::LittleEndianBytes, store::Store, store::StoreInner};
 
-mod control_instructions;
-mod memory_instructions;
-mod numeric_instructions;
-mod parametric_instructions;
-mod reference_instructions;
-mod table_instructions;
-mod variable_instructions;
-mod vector_instructions;
+mod control;
+mod memory;
+mod numeric;
+mod parametric;
+mod reference;
+mod table;
+mod variable;
+mod vector;
 
 mod dispatch_tables;
 
@@ -70,16 +67,29 @@ pub enum InterpreterLoopOutcome {
     },
 }
 
-type InstructionHandlerFn = unsafe fn(Args) -> Result<Option<InterpreterLoopOutcome>, RuntimeError>;
+type InstructionHandlerFn =
+    for<'wasm, 'modules> unsafe fn(
+        wasm: &mut WasmReader<'wasm>,
+        resumable: &mut WasmResumable,
+        current_sidetable: &mut &'modules Sidetable,
+        store_inner: &mut StoreInner,
+        modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
+        current_module: &mut ModuleAddr,
+        current_function_end_marker: &mut usize,
+    )
+        -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError>;
 
 // A placeholder instruction for unassigned instruction bytes. This function is by definition dead
 // code!
-define_instruction!(unset, opcode::NOP, |Args { .. }| {
-    unreachable_validated!()
+define_instruction_fn!(unset, fuel_check = omit, |Args { .. }| {
+    // Access T to circumvent warning that it is unused by this function. #[allow] does not work for
+    // macros.
+    let _ = T::DISPATCH_TABLE;
+    unreachable_validated!();
 });
 
 /// Interprets wasm native functions. Wasm parameters and Wasm return values are passed on the stack.
-/// Returns `Ok(None)` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
+/// Returns `Ok(ControlFlow::Continue(()))` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
 /// terminates due to insufficient fuel, indicating how much fuel is required to resume with `required_fuel`,
 /// and `[Error::RuntimeError]` otherwise.
 ///
@@ -135,16 +145,6 @@ pub(super) unsafe fn run<T: Config>(
             crate::opcodes::opcode_byte_to_str(first_instr_byte)
         );
 
-        let args = Args {
-            store_inner,
-            modules: &store.modules,
-            wasm,
-            current_module: &mut current_module,
-            current_function_end_marker: &mut current_function_end_marker,
-            current_sidetable: &mut current_sidetable,
-            resumable,
-        };
-
         let instruction_fn = T::DISPATCH_TABLE
             .get(usize::from(first_instr_byte))
             .expect("the instruction to be valid because the code is validated");
@@ -153,11 +153,19 @@ pub(super) unsafe fn run<T: Config>(
         // they are defined through the same macro: The caller ensures that the resumable is valid
         // in the current store. Also all other address types passed via the `Args` must come from
         // the current store itself. Therefore, they are automatically valid in this store.
-        let instruction_result = unsafe { instruction_fn(args) };
+        let instruction_result = unsafe {
+            instruction_fn(
+                wasm,
+                resumable,
+                &mut current_sidetable,
+                store_inner,
+                &store.modules,
+                &mut current_module,
+                &mut current_function_end_marker,
+            )
+        };
 
-        let maybe_interpreter_loop_outcome = instruction_result?;
-
-        if let Some(interpreter_loop_outcome) = maybe_interpreter_loop_outcome {
+        if let ControlFlow::Break(interpreter_loop_outcome) = instruction_result? {
             if let InterpreterLoopOutcome::OutOfFuel { .. } = interpreter_loop_outcome {
                 wasm.pc = prev_pc;
             }
@@ -404,8 +412,8 @@ pub(crate) struct Args<'a, 'sidetable, 'wasm, 'other, 'resumable> {
     current_function_end_marker: &'a mut usize,
 }
 
-macro_rules! define_instruction {
-    (no_fuel_check, $name:ident, $opcode:expr, $contents:expr) => {
+macro_rules! define_instruction_fn {
+    ($name:ident, fuel_check = omit, $contents:expr) => {
         /// # Safety
         ///
         /// The given [`WasmResumable`](crate::execution::resumable::WasmResumable) and all address
@@ -414,110 +422,157 @@ macro_rules! define_instruction {
         /// [`Args`](crate::execution::interpreter_loop::Args).
         // Disable inlining to inspect the emitted code of individual instruction handlers:
         // #[inline(never)]
-        pub(crate) unsafe fn $name<T: crate::config::Config>(
-            args: Args,
+        pub(crate) unsafe fn $name<'wasm, 'modules, T: $crate::config::Config>(
+            wasm: &mut $crate::core::reader::WasmReader<'wasm>,
+            resumable: &mut $crate::execution::resumable::WasmResumable,
+            current_sidetable: &mut &'modules $crate::core::sidetable::Sidetable,
+            store_inner: &mut $crate::execution::store::StoreInner,
+            modules: &'modules $crate::execution::store::addrs::AddrVec<
+                $crate::execution::store::addrs::ModuleAddr,
+                $crate::execution::store::instances::ModuleInst<'wasm>,
+            >,
+            current_module: &mut $crate::execution::store::addrs::ModuleAddr,
+            current_function_end_marker: &mut usize,
         ) -> Result<
-            Option<crate::execution::interpreter_loop::InterpreterLoopOutcome>,
-            crate::RuntimeError,
+            core::ops::ControlFlow<$crate::execution::interpreter_loop::InterpreterLoopOutcome>,
+            $crate::RuntimeError,
         > {
+            let args = $crate::execution::interpreter_loop::Args {
+                store_inner,
+                modules,
+                wasm,
+                current_module,
+                current_function_end_marker,
+                current_sidetable,
+                resumable,
+            };
+
             $contents(args)
         }
     };
 
-    ($name:ident, $opcode:expr, $contents:expr) => {
-        define_instruction!(no_fuel_check, $name, $opcode, |args: Args| {
-            if let Some(outcome) = crate::execution::interpreter_loop::decrement_fuel(
-                T::get_flat_cost($opcode),
-                &mut args.resumable.maybe_fuel,
-            ) {
-                return Ok(Some(outcome));
-            }
+    ($name:ident, fuel_check = flat($opcode:expr), $contents:expr) => {
+        define_instruction_fn!(
+            $name,
+            fuel_check = omit,
+            |args: $crate::execution::interpreter_loop::Args| {
+                if let core::ops::ControlFlow::Break(outcome) =
+                    $crate::execution::interpreter_loop::decrement_fuel(
+                        T::get_flat_cost($opcode),
+                        &mut args.resumable.maybe_fuel,
+                    )
+                {
+                    return Ok(core::ops::ControlFlow::Break(outcome));
+                }
 
-            $contents(args)
-        });
+                $contents(args)
+            }
+        );
     };
 
-    (fc_fuel_check, $name: ident, $opcode: expr, $contents:expr) => {
-        define_instruction!(no_fuel_check, $name, $opcode, |args: Args| {
-            if let Some(outcome) = crate::execution::interpreter_loop::decrement_fuel(
-                T::get_fc_extension_flat_cost($opcode),
-                &mut args.resumable.maybe_fuel,
-            ) {
-                return Ok(Some(outcome));
-            }
+    ($name: ident, fuel_check = flat_fc($opcode: expr), $contents:expr) => {
+        define_instruction_fn!(
+            $name,
+            fuel_check = omit,
+            |args: $crate::execution::interpreter_loop::Args| {
+                if let core::ops::ControlFlow::Break(outcome) =
+                    $crate::execution::interpreter_loop::decrement_fuel(
+                        T::get_fc_extension_flat_cost($opcode),
+                        &mut args.resumable.maybe_fuel,
+                    )
+                {
+                    return Ok(core::ops::ControlFlow::Break(outcome));
+                }
 
-            $contents(args)
-        });
+                $contents(args)
+            }
+        );
     };
 
-    (fd_fuel_check, $name: ident, $opcode: expr, $contents:expr) => {
-        define_instruction!(no_fuel_check, $name, $opcode, |args: Args| {
-            if let Some(outcome) = crate::execution::interpreter_loop::decrement_fuel(
-                T::get_fd_extension_flat_cost($opcode),
-                &mut args.resumable.maybe_fuel,
-            ) {
-                return Ok(Some(outcome));
-            }
+    ($name: ident, fuel_check = flat_fd($opcode: expr), $contents:expr) => {
+        define_instruction_fn!(
+            $name,
+            fuel_check = omit,
+            |args: $crate::execution::interpreter_loop::Args| {
+                if let core::ops::ControlFlow::Break(outcome) =
+                    $crate::execution::interpreter_loop::decrement_fuel(
+                        T::get_fd_extension_flat_cost($opcode),
+                        &mut args.resumable.maybe_fuel,
+                    )
+                {
+                    return Ok(core::ops::ControlFlow::Break(outcome));
+                }
 
-            $contents(args)
-        });
+                $contents(args)
+            }
+        );
     };
 }
 
-pub(crate) use define_instruction;
+pub(crate) use define_instruction_fn;
 
 #[inline(always)]
-fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> Option<InterpreterLoopOutcome> {
+fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> ControlFlow<InterpreterLoopOutcome> {
     if let Some(fuel) = maybe_fuel {
         if *fuel >= cost {
             *fuel -= cost;
         } else {
-            return Some(InterpreterLoopOutcome::OutOfFuel {
+            return ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
                 required_fuel: NonZeroU64::new(cost - *fuel)
                     .expect("the last check guarantees that the current fuel is smaller than cost"),
             });
         }
     }
 
-    None
+    ControlFlow::Continue(())
 }
 
-define_instruction!(
-    no_fuel_check,
-    fc_extensions,
-    opcode::FC_EXTENSIONS,
-    |args: Args| {
-        // should we call instruction hook here as well? multibyte instruction
-        let second_instr = args.wasm.read_var_u32().unwrap_validated();
+define_instruction_fn!(fc_extensions, fuel_check = omit, |args: Args| {
+    // should we call instruction hook here as well? multibyte instruction
+    let second_instr = args.wasm.read_var_u32().unwrap_validated();
 
-        let instruction_fn = T::FC_DISPATCH_TABLE
-            .get(second_instr.into_usize())
-            .expect("the instruction to be valid because the code is validated");
+    let instruction_fn = T::FC_DISPATCH_TABLE
+        .get(second_instr.into_usize())
+        .expect("the instruction to be valid because the code is validated");
 
-        // SAFETY: All possible instruction handler functions use the same safety requirements, as
-        // they are defined through the same macro: The caller ensures that the resumable is valid
-        // in the current store. Also all other address types passed via the `Args` must come from
-        // the current store itself. Therefore, they are automatically valid in this store.
-        unsafe { instruction_fn(args) }
+    // SAFETY: All possible instruction handler functions use the same safety requirements, as
+    // they are defined through the same macro: The caller ensures that the resumable is valid
+    // in the current store. Also all other address types passed via the `Args` must come from
+    // the current store itself. Therefore, they are automatically valid in this store.
+    unsafe {
+        instruction_fn(
+            args.wasm,
+            args.resumable,
+            args.current_sidetable,
+            args.store_inner,
+            args.modules,
+            args.current_module,
+            args.current_function_end_marker,
+        )
     }
-);
+});
 
-define_instruction!(
-    no_fuel_check,
-    fd_extensions,
-    opcode::FD_EXTENSIONS,
-    |args: Args| {
-        // Should we call instruction hook here as well? Multibyte instruction
-        let second_instr = args.wasm.read_var_u32().unwrap_validated();
+define_instruction_fn!(fd_extensions, fuel_check = omit, |args: Args| {
+    // Should we call instruction hook here as well? Multibyte instruction
+    let second_instr = args.wasm.read_var_u32().unwrap_validated();
 
-        let instruction_fn = T::FD_DISPATCH_TABLE
-            .get(second_instr.into_usize())
-            .expect("the instruction to be valid because the code is validated");
+    let instruction_fn = T::FD_DISPATCH_TABLE
+        .get(second_instr.into_usize())
+        .expect("the instruction to be valid because the code is validated");
 
-        // SAFETY: All possible instruction handler functions use the same safety requirements, as
-        // they are defined through the same macro: The caller ensures that the resumable is valid
-        // in the current store. Also all other address types passed via the `Args` must come from
-        // the current store itself. Therefore, they are automatically valid in this store.
-        unsafe { instruction_fn(args) }
+    // SAFETY: All possible instruction handler functions use the same safety requirements, as
+    // they are defined through the same macro: The caller ensures that the resumable is valid
+    // in the current store. Also all other address types passed via the `Args` must come from
+    // the current store itself. Therefore, they are automatically valid in this store.
+    unsafe {
+        instruction_fn(
+            args.wasm,
+            args.resumable,
+            args.current_sidetable,
+            args.store_inner,
+            args.modules,
+            args.current_module,
+            args.current_function_end_marker,
+        )
     }
-);
+});
