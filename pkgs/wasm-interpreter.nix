@@ -23,6 +23,7 @@ rustPlatform.buildRustPackage rec {
         "rs"
         "toml"
         "wast"
+        "wasm"
       ];
       # Files to explicitly include
       include = [ "README.md" ];
