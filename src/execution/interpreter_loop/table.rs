@@ -14,7 +14,7 @@ use crate::{
     TrapError, Value,
 };
 
-define_instruction_fn!(
+define_instruction_fn! {
     table_get,
     fuel_check = flat(opcode::TABLE_GET),
     |Args {
@@ -57,9 +57,9 @@ define_instruction_fn!(
         );
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     table_set,
     fuel_check = flat(opcode::TABLE_SET),
     |Args {
@@ -101,9 +101,9 @@ define_instruction_fn!(
         );
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     table_size,
     fuel_check = flat_fc(opcode::fc_extensions::TABLE_SIZE),
     |Args {
@@ -139,9 +139,9 @@ define_instruction_fn!(
         trace!("Instruction: table.size '{}' [] -> [{}]", table_idx, sz);
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     table_grow,
     fuel_check = omit,
     |Args {
@@ -204,9 +204,9 @@ define_instruction_fn!(
         }
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     table_fill,
     fuel_check = omit,
     |Args {
@@ -276,10 +276,10 @@ define_instruction_fn!(
         );
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
-define_instruction_fn!(
+define_instruction_fn! {
     table_copy,
     fuel_check = omit,
     |Args {
@@ -393,13 +393,13 @@ define_instruction_fn!(
         );
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-init-x-y
 // https://webassembly.github.io/spec/core/binary/instructions.html#table-instructions
 // in binary format it seems that elemidx is first ???????
 // this is ONLY for passive elements
-define_instruction_fn!(
+define_instruction_fn! {
     table_init_fn,
     fuel_check = omit,
     |Args {
@@ -466,9 +466,9 @@ define_instruction_fn!(
         };
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     elem_drop_fn,
     fuel_check = flat_fc(opcode::fc_extensions::ELEM_DROP),
     |Args {
@@ -504,4 +504,4 @@ define_instruction_fn!(
         }
         Ok(ControlFlow::Continue(()))
     }
-);
+}

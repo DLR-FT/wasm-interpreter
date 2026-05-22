@@ -7,7 +7,7 @@ use crate::{
     ValType,
 };
 
-define_instruction_fn!(
+define_instruction_fn! {
     drop,
     fuel_check = flat(opcode::DROP),
     |Args { resumable, .. }| {
@@ -16,9 +16,9 @@ define_instruction_fn!(
 
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     select,
     fuel_check = flat(opcode::SELECT),
     |Args { resumable, .. }| {
@@ -33,9 +33,9 @@ define_instruction_fn!(
         trace!("Instruction: SELECT");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     select_t,
     fuel_check = flat(opcode::SELECT_T),
     |Args {
@@ -53,4 +53,4 @@ define_instruction_fn!(
         trace!("Instruction: SELECT_T");
         Ok(ControlFlow::Continue(()))
     }
-);
+}

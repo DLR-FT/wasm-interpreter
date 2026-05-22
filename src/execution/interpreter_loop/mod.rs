@@ -81,12 +81,12 @@ type InstructionHandlerFn =
 
 // A placeholder instruction for unassigned instruction bytes. This function is by definition dead
 // code!
-define_instruction_fn!(unset, fuel_check = omit, |Args { .. }| {
+define_instruction_fn! {unset, fuel_check = omit, |Args { .. }| {
     // Access T to circumvent warning that it is unused by this function. #[allow] does not work for
     // macros.
     let _ = T::DISPATCH_TABLE;
     unreachable_validated!();
-});
+}}
 
 /// Interprets wasm native functions. Wasm parameters and Wasm return values are passed on the stack.
 /// Returns `Ok(ControlFlow::Continue(()))` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
@@ -452,7 +452,7 @@ macro_rules! define_instruction_fn {
     };
 
     ($name:ident, fuel_check = flat($opcode:expr), $contents:expr) => {
-        define_instruction_fn!(
+        define_instruction_fn! {
             $name,
             fuel_check = omit,
             |args: $crate::execution::interpreter_loop::Args| {
@@ -467,11 +467,11 @@ macro_rules! define_instruction_fn {
 
                 $contents(args)
             }
-        );
+        }
     };
 
     ($name: ident, fuel_check = flat_fc($opcode: expr), $contents:expr) => {
-        define_instruction_fn!(
+        define_instruction_fn! {
             $name,
             fuel_check = omit,
             |args: $crate::execution::interpreter_loop::Args| {
@@ -486,11 +486,11 @@ macro_rules! define_instruction_fn {
 
                 $contents(args)
             }
-        );
+        }
     };
 
     ($name: ident, fuel_check = flat_fd($opcode: expr), $contents:expr) => {
-        define_instruction_fn!(
+        define_instruction_fn! {
             $name,
             fuel_check = omit,
             |args: $crate::execution::interpreter_loop::Args| {
@@ -505,7 +505,7 @@ macro_rules! define_instruction_fn {
 
                 $contents(args)
             }
-        );
+        }
     };
 }
 
@@ -527,7 +527,7 @@ fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> ControlFlow<Interp
     ControlFlow::Continue(())
 }
 
-define_instruction_fn!(fc_extensions, fuel_check = omit, |args: Args| {
+define_instruction_fn! {fc_extensions, fuel_check = omit, |args: Args| {
     // should we call instruction hook here as well? multibyte instruction
     let second_instr = args.wasm.read_var_u32().unwrap_validated();
 
@@ -550,9 +550,9 @@ define_instruction_fn!(fc_extensions, fuel_check = omit, |args: Args| {
             args.current_function_end_marker,
         )
     }
-});
+}}
 
-define_instruction_fn!(fd_extensions, fuel_check = omit, |args: Args| {
+define_instruction_fn! {fd_extensions, fuel_check = omit, |args: Args| {
     // Should we call instruction hook here as well? Multibyte instruction
     let second_instr = args.wasm.read_var_u32().unwrap_validated();
 
@@ -575,4 +575,4 @@ define_instruction_fn!(fd_extensions, fuel_check = omit, |args: Args| {
             args.current_function_end_marker,
         )
     }
-});
+}}

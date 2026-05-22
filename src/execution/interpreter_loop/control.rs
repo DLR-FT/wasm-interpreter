@@ -16,17 +16,17 @@ use crate::{
     TrapError,
 };
 
-define_instruction_fn!(nop, fuel_check = flat(opcode::NOP), |_args| Ok(
+define_instruction_fn! {nop, fuel_check = flat(opcode::NOP), |_args| Ok(
     ControlFlow::Continue(())
-));
+)}
 
-define_instruction_fn!(
+define_instruction_fn! {
     unreachable,
     fuel_check = flat(opcode::UNREACHABLE),
     |Args { .. }| { Err(TrapError::ReachedUnreachable.into()) }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     block,
     fuel_check = flat(opcode::BLOCK),
     |Args { wasm, .. }| {
@@ -35,9 +35,9 @@ define_instruction_fn!(
         let _ = unsafe { BlockType::read_unchecked(wasm) };
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     end,
     fuel_check = flat(opcode::END),
     |Args {
@@ -103,9 +103,9 @@ define_instruction_fn!(
 
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     r#loop,
     fuel_check = flat(opcode::LOOP),
     |Args { wasm, .. }| {
@@ -114,9 +114,9 @@ define_instruction_fn!(
         let _ = unsafe { BlockType::read_unchecked(wasm) };
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     r#if,
     fuel_check = flat(opcode::IF),
     |Args {
@@ -145,9 +145,9 @@ define_instruction_fn!(
 
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     r#else,
     fuel_check = flat(opcode::ELSE),
     |Args {
@@ -164,9 +164,9 @@ define_instruction_fn!(
         )?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     br,
     fuel_check = flat(opcode::BR),
     |Args {
@@ -186,9 +186,9 @@ define_instruction_fn!(
         )?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     br_if,
     fuel_check = flat(opcode::BR_IF),
     |Args {
@@ -216,9 +216,9 @@ define_instruction_fn!(
         trace!("Instruction: BR_IF");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     br_table,
     fuel_check = flat(opcode::BR_TABLE),
     |Args {
@@ -257,9 +257,9 @@ define_instruction_fn!(
         )?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     r#return,
     fuel_check = flat(opcode::RETURN),
     |Args {
@@ -277,9 +277,9 @@ define_instruction_fn!(
         )?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     call,
     fuel_check = flat(opcode::CALL),
     |Args {
@@ -370,10 +370,10 @@ define_instruction_fn!(
 
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // TODO: fix push_call_frame, because the func idx that you get from the table is global func idx
-define_instruction_fn!(
+define_instruction_fn! {
     call_indirect,
     fuel_check = flat(opcode::CALL_INDIRECT),
     |Args {
@@ -485,4 +485,4 @@ define_instruction_fn!(
         trace!("Instruction: CALL_INDIRECT");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
