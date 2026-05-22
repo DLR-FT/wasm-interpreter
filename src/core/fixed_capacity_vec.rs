@@ -41,6 +41,24 @@ pub struct FixedCapacityVec<T> {
     len: usize,
 }
 
+// TODO Optimize Clone impl by using unsafe code
+impl<T: Clone> Clone for FixedCapacityVec<T> {
+    fn clone(&self) -> Self {
+        let mut cloned = Self::with_capacity(self.elements.len());
+
+        for index in 0..self.len {
+            let element = self
+                .get(index)
+                .expect("that this index is valid because it is less that self.len");
+            cloned
+                .push(element.clone())
+                .expect("that the new cloned vec has the same length as self and cannot overflow");
+        }
+
+        cloned
+    }
+}
+
 impl<T> FixedCapacityVec<T> {
     /// Construct new [`Self`], holding up to `capacity` elements of type `T`
     pub fn with_capacity(capacity: usize) -> Self {
