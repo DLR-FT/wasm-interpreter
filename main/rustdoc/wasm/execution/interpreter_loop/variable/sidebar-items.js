@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["global_get","global_set","local_get","local_set","local_tee"]};

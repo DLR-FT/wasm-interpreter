@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["run_const","run_const_span"]};
+window.SIDEBAR_ITEMS = {"fn":["end","f32_const","f64_const","fd_extensions","global_get","i32_const","i64_const","ref_func","ref_null","run_const","run_const_span"],"macro":["define_instruction"],"struct":["Args"]};

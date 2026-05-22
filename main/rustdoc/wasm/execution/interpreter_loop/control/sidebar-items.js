@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["block","br","br_if","br_table","call","call_indirect","else","end","if","loop","nop","return","unreachable"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["drop","select","select_t"]};
