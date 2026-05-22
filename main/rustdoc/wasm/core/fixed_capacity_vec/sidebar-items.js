@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["slice_assume_init"],"struct":["EmptyContainerError","FixedCapacityVec","FullContainerError","SliceDropGuard"]};
