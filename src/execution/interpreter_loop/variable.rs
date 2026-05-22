@@ -9,7 +9,7 @@ use crate::{
     execution::interpreter_loop::{define_instruction_fn, Args},
 };
 
-define_instruction_fn!(
+define_instruction_fn! {
     local_get,
     fuel_check = flat(opcode::LOCAL_GET),
     |Args {
@@ -23,9 +23,9 @@ define_instruction_fn!(
         trace!("Instruction: local.get {} [] -> [t]", local_idx);
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     local_set,
     fuel_check = flat(opcode::LOCAL_SET),
     |Args {
@@ -39,9 +39,9 @@ define_instruction_fn!(
         trace!("Instruction: local.set {} [t] -> []", local_idx);
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     local_tee,
     fuel_check = flat(opcode::LOCAL_TEE),
     |Args {
@@ -55,9 +55,9 @@ define_instruction_fn!(
         trace!("Instruction: local.tee {} [t] -> [t]", local_idx);
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     global_get,
     fuel_check = flat(opcode::GLOBAL_GET),
     |Args {
@@ -93,9 +93,9 @@ define_instruction_fn!(
         );
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     global_set,
     fuel_check = flat(opcode::GLOBAL_SET),
     |Args {
@@ -125,4 +125,4 @@ define_instruction_fn!(
         trace!("Instruction: GLOBAL_SET");
         Ok(ControlFlow::Continue(()))
     }
-);
+}

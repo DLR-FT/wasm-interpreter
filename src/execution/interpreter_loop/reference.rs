@@ -8,7 +8,7 @@ use crate::{
     RefType, Value,
 };
 
-define_instruction_fn!(
+define_instruction_fn! {
     ref_null,
     fuel_check = flat(opcode::REF_NULL),
     |Args {
@@ -20,9 +20,9 @@ define_instruction_fn!(
         trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     ref_is_null,
     fuel_check = flat(opcode::REF_IS_NULL),
     |Args { resumable, .. }| {
@@ -34,10 +34,10 @@ define_instruction_fn!(
         resumable.stack.push_value(Value::I32(res))?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
-define_instruction_fn!(
+define_instruction_fn! {
     ref_func,
     fuel_check = flat(opcode::REF_FUNC),
     |Args {
@@ -64,4 +64,4 @@ define_instruction_fn!(
             .push_value(Value::Ref(Ref::Func(*func_addr)))?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}

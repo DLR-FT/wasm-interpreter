@@ -15,7 +15,7 @@ use crate::{
 use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 // t.load
-define_instruction_fn!(
+define_instruction_fn! {
     i32_load,
     fuel_check = flat(opcode::I32_LOAD),
     |Args {
@@ -48,9 +48,9 @@ define_instruction_fn!(
         trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i64_load,
     fuel_check = flat(opcode::I64_LOAD),
     |Args {
@@ -83,9 +83,9 @@ define_instruction_fn!(
         trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     f32_load,
     fuel_check = flat(opcode::F32_LOAD),
     |Args {
@@ -118,9 +118,9 @@ define_instruction_fn!(
         trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     f64_load,
     fuel_check = flat(opcode::F64_LOAD),
     |Args {
@@ -153,9 +153,9 @@ define_instruction_fn!(
         trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     v128_load,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD),
     |Args {
@@ -188,10 +188,10 @@ define_instruction_fn!(
         resumable.stack.push_value(data.to_le_bytes().into())?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // t.loadN_sx
-define_instruction_fn!(
+define_instruction_fn! {
     i32_load8_s,
     fuel_check = flat(opcode::I32_LOAD8_S),
     |Args {
@@ -224,9 +224,9 @@ define_instruction_fn!(
         trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i32_load8_u,
     fuel_check = flat(opcode::I32_LOAD8_U),
     |Args {
@@ -259,9 +259,9 @@ define_instruction_fn!(
         trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i32_load16_s,
     fuel_check = flat(opcode::I32_LOAD16_S),
     |Args {
@@ -294,9 +294,9 @@ define_instruction_fn!(
         trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i32_load16_u,
     fuel_check = flat(opcode::I32_LOAD16_U),
     |Args {
@@ -329,9 +329,9 @@ define_instruction_fn!(
         trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i64_load8_s,
     fuel_check = flat(opcode::I64_LOAD8_S),
     |Args {
@@ -364,9 +364,9 @@ define_instruction_fn!(
         trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i64_load8_u,
     fuel_check = flat(opcode::I64_LOAD8_U),
     |Args {
@@ -399,9 +399,9 @@ define_instruction_fn!(
         trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i64_load16_s,
     fuel_check = flat(opcode::I64_LOAD16_S),
     |Args {
@@ -434,9 +434,9 @@ define_instruction_fn!(
         trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i64_load16_u,
     fuel_check = flat(opcode::I64_LOAD16_U),
     |Args {
@@ -469,9 +469,9 @@ define_instruction_fn!(
         trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i64_load32_s,
     fuel_check = flat(opcode::I64_LOAD32_S),
     |Args {
@@ -504,9 +504,9 @@ define_instruction_fn!(
         trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i64_load32_u,
     fuel_check = flat(opcode::I64_LOAD32_U),
     |Args {
@@ -539,10 +539,10 @@ define_instruction_fn!(
         trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // v128.loadNxM_sx
-define_instruction_fn!(
+define_instruction_fn! {
     v128_load8x8_s,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8X8_S),
     |Args {
@@ -584,8 +584,8 @@ define_instruction_fn!(
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_load8x8_u,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8X8_U),
     |Args {
@@ -627,8 +627,8 @@ define_instruction_fn!(
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_load16x4_s,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16X4_S),
     |Args {
@@ -670,8 +670,8 @@ define_instruction_fn!(
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_load16x4_u,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16X4_U),
     |Args {
@@ -713,8 +713,8 @@ define_instruction_fn!(
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_load32x2_s,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32X2_S),
     |Args {
@@ -756,8 +756,8 @@ define_instruction_fn!(
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_load32x2_u,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32X2_U),
     |Args {
@@ -799,10 +799,10 @@ define_instruction_fn!(
             .push_value(Value::V128(from_lanes(extended_lanes)))?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // v128.loadN_splat
-define_instruction_fn!(
+define_instruction_fn! {
     v128_load8_splat,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8_SPLAT),
     |Args {
@@ -836,8 +836,8 @@ define_instruction_fn!(
             .push_value(Value::V128(from_lanes([lane; 16])))?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_load16_splat,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16_SPLAT),
     |Args {
@@ -871,8 +871,8 @@ define_instruction_fn!(
             .push_value(Value::V128(from_lanes([lane; 8])))?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_load32_splat,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32_SPLAT),
     |Args {
@@ -906,8 +906,8 @@ define_instruction_fn!(
             .push_value(Value::V128(from_lanes([lane; 4])))?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_load64_splat,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD64_SPLAT),
     |Args {
@@ -941,10 +941,10 @@ define_instruction_fn!(
             .push_value(Value::V128(from_lanes([lane; 2])))?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // v128.loadN_zero
-define_instruction_fn!(
+define_instruction_fn! {
     v128_load32_zero,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32_ZERO),
     |Args {
@@ -980,8 +980,8 @@ define_instruction_fn!(
             .push_value(Value::V128(data.to_le_bytes()))?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_load64_zero,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD64_ZERO),
     |Args {
@@ -1016,10 +1016,10 @@ define_instruction_fn!(
             .push_value(Value::V128(data.to_le_bytes()))?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // v128.loadN_lane
-define_instruction_fn!(
+define_instruction_fn! {
     v128_load8_lane,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8_LANE),
     |Args {
@@ -1053,9 +1053,9 @@ define_instruction_fn!(
         resumable.stack.push_value(Value::V128(from_lanes(lanes)))?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     v128_load16_lane,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16_LANE),
     |Args {
@@ -1089,8 +1089,8 @@ define_instruction_fn!(
         resumable.stack.push_value(Value::V128(from_lanes(lanes)))?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_load32_lane,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32_LANE),
     |Args {
@@ -1124,8 +1124,8 @@ define_instruction_fn!(
         resumable.stack.push_value(Value::V128(from_lanes(lanes)))?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_load64_lane,
     fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD64_LANE),
     |Args {
@@ -1159,10 +1159,10 @@ define_instruction_fn!(
         resumable.stack.push_value(Value::V128(from_lanes(lanes)))?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // t.store
-define_instruction_fn!(
+define_instruction_fn! {
     i32_store,
     fuel_check = flat(opcode::I32_STORE),
     |Args {
@@ -1196,9 +1196,9 @@ define_instruction_fn!(
         trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i64_store,
     fuel_check = flat(opcode::I64_STORE),
     |Args {
@@ -1232,9 +1232,9 @@ define_instruction_fn!(
         trace!("Instruction: i64.store [{relative_address} {data_to_store}] -> []");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     f32_store,
     fuel_check = flat(opcode::F32_STORE),
     |Args {
@@ -1268,9 +1268,9 @@ define_instruction_fn!(
         trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     f64_store,
     fuel_check = flat(opcode::F64_STORE),
     |Args {
@@ -1304,9 +1304,9 @@ define_instruction_fn!(
         trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     v128_store,
     fuel_check = flat_fd(opcode::fd_extensions::V128_STORE),
     |Args {
@@ -1339,10 +1339,10 @@ define_instruction_fn!(
         memory.mem.store(idx, u128::from_le_bytes(data))?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // t.storeN
-define_instruction_fn!(
+define_instruction_fn! {
     i32_store8,
     fuel_check = flat(opcode::I32_STORE8),
     |Args {
@@ -1378,9 +1378,9 @@ define_instruction_fn!(
         trace!("Instruction: i32.store8 [{relative_address} {wrapped_data}] -> []");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i32_store16,
     fuel_check = flat(opcode::I32_STORE16),
     |Args {
@@ -1416,9 +1416,9 @@ define_instruction_fn!(
         trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i64_store8,
     fuel_check = flat(opcode::I64_STORE8),
     |Args {
@@ -1454,9 +1454,9 @@ define_instruction_fn!(
         trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i64_store16,
     fuel_check = flat(opcode::I64_STORE16),
     |Args {
@@ -1492,9 +1492,9 @@ define_instruction_fn!(
         trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
-define_instruction_fn!(
+define_instruction_fn! {
     i64_store32,
     fuel_check = flat(opcode::I64_STORE32),
     |Args {
@@ -1530,10 +1530,10 @@ define_instruction_fn!(
         trace!("Instruction: i64.store32 [{relative_address} {data_to_store}] -> []");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // v128.storeN_lane
-define_instruction_fn!(
+define_instruction_fn! {
     v128_store8_lane,
     fuel_check = flat_fd(opcode::fd_extensions::V128_STORE8_LANE),
     |Args {
@@ -1568,8 +1568,8 @@ define_instruction_fn!(
         memory.mem.store::<1, u8>(idx, lane)?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_store16_lane,
     fuel_check = flat_fd(opcode::fd_extensions::V128_STORE16_LANE),
     |Args {
@@ -1604,8 +1604,8 @@ define_instruction_fn!(
         memory.mem.store::<2, u16>(idx, lane)?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_store32_lane,
     fuel_check = flat_fd(opcode::fd_extensions::V128_STORE32_LANE),
     |Args {
@@ -1640,8 +1640,8 @@ define_instruction_fn!(
         memory.mem.store::<4, u32>(idx, lane)?;
         Ok(ControlFlow::Continue(()))
     }
-);
-define_instruction_fn!(
+}
+define_instruction_fn! {
     v128_store64_lane,
     fuel_check = flat_fd(opcode::fd_extensions::V128_STORE64_LANE),
     |Args {
@@ -1676,10 +1676,10 @@ define_instruction_fn!(
         memory.mem.store::<8, u64>(idx, lane)?;
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // memory.size
-define_instruction_fn!(
+define_instruction_fn! {
     memory_size,
     fuel_check = flat(opcode::MEMORY_SIZE),
     |Args {
@@ -1709,10 +1709,10 @@ define_instruction_fn!(
         trace!("Instruction: memory.size [] -> [{}]", size);
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // memory.grow
-define_instruction_fn!(
+define_instruction_fn! {
     memory_grow,
     fuel_check = omit,
     |Args {
@@ -1769,11 +1769,11 @@ define_instruction_fn!(
         trace!("Instruction: memory.grow [{}] -> [{}]", n, pushed_value);
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // memory.fill
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
-define_instruction_fn!(
+define_instruction_fn! {
     memory_fill,
     fuel_check = omit,
     |Args {
@@ -1838,11 +1838,11 @@ define_instruction_fn!(
         trace!("Instruction: memory.fill");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // memory.copy
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
-define_instruction_fn!(
+define_instruction_fn! {
     memory_copy,
     fuel_check = omit,
     |Args {
@@ -1914,12 +1914,12 @@ define_instruction_fn!(
         trace!("Instruction: memory.copy");
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // memory.init
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
 // Copy a region from a data segment into memory
-define_instruction_fn!(
+define_instruction_fn! {
     memory_init_fn,
     fuel_check = omit,
     |Args {
@@ -1991,10 +1991,10 @@ define_instruction_fn!(
         };
         Ok(ControlFlow::Continue(()))
     }
-);
+}
 
 // data.drop
-define_instruction_fn!(
+define_instruction_fn! {
     data_drop_fn,
     fuel_check = flat_fc(opcode::fc_extensions::DATA_DROP),
     |Args {
@@ -2022,4 +2022,4 @@ define_instruction_fn!(
         unsafe { data_drop(modules, &mut store_inner.data, *current_module, data_idx) };
         Ok(ControlFlow::Continue(()))
     }
-);
+}
