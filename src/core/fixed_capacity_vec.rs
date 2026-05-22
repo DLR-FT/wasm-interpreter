@@ -129,16 +129,13 @@ impl<T> FixedCapacityVec<T> {
     pub fn pop(&mut self) -> Result<T, EmptyContainerError> {
         self.len = self.len.checked_sub(1).ok_or(EmptyContainerError)?;
 
-        let value = self
-            .elements
-            .get(self.len)
-            .expect("than len is never larger than the length of elements");
+        // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the number
+        // of initialized values starting from `self.element`'s beginning. As we require `self.len`
+        // not to be zero before calling this function, it is now at zero and thus a valid index to
+        // an initialized element.
+        let value = unsafe { self.elements.get_unchecked(self.len).assume_init_read() };
 
-        Ok(
-            // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
-            // number of initialized values starting from `self.element`'s beginning.
-            unsafe { value.assume_init_read() },
-        )
+        Ok(value)
     }
 
     /// Peek at the topmost/last value from [`Self`]
@@ -164,16 +161,13 @@ impl<T> FixedCapacityVec<T> {
     pub fn peek(&self) -> Result<&T, EmptyContainerError> {
         let idx = self.len.checked_sub(1).ok_or(EmptyContainerError)?;
 
-        let value = self
-            .elements
-            .get(idx)
-            .expect("than len is never larger than the length of elements");
+        // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the number
+        // of initialized values starting from `self.element`'s beginning. As we require `self.len`
+        // not to be zero before calling this function, it is now at zero and thus a valid index to
+        // an initialized element.
+        let value = unsafe { self.elements.get_unchecked(idx).assume_init_ref() };
 
-        Ok(
-            // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
-            // number of initialized values starting from `self.element`'s beginning.
-            unsafe { value.assume_init_ref() },
-        )
+        Ok(value)
     }
 
     /// Get a shared ref to the nth element in [`Self`]
