@@ -1,5 +1,6 @@
 use super::global::GlobalType;
 use super::RefType;
+use crate::core::error::DecodingError;
 use crate::core::indices::{FuncIdx, IdxVec, TableIdx, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::TableType;
@@ -356,10 +357,10 @@ fn parse_validate_generic_initializer_list(
 /// Parse an elemkind: <https://webassembly.github.io/spec/core/binary/modules.html#element-section>
 /// # Returns
 /// - `Ok(elemkind)` if parsing is successful, Err(_) otherwise
-fn parse_elemkind(wasm: &mut WasmReader) -> Result<u8, ValidationError> {
+fn parse_elemkind(wasm: &mut WasmReader) -> Result<u8, DecodingError> {
     let et = wasm.read_u8()?;
     if et != 0x00 {
-        Err(ValidationError::MalformedElemKindDiscriminator(et))
+        Err(DecodingError::MalformedElemKindDiscriminator(et))
     } else {
         Ok(et)
     }

@@ -1,7 +1,7 @@
+use crate::core::error::DecodingError;
 use crate::core::reader::span::Span;
 use crate::core::reader::WasmReader;
 use crate::core::utils::ToUsizeExt;
-use crate::ValidationError;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SectionTy {
@@ -21,7 +21,7 @@ pub enum SectionTy {
 }
 
 impl SectionTy {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
         use SectionTy::*;
         let ty = match wasm.read_u8()? {
             0 => Custom,
@@ -37,7 +37,7 @@ impl SectionTy {
             10 => Code,
             11 => Data,
             12 => DataCount,
-            other => return Err(ValidationError::MalformedSectionTypeDiscriminator(other)),
+            other => return Err(DecodingError::MalformedSectionTypeDiscriminator(other)),
         };
 
         Ok(ty)
@@ -51,7 +51,7 @@ pub(crate) struct SectionHeader {
 }
 
 impl SectionHeader {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
         let ty = SectionTy::read(wasm)?;
         let size: u32 = wasm.read_var_u32()?;
         let contents_span = wasm.make_span(size.into_usize())?;

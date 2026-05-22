@@ -1,3 +1,4 @@
+use crate::core::error::DecodingError;
 use crate::core::indices::{IdxVec, TypeIdx};
 use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;
@@ -49,7 +50,7 @@ impl ImportDesc {
             0x01 => Self::Table(TableType::read(wasm)?),
             0x02 => Self::Mem(MemType::read(wasm)?),
             0x03 => Self::Global(GlobalType::read(wasm)?),
-            other => return Err(ValidationError::MalformedImportDescDiscriminator(other)),
+            other => return Err(DecodingError::MalformedImportDescDiscriminator(other).into()),
         };
 
         Ok(desc)

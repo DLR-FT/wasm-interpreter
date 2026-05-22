@@ -3,6 +3,7 @@ use core::ops::ControlFlow;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
+        error::DecodingError,
         indices::{read_label_idx_unchecked, FuncIdx, TableIdx, TypeIdx},
         reader::types::{opcode, BlockType},
         utils::ToUsizeExt,
@@ -228,12 +229,11 @@ define_instruction_fn! {
          ..
      }| {
         let label_vec = wasm
-            .read_vec(|wasm| {
+            .read_vec::<_, _, DecodingError>(|wasm| {
                 // SAFETY: Validation guarantees that there is a
                 // valid vec of label indices.
                 Ok(unsafe { read_label_idx_unchecked(wasm) })
-            })
-            .unwrap_validated();
+            }).unwrap();
 
         // SAFETY: Validation guarantees there to be another label index
         // for the default case.

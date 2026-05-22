@@ -36,6 +36,7 @@ use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
     core::{
+        error::DecodingError,
         reader::{types::FuncType, WasmReader},
         utils::ToUsizeExt,
     },
@@ -688,7 +689,7 @@ impl LocalIdx {
 }
 
 /// Reads a label index from Wasm code without validating it.
-pub fn read_label_idx(wasm: &mut WasmReader) -> Result<u32, ValidationError> {
+pub fn read_label_idx(wasm: &mut WasmReader) -> Result<u32, DecodingError> {
     wasm.read_var_u32()
 }
 

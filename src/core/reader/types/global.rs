@@ -1,7 +1,7 @@
+use crate::core::error::DecodingError;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::ValType;
 use crate::core::reader::WasmReader;
-use crate::ValidationError;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Global {
@@ -17,12 +17,12 @@ pub struct GlobalType {
 }
 
 impl GlobalType {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
         let ty = ValType::read(wasm)?;
         let is_mut = match wasm.read_u8()? {
             0x00 => false,
             0x01 => true,
-            other => return Err(ValidationError::MalformedMutDiscriminator(other)),
+            other => return Err(DecodingError::MalformedMutDiscriminator(other)),
         };
         Ok(Self { ty, is_mut })
     }

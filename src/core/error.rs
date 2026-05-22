@@ -8,7 +8,7 @@ use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum ValidationError {
+pub enum DecodingError {
     /// The magic number at the start of the Wasm bytecode is invalid.
     InvalidMagic,
     /// The binary format version at the start of the Wasm bytecode is invalid.
@@ -37,10 +37,7 @@ pub enum ValidationError {
     /// The discriminator of a limits type is malformed.
     MalformedLimitsDiscriminator(u8),
     /// The min field of a limits type is larger than the max field.
-    MalformedLimitsMinLargerThanMax {
-        min: u32,
-        max: u32,
-    },
+    MalformedLimitsMinLargerThanMax { min: u32, max: u32 },
     /// The discriminator of a mut type is malformed.
     MalformedMutDiscriminator(u8),
     /// Block types use a special 33-bit signed integer for encoding type indices.
@@ -49,7 +46,49 @@ pub enum ValidationError {
     MalformedVariableLengthInteger,
     /// The discriminator of an element kind is malformed.
     MalformedElemKindDiscriminator(u8),
+    /// 33-bit signed integers are sometimes used to encode unsigned 32-bit
+    /// integers to prevent collisions between bit patterns of different types.
+    /// Therefore, 33-bit signed integers may never be negative.
+    I33IsNegative,
+    /// A function specifies too many locals, i.e. more than 2^32 - 1
+    TooManyLocals(u64),
+    /// The memory size specified by a mem type exceeds the maximum size.
+    MemoryTooLarge,
+}
 
+impl core::error::Error for DecodingError {}
+
+impl Display for DecodingError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            DecodingError::InvalidMagic => write!(f, "The magic number is invalid"),
+            DecodingError::InvalidBinaryFormatVersion => write!(f, "The Wasm binary format version is invalid"),
+            DecodingError::Eof => write!(f, "The end of the Wasm bytecode was reached unexpectedly"),
+            DecodingError::MalformedUtf8(utf8_error) => write!(f, "Failed to parse a UTF-8 string: {utf8_error}"),
+            DecodingError::MalformedSectionTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a section type discriminator"),
+            DecodingError::MalformedNumTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a number type discriminator"),
+            DecodingError::MalformedVecTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a vector type discriminator"),
+            DecodingError::MalformedFuncTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a function type discriminator"),
+            DecodingError::MalformedRefTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a reference type discriminator"),
+            DecodingError::MalformedValType => write!(f, "Failed to read a value type because it is neither a number, reference or vector type"),
+            DecodingError::MalformedExportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an export description discriminator"),
+            DecodingError::MalformedImportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an import description discriminator"),
+            DecodingError::MalformedLimitsDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a limits type discriminator"),
+            DecodingError::MalformedLimitsMinLargerThanMax { min, max } => write!(f, "Limits are malformed because min={min} is larger than max={max}"),
+            DecodingError::MalformedMutDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a mute type discriminator"),
+            DecodingError::MalformedBlockTypeTypeIdx(idx) => write!(f, "The type index {idx} which is encoded as a singed 33-bit integer inside a block type is malformed"),
+            DecodingError::MalformedVariableLengthInteger => write!(f, "Reading a variable-length integer overflowed"),
+            DecodingError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
+            DecodingError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
+            DecodingError::TooManyLocals(n) => write!(f,"There are {n} locals and this exceeds the maximum allowed number of 2^32-1"),
+            DecodingError::MemoryTooLarge => write!(f, "The size specified by a memory type exceeds the maximum size"),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum ValidationError {
+    Decoding(DecodingError),
     /// An index for a type is invalid.
     InvalidTypeIdx(u32),
     /// An index for a function is invalid.
@@ -82,8 +121,6 @@ pub enum ValidationError {
     InvalidValidationStackValType(Option<ValType>),
     InvalidValidationStackType(ValidationStackEntry),
     ExpectedAnOperand,
-    /// The memory size specified by a mem type exceeds the maximum size.
-    MemoryTooLarge,
     /// An attempt has been made to mutate a const global
     MutationOfConstGlobal,
     /// An alignment of some memory instruction is invalid
@@ -121,8 +158,6 @@ pub enum ValidationError {
     ReferencingAnUnreferencedFunction(FuncIdx),
     /// The select instructions may work with multiple values in the future. However, as of now its vector may only have one element.
     InvalidSelectTypeVectorLength(usize),
-    /// A function specifies too many locals, i.e. more than 2^32 - 1
-    TooManyLocals(u64),
     /// Multiple exports share the same name
     DuplicateExportName,
     /// Multiple memories are not yet allowed without the proposal.
@@ -138,10 +173,6 @@ pub enum ValidationError {
     InvalidStartFunctionSignature,
     /// An active element segment's type and its table's type are different.
     ActiveElementSegmentTypeMismatch,
-    /// 33-bit signed integers are sometimes used to encode unsigned 32-bit
-    /// integers to prevent collisions between bit patterns of different types.
-    /// Therefore, 33-bit signed integers may never be negative.
-    I33IsNegative,
     /// The data count section is required, if there are instructions that use
     /// data indices.
     MissingDataCountSection,
@@ -170,25 +201,7 @@ impl core::error::Error for ValidationError {}
 impl Display for ValidationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            ValidationError::InvalidMagic => write!(f, "The magic number is invalid"),
-            ValidationError::InvalidBinaryFormatVersion => write!(f, "The Wasm binary format version is invalid"),
-            ValidationError::Eof => write!(f, "The end of the Wasm bytecode was reached unexpectedly"),
-
-            ValidationError::MalformedUtf8(utf8_error) => write!(f, "Failed to parse a UTF-8 string: {utf8_error}"),
-            ValidationError::MalformedSectionTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a section type discriminator"),
-            ValidationError::MalformedNumTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a number type discriminator"),
-            ValidationError::MalformedVecTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a vector type discriminator"),
-            ValidationError::MalformedFuncTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a function type discriminator"),
-            ValidationError::MalformedRefTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a reference type discriminator"),
-            ValidationError::MalformedValType => write!(f, "Failed to read a value type because it is neither a number, reference or vector type"),
-            ValidationError::MalformedExportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an export description discriminator"),
-            ValidationError::MalformedImportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an import description discriminator"),
-            ValidationError::MalformedLimitsDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a limits type discriminator"),
-            ValidationError::MalformedLimitsMinLargerThanMax { min, max } => write!(f, "Limits are malformed because min={min} is larger than max={max}"),
-            ValidationError::MalformedMutDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a mute type discriminator"),
-            ValidationError::MalformedBlockTypeTypeIdx(idx) => write!(f, "The type index {idx} which is encoded as a singed 33-bit integer inside a block type is malformed"),
-            ValidationError::MalformedVariableLengthInteger => write!(f, "Reading a variable-length integer overflowed"),
-            ValidationError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
+            ValidationError::Decoding(err) => write!(f, "Decoding failed: {err}"),
 
             ValidationError::InvalidTypeIdx(idx) => write!(f, "The type index {idx} is invalid"),
             ValidationError::InvalidFuncIdx(idx) => write!(f, "The function index {idx} is invalid"),
@@ -211,7 +224,6 @@ impl Display for ValidationError {
             ValidationError::InvalidValidationStackValType(ty) => write!(f, "An unexpected type `{ty:?}` was found on the stack when trying to pop another"),
             ValidationError::InvalidValidationStackType(ty) => write!(f, "An unexpected type `{ty:?}` was found on the stack"),
             ValidationError::ExpectedAnOperand => write!(f, "Expected a value type operand on the stack"),
-            ValidationError::MemoryTooLarge => write!(f, "The size specified by a memory type exceeds the maximum size"),
             ValidationError::MutationOfConstGlobal => write!(f, "An attempt has been made to mutate a const global"),
             ValidationError::ErroneousAlignment {alignment , minimum_required_alignment} => write!(f, "The alignment 2^{alignment} is not less or equal to the required alignment 2^{minimum_required_alignment}"),
             ValidationError::ValidationCtrlStackEmpty => write!(f, "Failed to retrieve last ctrl block because validation ctrl stack is empty"),
@@ -224,7 +236,6 @@ impl Display for ValidationError {
             ValidationError::ExpectedReferenceTypeOnStack(found_valtype) => write!(f, "Expected a reference type but instead found a `{found_valtype:?}` on the stack"),
             ValidationError::ReferencingAnUnreferencedFunction(func_idx) => write!(f, "Referenced a function with index {func_idx} that was not referenced in prior validation"),
             ValidationError::InvalidSelectTypeVectorLength(len) => write!(f, "The type vector of a `select` instruction must be of length 1 as of now but it is of length {len} instead"),
-            ValidationError::TooManyLocals(n) => write!(f,"There are {n} locals and this exceeds the maximum allowed number of 2^32-1"),
             ValidationError::DuplicateExportName => write!(f,"Multiple exports share the same name"),
             ValidationError::UnsupportedMultipleMemoriesProposal => write!(f,"A memory index other than 1 was used, but the proposal for multiple memories is not yet supported"),
             ValidationError::CodeExprHasTrailingInstructions => write!(f,"A code expression has invalid trailing instructions following its `end` instruction"),
@@ -232,7 +243,6 @@ impl Display for ValidationError {
             ValidationError::DataCountAndDataSectionsLengthAreDifferent => write!(f,"The data count section specifies a different length than there are data segments in the data section"),
             ValidationError::InvalidImportType => f.write_str("Invalid import type"),
             ValidationError::InvalidStartFunctionSignature => write!(f,"The start function has parameters or return types which it is not allowed to have"),
-            ValidationError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
             ValidationError::MissingDataCountSection => f.write_str("Some instructions could not be validated because the data count section is missing"),
             ValidationError::InvalidDataSegmentMode(mode) => write!(f, "The mode of a data segment was invalid (only 0..=2 is allowed): {mode}"),
             ValidationError::InvalidElementMode(mode) => write!(f, "The mode of an element was invalid (only 0..=7 is allowed): {mode}"),
@@ -251,22 +261,28 @@ impl ValidationError {
     }
 }
 
+impl From<DecodingError> for ValidationError {
+    fn from(error: DecodingError) -> Self {
+        Self::Decoding(error)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use alloc::string::ToString;
 
-    use crate::ValidationError;
+    use crate::core::error::DecodingError;
 
     #[test]
     fn fmt_invalid_magic() {
-        assert!(ValidationError::InvalidMagic
+        assert!(DecodingError::InvalidMagic
             .to_string()
             .contains("magic number"));
     }
 
     #[test]
     fn fmt_invalid_version() {
-        assert!(ValidationError::InvalidBinaryFormatVersion
+        assert!(DecodingError::InvalidBinaryFormatVersion
             .to_string()
             .contains("version"));
     }
