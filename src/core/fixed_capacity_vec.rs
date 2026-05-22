@@ -129,7 +129,10 @@ impl<T> FixedCapacityVec<T> {
     pub fn pop(&mut self) -> Result<T, EmptyContainerError> {
         self.len = self.len.checked_sub(1).ok_or(EmptyContainerError)?;
 
-        let value = self.elements.get(self.len).ok_or(EmptyContainerError)?;
+        let value = self
+            .elements
+            .get(self.len)
+            .expect("than len is never larger than the length of elements");
 
         Ok(
             // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
@@ -161,7 +164,10 @@ impl<T> FixedCapacityVec<T> {
     pub fn peek(&self) -> Result<&T, EmptyContainerError> {
         let idx = self.len.checked_sub(1).ok_or(EmptyContainerError)?;
 
-        let value = self.elements.get(idx).ok_or(EmptyContainerError)?;
+        let value = self
+            .elements
+            .get(idx)
+            .expect("than len is never larger than the length of elements");
 
         Ok(
             // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
@@ -174,11 +180,12 @@ impl<T> FixedCapacityVec<T> {
     #[inline(always)]
     pub fn get(&self, idx: usize) -> Option<&T> {
         if idx < self.len {
-            self.elements.get(idx).map(|e|
-            // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
-            // number of initialized values starting from `self.element`'s beginning. The pervious
-            // if condition in term checks that idx is Smaller than 
-            unsafe{ e.assume_init_ref() })
+            self.elements.get(idx).map(|e| {
+                // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
+                // number of initialized values starting from `self.element`'s beginning. The pervious
+                // if condition in term checks that idx is Smaller than
+                unsafe { e.assume_init_ref() }
+            })
         } else {
             None
         }
@@ -188,11 +195,10 @@ impl<T> FixedCapacityVec<T> {
     #[inline(always)]
     pub fn get_mut(&mut self, idx: usize) -> Option<&mut T> {
         if idx < self.len {
-            self.elements.get_mut(idx).map(|e|
+            self.elements.get_mut(idx).map(|e| {
                 // SAFETY: per the previous if statement, the index points into the range of
                 // initialized stack members.
-                unsafe{
-                    e.assume_init_mut()
+                unsafe { e.assume_init_mut() }
             })
         } else {
             None
@@ -211,9 +217,7 @@ impl<T: Clone> FixedCapacityVec<T> {
         for e in values {
             // SAFETY: this is safe, as the previous if statement verifies that there is enough
             // space for all elements from `values` in `stack`
-            unsafe {
-                self.push_unchecked(e.clone());
-            }
+            unsafe { self.push_unchecked(e.clone()) };
         }
 
         Ok(())
