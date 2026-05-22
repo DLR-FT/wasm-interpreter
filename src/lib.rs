@@ -9,7 +9,7 @@ extern crate alloc;
 #[macro_use]
 extern crate log_wrapper;
 
-pub use core::error::ValidationError;
+pub use core::error::{DecodingError, ValidationError};
 pub use core::reader::types::opcode as opcodes;
 pub use core::reader::types::{
     global::GlobalType, ExternType, FuncType, Limits, MemType, NumType, RefType, ResultType,
@@ -53,14 +53,17 @@ impl From<RuntimeError> for Error {
 
 #[cfg(test)]
 mod test {
-    use crate::{Error, RuntimeError, ValidationError};
+    use crate::{core::error::DecodingError, Error, RuntimeError, ValidationError};
 
     #[test]
     fn error_conversion_validation_error() {
-        let validation_error = ValidationError::InvalidMagic;
+        let validation_error = ValidationError::Decoding(DecodingError::InvalidMagic);
         let error: Error = validation_error.into();
 
-        assert_eq!(error, Error::Validation(ValidationError::InvalidMagic))
+        assert_eq!(
+            error,
+            Error::Validation(ValidationError::Decoding(DecodingError::InvalidMagic))
+        )
     }
 
     #[test]

@@ -3,6 +3,7 @@ use core::iter::Map;
 use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
+use crate::core::error::DecodingError;
 use crate::core::indices::{
     DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, IdxVecOverflowError, MemIdx,
     TableIdx, TypeIdx,
@@ -84,12 +85,12 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     trace!("Validating magic value");
     let [0x00, 0x61, 0x73, 0x6d] = wasm.strip_bytes::<4>()? else {
-        return Err(ValidationError::InvalidMagic);
+        return Err(DecodingError::InvalidMagic.into());
     };
 
     trace!("Validating version number");
     let [0x01, 0x00, 0x00, 0x00] = wasm.strip_bytes::<4>()? else {
-        return Err(ValidationError::InvalidBinaryFormatVersion);
+        return Err(DecodingError::InvalidBinaryFormatVersion.into());
     };
     debug!("Header ok");
 
@@ -353,7 +354,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 fn read_next_header(
     wasm: &mut WasmReader,
     header: &mut Option<SectionHeader>,
-) -> Result<(), ValidationError> {
+) -> Result<(), DecodingError> {
     if header.is_none() && !wasm.remaining_bytes().is_empty() {
         *header = Some(SectionHeader::read(wasm)?);
     }
@@ -361,15 +362,16 @@ fn read_next_header(
 }
 
 #[inline(always)]
-fn handle_section<'wasm, T, F>(
+fn handle_section<'wasm, T, F, E>(
     wasm: &mut WasmReader<'wasm>,
     header: &mut Option<SectionHeader>,
     section_ty: SectionTy,
     handler: F,
-) -> Result<Option<T>, ValidationError>
+) -> Result<Option<T>, E>
 where
     T: 'wasm,
-    F: FnOnce(&mut WasmReader<'wasm>, SectionHeader) -> Result<T, ValidationError>,
+    F: FnOnce(&mut WasmReader<'wasm>, SectionHeader) -> Result<T, E>,
+    E: From<DecodingError>,
 {
     match &header {
         Some(SectionHeader { ty, .. }) if *ty == section_ty => {

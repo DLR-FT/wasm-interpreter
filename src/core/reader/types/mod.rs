@@ -6,6 +6,7 @@ use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter};
 use global::GlobalType;
 
+use crate::core::error::DecodingError;
 use crate::core::indices::{IdxVec, TypeIdx};
 use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;
@@ -30,7 +31,7 @@ pub enum NumType {
 }
 
 impl NumType {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
         use NumType::*;
 
         let ty = match wasm.peek_u8()? {
@@ -38,7 +39,7 @@ impl NumType {
             0x7E => I64,
             0x7D => F32,
             0x7C => F64,
-            other => return Err(ValidationError::MalformedNumTypeDiscriminator(other)),
+            other => return Err(DecodingError::MalformedNumTypeDiscriminator(other)),
         };
         let _ = wasm.read_u8();
 
@@ -50,13 +51,13 @@ impl NumType {
 struct VecType;
 
 impl VecType {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
         match wasm.peek_u8()? {
             0x7b => {
                 let _ = wasm.read_u8();
                 Ok(VecType)
             }
-            other => Err(ValidationError::MalformedVecTypeDiscriminator(other)),
+            other => Err(DecodingError::MalformedVecTypeDiscriminator(other)),
         }
     }
 }
@@ -69,11 +70,11 @@ pub enum RefType {
 }
 
 impl RefType {
-    pub fn read(wasm: &mut WasmReader) -> Result<RefType, ValidationError> {
+    pub fn read(wasm: &mut WasmReader) -> Result<RefType, DecodingError> {
         let ty = match wasm.peek_u8()? {
             0x70 => RefType::FuncRef,
             0x6F => RefType::ExternRef,
-            other => return Err(ValidationError::MalformedRefTypeDiscriminator(other)),
+            other => return Err(DecodingError::MalformedRefTypeDiscriminator(other)),
         };
         let _ = wasm.read_u8();
 
@@ -102,7 +103,7 @@ impl ValType {
 }
 
 impl ValType {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
         if let Ok(numtype) = NumType::read(wasm).map(ValType::NumType) {
             return Ok(numtype);
         };
@@ -113,7 +114,7 @@ impl ValType {
             return Ok(reftype);
         }
 
-        Err(ValidationError::MalformedValType)
+        Err(DecodingError::MalformedValType)
     }
 }
 
@@ -124,7 +125,7 @@ pub struct ResultType {
 }
 
 impl ResultType {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
         let valtypes = wasm.read_vec(ValType::read)?;
 
         Ok(ResultType { valtypes })
@@ -139,10 +140,10 @@ pub struct FuncType {
 }
 
 impl FuncType {
-    pub fn read(wasm: &mut WasmReader) -> Result<FuncType, ValidationError> {
+    pub fn read(wasm: &mut WasmReader) -> Result<FuncType, DecodingError> {
         match wasm.read_u8()? {
             0x60 => {}
-            other => return Err(ValidationError::MalformedFuncTypeDiscriminator(other)),
+            other => return Err(DecodingError::MalformedFuncTypeDiscriminator(other)),
         };
 
         let params = ResultType::read(wasm)?;
@@ -289,7 +290,7 @@ impl Debug for Limits {
 }
 
 impl Limits {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
         let limits = match wasm.read_u8()? {
             0x00 => {
                 let min = wasm.read_var_u32()?;
@@ -303,12 +304,12 @@ impl Limits {
                     max: Some(max),
                 }
             }
-            other => return Err(ValidationError::MalformedLimitsDiscriminator(other)),
+            other => return Err(DecodingError::MalformedLimitsDiscriminator(other)),
         };
 
         if let Some(max) = limits.max {
             if limits.min > max {
-                return Err(ValidationError::MalformedLimitsMinLargerThanMax {
+                return Err(DecodingError::MalformedLimitsMinLargerThanMax {
                     min: limits.min,
                     max,
                 });
@@ -327,7 +328,7 @@ pub struct TableType {
 
 // https://webassembly.github.io/spec/core/syntax/types.html#limits
 impl TableType {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
         let et = RefType::read(wasm)?;
         let mut lim = Limits::read(wasm)?;
         if lim.max.is_none() {
@@ -344,15 +345,15 @@ pub struct MemType {
 }
 
 impl MemType {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
         let limit = Limits::read(wasm)?;
         // Memory can only grow to 65536 pages of 64kb size (4GiB)
         if limit.min > (1 << 16) {
-            return Err(ValidationError::MemoryTooLarge);
+            return Err(DecodingError::MemoryTooLarge);
         }
         if let Some(max_limit) = limit.max {
             if max_limit > (1 << 16) {
-                return Err(ValidationError::MemoryTooLarge);
+                return Err(DecodingError::MemoryTooLarge);
             }
         }
 

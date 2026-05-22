@@ -3,6 +3,7 @@ use core::iter;
 use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
 
+use crate::core::error::DecodingError;
 use crate::core::indices::{
     read_label_idx, DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, LocalIdx, MemIdx,
     TableIdx, TypeIdx,
@@ -106,7 +107,7 @@ pub unsafe fn validate_code_section(
     Ok(code_block_spans_stps)
 }
 
-pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, ValidationError> {
+pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, DecodingError> {
     let locals = wasm.read_vec(|wasm| {
         let n = wasm.read_var_u32()?.into_usize();
         let valtype = ValType::read(wasm)?;
@@ -122,16 +123,16 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, Valid
     for local in &locals {
         let temp = local.0 as u64;
         if temp > u32::MAX.into() {
-            return Err(ValidationError::TooManyLocals(total_no_of_locals));
+            return Err(DecodingError::TooManyLocals(total_no_of_locals));
         };
         total_no_of_locals = match total_no_of_locals.checked_add(temp) {
-            None => return Err(ValidationError::TooManyLocals(total_no_of_locals)),
+            None => return Err(DecodingError::TooManyLocals(total_no_of_locals)),
             Some(n) => n,
         }
     }
 
     if total_no_of_locals > u32::MAX.into() {
-        return Err(ValidationError::TooManyLocals(total_no_of_locals));
+        return Err(DecodingError::TooManyLocals(total_no_of_locals));
     }
 
     // Flatten local types for easier representation where n > 1

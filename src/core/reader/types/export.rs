@@ -1,3 +1,4 @@
+use crate::core::error::DecodingError;
 use crate::core::indices::{FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx};
 use crate::core::reader::types::global::Global;
 use crate::core::reader::WasmReader;
@@ -106,7 +107,7 @@ impl ExportDesc {
             0x01 => ExportDesc::Table(TableIdx::read_and_validate(wasm, c_tables)?),
             0x02 => ExportDesc::Mem(MemIdx::read_and_validate(wasm, c_mems)?),
             0x03 => ExportDesc::Global(GlobalIdx::read_and_validate(wasm, c_globals)?),
-            other => return Err(ValidationError::MalformedExportDescDiscriminator(other)),
+            other => return Err(DecodingError::MalformedExportDescDiscriminator(other).into()),
         };
         Ok(desc)
     }
