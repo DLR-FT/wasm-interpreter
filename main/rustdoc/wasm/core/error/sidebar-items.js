@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ValidationError"]};
+window.SIDEBAR_ITEMS = {"enum":["DecodingError","ValidationError"]};
