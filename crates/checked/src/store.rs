@@ -509,22 +509,17 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_return_values)
     }
 
-    /// This is a safe variant of
-    /// [`Store::mem_access_mut_slice`](crate::Store::mem_access_mut_slice).
-    pub fn mem_access_mut_slice<R>(
-        &self,
-        memory: Stored<MemAddr>,
-        accessor: impl FnOnce(&mut [u8]) -> R,
-    ) -> R {
+    /// This is a safe variant of [`Store::mem_data_mut`](wasm::Store::mem_data_mut).
+    pub fn mem_data_mut(&mut self, memory: Stored<MemAddr>) -> &mut [u8] {
         // 1. try unwrap
         let memory = memory.try_unwrap_into_bare(self.id);
         // 2. call
         // 3. rewrap
-        // result is generic
+        // result is a reference into the store
         // 4. return
         // SAFETY: It was just checked that the `MemAddr` came from the current
         // store through its store id.
-        unsafe { self.inner.mem_access_mut_slice(memory, accessor) }
+        unsafe { self.inner.mem_data_mut(memory) }
     }
 
     /// This is a safe variant of

@@ -336,7 +336,7 @@ pub(super) unsafe fn memory_init(
     let mem_addr = *unsafe { module_inst.mem_addrs.get(mem_idx) };
     // SAFETY: The caller ensures that this memory address is valid in this
     // address vector (3).
-    let mem = unsafe { store_memories.get(mem_addr) };
+    let mem = unsafe { store_memories.get_mut(mem_addr) };
     // SAFETY: The caller ensures that `data_idx` is valid for this specific
     // `IdxVec` (4).
     let data_addr = *unsafe { module_inst.data_addrs.get(data_idx) };

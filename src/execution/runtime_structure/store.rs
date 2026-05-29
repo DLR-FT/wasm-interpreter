@@ -980,7 +980,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         // 2. If `i` is larger than or equal to the length of `mi.data`, then return `error`.
         // 3. Else, return the byte `mi.data[i]`.
-        mi.mem.load(i)
+        mi.mem.load(i).map_err(Into::into)
     }
 
     /// Writes a byte into some memory by its memory address and an index into the memory
@@ -992,7 +992,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
     pub unsafe fn mem_write(
-        &self,
+        &mut self,
         mem_addr: MemAddr,
         i: u32,
         byte: u8,
@@ -1003,9 +1003,9 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let mi = unsafe { self.inner.memories.get(mem_addr) };
+        let mi = unsafe { self.inner.memories.get_mut(mem_addr) };
 
-        mi.mem.store(i, byte)
+        mi.mem.store(i, byte).map_err(Into::into)
     }
 
     /// Gets the size of some memory by its memory address in pages.
@@ -1491,22 +1491,17 @@ impl<'b, T: Config> Store<'b, T> {
         }
     }
 
-    /// Allows a given closure to temporarily access the entire memory as a
-    /// `&mut [u8]`.
+    /// Returns the inner data of a specific memory instance as a byte slice.
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the given [`MemAddr`] came from the
-    /// current [`Store`] object.
-    pub unsafe fn mem_access_mut_slice<R>(
-        &self,
-        memory: MemAddr,
-        accessor: impl FnOnce(&mut [u8]) -> R,
-    ) -> R {
+    /// The caller has to guarantee that the given [`MemAddr`] came from the current [`Store`]
+    /// object.
+    pub unsafe fn mem_data_mut(&mut self, memory: MemAddr) -> &mut [u8] {
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let memory = unsafe { self.inner.memories.get(memory) };
-        memory.mem.access_mut_slice(accessor)
+        let memory = unsafe { self.inner.memories.get_mut(memory) };
+        memory.mem.data_mut()
     }
 
     /// Returns all exports of a module instance by its module address.

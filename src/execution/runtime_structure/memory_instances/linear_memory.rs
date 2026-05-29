@@ -1,492 +1,242 @@
-use alloc::vec::Vec;
-use core::{
-    iter,
-    sync::atomic::{AtomicU8, Ordering},
-};
+use core::iter;
 
-use crate::{
-    execution::numerics::representations::LittleEndianBytes,
-    rw_spinlock::{ReadLockGuard, RwSpinLock},
-    RuntimeError, TrapError,
-};
+use alloc::{vec, vec::Vec};
 
-/// Implementation of the linear memory suitable for concurrent access
+use crate::{execution::numerics::representations::LittleEndianBytes, RuntimeError, TrapError};
+
+/// A linear memory is the backing data structure for a memory instance[^memory-instances].
 ///
-/// Implements the base for the instructions described in
-/// <https://webassembly.github.io/spec/core/exec/instructions.html#memory-instructions>.
+/// It is a wrapper around a contiguous, but growable sequence of bytes. Also it provides generic
+/// methods to be build upon by memory instructions[^memory-instructions].
 ///
-/// This linear memory implementation internally relies on a [`Vec<AtomicU8>`]. Thus, the atomic unit
-/// of information for it is a byte (`u8`). All access to the linear memory internally occur through
-/// [`AtomicU8::load`] and [`AtomicU8::store`], avoiding the creation of shared and `mut ref`s to
-/// the internal data completely. This avoids undefined behavior. Racy multibyte writes to the same
-/// data however may tear (e.g. for any number of concurrent writes to a given byte, only one is
-/// effectively written). Because of this, the [`LinearMemory::store`] function does not require
-/// `&mut self` -- `&self` suffices.
+/// TODO: Write section on why some memory instructions are implemented here vs. implemented in
+/// their instruction handlers. Also find out how we can reference the specification steps for each
+/// instruction.
 ///
-/// The implementation of atomic stores to multibyte values requires a global write lock. Rust's
-/// memory model considers partially overlapping atomic operations involving a write as undefined
-/// behavior. As there is no way to predict if an atomic multibyte store operation might overlap
-/// with another store or load operation, only a lock at runtime can avoid this cause of undefined
-/// behavior.
-// TODO does it pay of to have more fine-granular locking for multibyte stores than a single global write lock?
 ///
-/// # Notes on overflowing
-///
-/// All operations that rely on accessing `n` bytes starting at `index` in the linear memory have to
-/// perform bounds checking. Thus, they always have to ensure that `n + index < linear_memory.len()`
-/// holds true (e.g. `n + index - 1` must be a valid index into `linear_memory`). However,
-/// writing that check as is bears the danger of an overflow, assuming that `n`, `index` and
-/// `linear_memory.len()` are the same given integer type, `n + index` can overflow, resulting in
-/// the check passing despite the access being out of bounds!
-///
-/// To avoid this, the bounds checks are carefully ordered to avoid any overflows:
-///
-/// - First we check, that `n <= linear_memory.len()` holds true, ensuring that the amount of bytes
-///   to be accessed is indeed smaller than or equal to the linear memory's size. If this does not
-///   hold true, continuation of the operation will yield out of bounds access in any case.
-/// - Then, as a second check, we verify that `index <= linear_memory.len() - n`. This way we
-///   avoid the overflow, as there is no addition. The subtraction in the left hand can not
-///   underflow, due to the previous check (which asserts that `n` is smaller than or equal to
-///   `linear_memory.len()`).
-///
-/// Combined in the given order, these two checks enable bounds checking without risking any
-/// overflow or underflow, provided that `n`, `index` and `linear_memory.len()` are of the same
-/// integer type.
-///
-/// In addition, the Wasm specification requires a certain order of checks. For example, when a
-/// `copy` instruction is emitted with a `count` of zero (i.e. no bytes to be copied), an out of
-/// bounds index still has to cause a trap. To control the order of checks manually, use of slice
-/// indexing is avoided altogether.
-///
-/// # Notes on locking
-///
-/// The internal data vector of the [`LinearMemory`] is wrapped in a [`RwSpinLock`]. Despite the
-/// name, writes to the linear memory do not require an acquisition of a write lock. Non-atomic
-/// or atomic single-byte writes are implemented through a shared ref to the internal vector, with
-/// [`AtomicU8`] to achieve interior mutability without undefined behavior.
-///
-/// However, linear memory can grow. As the linear memory is implemented via a [`Vec`], a `grow`
-/// can result in the vector's internal data buffer to be copied over to a bigger, fresh allocation.
-/// The old buffer is then freed. Combined with concurrent access, this can cause use-after-free.
-/// To avoid this, a `grow` operation of the linear memory acquires a write lock, blocking all
-/// read/write to the linear memory in between.
-///
-/// # Unsafe Note
-///
-/// As the manual index checking assures all indices to be valid, there is no need to re-check.
-/// Therefore [`slice::get_unchecked`] is used access the internal [`AtomicU8`] in the vector
-/// backing a [`LinearMemory`], implicating the use of `unsafe`.
-///
-/// To gain some confidence in the correctness of the unsafe code in this module, run `miri`:
-///
-/// ```bash
-/// cargo miri test --test memory # quick
-/// cargo miri test # thorough
-/// ```
-// TODO if a memmap like operation is available, the linear memory implementation can be optimized brutally. Out-of-bound access can be mapped to userspace handled page-faults, e.g. the MMU takes over that responsibility of catching out of bounds. Grow can happen without copying of data, by mapping new pages consecutively after the current final page of the linear memory.
+/// [^memory-instances]: [WebAssembly Specification 2.0 - 4.2.9. Memory Instances](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instances%E2%91%A0).
+/// [^memory-instructions]: [WebAssembly Specification 2.0 - 4.4.7. Memory Instructions](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instructions%E2%91%A4).
 pub struct LinearMemory<const PAGE_SIZE: usize = { crate::Limits::MEM_PAGE_SIZE as usize }> {
-    inner_data: RwSpinLock<Vec<AtomicU8>>,
+    pub(crate) data: Vec<u8>,
 }
 
 /// Type to express the page count
 pub type PageCountTy = u16;
 
 impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
-    /// Size of a page in the linear memory, measured in bytes
-    ///
-    /// The WASM specification demands a page size of 64 KiB, that is `65536` bytes:
-    /// <https://webassembly.github.io/spec/core/exec/runtime.html?highlight=page#memory-instances>
-    const PAGE_SIZE: usize = PAGE_SIZE;
-
-    /// Create a new, empty [`LinearMemory`]
+    /// Creates a new linear memory of size 0
     pub fn new() -> Self {
-        Self {
-            inner_data: RwSpinLock::new(Vec::new()),
-        }
+        Self { data: Vec::new() }
     }
 
-    /// Create a new, empty [`LinearMemory`]
+    /// Creates a new zero-initialized linear memory. Its size is determined by the given number of
+    /// pages and the `PAGE_SIZE`.
     pub fn new_with_initial_pages(pages: PageCountTy) -> Self {
-        let size_bytes = Self::PAGE_SIZE * usize::from(pages);
-        let mut data = Vec::with_capacity(size_bytes);
-        data.resize_with(size_bytes, || AtomicU8::new(0));
+        let size_bytes = PAGE_SIZE * usize::from(pages);
+        let data = vec![0; size_bytes];
 
-        Self {
-            inner_data: RwSpinLock::new(data),
-        }
+        Self { data }
     }
 
-    /// Grow the [`LinearMemory`] by a number of pages
-    pub fn grow(&self, pages_to_add: PageCountTy) {
-        let mut lock_guard = self.inner_data.write();
-        let prior_length_bytes = lock_guard.len();
-        let new_length_bytes = prior_length_bytes + Self::PAGE_SIZE * usize::from(pages_to_add);
-        lock_guard.resize_with(new_length_bytes, || AtomicU8::new(0));
+    /// Grows the current linear memory by a number of pages.
+    pub fn grow(&mut self, pages_to_add: PageCountTy) {
+        let prior_length_bytes = self.data.len();
+        let new_length_bytes = prior_length_bytes + PAGE_SIZE * usize::from(pages_to_add);
+        self.data.resize(new_length_bytes, 0);
     }
 
-    /// Get the number of pages currently allocated to this [`LinearMemory`]
+    /// Returns the size of this linear memory in pages.
     pub fn pages(&self) -> PageCountTy {
-        PageCountTy::try_from(self.inner_data.read().len() / PAGE_SIZE).unwrap()
+        PageCountTy::try_from(self.data.len() / PAGE_SIZE).unwrap()
     }
 
-    /// Get the length in bytes currently allocated to this [`LinearMemory`]
-    // TODO remove this op
+    /// Returns the size of this linear memory in bytes.
+    ///
+    /// This size is always a multiple of `PAGE_SIZE`.
     pub fn len(&self) -> usize {
-        self.inner_data.read().len()
+        self.data.len()
     }
 
-    /// At a given index, store a datum in the [`LinearMemory`]
+    /// Stores a `T` starting from the given index into this linear memory.
+    ///
+    /// The `T` must be convertible to its little-endian byte form (as required by the
+    /// [`LittleEndianBytes`] bound).
+    ///
+    /// # Errors
+    ///
+    /// Same as [`LinearMemory::store_bytes`]
     pub fn store<const N: usize, T: LittleEndianBytes<N>>(
-        &self,
+        &mut self,
         index: usize,
         value: T,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), TrapError> {
         self.store_bytes::<N>(index, value.to_le_bytes())
     }
 
-    /// At a given index, store a number of bytes `N` in the [`LinearMemory`]
+    /// Stores a number of bytes into this linear memory starting at the given index.
+    ///
+    /// # Errors
+    ///
+    /// - [`TrapError::MemoryOrDataAccessOutOfBounds`]: The store would have been out of bounds. The
+    ///   memory remains unchanged.
     pub fn store_bytes<const N: usize>(
-        &self,
+        &mut self,
         index: usize,
         bytes: [u8; N],
-    ) -> Result<(), RuntimeError> {
-        let lock_guard = self.inner_data.read();
+    ) -> Result<(), TrapError> {
+        let target_range = index..(index + N);
 
-        /* check destination for out of bounds access */
-        // A value must fit into the linear memory
-        if N > lock_guard.len() {
-            error!("value does not fit into linear memory");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
+        let target_bytes = self
+            .data
+            .get_mut(target_range)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
 
-        // The following statement must be true
-        // `index + N <= lock_guard.len()`
-        // This check verifies it, while avoiding the possible overflow. The subtraction can not
-        // underflow because of the previous check.
-
-        if index > lock_guard.len() - N {
-            error!("value write would extend beyond the end of the linear memory");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
-
-        /* do the store */
-        for (i, byte) in bytes.into_iter().enumerate() {
-            // SAFETY:
-            // The safety of this `unsafe` block depends on the index being valid, which it is
-            // because:
-            //
-            // - the first if statement in this function guarantees that a `T` can fit into the
-            //   `LinearMemory` `&self`
-            // - the second if statement in this function guarantees that even with the offset
-            //   `index`, writing all of `value`'s bytes does not extend beyond the last byte in
-            //   the `LinearMemory` `&self`
-            let dst = unsafe { lock_guard.get_unchecked(i + index) };
-            dst.store(byte, Ordering::Relaxed);
-        }
+        target_bytes.copy_from_slice(&bytes);
 
         Ok(())
     }
 
-    /// From a given index, load a datum from the [`LinearMemory`]
+    /// Loads a `T` starting from the given index into this linear memory.
+    ///
+    /// The `T` must be convertible from its little-endian byte form (as required by the
+    /// [`LittleEndianBytes`] bound).
+    ///
+    /// # Errors
+    ///
+    /// Same as [`LinearMemory::load_bytes`]
     pub fn load<const N: usize, T: LittleEndianBytes<N>>(
         &self,
         index: usize,
-    ) -> Result<T, RuntimeError> {
+    ) -> Result<T, TrapError> {
         self.load_bytes::<N>(index).map(T::from_le_bytes)
     }
 
-    /// From a given index, load a number of bytes `N` from the [`LinearMemory`]
-    pub fn load_bytes<const N: usize>(&self, index: usize) -> Result<[u8; N], RuntimeError> {
-        let lock_guard = self.inner_data.read();
+    /// Loads a number of bytes from this linear memory starting at the given index.
+    ///
+    /// # Errors
+    ///
+    /// - [`TrapError::MemoryOrDataAccessOutOfBounds`]: The load would have been out of bounds.
+    pub fn load_bytes<const N: usize>(&self, index: usize) -> Result<[u8; N], TrapError> {
+        let target_range = index..(index + N);
 
-        /* check source for out of bounds access */
-        // A value must fit into the linear memory
-        if N > lock_guard.len() {
-            error!("value does not fit into linear memory");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
+        let target_bytes = self
+            .data
+            .get(target_range)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
 
-        // The following statement must be true
-        // `index + N <= lock_guard.len()`
-        // This check verifies it, while avoiding the possible overflow. The subtraction can not
-        // underflow because of the previous assert.
-
-        if index > lock_guard.len() - N {
-            error!("value read would extend beyond the end of the linear_memory");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
-
-        let mut bytes = [0; N];
-
-        /* do the load */
-        for (i, byte) in bytes.iter_mut().enumerate() {
-            // SAFETY:
-            // The safety of this `unsafe` block depends on the index being valid, which it is
-            // because:
-            //
-            // - the first if statement in this function guarantees that a `T` can fit into the
-            //   `LinearMemory` `&self`
-            // - the second if statement in this function guarantees that even with the offset
-            //   `index`, reading all `N` bytes does not extend beyond the last byte in
-            //   the `LinearMemory` `&self`
-            let src = unsafe { lock_guard.get_unchecked(i + index) };
-            *byte = src.load(Ordering::Relaxed);
-        }
+        let bytes: [u8; N] = target_bytes
+            .try_into()
+            .expect("bytes slice to be of length N");
 
         Ok(bytes)
     }
 
-    /// Implementation of the behavior described in
-    /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill>.
-    /// Note, that the WASM spec defines the behavior by recursion, while our implementation uses
-    /// the memset like [`core::ptr::write_bytes`].
+    /// Sets a number of bytes in this linear memory to a constant `data_byte`. A total of `count`
+    /// bytes are written, starting at the given index.
     ///
-    /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill>
-    pub fn fill(&self, index: usize, data_byte: u8, count: usize) -> Result<(), RuntimeError> {
-        let lock_guard = self.inner_data.read();
+    /// # Errors
+    ///
+    /// - [`TrapError::MemoryOrDataAccessOutOfBounds`]: The fill operation would have been out of
+    ///   bounds. The memory remains unchanged.
+    pub fn fill(&mut self, index: usize, data_byte: u8, count: usize) -> Result<(), TrapError> {
+        let target_range = index..(index + count);
 
         /* check destination for out of bounds access */
         // Specification step 12.
-        if count > lock_guard.len() {
-            error!("fill count is bigger than the linear memory");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
+        let target_bytes = self
+            .data
+            .get_mut(target_range)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
 
-        // Specification step 12.
-        if index > lock_guard.len() - count {
-            error!("fill extends beyond the linear memory's end");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
-
-        /* check if there is anything to be done */
-        // Specification step 13.
-        if count == 0 {
-            return Ok(());
-        }
-
-        /* do the fill */
-        // Specification step 14-21.
-        for i in index..(index + count) {
-            // SAFETY:
-            // The safety of this `unsafe` block depends on the index being valid, which it is
-            // because:
-            //
-            // - the first if statement in this function guarantees that `count` elements can fit
-            //   into the `LinearMemory` `&self`
-            // - the second if statement in this function guarantees that even with the offset
-            //   `index`, writing all `count`'s bytes does not extend beyond the last byte in
-            //   the `LinearMemory` `&self`
-            let lin_mem_byte = unsafe { lock_guard.get_unchecked(i) };
-            lin_mem_byte.store(data_byte, Ordering::Relaxed);
-        }
+        /* do the fill, do nothing if count was zero */
+        // Specification step 13-21.
+        target_bytes.fill(data_byte);
 
         Ok(())
     }
 
-    /// Copy `count` bytes from one region in the linear memory to another region in the same or a
-    /// different linear memory
+    /// Copies a number of bytes inside this linear memory from one to another location. Both the
+    /// source and destination may overlap.
     ///
-    /// - Both regions may overlap
-    /// - Copies the `count` bytes starting from `source_index`, overwriting the `count` bytes
-    ///   starting from `destination_index`
+    /// A total of `count` bytes will be copied, starting at the given source and destination
+    /// indices.
     ///
-    /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy>
-    pub fn copy(
-        &self,
+    /// # Errors
+    ///
+    /// - [`TrapError::MemoryOrDataAccessOutOfBounds`]: The copy operation would have been out of
+    ///   bounds. The memory remains unchanged.
+    pub fn copy_within(
+        &mut self,
         destination_index: usize,
-        source_mem: &Self,
         source_index: usize,
         count: usize,
     ) -> Result<(), RuntimeError> {
-        // self is the destination
-        let lock_guard_self = self.inner_data.read();
+        let source_range = source_index..(source_index + count);
+        let destination_range = destination_index..(destination_index + count);
 
-        // other is the source
-        let lock_guard_other = source_mem.inner_data.read();
-
-        /* check source for out of bounds access */
+        /* check source and destination for out of bounds accesses */
         // Specification step 12.
-        if count > lock_guard_other.len() {
-            error!("copy count is bigger than the source linear memory");
+        let source_range_is_within_bounds = self.data.get(source_range.clone()).is_some();
+        let destination_range_is_within_bounds = self.data.get(destination_range).is_some();
+        if !source_range_is_within_bounds || !destination_range_is_within_bounds {
             return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
-        // Specification step 12.
-        if source_index > lock_guard_other.len() - count {
-            error!("copy source extends beyond the linear memory's end");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
+        /* do the potentially-overlapping copy, does nothing if count was zero */
+        // Specification step 13-15
 
-        /* check destination for out of bounds access */
-        // Specification step 12.
-        if count > lock_guard_self.len() {
-            error!("copy count is bigger than the destination linear memory");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
-
-        // Specification step 12.
-        if destination_index > lock_guard_self.len() - count {
-            error!("copy destination extends beyond the linear memory's end");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
-
-        /* check if there is anything to be done */
-        // Specification step 13.
-        if count == 0 {
-            return Ok(());
-        }
-
-        /* do the copy */
-        let copy_one_byte = move |i| {
-            // SAFETY:
-            // The safety of this `unsafe` block depends on the index being valid, which it is
-            // because:
-            //
-            // - the first if statement in this function guarantees that `count` elements can fit
-            //   into the `LinearMemory` `&source_mem`
-            // - the second if statement in this function guarantees that even with the offset
-            //   `source_index`, writing all `count`'s bytes does not extend beyond the last byte in
-            let src_byte: &AtomicU8 = unsafe { lock_guard_other.get_unchecked(i + source_index) };
-
-            // SAFETY:
-            // The safety of this `unsafe` block depends on the index being valid, which it is
-            // because:
-            //
-            // - the third if statement in this function guarantees that `count` elements can fit
-            //   into the `LinearMemory` `&self`
-            // - the fourth if statement in this function guarantees that even with the offset
-            //   `destination_index`, writing all `count`'s bytes does not extend beyond the last byte in
-            //   the `LinearMemory` `&self`
-            let dst_byte: &AtomicU8 =
-                unsafe { lock_guard_self.get_unchecked(i + destination_index) };
-
-            let byte = src_byte.load(Ordering::Relaxed);
-            dst_byte.store(byte, Ordering::Relaxed);
-        };
-
-        // TODO investigate if it is worth to only do reverse order copy if there is actual overlap
-
-        // Specification step 14.
-        if destination_index <= source_index {
-            // if source index is bigger than or equal to destination index, forward processing copy
-            // handles overlaps just fine
-            (0..count).for_each(copy_one_byte)
-        }
-        // Specification step 15.
-        else {
-            // if source index is smaller than destination index, backward processing is required to
-            // avoid data loss on overlaps
-            (0..count).rev().for_each(copy_one_byte)
-        }
+        // This cannot panic, because both ranges are within bounds.
+        self.data.copy_within(source_range, destination_index);
 
         Ok(())
     }
 
-    // Rationale behind having `source_index` and `count` when the callsite could also just create a
-    // subslice for `source_data`? Have all the index error checks in one place.
-    //
-    // <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x>
+    /// Copies a number of bytes from the given byte slice `source_data` into this linear memory. A
+    /// total of `count` bytes will be copied, starting at the given source and destination indices.
+    ///
+    /// # Errors
+    ///
+    /// - [`TrapError::MemoryOrDataAccessOutOfBounds`]: This operation would have been out of
+    ///   bounds. The memory remains unchanged.
     pub fn init(
-        &self,
+        &mut self,
         destination_index: usize,
         source_data: &[u8],
         source_index: usize,
         count: usize,
     ) -> Result<(), RuntimeError> {
-        // self is the destination
-        let lock_guard_self = self.inner_data.read();
-        let data_len = source_data.len();
+        let source_range = source_index..(source_index + count);
+        let destination_range = destination_index..(destination_index + count);
 
-        /* check source for out of bounds access */
+        /* check source and destination for out of bounds accesses */
         // Specification step 16.
-        if count > data_len {
-            error!("init count is bigger than the data instance");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
+        let source_bytes = source_data
+            .get(source_range)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
+        let destination_bytes = self
+            .data
+            .get_mut(destination_range)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
 
-        // Specification step 16.
-        if source_index > data_len - count {
-            error!("init source extends beyond the data instance's end");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
-
-        /* check destination for out of bounds access */
-        // Specification step 16.
-        if count > lock_guard_self.len() {
-            error!("init count is bigger than the linear memory");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
-
-        // Specification step 16.
-        if destination_index > lock_guard_self.len() - count {
-            error!("init extends beyond the linear memory's end");
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
-
-        /* check if there is anything to be done */
-        // Specification step 17.
-        if count == 0 {
-            return Ok(());
-        }
-
-        /* do the init */
-        // Specification step 18-27.
-        for i in 0..count {
-            // SAFETY:
-            // The safety of this `unsafe` block depends on the index being valid, which it is
-            // because:
-            //
-            // - the first if statement in this function guarantees that `count` elements can fit
-            //   into the `LinearMemory` `&source_mem`
-            // - the second if statement in this function guarantees that even with the offset
-            //   `source_index`, writing all `count`'s bytes does not extend beyond the last byte in
-            let src_byte = unsafe { source_data.get_unchecked(i + source_index) };
-
-            // SAFETY:
-            // The safety of this `unsafe` block depends on the index being valid, which it is
-            // because:
-            //
-            // - the third if statement in this function guarantees that `count` elements can fit
-            //   into the `LinearMemory` `&self`
-            // - the fourth if statement in this function guarantees that even with the offset
-            //   `destination_index`, writing all `count`'s bytes does not extend beyond the last byte in
-            //   the `LinearMemory` `&self`
-            let dst_byte = unsafe { lock_guard_self.get_unchecked(i + destination_index) };
-            dst_byte.store(*src_byte, Ordering::Relaxed);
-        }
+        /* do the init, also check if there is anything to be done */
+        // Specification step 17-27.
+        destination_bytes.copy_from_slice(source_bytes);
 
         Ok(())
     }
 
-    /// Allows a given closure to temporarily access the entire memory as a
-    /// `&mut [u8]`.
-    ///
-    /// # Note on locking
-    ///
-    /// This operation exclusively locks the entire linear memory for the
-    /// duration of this function call. To acquire the lock, this function may
-    /// also block until the lock is available.
-    pub fn access_mut_slice<R>(&self, accessor: impl FnOnce(&mut [u8]) -> R) -> R {
-        /// Converts an exclusively borrowed slice of atomic `u8`s to a slice of
-        /// non-atomic `u8`s
-        // TODO when `atomic_from_mut` is stabilized, replace this function with
-        // `Atomic::U8::get_mut_slice`
-        fn atomic_u8_get_mut_slice(slice: &mut [AtomicU8]) -> &mut [u8] {
-            // SAFETY: the mutable reference guarantees unique ownership
-            unsafe { &mut *(slice as *mut [AtomicU8] as *mut [u8]) }
-        }
-
-        let mut write_lock_guard = self.inner_data.write();
-        let non_atomic_slice = atomic_u8_get_mut_slice(&mut write_lock_guard);
-        accessor(non_atomic_slice)
+    /// Returns the data in this memory as a byte slice. The length of this slice is always a
+    /// multiple of `PAGE_SIZE`.
+    pub fn data_mut(&mut self) -> &mut [u8] {
+        &mut self.data
     }
 }
 
 impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        /// A helper struct for formatting a [`Vec<UnsafeCell<u8>>`] which is guarded by a [`ReadLockGuard`].
-        /// This formatter is able to detect and format byte repetitions in a compact way.
-        struct RepetitionDetectingMemoryWriter<'a>(ReadLockGuard<'a, Vec<AtomicU8>>);
+        /// A helper struct for formatting, able to detect and format byte repetitions in a compact
+        /// way.
+        struct RepetitionDetectingMemoryWriter<'a>(&'a [u8]);
         impl core::fmt::Debug for RepetitionDetectingMemoryWriter<'_> {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 /// The number of repetitions required for successive elements to be grouped
@@ -494,7 +244,7 @@ impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
                 const MIN_REPETITIONS_FOR_GROUP: usize = 8;
 
                 // First we create an iterator over all bytes
-                let mut bytes = self.0.iter().map(|x| x.load(Ordering::Relaxed));
+                let mut bytes = self.0.iter();
 
                 // Then we iterate over all bytes and deduplicate repetitions. This produces an
                 // iterator of pairs, consisting of the number of repetitions and the repeated byte
@@ -502,7 +252,7 @@ impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
                 // the current group.
                 let mut current_group: Option<(usize, u8)> = None;
                 let deduplicated_with_count = iter::from_fn(|| {
-                    for byte in bytes.by_ref() {
+                    for &byte in bytes.by_ref() {
                         // If the next byte is different than the one being tracked currently...
                         if current_group.is_some() && current_group.unwrap().1 != byte {
                             // ...then end and emit the current group but also start a new group for
@@ -534,10 +284,7 @@ impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
         // Format the linear memory by using Rust's formatter helpers and the previously defined
         // `RepetitionDetectingMemoryWriter`
         f.debug_struct("LinearMemory")
-            .field(
-                "inner_data",
-                &RepetitionDetectingMemoryWriter(self.inner_data.read()),
-            )
+            .field("inner_data", &RepetitionDetectingMemoryWriter(&self.data))
             .finish()
     }
 }
@@ -570,7 +317,7 @@ mod test {
 
     #[test]
     fn new_grow() {
-        let lin_mem = LinearMemory::<PAGE_SIZE>::new();
+        let mut lin_mem = LinearMemory::<PAGE_SIZE>::new();
         lin_mem.grow(1);
         assert_eq!(lin_mem.pages(), 1);
     }
@@ -589,7 +336,7 @@ mod test {
     #[test]
     fn debug_print_complex() {
         let page_count = 2;
-        let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(page_count);
+        let mut lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(page_count);
         assert_eq!(lin_mem.pages(), page_count);
 
         lin_mem.store(1, 0xffu8).unwrap();
@@ -618,7 +365,7 @@ mod test {
         let x: i8 = -127;
         let highest_legal_offset = PAGE_SIZE - mem::size_of::<i8>();
         for offset in 0..highest_legal_offset {
-            let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
+            let mut lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
             lin_mem.store(offset, x).unwrap();
 
@@ -637,7 +384,7 @@ mod test {
         let x = F32(13.0);
         let highest_legal_offset = PAGE_SIZE - mem::size_of::<F32>();
         for offset in 0..highest_legal_offset {
-            let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
+            let mut lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
             lin_mem.store(offset, x).unwrap();
 
@@ -656,7 +403,7 @@ mod test {
         let x = F64(f64::MIN);
         let highest_legal_offset = PAGE_SIZE - mem::size_of::<F64>();
         for offset in 0..highest_legal_offset {
-            let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
+            let mut lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
             lin_mem.store(offset, x).unwrap();
 
@@ -675,7 +422,7 @@ mod test {
         let x = F64(f64::NAN);
         let highest_legal_offset = PAGE_SIZE - mem::size_of::<f64>();
         for offset in 0..highest_legal_offset {
-            let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
+            let mut lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
             lin_mem.store(offset, x).unwrap();
 
@@ -691,33 +438,33 @@ mod test {
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: Trap(MemoryOrDataAccessOutOfBounds)"
+        expected = "called `Result::unwrap()` on an `Err` value: MemoryOrDataAccessOutOfBounds"
     )]
     fn store_out_of_range_u128_max() {
         let x: u128 = u128::MAX;
         let pages = 1;
         let lowest_illegal_offset = PAGE_SIZE - mem::size_of::<u128>() + 1;
-        let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
+        let mut lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
 
         lin_mem.store(lowest_illegal_offset, x).unwrap();
     }
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: Trap(MemoryOrDataAccessOutOfBounds)"
+        expected = "called `Result::unwrap()` on an `Err` value: MemoryOrDataAccessOutOfBounds"
     )]
     fn store_empty_lineaer_memory_u8() {
         let x: u8 = u8::MAX;
         let pages = 0;
         let lowest_illegal_offset = PAGE_SIZE - mem::size_of::<u8>() + 1;
-        let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
+        let mut lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
 
         lin_mem.store(lowest_illegal_offset, x).unwrap();
     }
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: Trap(MemoryOrDataAccessOutOfBounds)"
+        expected = "called `Result::unwrap()` on an `Err` value: MemoryOrDataAccessOutOfBounds"
     )]
     fn load_out_of_range_u128_max() {
         let pages = 1;
@@ -729,7 +476,7 @@ mod test {
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: Trap(MemoryOrDataAccessOutOfBounds)"
+        expected = "called `Result::unwrap()` on an `Err` value: MemoryOrDataAccessOutOfBounds"
     )]
     fn load_empty_lineaer_memory_u8() {
         let pages = 0;
@@ -742,8 +489,7 @@ mod test {
     #[test]
     #[should_panic]
     fn copy_out_of_bounds() {
-        let lin_mem_0 = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(2);
-        let lin_mem_1 = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(1);
-        lin_mem_0.copy(0, &lin_mem_1, 0, PAGE_SIZE + 1).unwrap();
+        let mut lin_mem_0 = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(2);
+        lin_mem_0.copy_within(0, PAGE_SIZE, PAGE_SIZE + 1).unwrap();
     }
 }
