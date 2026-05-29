@@ -21,6 +21,7 @@ pub use execution::error::{RuntimeError, TrapError};
 pub use execution::store::*;
 pub use execution::value::Value;
 pub use execution::*;
+pub use validation::custom_section::CustomSection;
 pub use validation::*;
 
 pub(crate) mod core;
