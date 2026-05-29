@@ -73,7 +73,11 @@ impl Limits {
         let limits = match wasm.decode_u8()? {
             0x00 => {
                 let min = wasm.decode_var_u32()?;
-                Self { min, max: None }
+                Self {
+                    min,
+                    max: None,
+                    shared: false,
+                }
             }
             0x01 => {
                 let min = wasm.decode_var_u32()?;
@@ -81,6 +85,7 @@ impl Limits {
                 Self {
                     min,
                     max: Some(max),
+                    shared: false,
                 }
             }
             other => return Err(DecodingError::MalformedLimitsDiscriminator(other).into()),

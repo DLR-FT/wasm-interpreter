@@ -3,10 +3,12 @@ use core::{iter, num::NonZeroUsize};
 use alloc::{vec, vec::Vec};
 
 use crate::{
-    execution::numerics::representations::LittleEndianBytes, Config, RuntimeError, TrapError,
+    execution::{
+        numerics::representations::LittleEndianBytes,
+        runtime_structure::memory_instances::DEFAULT_PAGE_SIZE,
+    },
+    Config, RuntimeError, TrapError,
 };
-
-pub const DEFAULT_PAGE_SIZE: NonZeroUsize = NonZeroUsize::new(65536).unwrap();
 
 /// A linear memory is the backing data structure for a memory instance[^memory-instances].
 ///
@@ -25,10 +27,6 @@ pub struct LinearMemory {
     page_size: NonZeroUsize,
 }
 
-/// An operation on a linear memory would have overflowed the maximum size of 2^32 bytes.
-#[derive(Copy, Clone, Debug)]
-pub struct MemorySizeOverflow;
-
 impl LinearMemory {
     /// Creates a new linear memory of size 0
     pub fn new(page_size: NonZeroUsize) -> Self {
@@ -43,11 +41,11 @@ impl LinearMemory {
     pub fn new_with_initial_pages<T: Config>(
         page_size: NonZeroUsize,
         pages: usize,
-    ) -> Result<Self, MemorySizeOverflow> {
+    ) -> Result<Self, RuntimeError> {
         // If there is a limit configured check that first.
         if let Some(max_pages) = T::MAX_NUMBER_OF_MEMORY_PAGES {
             if pages > usize::from(max_pages.get()) {
-                return Err(MemorySizeOverflow);
+                return Err(RuntimeError::MemoryOverflowed);
             }
         }
 
@@ -55,7 +53,7 @@ impl LinearMemory {
         let size_bytes = page_size
             .get()
             .checked_mul(pages)
-            .ok_or(MemorySizeOverflow)?;
+            .ok_or(RuntimeError::MemoryOverflowed)?;
 
         let data = vec![0; size_bytes];
 
@@ -63,24 +61,24 @@ impl LinearMemory {
     }
 
     /// Grows the current linear memory by a number of pages.
-    pub fn grow<T: Config>(&mut self, pages_to_add: usize) -> Result<(), MemorySizeOverflow> {
+    pub fn grow<T: Config>(&mut self, pages_to_add: usize) -> Result<(), RuntimeError> {
         // This implementation uses only 2 (or 3) multiplications. It does not rely on `len_pages`
         // which would use a division.
 
         let num_bytes_to_grow = pages_to_add
             .checked_mul(self.page_size.get())
-            .ok_or(MemorySizeOverflow)?;
+            .ok_or(RuntimeError::MemoryOverflowed)?;
         let new_len = self
             .len()
             .checked_add(num_bytes_to_grow)
-            .ok_or(MemorySizeOverflow)?;
+            .ok_or(RuntimeError::MemoryOverflowed)?;
 
         if let Some(max_pages) = T::MAX_NUMBER_OF_MEMORY_PAGES {
             if usize::from(max_pages.get())
                 .checked_mul(self.page_size.get())
                 .is_some_and(|max_len| new_len > max_len)
             {
-                return Err(MemorySizeOverflow);
+                return Err(RuntimeError::MemoryOverflowed);
             }
         }
 

@@ -22,6 +22,7 @@ A minimal in-place interpreter for [WebAssembly 2.0](https://webassembly.org/) b
 - **Compliance with specification**: The interpreter passes all tests from the [official WebAssembly testsuite](https://github.com/WebAssembly/testsuite), except for the unfinished proposal tests. See [`GlobalConfig` in `tests/specification/mod.rs`](tests/specification/mod.rs) for the default spec-test filter regex.
 - **Returning host functions**: The host system can provide functions for Wasm code to call. Contrary to other Wasm runtimes, host functions are not owned by the interpreter. Instead control flow is returned back to the user, when Wasm code calls a host function.
 - **Fuel & resumable execution**: A fuel mechanism is used to halt execution once fuel runs out. Then fuel can be refilled and execution resumed.
+- **Shared Linear Memory (from Threads Proposal)**: Linear memories can be marked as shared, allowing them to be shared across multiple stores.
 
 _For information on other features, visit our [requirements page](https://dlr-ft.github.io/wasm-interpreter/main/requirements/html/index.html)._
 
@@ -29,7 +30,7 @@ _For information on other features, visit our [requirements page](https://dlr-ft
 
 - **C bindings**: The interpreter can be used from C code.
 - **Migratability**: Wasm instances can be transferred between systems during their execution.
-- **Threading**: Support for the [Threads Proposal](https://github.com/WebAssembly/threads) is work-in-progress. The [Shared-Everything Threads Proposal](https://github.com/WebAssembly/shared-everything-threads) is also of interest.
+- **Threading**: Support for the [Threads Proposal](https://github.com/WebAssembly/threads) is work-in-progress. Its shared linear memory is implemented already, however the atomic instructions are not. Furthermore, we are also interested in the [Shared-Everything Threads Proposal](https://github.com/WebAssembly/shared-everything-threads).
 - **Flexible Allocation API**: Custom Allocators should be configurable. There is still some uncertainty, especially regarding the use of the Rust Allocator API.
 
 ### Not planned
@@ -114,5 +115,5 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 ## Copyright
 
-Copyright © 2024-2026 Deutsches Zentrum für Luft- und Raumfahrt e.V. (DLR)
+Copyright © 2024-2026 Deutsches Zentrum für Luft- und Raumfahrt e.V. (DLR)  
 Copyright © 2024-2025 OxidOS Automotive SRL

@@ -1,7 +1,7 @@
-use alloc::vec::Vec;
+use alloc::{sync::Arc, vec::Vec};
 use dlr_wasm_interpreter::{
     Config, FuncAddr, FuncType, GlobalAddr, GlobalType, HostResumable, Hostcode, MemAddr, MemType,
-    Module, ModuleAddr, RuntimeError, TableAddr, TableType, WasmResumable,
+    Module, ModuleAddr, RuntimeError, SharedLinearMemory, TableAddr, TableType, WasmResumable,
 };
 
 use crate::{
@@ -511,7 +511,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of [`Store::mem_data`](dlr_wasm_interpreter::Store::mem_data).
-    pub fn mem_data(&self, memory: Stored<MemAddr>) -> &[u8] {
+    pub fn mem_data(&self, memory: Stored<MemAddr>) -> Option<&[u8]> {
         let memory = memory.try_unwrap_into_bare(self.id);
         // SAFETY: It was just checked that the `MemAddr` came from the current
         // store through its store id.
@@ -519,7 +519,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of [`Store::mem_data_mut`](dlr_wasm_interpreter::Store::mem_data_mut).
-    pub fn mem_data_mut(&mut self, memory: Stored<MemAddr>) -> &mut [u8] {
+    pub fn mem_data_mut(&mut self, memory: Stored<MemAddr>) -> Option<&mut [u8]> {
         // 1. try unwrap
         let memory = memory.try_unwrap_into_bare(self.id);
         // 2. call
@@ -550,5 +550,16 @@ impl<'b, T: Config> Store<'b, T> {
             let stored_externval = unsafe { StoredExternVal::from_bare(externval, self.id) };
             (name, stored_externval)
         })
+    }
+
+    pub fn mem_get_as_shared(&self, mem_addr: Stored<MemAddr>) -> Option<&Arc<SharedLinearMemory>> {
+        // 1. try unwrap
+        let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
+        // 2. call
+        // SAFETY: We just checked that this memory address is valid in the current store through
+        // its store id.
+        // 3. rewrap
+        // 4. return
+        unsafe { self.inner.mem_get_as_shared(mem_addr) }
     }
 }

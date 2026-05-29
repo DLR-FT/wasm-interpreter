@@ -332,7 +332,14 @@ pub(super) unsafe fn memory_init(
     // address vector (5).
     let data = unsafe { store_data.get(data_addr) };
 
-    mem.mem.init(d, &data.data, s, n)?;
+    match mem {
+        MemInst::Unshared(unshared_mem) => {
+            unshared_mem.mem.init(d, &data.data, s, n)?;
+        }
+        MemInst::Shared(shared_mem) => {
+            shared_mem.mem.init(d, &data.data, s, n)?;
+        }
+    }
 
     Ok(())
 }

@@ -118,6 +118,7 @@ pub struct Limits {
     pub min: u32,
     /// If this is `Some(n)`, `n` must be greater or equal to `self.min`
     pub max: Option<u32>,
+    pub shared: bool,
 }
 
 impl fmt::Debug for Limits {

@@ -456,6 +456,7 @@ fn try_grow_past_limit() {
                 lim: Limits {
                     min: 1,
                     max: Some(3),
+                    shared: false,
                 },
             },
             RANDOM_EXTERN_REF,
