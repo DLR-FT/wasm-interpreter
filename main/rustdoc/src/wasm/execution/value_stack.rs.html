@@ -18,7 +18,7 @@
 <a href=#18 id=18 data-nosnippet>18</a>/// 3. Activations
 <a href=#19 id=19 data-nosnippet>19</a>///
 <a href=#20 id=20 data-nosnippet>20</a>/// See &lt;https://webassembly.github.io/spec/core/exec/runtime.html#stack&gt;
-<a href=#21 id=21 data-nosnippet>21</a></span><span class="attr">#[derive(Debug)]
+<a href=#21 id=21 data-nosnippet>21</a></span><span class="attr">#[derive(Debug, Clone)]
 <a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Stack {
 <a href=#23 id=23 data-nosnippet>23</a>    <span class="doccomment">/// WASM values on the stack, i.e. the actual data that instructions operate on
 <a href=#24 id=24 data-nosnippet>24</a>    </span>values: FixedCapacityVec&lt;Value&gt;,
@@ -301,7 +301,7 @@
 <a href=#301 id=301 data-nosnippet>301</a>}
 <a href=#302 id=302 data-nosnippet>302</a>
 <a href=#303 id=303 data-nosnippet>303</a><span class="doccomment">/// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.
-<a href=#304 id=304 data-nosnippet>304</a></span><span class="attr">#[derive(Debug)]
+<a href=#304 id=304 data-nosnippet>304</a></span><span class="attr">#[derive(Debug, Clone, Copy)]
 <a href=#305 id=305 data-nosnippet>305</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>CallFrame {
 <a href=#306 id=306 data-nosnippet>306</a>    <span class="doccomment">/// Store address of the function that called this [`CallFrame`]'s function
 <a href=#307 id=307 data-nosnippet>307</a>    ///
