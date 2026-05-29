@@ -1,5 +1,6 @@
-use alloc::{boxed::Box, vec, vec::Vec};
 use core::convert::Infallible;
+
+use alloc::{boxed::Box, sync::Arc, vec, vec::Vec};
 
 use crate::{
     core::{
@@ -32,8 +33,8 @@ use crate::{
             function_instances::{FuncInst, HostFuncInst, WasmFuncInst},
             global_instances::GlobalInst,
             memory_instances::{
-                linear_memory::{self, LinearMemory, MemorySizeOverflow},
-                MemInst,
+                linear_memory::LinearMemory, shared_linear_memory::SharedLinearMemory, MemInst,
+                SharedMemInst, UnsharedMemInst, DEFAULT_PAGE_SIZE,
             },
             module_instances::ModuleInst,
             table_instances::TableInst,
@@ -41,8 +42,8 @@ use crate::{
         },
     },
     AddrVec, Config, DataAddr, ElemAddr, ExternVal, FuncAddr, FuncType, GlobalAddr, GlobalType,
-    HostCall, HostResumable, MemAddr, MemType, Module, ModuleAddr, Ref, RefType, Resumable,
-    RunState, RuntimeError, TableAddr, TableType, Value, WasmResumable,
+    HostCall, HostResumable, MemAddr, MemType, Module, ModuleAddr, Ordering, Ref, RefType,
+    Resumable, RunState, RuntimeError, TableAddr, TableType, Value, WasmResumable,
 };
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
@@ -964,6 +965,43 @@ impl<'b, T: Config> Store<'b, T> {
         table.grow::<T>(n, r#ref)
     }
 
+    /// Allocates a new shared linear memory from the given [`SharedLinearMemory`]
+    pub fn mem_alloc_shared(
+        &mut self,
+        linear_memory: Arc<SharedLinearMemory>,
+        mut mem_type: MemType,
+    ) -> Result<MemAddr, RuntimeError> {
+        mem_type.limits.shared = true;
+        let len = linear_memory.rd_len_in_pages(Ordering::SeqCst);
+        let len =
+            u32::try_from(len).map_err(|_| RuntimeError::SharedLinearMemoryAllocationError)?;
+
+        let Some(max) = mem_type.limits.max else {
+            return Err(RuntimeError::SharedLinearMemoryAllocationError);
+        };
+
+        // The min limit is weird. We can't set it to len, because len might be outdated already
+        // since the memory could have grown since we read its length.
+        let min = mem_type.limits.min;
+
+        if !(min..=max).contains(&len) {
+            return Err(RuntimeError::SharedLinearMemoryAllocationError);
+        }
+
+        if linear_memory.max_pages() != max.into_usize() {
+            return Err(RuntimeError::SharedLinearMemoryAllocationError);
+        }
+
+        let mem_inst = SharedMemInst {
+            ty: mem_type,
+            mem: linear_memory,
+        };
+
+        let mem_addr = self.inner.memories.insert(MemInst::Shared(mem_inst));
+
+        Ok(mem_addr)
+    }
+
     /// Allocates a new linear memory and returns its memory address.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.9 - mem_alloc
@@ -990,7 +1028,10 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
         let memory = unsafe { self.inner.memories.get(mem_addr) };
-        memory.ty
+        match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.ty,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.ty,
+        }
 
         // 2. Post-condition: the returned memory type is valid.
     }
@@ -1007,11 +1048,24 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let mi = unsafe { self.inner.memories.get(mem_addr) };
+        let mem = unsafe { self.inner.memories.get(mem_addr) };
 
-        // 2. If `i` is larger than or equal to the length of `mi.data`, then return `error`.
-        // 3. Else, return the byte `mi.data[i]`.
-        mi.mem.load(i.into_usize()).map_err(Into::into)
+        match mem {
+            MemInst::Shared(shared_mem) => {
+                // mem_read on shared memory instances is not defined in the specification. This is
+                // a best-effort implementation using a SeqCst ordering.
+                let [byte] = shared_mem
+                    .mem
+                    .load_bytes::<1>(i.into_usize(), Ordering::SeqCst)?;
+
+                Ok(byte)
+            }
+            MemInst::Unshared(unshared_mem) => {
+                // 2. If `i` is larger than or equal to the length of `mi.data`, then return `error`.
+                // 3. Else, return the byte `mi.data[i]`.
+                unshared_mem.mem.load(i.into_usize()).map_err(Into::into)
+            }
+        }
     }
 
     /// Writes a byte into some memory by its memory address and an index into the memory
@@ -1031,9 +1085,20 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let mi = unsafe { self.inner.memories.get_mut(mem_addr) };
-
-        mi.mem.store(i.into_usize(), byte).map_err(Into::into)
+        let mem = unsafe { self.inner.memories.get_mut(mem_addr) };
+        match mem {
+            MemInst::Shared(shared_mem) => {
+                // mem_write on shared memory instances is not defined in the specification. This is
+                // a best-effort implementation using a SeqCst ordering.
+                shared_mem
+                    .mem
+                    .store_bytes::<1>(i.into_usize(), [byte], Ordering::SeqCst)
+            }
+            MemInst::Unshared(unshared_mem) => unshared_mem
+                .mem
+                .store(i.into_usize(), byte)
+                .map_err(Into::into),
+        }
     }
 
     /// Gets the size of some memory by its memory address in pages.
@@ -1047,8 +1112,15 @@ impl<'b, T: Config> Store<'b, T> {
     pub unsafe fn mem_size(&self, mem_addr: MemAddr) -> u32 {
         // 1. Return the length of `store.mems[memaddr].data` divided by the page size.
         // SAFETY: The caller ensures that the given memory address is valid in the current store.
-        let memory = unsafe { self.inner.memories.get(mem_addr) };
-        memory.len_pages().into()
+        let mem = unsafe { self.inner.memories.get(mem_addr) };
+        match mem {
+            MemInst::Shared(shared_mem) => {
+                // mem_size on shared memory instances is not defined in the specification. This is
+                // a best-effort implementation using a SeqCst ordering.
+                u32::from(shared_mem.rd_len_in_pages(Ordering::SeqCst))
+            }
+            MemInst::Unshared(unshared_mem) => u32::from(unshared_mem.len_pages()),
+        }
     }
 
     /// Grows some memory by its memory address by `n` pages.
@@ -1067,8 +1139,16 @@ impl<'b, T: Config> Store<'b, T> {
         // Note: Returning the new store is a noop for us because we mutate the store instead.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let memory = unsafe { self.inner.memories.get_mut(mem_addr) };
-        let _previous_length = memory.grow::<T>(n)?;
+        let mem = unsafe { self.inner.memories.get_mut(mem_addr) };
+        match mem {
+            MemInst::Shared(shared_mem) => {
+                let _previous_length = shared_mem.grow::<T>(n)?;
+            }
+            MemInst::Unshared(unshared_mem) => {
+                let _previous_length = unshared_mem.grow::<T>(n)?;
+            }
+        }
+
         Ok(())
     }
 
@@ -1251,14 +1331,31 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
     fn alloc_mem(&mut self, mem_type: MemType) -> Result<MemAddr, RuntimeError> {
-        let mem = LinearMemory::new_with_initial_pages::<T>(
-            linear_memory::DEFAULT_PAGE_SIZE,
-            mem_type.limits.min.into_usize(),
-        )
-        .map_err(|MemorySizeOverflow| RuntimeError::MemoryOverflowed)?;
-        let mem_inst = MemInst { ty: mem_type, mem };
-        let mem_addr = self.inner.memories.insert(mem_inst);
-        Ok(mem_addr)
+        // TODO add new RuntimeError variant instead of unwrapping (note: if we want to support
+        // custom pages sizes this code will change anyway!)
+        let initial_page_count = mem_type.limits.min.into_usize();
+
+        let mem_inst = if mem_type.limits.shared {
+            let Some(max_pages) = mem_type.limits.max else {
+                return Err(RuntimeError::SharedLinearMemoryAllocationError);
+            };
+
+            let shared_memory = SharedLinearMemory::new_with_initial_pages::<T>(
+                initial_page_count,
+                max_pages.into_usize(),
+            )?;
+
+            MemInst::Shared(SharedMemInst {
+                ty: mem_type,
+                mem: Arc::new(shared_memory),
+            })
+        } else {
+            let mem =
+                LinearMemory::new_with_initial_pages::<T>(DEFAULT_PAGE_SIZE, initial_page_count)?;
+            MemInst::Unshared(UnsharedMemInst { ty: mem_type, mem })
+        };
+
+        Ok(self.inner.memories.insert(mem_inst))
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
@@ -1516,7 +1613,8 @@ impl<'b, T: Config> Store<'b, T> {
         }
     }
 
-    /// Returns the inner data of a specific memory instance as a byte slice.
+    /// Returns the inner data of a specific unshared memory instance as a mutable byte slice. If
+    /// the memory instance is shared, `None` is returned.
     ///
     /// The length of the slice can never exceed 2^32 - 1.
     ///
@@ -1524,14 +1622,18 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the current [`Store`]
     /// object.
-    pub unsafe fn mem_data(&self, memory: MemAddr) -> &[u8] {
+    pub unsafe fn mem_data(&self, memory: MemAddr) -> Option<&[u8]> {
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
         let memory = unsafe { self.inner.memories.get(memory) };
-        memory.mem.data()
+        match memory {
+            MemInst::Shared(_shared_mem_inst) => None,
+            MemInst::Unshared(unshared_mem_inst) => Some(unshared_mem_inst.mem.data()),
+        }
     }
 
-    /// Returns the inner data of a specific memory instance as a mutable byte slice.
+    /// Returns the inner data of a specific unshared memory instance as a mutable byte slice. If
+    /// the memory instance is shared, `None` is returned.
     ///
     /// The length of the slice can never exceed 2^32 - 1.
     ///
@@ -1539,11 +1641,31 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the current [`Store`]
     /// object.
-    pub unsafe fn mem_data_mut(&mut self, memory: MemAddr) -> &mut [u8] {
+    pub unsafe fn mem_data_mut(&mut self, memory: MemAddr) -> Option<&mut [u8]> {
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
         let memory = unsafe { self.inner.memories.get_mut(memory) };
-        memory.mem.data_mut()
+        match memory {
+            MemInst::Shared(_shared_mem_inst) => None,
+            MemInst::Unshared(unshared_mem_inst) => Some(unshared_mem_inst.mem.data_mut()),
+        }
+    }
+
+    /// Returns the inner shared linear memory of a memory instance by its address. `None` is
+    /// returned if the memory instance is unshared.
+    ///
+    /// # Safety
+    ///
+    /// The caller has to guarantee that the given [`MemAddr`] came from the current [`Store`]
+    /// object.
+    pub unsafe fn mem_get_as_shared(&self, memory: MemAddr) -> Option<&Arc<SharedLinearMemory>> {
+        // SAFETY: The caller ensures that the given memory address is valid in
+        // the current store.
+        let memory = unsafe { self.inner.memories.get(memory) };
+        match memory {
+            MemInst::Shared(shared_mem_inst) => Some(&shared_mem_inst.mem),
+            MemInst::Unshared(_) => None,
+        }
     }
 
     /// Returns all exports of a module instance by its module address.

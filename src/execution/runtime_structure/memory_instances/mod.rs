@@ -1,24 +1,78 @@
+use core::num::NonZeroUsize;
+
+use alloc::sync::Arc;
+
 use crate::{
     core::utils::ToUsizeExt,
-    execution::runtime_structure::memory_instances::linear_memory::MemorySizeOverflow, Config,
-    Limits, MemType, RuntimeError,
+    execution::runtime_structure::memory_instances::{
+        linear_memory::LinearMemory, shared_linear_memory::SharedLinearMemory,
+    },
+    Config, Limits, MemType, Ordering, RuntimeError,
 };
 
 pub mod linear_memory;
+pub mod shared_linear_memory;
 
-pub struct MemInst {
-    pub ty: MemType,
-    pub mem: linear_memory::LinearMemory,
+pub const DEFAULT_PAGE_SIZE: NonZeroUsize = NonZeroUsize::new(65536).unwrap();
+
+#[derive(Debug)]
+pub enum MemInst {
+    Shared(SharedMemInst),
+    Unshared(UnsharedMemInst),
 }
-impl core::fmt::Debug for MemInst {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("MemInst")
-            .field("ty", &self.ty)
-            .finish_non_exhaustive()
+
+#[derive(Debug)]
+pub struct SharedMemInst {
+    pub ty: MemType,
+    pub mem: Arc<SharedLinearMemory>,
+}
+
+impl SharedMemInst {
+    /// If the grow is successful, the previous length of the memory is returned in pages.
+    ///
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-memories>
+    pub fn grow<T: Config>(&mut self, n: u32) -> Result<u32, RuntimeError> {
+        debug_assert_eq!(
+            Some(self.mem.max_pages()),
+            self.ty.limits.max.map(ToUsizeExt::into_usize)
+        );
+
+        // No check for the memory's upper size limit, because that is done by the
+        // SharedLinearMemory itself. It has to contain the information about its upper limit,
+        // because it can be grown by the user without going through the store.
+
+        let previous_len_pages = self.mem.grow::<T>(n.into_usize())?;
+
+        let previous_len_pages = u32::try_from(previous_len_pages).expect(
+            "we always use the default page size and do not expose any methods to set custom page sizes to the user, thereby limiting the number of pages to < 2^16");
+
+        let new_len_pages = previous_len_pages
+            .checked_add(n)
+            .expect("length of memory in pages is always less than 2^32");
+
+        let limits_prime = Limits {
+            min: new_len_pages,
+            ..self.ty.limits
+        };
+
+        self.ty.limits = limits_prime;
+        Ok(previous_len_pages)
+    }
+
+    /// Reads the length of this memory in pages.
+    pub fn rd_len_in_pages(&self, ord: Ordering) -> u16 {
+        u16::try_from(self.mem.rd_len_in_pages(ord))
+            .expect("memory length in pages is never 2^16 or larger")
     }
 }
 
-impl MemInst {
+#[derive(Debug)]
+pub struct UnsharedMemInst {
+    pub ty: MemType,
+    pub mem: LinearMemory,
+}
+
+impl UnsharedMemInst {
     /// If the grow is successful, the previous length of the memory is returned in pages.
     ///
     /// See: [WebAssembly Specification 2.0 - 4.5.3.9 Growing Memories](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#growing-memories%E2%91%A0)
@@ -60,9 +114,7 @@ impl MemInst {
         //
         // For us this operation is fallible, as a custom upper size limit can be set through
         // `Config`.
-        self.mem
-            .grow::<T>(n.into_usize())
-            .map_err(|MemorySizeOverflow| RuntimeError::MemoryOverflowed)?;
+        self.mem.grow::<T>(n.into_usize())?;
 
         // 9. Set meminst.type to the memory type limits'.
         self.ty.limits = limits_prime;

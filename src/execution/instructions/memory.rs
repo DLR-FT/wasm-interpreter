@@ -20,8 +20,9 @@ use crate::{
             calculate_mem_address, data_drop, define_instruction, from_lanes, memory_init,
             to_lanes, InterpreterLoopOutcome, State,
         },
+        runtime_structure::memory_instances::MemInst,
     },
-    Config, RuntimeError, Value, F32, F64,
+    Config, Ordering, RuntimeError, Value, F32, F64,
 };
 
 // t.load
@@ -47,7 +48,10 @@ pub unsafe fn i32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     let mem_inst = unsafe { state.store_inner.memories.get(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data = mem_inst.mem.load(idx)?;
+    let data = match mem_inst {
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+    };
 
     state.resumable.stack.push_value(Value::I32(data))?;
     Ok(ControlFlow::Continue(()))
@@ -75,7 +79,10 @@ pub unsafe fn i64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data = mem.mem.load(idx)?;
+    let data = match mem {
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+    };
 
     state.resumable.stack.push_value(Value::I64(data))?;
     Ok(ControlFlow::Continue(()))
@@ -103,7 +110,10 @@ pub unsafe fn f32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data = mem.mem.load(idx)?;
+    let data = match mem {
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+    };
 
     state.resumable.stack.push_value(Value::F32(data))?;
     Ok(ControlFlow::Continue(()))
@@ -131,7 +141,10 @@ pub unsafe fn f64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data = mem.mem.load(idx)?;
+    let data = match mem {
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+    };
 
     state.resumable.stack.push_value(Value::F64(data))?;
     Ok(ControlFlow::Continue(()))
@@ -165,7 +178,10 @@ pub unsafe fn v128_load(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let data: u128 = memory.mem.load(idx)?;
+    let data: u128 = match memory {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+    };
     state
         .resumable
         .stack
@@ -202,7 +218,10 @@ pub unsafe fn i32_load8_s(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data: i8 = mem.mem.load(idx)?;
+    let data: i8 = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+    };
 
     state.resumable.stack.push_value(Value::I32(data as u32))?;
     Ok(ControlFlow::Continue(()))
@@ -236,7 +255,10 @@ pub unsafe fn i32_load8_u(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data: u8 = mem.mem.load(idx)?;
+    let data: u8 = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+    };
 
     state.resumable.stack.push_value(Value::I32(data as u32))?;
     Ok(ControlFlow::Continue(()))
@@ -270,7 +292,10 @@ pub unsafe fn i32_load16_s(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data: i16 = mem.mem.load(idx)?;
+    let data: i16 = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+    };
 
     state.resumable.stack.push_value(Value::I32(data as u32))?;
     Ok(ControlFlow::Continue(()))
@@ -304,7 +329,10 @@ pub unsafe fn i32_load16_u(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data: u16 = mem.mem.load(idx)?;
+    let data: u16 = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+    };
 
     state.resumable.stack.push_value(Value::I32(data as u32))?;
     Ok(ControlFlow::Continue(()))
@@ -338,7 +366,10 @@ pub unsafe fn i64_load8_s(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data: i8 = mem.mem.load(idx)?;
+    let data: i8 = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+    };
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
     Ok(ControlFlow::Continue(()))
@@ -372,7 +403,10 @@ pub unsafe fn i64_load8_u(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data: u8 = mem.mem.load(idx)?;
+    let data: u8 = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+    };
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
     Ok(ControlFlow::Continue(()))
@@ -406,7 +440,10 @@ pub unsafe fn i64_load16_s(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data: i16 = mem.mem.load(idx)?;
+    let data: i16 = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+    };
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
     Ok(ControlFlow::Continue(()))
@@ -440,7 +477,10 @@ pub unsafe fn i64_load16_u(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data: u16 = mem.mem.load(idx)?;
+    let data: u16 = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+    };
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
     Ok(ControlFlow::Continue(()))
@@ -474,7 +514,10 @@ pub unsafe fn i64_load32_s(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data: i32 = mem.mem.load(idx)?;
+    let data: i32 = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+    };
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
     Ok(ControlFlow::Continue(()))
@@ -508,7 +551,10 @@ pub unsafe fn i64_load32_u(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let data: u32 = mem.mem.load(idx)?;
+    let data: u32 = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ordering::Unord)?,
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+    };
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
     Ok(ControlFlow::Continue(()))
@@ -545,7 +591,14 @@ pub unsafe fn v128_load8x8_s(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+    // v128 load always loads half of a v128
+    let half_data: [u8; 8] = match memory {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst
+            .mem
+            .load::<8, u64>(idx, Ordering::Unord)?
+            .to_le_bytes(),
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+    };
 
     // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
     let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -589,7 +642,13 @@ pub unsafe fn v128_load8x8_u(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+    // v128 load always loads half of a v128
+    let half_data: [u8; 8] = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load_bytes::<8>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+    };
 
     // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
     let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -633,7 +692,13 @@ pub unsafe fn v128_load16x4_s(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+    // v128 load always loads half of a v128
+    let half_data: [u8; 8] = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load_bytes::<8>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+    };
 
     // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
     let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -677,7 +742,13 @@ pub unsafe fn v128_load16x4_u(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+    // v128 load always loads half of a v128
+    let half_data: [u8; 8] = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load_bytes::<8>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+    };
 
     // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
     let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -721,7 +792,13 @@ pub unsafe fn v128_load32x2_s(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+    // v128 load always loads half of a v128
+    let half_data: [u8; 8] = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load_bytes::<8>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+    };
 
     // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
     let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -765,7 +842,13 @@ pub unsafe fn v128_load32x2_u(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+    // v128 load always loads half of a v128
+    let half_data: [u8; 8] = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load_bytes::<8>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+    };
 
     // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
     let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -810,7 +893,12 @@ pub unsafe fn v128_load8_splat(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let lane = memory.mem.load::<1, u8>(idx)?;
+    let lane = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load::<1, u8>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<1, u8>(idx)?,
+    };
     state
         .resumable
         .stack
@@ -846,7 +934,12 @@ pub unsafe fn v128_load16_splat(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let lane = memory.mem.load::<2, u16>(idx)?;
+    let lane = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load::<2, u16>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<2, u16>(idx)?,
+    };
     state
         .resumable
         .stack
@@ -882,7 +975,12 @@ pub unsafe fn v128_load32_splat(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let lane = memory.mem.load::<4, u32>(idx)?;
+    let lane = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load::<4, u32>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<4, u32>(idx)?,
+    };
     state
         .resumable
         .stack
@@ -918,7 +1016,12 @@ pub unsafe fn v128_load64_splat(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let lane = memory.mem.load::<8, u64>(idx)?;
+    let lane = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load::<8, u64>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<8, u64>(idx)?,
+    };
     state
         .resumable
         .stack
@@ -958,7 +1061,12 @@ pub unsafe fn v128_load32_zero(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let data = memory.mem.load::<4, u32>(idx)? as u128;
+    let data = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load::<4, u32>(idx, Ordering::Unord)? as u128
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<4, u32>(idx)? as u128,
+    };
     state
         .resumable
         .stack
@@ -995,7 +1103,12 @@ pub unsafe fn v128_load64_zero(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    let data = memory.mem.load::<8, u64>(idx)? as u128;
+    let data = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load::<8, u64>(idx, Ordering::Unord)? as u128
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<8, u64>(idx)? as u128,
+    };
     state
         .resumable
         .stack
@@ -1038,7 +1151,13 @@ pub unsafe fn v128_load8_lane(
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
     let mut lanes: [u8; 16] = to_lanes(data);
-    *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<1, u8>(idx)?;
+    let lane = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load::<1, u8>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<1, u8>(idx)?,
+    };
+    *lanes.get_mut(lane_idx).unwrap_validated() = lane;
     state
         .resumable
         .stack
@@ -1080,7 +1199,13 @@ pub unsafe fn v128_load16_lane(
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
     let mut lanes: [u16; 8] = to_lanes(data);
-    *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<2, u16>(idx)?;
+    let lane = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load::<2, u16>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<2, u16>(idx)?,
+    };
+    *lanes.get_mut(lane_idx).unwrap_validated() = lane;
     state
         .resumable
         .stack
@@ -1121,7 +1246,13 @@ pub unsafe fn v128_load32_lane(
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
     let mut lanes: [u32; 4] = to_lanes(data);
-    *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<4, u32>(idx)?;
+    let lane = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load::<4, u32>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<4, u32>(idx)?,
+    };
+    *lanes.get_mut(lane_idx).unwrap_validated() = lane;
     state
         .resumable
         .stack
@@ -1162,7 +1293,13 @@ pub unsafe fn v128_load64_lane(
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
     let mut lanes: [u64; 2] = to_lanes(data);
-    *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<8, u64>(idx)?;
+    let lane = match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst.mem.load::<8, u64>(idx, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<8, u64>(idx)?,
+    };
+    *lanes.get_mut(lane_idx).unwrap_validated() = lane;
     state
         .resumable
         .stack
@@ -1202,7 +1339,14 @@ pub unsafe fn i32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    mem.mem.store(idx, data_to_store)?;
+    match mem {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store(idx, data_to_store, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store(idx, data_to_store)?,
+    };
 
     Ok(ControlFlow::Continue(()))
 }
@@ -1238,7 +1382,14 @@ pub unsafe fn i64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    mem.mem.store(idx, data_to_store)?;
+    match mem {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store(idx, data_to_store, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store(idx, data_to_store)?,
+    };
 
     Ok(ControlFlow::Continue(()))
 }
@@ -1274,7 +1425,14 @@ pub unsafe fn f32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    mem.mem.store(idx, data_to_store)?;
+    match mem {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store(idx, data_to_store, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store(idx, data_to_store)?,
+    };
 
     Ok(ControlFlow::Continue(()))
 }
@@ -1310,7 +1468,14 @@ pub unsafe fn f64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    mem.mem.store(idx, data_to_store)?;
+    match mem {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store(idx, data_to_store, Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store(idx, data_to_store)?,
+    };
 
     Ok(ControlFlow::Continue(()))
 }
@@ -1349,7 +1514,16 @@ pub unsafe fn v128_store(
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
-    memory.mem.store(idx, u128::from_le_bytes(data))?;
+    match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store(idx, u128::from_le_bytes(data), Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst
+            .mem
+            .store(idx, u128::from_le_bytes(data))?,
+    }
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1389,7 +1563,14 @@ pub unsafe fn i32_store8(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    mem.mem.store(idx, wrapped_data)?;
+    match mem {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store_bytes(idx, wrapped_data.to_le_bytes(), Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store(idx, wrapped_data)?,
+    }
 
     Ok(ControlFlow::Continue(()))
 }
@@ -1429,7 +1610,14 @@ pub unsafe fn i32_store16(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    mem.mem.store(idx, wrapped_data)?;
+    match mem {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store_bytes(idx, wrapped_data.to_le_bytes(), Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store(idx, wrapped_data)?,
+    }
 
     Ok(ControlFlow::Continue(()))
 }
@@ -1469,7 +1657,14 @@ pub unsafe fn i64_store8(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    mem.mem.store(idx, wrapped_data)?;
+    match mem {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store_bytes(idx, wrapped_data.to_le_bytes(), Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store(idx, wrapped_data)?,
+    }
 
     Ok(ControlFlow::Continue(()))
 }
@@ -1509,7 +1704,14 @@ pub unsafe fn i64_store16(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    mem.mem.store(idx, wrapped_data)?;
+    match mem {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store_bytes(idx, wrapped_data.to_le_bytes(), Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store(idx, wrapped_data)?,
+    }
 
     Ok(ControlFlow::Continue(()))
 }
@@ -1549,7 +1751,14 @@ pub unsafe fn i64_store32(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    mem.mem.store(idx, wrapped_data)?;
+    match mem {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store_bytes(idx, wrapped_data.to_le_bytes(), Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store(idx, wrapped_data)?,
+    }
 
     Ok(ControlFlow::Continue(()))
 }
@@ -1591,9 +1800,17 @@ pub unsafe fn v128_store8_lane(
 
     let lane = *to_lanes::<1, 16, u8>(data).get(lane_idx).unwrap_validated();
 
-    memory.mem.store::<1, u8>(idx, lane)?;
+    match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store_bytes(idx, lane.to_le_bytes(), Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store::<1, u8>(idx, lane)?,
+    }
     Ok(ControlFlow::Continue(()))
 }
+
 define_instruction!(
     super::v128_store16_lane,
     v128_store16_lane_mod,
@@ -1630,9 +1847,17 @@ pub unsafe fn v128_store16_lane(
 
     let lane = *to_lanes::<2, 8, u16>(data).get(lane_idx).unwrap_validated();
 
-    memory.mem.store::<2, u16>(idx, lane)?;
+    match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store_bytes(idx, lane.to_le_bytes(), Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store::<2, u16>(idx, lane)?,
+    }
     Ok(ControlFlow::Continue(()))
 }
+
 define_instruction!(
     super::v128_store32_lane,
     v128_store32_lane_mod,
@@ -1669,9 +1894,17 @@ pub unsafe fn v128_store32_lane(
 
     let lane = *to_lanes::<4, 4, u32>(data).get(lane_idx).unwrap_validated();
 
-    memory.mem.store::<4, u32>(idx, lane)?;
+    match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store_bytes(idx, lane.to_le_bytes(), Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store::<4, u32>(idx, lane)?,
+    }
     Ok(ControlFlow::Continue(()))
 }
+
 define_instruction!(
     super::v128_store64_lane,
     v128_store64_lane_mod,
@@ -1708,7 +1941,14 @@ pub unsafe fn v128_store64_lane(
 
     let lane = *to_lanes::<8, 2, u64>(data).get(lane_idx).unwrap_validated();
 
-    memory.mem.store::<8, u64>(idx, lane)?;
+    match memory {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .store_bytes(idx, lane.to_le_bytes(), Ordering::Unord)?
+        }
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.store::<8, u64>(idx, lane)?,
+    }
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1736,7 +1976,10 @@ pub unsafe fn memory_size(
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
-    let size = mem.len_pages();
+    let size = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.rd_len_in_pages(Ordering::SeqCst),
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.len_pages(),
+    };
     state
         .resumable
         .stack
@@ -1792,7 +2035,10 @@ pub unsafe fn memory_grow<T: Config>(
     // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
     // for now we execute it always according to the following match expr.
     // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the stack per spec
-    let grow_result = mem.grow::<T>(n);
+    let grow_result = match mem {
+        MemInst::Shared(shared_mem_inst) => shared_mem_inst.grow::<T>(n),
+        MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.grow::<T>(n),
+    };
     let pushed_value = match grow_result {
         Ok(previous_len_pages) => previous_len_pages,
         Err(RuntimeError::MemoryOverflowed | RuntimeError::MemoryGrowExceededLimit) => u32::MAX,
@@ -1865,8 +2111,18 @@ pub unsafe fn memory_fill<T: Config>(
         .try_into()
         .unwrap_validated();
 
-    mem.mem
-        .fill(d.cast_unsigned().into_usize(), val as u8, n.into_usize())?;
+    match mem {
+        MemInst::Shared(shared_mem_inst) => {
+            shared_mem_inst
+                .mem
+                .fill(d.cast_unsigned().into_usize(), val as u8, n.into_usize())?
+        }
+        MemInst::Unshared(unshared_mem_inst) => {
+            unshared_mem_inst
+                .mem
+                .fill(d.cast_unsigned().into_usize(), val as u8, n.into_usize())?
+        }
+    };
 
     Ok(ControlFlow::Continue(()))
 }
@@ -1943,11 +2199,23 @@ pub unsafe fn memory_copy<T: Config>(
     // just read from the current store. Therefore, it must also be valid in the current store.
     let src_dst_memory = unsafe { state.store_inner.memories.get_mut(src_dst_addr) };
 
-    src_dst_memory.mem.copy_within(
-        d.cast_unsigned().into_usize(),
-        s.cast_unsigned().into_usize(),
-        n.into_usize(),
-    )?;
+    match src_dst_memory {
+        MemInst::Shared(shared_mem) => {
+            let shared_mem = &*shared_mem;
+            shared_mem.mem.copy_within(
+                d.cast_unsigned().into_usize(),
+                s.cast_unsigned().into_usize(),
+                n.into_usize(),
+            )?;
+        }
+        MemInst::Unshared(unshared_mem) => {
+            unshared_mem.mem.copy_within(
+                d.cast_unsigned().into_usize(),
+                s.cast_unsigned().into_usize(),
+                n.into_usize(),
+            )?;
+        }
+    }
 
     Ok(ControlFlow::Continue(()))
 }

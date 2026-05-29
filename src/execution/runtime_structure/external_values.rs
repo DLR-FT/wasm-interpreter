@@ -1,5 +1,6 @@
 use crate::{
-    core::structure::types::ExternTypeRef, Config, FuncAddr, GlobalAddr, MemAddr, Store, TableAddr,
+    core::structure::types::ExternTypeRef, execution::runtime_structure::memory_instances::MemInst,
+    Config, FuncAddr, GlobalAddr, MemAddr, Store, TableAddr,
 };
 
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#external-values>
@@ -40,7 +41,11 @@ impl ExternVal {
                 // SAFETY: The caller ensures that self including the memory
                 // address in self is valid in the given store.
                 let memory = unsafe { store.inner.memories.get(*mem_addr) };
-                ExternTypeRef::Mem(memory.ty)
+                let ty = match memory {
+                    MemInst::Shared(shared_mem_inst) => shared_mem_inst.ty,
+                    MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.ty,
+                };
+                ExternTypeRef::Mem(ty)
             }
             ExternVal::Global(global_addr) => {
                 // SAFETY: The caller ensures that self including the global

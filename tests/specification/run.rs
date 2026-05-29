@@ -717,18 +717,22 @@ fn init_spectest(
     linker: &mut Linker,
     registry: &mut Registry<()>,
 ) -> Result<(), RuntimeError> {
-    let memory = store.mem_alloc(MemType {
-        limits: Limits {
-            min: 1,
-            max: Some(2),
-        },
-    })?;
+    let memory = store
+        .mem_alloc(MemType {
+            limits: Limits {
+                min: 1,
+                max: Some(2),
+                shared: false,
+            },
+        })
+        .expect("memory is unshared and does not overflow");
 
     let table = store.table_alloc(
         TableType {
             lim: Limits {
                 min: 10,
                 max: Some(20),
+                shared: false,
             },
             et: RefType::FuncRef,
         },

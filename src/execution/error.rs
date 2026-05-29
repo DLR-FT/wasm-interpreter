@@ -38,8 +38,13 @@ pub enum RuntimeError {
     /// A host function was called from a start function during module
     /// instantiation.
     UnsupportedHostCallDuringInstantiation,
-    /// A memory allocation or grow operation failed because its new size would have overflowed by
-    /// being over 2^16 - 1
+    /// An operation on a linear memory would have resulted in an overflow. Overflows can happen due
+    /// to multiple reasons:
+    ///
+    /// - A limit set via
+    ///   [`Config::MAX_NUMBER_OF_MEMORY_PAGES`](crate::Config::MAX_NUMBER_OF_MEMORY_PAGES).
+    /// - An upper limit of some memory type [`MemType`](crate::MemType)
+    /// - The general limit of 2^16 pages
     MemoryOverflowed,
     /// A memory grow operation failed because the new size would have exceeded
     /// its upper limit.
@@ -49,6 +54,10 @@ pub enum RuntimeError {
     /// A table grow operation failed because the new size would have exceeded
     /// its upper limit.
     TableGrowExceededLimit,
+    /// The allocation of a new shared linear memory failed. This happens either if no maximum limit
+    /// was specified, the size of the linear memory is not within its memory type's limits or the
+    /// linear memory was initialized with a different maximum size than what size was provided.
+    SharedLinearMemoryAllocationError,
 }
 
 impl fmt::Display for RuntimeError {
@@ -99,10 +108,11 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::UnexpectedHostCall => f.write_str(" The Store::invoke_simple method was used to execute some Wasm code but this resulted a host call, which is not supported in this mode"),
             RuntimeError::UnsupportedHostCallDuringInstantiation => f.write_str("A host function was called from a start function during module instantiation"),
-            RuntimeError::MemoryOverflowed => f.write_str("A memory allocation or grow operation failed with an overflow"),
+            RuntimeError::MemoryOverflowed => f.write_str("An operation on a linear memory would have resulted in an overflow"),
             RuntimeError::MemoryGrowExceededLimit => f.write_str("A memory grow operation failed due to exceeding its upper limit"),
             RuntimeError::TableGrowOverflowed => f.write_str("A table grow operation failed with an overflow"),
             RuntimeError::TableGrowExceededLimit => f.write_str("A table grow operation failed due to exceeding its upper limit"),
+            RuntimeError::SharedLinearMemoryAllocationError => f.write_str("The allocation of a new shared linear memory failed. This happens either if no maximum limit was specified or the size of the linear memory is not within its memory type's limits")
         }
     }
 }
@@ -131,6 +141,8 @@ pub enum TrapError {
     IndirectCallNullFuncRef,
     TableAccessOutOfBounds,
     ReachedUnreachable,
+    /// An atomic access was not properly aligned.
+    UnalignedAtomicAccess,
 }
 
 impl fmt::Display for TrapError {
@@ -154,6 +166,9 @@ impl fmt::Display for TrapError {
                 f.write_str("Indirect call: table index out of bounds")
             }
             TrapError::ReachedUnreachable => f.write_str("An unreachable statement was reached"),
+            TrapError::UnalignedAtomicAccess => {
+                f.write_str("An atomic access was not properly aligned")
+            }
         }
     }
 }

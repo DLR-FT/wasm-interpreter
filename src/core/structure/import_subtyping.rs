@@ -17,6 +17,7 @@ impl ImportSubTypeRelation for Limits {
                     Some(self_max) => self_max <= other_max,
                 },
             })
+            && self.shared == other.shared
     }
 }
 

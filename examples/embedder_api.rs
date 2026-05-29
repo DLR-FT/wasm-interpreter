@@ -21,6 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         limits: Limits {
             min: 1,    // minimum size is one page
             max: None, // no upper limit
+            shared: false,
         },
     })?;
     // SAFETY: The memory address just came from the same store.
@@ -35,7 +36,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Note: Multi-byte memory accesses are work-in-progress. For now, use `mem_data_mut` and
         // cast it to your type:
-        let mem_data: &mut [u8] = store.mem_data_mut(my_memory);
+        let mem_data: &mut [u8] = store
+            .mem_data_mut(my_memory)
+            .expect("my_memory is unshared");
         let four_bytes: [u8; 4] = mem_data[128..=131].try_into().expect("4 bytes");
         let as_integer: u32 = u32::from_le_bytes(four_bytes);
         assert_eq!(as_integer, u32::from_le_bytes([0x50, 0x51, 0x52, 0x53]));
@@ -48,7 +51,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         store.table_alloc(
             TableType {
                 et: RefType::FuncRef,
-                lim: Limits { min: 1, max: None },
+                lim: Limits {
+                    min: 1,
+                    max: None,
+                    shared: false,
+                },
             },
             Ref::Null(RefType::FuncRef),
         )

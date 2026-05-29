@@ -76,6 +76,7 @@ pub use crate::{
         runtime_structure::{
             addresses::*,
             external_values::ExternVal,
+            memory_instances::shared_linear_memory::{Ordering, SharedLinearMemory},
             store::{Hostcode, InstantiationOutcome, Store},
             values::{ExternAddr, Ref, Value, ValueTypeMismatchError, F32, F64},
         },
