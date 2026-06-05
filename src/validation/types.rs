@@ -64,6 +64,8 @@ impl BlockType {
 impl Limits {
     /// Decodes a limits object[^binary-format] and validates it[^validation].
     ///
+    /// Note: This includes the decoding logic for shared memory types from the threads proposal.
+    ///
     /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.7. Limits](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-limits).
     /// [^validation]: [WebAssembly Specification 2.0 - 3.2.1. Limits](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#valid-limits).
     pub fn decode_and_validate(
@@ -86,6 +88,15 @@ impl Limits {
                     min,
                     max: Some(max),
                     shared: false,
+                }
+            }
+            0x03 => {
+                let min = wasm.decode_var_u32()?;
+                let max = wasm.decode_var_u32()?;
+                Self {
+                    min,
+                    max: Some(max),
+                    shared: true,
                 }
             }
             other => return Err(DecodingError::MalformedLimitsDiscriminator(other).into()),
@@ -122,6 +133,10 @@ impl TableType {
 
         let et = RefType::decode(wasm)?;
         let lim = Limits::decode_and_validate(wasm, LIMITS_RANGE)?;
+
+        if lim.shared {
+            return Err(DecodingError::SharedTablesNotYetImplemented.into());
+        }
 
         Ok(Self { et, lim })
     }

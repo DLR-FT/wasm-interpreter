@@ -50,6 +50,11 @@ pub enum DecodingError {
     SectionSizeMismatch,
     /// A section with given type is out of order. All section types have a fixed order in which they must occur.
     SectionOutOfOrder(SectionTy),
+    /// A table type was marked as shared but shared tables are not yet
+    /// implemented.
+    SharedTablesNotYetImplemented,
+    /// A memory type is shared and thus requires a max limit but none was set.
+    SharedMemoryWithoutMaxLimit,
 }
 
 impl error::Error for DecodingError {}
@@ -78,6 +83,8 @@ impl fmt::Display for DecodingError {
             DecodingError::TooManyLocals => write!(f,"A function specifies too many locals, i.e. more than of 2^32-1"),
             DecodingError::SectionSizeMismatch => f.write_str("A section's contents were successfully decoded, but either too many or not enough bytes of the section's bytecode were consumed."),
             DecodingError::SectionOutOfOrder(ty) => write!(f, "A section of type `{ty:?}` is defined out of order"),
+            DecodingError::SharedTablesNotYetImplemented => f.write_str("A table type was marked as shared but shared tables are not yet implemented"),
+            DecodingError::SharedMemoryWithoutMaxLimit => f.write_str("A memory type is shared and thus requires a max limit but none was set"),
         }
     }
 }
