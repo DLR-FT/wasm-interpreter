@@ -254,7 +254,7 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
 /// module or module instance.
 ///
 /// All Wasm indices, including this one, follow a type-state pattern. Refer to
-/// [`indices`](crate::core::indices) for more information on this topic.
+/// [`indices`](crate::core::structure::modules::indices) for more information on this topic.
 ///
 /// See: WebAssembly Specification 2.0 - 2.5.1 - Indices
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

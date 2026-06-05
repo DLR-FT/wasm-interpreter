@@ -2,8 +2,7 @@ use core::ops::ControlFlow;
 
 use crate::{
     assert_validated::UnwrapValidatedExt,
-    core::indices::FuncIdx,
-    core::structure::instructions,
+    core::structure::{instructions, modules::indices::FuncIdx},
     execution::interpreter_loop::{define_instruction_fn, Args},
     value::Ref,
     RefType, Value,

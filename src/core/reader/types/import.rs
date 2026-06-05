@@ -1,6 +1,6 @@
 use crate::core::decoding::error::DecodingError;
-use crate::core::indices::{IdxVec, TypeIdx};
 use crate::core::reader::WasmReader;
+use crate::core::structure::modules::indices::{IdxVec, TypeIdx};
 use crate::core::structure::types::{ExternType, FuncType, GlobalType, MemType, TableType};
 use crate::{ValidationError, ValidationInfo};
 

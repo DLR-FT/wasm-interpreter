@@ -3,8 +3,10 @@ use core::{num::NonZeroU64, ops::ControlFlow};
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{ElemIdx, TableIdx},
-        structure::instructions,
+        structure::{
+            instructions,
+            modules::indices::{ElemIdx, TableIdx},
+        },
         utils::ToUsizeExt,
     },
     execution::interpreter_loop::{

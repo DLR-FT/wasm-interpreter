@@ -1,10 +1,10 @@
 use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
 
-use crate::core::indices::{FuncIdx, IdxVec, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::types::global::Global;
 use crate::core::reader::WasmReader;
+use crate::core::structure::modules::indices::{FuncIdx, IdxVec, TypeIdx};
 use crate::core::structure::types::GlobalType;
 use crate::read_constant_expression::read_constant_expression;
 use crate::validation_stack::ValidationStack;

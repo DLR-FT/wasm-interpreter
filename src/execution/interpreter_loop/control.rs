@@ -4,8 +4,11 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
         decoding::error::DecodingError,
-        indices::{read_label_idx_unchecked, FuncIdx, TableIdx, TypeIdx},
-        structure::{instructions, types::BlockType},
+        structure::{
+            instructions,
+            modules::indices::{read_label_idx_unchecked, FuncIdx, TableIdx, TypeIdx},
+            types::BlockType,
+        },
         utils::ToUsizeExt,
     },
     execution::interpreter_loop::{

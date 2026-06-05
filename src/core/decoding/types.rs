@@ -1,10 +1,12 @@
 use crate::core::{
     decoding::error::DecodingError,
-    indices::TypeIdx,
     reader::WasmReader,
-    structure::types::{
-        BlockType, FuncType, GlobalType, Limits, MemType, NumType, RefType, ResultType, TableType,
-        ValType, VecType,
+    structure::{
+        modules::indices::TypeIdx,
+        types::{
+            BlockType, FuncType, GlobalType, Limits, MemType, NumType, RefType, ResultType,
+            TableType, ValType, VecType,
+        },
     },
 };
 
