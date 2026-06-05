@@ -1,32 +1,12 @@
 use crate::{
-    core::{
-        decoding::reader::WasmReader,
-        structure::modules::{
-            globals::Global,
-            indices::{FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
-        },
-    },
-    DecodingError, ExternType, MemType, TableType, ValidationError, ValidationInfo,
+    core::structure::modules::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx},
+    ExternType, ValidationInfo,
 };
 
 #[derive(Debug, Clone)]
 pub struct Export<'wasm> {
     pub name: &'wasm str,
     pub desc: ExportDesc,
-}
-
-impl<'wasm> Export<'wasm> {
-    pub fn read_and_validate(
-        wasm: &mut WasmReader<'wasm>,
-        c_funcs: &IdxVec<FuncIdx, TypeIdx>,
-        c_tables: &IdxVec<TableIdx, TableType>,
-        c_mems: &IdxVec<MemIdx, MemType>,
-        c_globals: &IdxVec<GlobalIdx, Global>,
-    ) -> Result<Self, ValidationError> {
-        let name = wasm.read_name()?;
-        let desc = ExportDesc::read_and_validate(wasm, c_funcs, c_tables, c_mems, c_globals)?;
-        Ok(Export { name, desc })
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -92,26 +72,5 @@ impl ExportDesc {
                 ExternType::Global(global.ty)
             }
         }
-    }
-}
-
-impl ExportDesc {
-    pub fn read_and_validate(
-        wasm: &mut WasmReader,
-        c_functions: &IdxVec<FuncIdx, TypeIdx>,
-        c_tables: &IdxVec<TableIdx, TableType>,
-        c_mems: &IdxVec<MemIdx, MemType>,
-        c_globals: &IdxVec<GlobalIdx, Global>,
-    ) -> Result<Self, ValidationError> {
-        let desc_id = wasm.read_u8()?;
-
-        let desc = match desc_id {
-            0x00 => ExportDesc::Func(FuncIdx::read_and_validate(wasm, c_functions)?),
-            0x01 => ExportDesc::Table(TableIdx::read_and_validate(wasm, c_tables)?),
-            0x02 => ExportDesc::Mem(MemIdx::read_and_validate(wasm, c_mems)?),
-            0x03 => ExportDesc::Global(GlobalIdx::read_and_validate(wasm, c_globals)?),
-            other => return Err(DecodingError::MalformedExportDescDiscriminator(other).into()),
-        };
-        Ok(desc)
     }
 }
