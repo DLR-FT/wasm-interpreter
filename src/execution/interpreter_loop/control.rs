@@ -3,10 +3,10 @@ use core::ops::ControlFlow;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        decoding::error::DecodingError,
+        decoding::{error::DecodingError, modules::indices::read_label_idx_unchecked},
         structure::{
             instructions,
-            modules::indices::{read_label_idx_unchecked, FuncIdx, TableIdx, TypeIdx},
+            modules::indices::{FuncIdx, TableIdx, TypeIdx},
             types::BlockType,
         },
         utils::ToUsizeExt,

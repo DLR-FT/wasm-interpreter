@@ -34,10 +34,7 @@ use core::marker::PhantomData;
 
 use alloc::{boxed::Box, vec::Vec};
 
-use crate::core::{
-    decoding::{error::DecodingError, reader::WasmReader},
-    utils::ToUsizeExt,
-};
+use crate::core::utils::ToUsizeExt;
 
 /// A trait for all index types.
 ///
@@ -281,18 +278,6 @@ impl TypeIdx {
     pub fn new(index: u32) -> Self {
         Self(index)
     }
-
-    /// Reads a type index from Wasm code without validating it. Using the
-    /// returned type requires some other form of validation to be done.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that there is a valid type index in the
-    /// [`WasmReader`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
-        Self::new(index)
-    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -311,20 +296,6 @@ impl Idx for FuncIdx {
 
     fn into_inner(self) -> u32 {
         self.0
-    }
-}
-
-impl FuncIdx {
-    /// Reads a function index from Wasm code without validating it.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that there is a valid function index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
-    /// through [`Self::read_and_validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
-        Self::new(index)
     }
 }
 
@@ -347,20 +318,6 @@ impl Idx for TableIdx {
     }
 }
 
-impl TableIdx {
-    /// Reads a table index from Wasm code without validating it.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that there is a valid table index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`ExtendedIdxVec`]
-    /// through [`Self::read_and_validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
-        Self::new(index)
-    }
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MemIdx(u32);
 
@@ -377,21 +334,6 @@ impl Idx for MemIdx {
 
     fn into_inner(self) -> u32 {
         self.0
-    }
-}
-
-impl MemIdx {
-    /// Reads a memory index from Wasm code without validating it.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that there is a valid memory index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`ExtendedIdxVec`]
-    /// through [`Self::read_and_validate`].
-    #[allow(unused)] // reason = "unused until multiple memories proposal is implemented"
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
-        Self::new(index)
     }
 }
 
@@ -414,20 +356,6 @@ impl Idx for GlobalIdx {
     }
 }
 
-impl GlobalIdx {
-    /// Reads a global index from Wasm code without validating it.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that there is a valid global index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
-    /// through [`Self::read_and_validate`] or [`Self::validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
-        Self::new(index)
-    }
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ElemIdx(u32);
 
@@ -444,20 +372,6 @@ impl Idx for ElemIdx {
 
     fn into_inner(self) -> u32 {
         self.0
-    }
-}
-
-impl ElemIdx {
-    /// Reads an element index from Wasm code without validating it.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that there is a valid element index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
-    /// through [`Self::read_and_validate`] or [`Self::validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
-        Self::new(index)
     }
 }
 
@@ -480,20 +394,6 @@ impl Idx for DataIdx {
     }
 }
 
-impl DataIdx {
-    /// Reads a data index from Wasm code without validating it.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that there is a valid data index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
-    /// through [`Self::read_and_validate`] or [`Self::validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
-        Self::new(index)
-    }
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LocalIdx(pub(crate) u32);
 
@@ -507,31 +407,4 @@ impl LocalIdx {
     pub fn into_inner(self) -> u32 {
         self.0
     }
-
-    /// Reads a local index from Wasm code without validating it.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that there is a valid local index in the
-    /// [`WasmReader`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
-        Self(index)
-    }
-}
-
-/// Reads a label index from Wasm code without validating it.
-pub fn read_label_idx(wasm: &mut WasmReader) -> Result<u32, DecodingError> {
-    wasm.read_var_u32()
-}
-
-/// Reads a label index from Wasm code without validating it.
-///
-/// # Safety
-///
-/// The caller must ensure that there is a valid label index in the
-/// [`WasmReader`].
-pub unsafe fn read_label_idx_unchecked(wasm: &mut WasmReader) -> u32 {
-    // TODO use `unwrap_unchecked` instead
-    wasm.read_var_u32().unwrap()
 }

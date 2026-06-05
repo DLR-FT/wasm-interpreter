@@ -1,5 +1,6 @@
 use crate::core::decoding::{error::DecodingError, reader::WasmReader};
 
+pub mod indices;
 pub mod section_header;
 
 /// Parse an elemkind: <https://webassembly.github.io/spec/core/binary/modules.html#element-section>
