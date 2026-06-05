@@ -24,7 +24,7 @@ use core::{cmp::Ordering, marker::PhantomData};
 use alloc::vec::Vec;
 
 /// A trait for all address types.
-pub trait Addr: Copy + core::fmt::Debug + core::fmt::Display + Eq {
+pub(crate) trait Addr: Copy + core::fmt::Debug + core::fmt::Display + Eq {
     fn new(inner: usize) -> Self;
 
     fn into_inner(self) -> usize;
@@ -72,7 +72,7 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     /// Inserts a new instance into the current [`Store`](crate::Store) and returns its address.
     ///
     /// This method should always be used to insert new instances, as it is the only safe way of creating addrs.
-    pub(crate) fn insert(&mut self, instance: Inst) -> A {
+    pub fn insert(&mut self, instance: Inst) -> A {
         let new_addr = self.inner.len();
         self.inner.push(instance);
         A::new(new_addr)
@@ -86,7 +86,7 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     ///
     /// The caller must ensure that both given addresses are valid in this
     /// vector.
-    pub(crate) unsafe fn get_two_mut(
+    pub unsafe fn get_two_mut(
         &mut self,
         addr_one: A,
         addr_two: A,

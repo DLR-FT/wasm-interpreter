@@ -1,5 +1,4 @@
 use crate::{
-    assert_validated::UnwrapValidatedExt,
     core::{
         structure::{
             instructions,
@@ -8,12 +7,14 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    execution::interpreter_loop::{
-        calculate_mem_address, data_drop, define_instruction_fn, from_lanes, memory_init, to_lanes,
-        Args, InterpreterLoopOutcome,
+    execution::{
+        assert_validated::UnwrapValidatedExt,
+        interpreter_loop::{
+            calculate_mem_address, data_drop, define_instruction_fn, from_lanes, memory_init,
+            to_lanes, Args, InterpreterLoopOutcome,
+        },
     },
-    value::{F32, F64},
-    Value,
+    Value, F32, F64,
 };
 use core::{array, num::NonZeroU64, ops::ControlFlow};
 

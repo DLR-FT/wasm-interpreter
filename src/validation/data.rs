@@ -14,8 +14,9 @@ use crate::{
             types::GlobalType,
         },
     },
-    read_constant_expression::read_constant_expression,
-    validation_stack::ValidationStack,
+    validation::{
+        read_constant_expression::read_constant_expression, validation_stack::ValidationStack,
+    },
     MemType, ValidationError,
 };
 

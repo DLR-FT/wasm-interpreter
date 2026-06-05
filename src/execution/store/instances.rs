@@ -12,9 +12,8 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    linear_memory::LinearMemory,
-    value::Ref,
-    GlobalType, Hostcode, Limits, RefType, RuntimeError, TrapError, ValType, Value,
+    execution::store::linear_memory::LinearMemory,
+    GlobalType, Hostcode, Limits, Ref, RefType, RuntimeError, TrapError, ValType, Value,
 };
 
 use super::{

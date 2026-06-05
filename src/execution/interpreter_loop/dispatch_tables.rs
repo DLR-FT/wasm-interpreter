@@ -1,9 +1,9 @@
 use crate::{
-    config::Config,
     execution::interpreter_loop::{
         control, fc_extensions, fd_extensions, memory, numeric, parametric, reference, table,
         unset, variable, vector, InstructionHandlerFn,
     },
+    Config,
 };
 
 pub(crate) trait HasBaseDispatchTable {

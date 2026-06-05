@@ -2,15 +2,13 @@ use core::mem::MaybeUninit;
 
 use alloc::vec::Vec;
 
-use crate::addrs::FuncAddr;
-use crate::config::Config;
 use crate::core::fixed_capacity_vec::FixedCapacityVec;
 use crate::core::structure::modules::indices::LocalIdx;
 use crate::core::structure::types::{FuncType, ValType};
 use crate::core::utils::ToUsizeExt;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
-use crate::RuntimeError;
+use crate::{Config, FuncAddr, RuntimeError};
 
 /// The stack at runtime containing
 /// 1. Values

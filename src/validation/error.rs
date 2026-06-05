@@ -1,6 +1,6 @@
 use crate::core::decoding::{error::DecodingError, modules::section_header::SectionTy};
 use crate::core::structure::modules::indices::FuncIdx;
-use crate::validation_stack::ValidationStackEntry;
+use crate::validation::validation_stack::ValidationStackEntry;
 use crate::RefType;
 use core::fmt::{Display, Formatter};
 

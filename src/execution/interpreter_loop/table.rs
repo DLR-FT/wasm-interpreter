@@ -1,7 +1,6 @@
 use core::{num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
-    assert_validated::UnwrapValidatedExt,
     core::{
         structure::{
             instructions,
@@ -9,11 +8,13 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    execution::interpreter_loop::{
-        define_instruction_fn, elem_drop, table_init, Args, InterpreterLoopOutcome,
+    execution::{
+        assert_validated::UnwrapValidatedExt,
+        interpreter_loop::{
+            define_instruction_fn, elem_drop, table_init, Args, InterpreterLoopOutcome,
+        },
     },
-    value::Ref,
-    TrapError, Value,
+    Ref, TrapError, Value,
 };
 
 define_instruction_fn! {

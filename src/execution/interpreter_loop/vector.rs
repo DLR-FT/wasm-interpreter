@@ -4,11 +4,12 @@ use core::{
 };
 
 use crate::{
-    assert_validated::UnwrapValidatedExt,
     core::structure::instructions,
-    execution::interpreter_loop::{define_instruction_fn, from_lanes, to_lanes, Args},
-    value::{F32, F64},
-    Value,
+    execution::{
+        assert_validated::UnwrapValidatedExt,
+        interpreter_loop::{define_instruction_fn, from_lanes, to_lanes, Args},
+    },
+    Value, F32, F64,
 };
 
 // v128.const
