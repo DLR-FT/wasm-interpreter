@@ -11,8 +11,9 @@ use crate::{
             indices::{FuncIdx, IdxVec, TableIdx, TypeIdx},
         },
     },
-    read_constant_expression::read_constant_expression,
-    validation_stack::ValidationStack,
+    validation::{
+        read_constant_expression::read_constant_expression, validation_stack::ValidationStack,
+    },
     GlobalType, NumType, RefType, TableType, ValType, ValidationError,
 };
 

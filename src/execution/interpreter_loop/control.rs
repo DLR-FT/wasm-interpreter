@@ -1,7 +1,6 @@
 use core::ops::ControlFlow;
 
 use crate::{
-    assert_validated::UnwrapValidatedExt,
     core::{
         decoding::{error::DecodingError, modules::indices::read_label_idx_unchecked},
         structure::{
@@ -11,13 +10,14 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    execution::interpreter_loop::{
-        define_instruction_fn, do_sidetable_control_transfer, Args, InterpreterLoopOutcome,
+    execution::{
+        assert_validated::UnwrapValidatedExt,
+        interpreter_loop::{
+            define_instruction_fn, do_sidetable_control_transfer, Args, InterpreterLoopOutcome,
+        },
+        store::instances::FuncInst,
     },
-    instances::FuncInst,
-    unreachable_validated,
-    value::Ref,
-    TrapError,
+    unreachable_validated, Ref, TrapError,
 };
 
 define_instruction_fn! {nop, fuel_check = flat(instructions::NOP), |_args| Ok(

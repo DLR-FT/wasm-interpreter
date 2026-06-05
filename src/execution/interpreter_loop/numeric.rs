@@ -1,11 +1,12 @@
 use core::ops::ControlFlow;
 
 use crate::{
-    assert_validated::UnwrapValidatedExt,
     core::structure::instructions,
-    execution::interpreter_loop::{define_instruction_fn, Args},
-    value::{self, F32, F64},
-    TrapError,
+    execution::{
+        assert_validated::UnwrapValidatedExt,
+        interpreter_loop::{define_instruction_fn, Args},
+    },
+    TrapError, F32, F64,
 };
 
 // t.const
@@ -146,8 +147,8 @@ define_instruction_fn! {
     f32_abs,
     fuel_check = flat(instructions::F32_ABS),
     |Args { resumable, .. }| {
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1.abs();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1.abs();
 
         trace!("Instruction: f32.abs [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -159,8 +160,8 @@ define_instruction_fn! {
     f32_neg,
     fuel_check = flat(instructions::F32_NEG),
     |Args { resumable, .. }| {
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1.neg();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1.neg();
 
         trace!("Instruction: f32.neg [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -172,8 +173,8 @@ define_instruction_fn! {
     f32_ceil,
     fuel_check = flat(instructions::F32_CEIL),
     |Args { resumable, .. }| {
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1.ceil();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1.ceil();
 
         trace!("Instruction: f32.ceil [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -185,8 +186,8 @@ define_instruction_fn! {
     f32_floor,
     fuel_check = flat(instructions::F32_FLOOR),
     |Args { resumable, .. }| {
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1.floor();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1.floor();
 
         trace!("Instruction: f32.floor [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -198,8 +199,8 @@ define_instruction_fn! {
     f32_trunc,
     fuel_check = flat(instructions::F32_TRUNC),
     |Args { resumable, .. }| {
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1.trunc();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1.trunc();
 
         trace!("Instruction: f32.trunc [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -211,8 +212,8 @@ define_instruction_fn! {
     f32_nearest,
     fuel_check = flat(instructions::F32_NEAREST),
     |Args { resumable, .. }| {
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1.nearest();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1.nearest();
 
         trace!("Instruction: f32.nearest [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -224,8 +225,8 @@ define_instruction_fn! {
     f32_sqrt,
     fuel_check = flat(instructions::F32_SQRT),
     |Args { resumable, .. }| {
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1.sqrt();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1.sqrt();
 
         trace!("Instruction: f32.sqrt [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -238,8 +239,8 @@ define_instruction_fn! {
     f64_abs,
     fuel_check = flat(instructions::F64_ABS),
     |Args { resumable, .. }| {
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1.abs();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1.abs();
 
         trace!("Instruction: f64.abs [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -251,8 +252,8 @@ define_instruction_fn! {
     f64_neg,
     fuel_check = flat(instructions::F64_NEG),
     |Args { resumable, .. }| {
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1.neg();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1.neg();
 
         trace!("Instruction: f64.neg [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -264,8 +265,8 @@ define_instruction_fn! {
     f64_ceil,
     fuel_check = flat(instructions::F64_CEIL),
     |Args { resumable, .. }| {
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1.ceil();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1.ceil();
 
         trace!("Instruction: f64.ceil [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -277,8 +278,8 @@ define_instruction_fn! {
     f64_floor,
     fuel_check = flat(instructions::F64_FLOOR),
     |Args { resumable, .. }| {
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1.floor();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1.floor();
 
         trace!("Instruction: f64.floor [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -290,8 +291,8 @@ define_instruction_fn! {
     f64_trunc,
     fuel_check = flat(instructions::F64_TRUNC),
     |Args { resumable, .. }| {
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1.trunc();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1.trunc();
 
         trace!("Instruction: f64.trunc [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -303,8 +304,8 @@ define_instruction_fn! {
     f64_nearest,
     fuel_check = flat(instructions::F64_NEAREST),
     |Args { resumable, .. }| {
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1.nearest();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1.nearest();
 
         trace!("Instruction: f64.nearest [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -316,8 +317,8 @@ define_instruction_fn! {
     f64_sqrt,
     fuel_check = flat(instructions::F64_SQRT),
     |Args { resumable, .. }| {
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1.sqrt();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1.sqrt();
 
         trace!("Instruction: f64.sqrt [{v1}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -825,9 +826,9 @@ define_instruction_fn! {
     f32_add,
     fuel_check = flat(instructions::F32_ADD),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1 + v2;
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1 + v2;
 
         trace!("Instruction: f32.add [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -839,9 +840,9 @@ define_instruction_fn! {
     f32_sub,
     fuel_check = flat(instructions::F32_SUB),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1 - v2;
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1 - v2;
 
         trace!("Instruction: f32.sub [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -853,9 +854,9 @@ define_instruction_fn! {
     f32_mul,
     fuel_check = flat(instructions::F32_MUL),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1 * v2;
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1 * v2;
 
         trace!("Instruction: f32.mul [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -867,9 +868,9 @@ define_instruction_fn! {
     f32_div,
     fuel_check = flat(instructions::F32_DIV),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1 / v2;
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1 / v2;
 
         trace!("Instruction: f32.div [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -881,9 +882,9 @@ define_instruction_fn! {
     f32_min,
     fuel_check = flat(instructions::F32_MIN),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1.min(v2);
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1.min(v2);
 
         trace!("Instruction: f32.min [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -895,9 +896,9 @@ define_instruction_fn! {
     f32_max,
     fuel_check = flat(instructions::F32_MAX),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1.max(v2);
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1.max(v2);
 
         trace!("Instruction: f32.max [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -909,9 +910,9 @@ define_instruction_fn! {
     f32_copysign,
     fuel_check = flat(instructions::F32_COPYSIGN),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v1.copysign(v2);
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v1.copysign(v2);
 
         trace!("Instruction: f32.copysign [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -924,9 +925,9 @@ define_instruction_fn! {
     f64_add,
     fuel_check = flat(instructions::F64_ADD),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1 + v2;
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1 + v2;
 
         trace!("Instruction: f64.add [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -938,9 +939,9 @@ define_instruction_fn! {
     f64_sub,
     fuel_check = flat(instructions::F64_SUB),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1 - v2;
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1 - v2;
 
         trace!("Instruction: f64.sub [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -952,9 +953,9 @@ define_instruction_fn! {
     f64_mul,
     fuel_check = flat(instructions::F64_MUL),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1 * v2;
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1 * v2;
 
         trace!("Instruction: f64.mul [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -966,9 +967,9 @@ define_instruction_fn! {
     f64_div,
     fuel_check = flat(instructions::F64_DIV),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1 / v2;
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1 / v2;
 
         trace!("Instruction: f64.div [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -980,9 +981,9 @@ define_instruction_fn! {
     f64_min,
     fuel_check = flat(instructions::F64_MIN),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1.min(v2);
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1.min(v2);
 
         trace!("Instruction: f64.min [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -994,9 +995,9 @@ define_instruction_fn! {
     f64_max,
     fuel_check = flat(instructions::F64_MAX),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1.max(v2);
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1.max(v2);
 
         trace!("Instruction: f64.max [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -1008,9 +1009,9 @@ define_instruction_fn! {
     f64_copysign,
     fuel_check = flat(instructions::F64_COPYSIGN),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v1.copysign(v2);
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v1.copysign(v2);
 
         trace!("Instruction: f64.copysign [{v1} {v2}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -1355,8 +1356,8 @@ define_instruction_fn! {
     f32_eq,
     fuel_check = flat(instructions::F32_EQ),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 == v2 { 1 } else { 0 };
 
@@ -1370,8 +1371,8 @@ define_instruction_fn! {
     f32_ne,
     fuel_check = flat(instructions::F32_NE),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 != v2 { 1 } else { 0 };
 
@@ -1385,8 +1386,8 @@ define_instruction_fn! {
     f32_lt,
     fuel_check = flat(instructions::F32_LT),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 < v2 { 1 } else { 0 };
 
@@ -1400,8 +1401,8 @@ define_instruction_fn! {
     f32_gt,
     fuel_check = flat(instructions::F32_GT),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 > v2 { 1 } else { 0 };
 
@@ -1415,8 +1416,8 @@ define_instruction_fn! {
     f32_le,
     fuel_check = flat(instructions::F32_LE),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 <= v2 { 1 } else { 0 };
 
@@ -1430,8 +1431,8 @@ define_instruction_fn! {
     f32_ge,
     fuel_check = flat(instructions::F32_GE),
     |Args { resumable, .. }| {
-        let v2: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 >= v2 { 1 } else { 0 };
 
@@ -1446,8 +1447,8 @@ define_instruction_fn! {
     f64_eq,
     fuel_check = flat(instructions::F64_EQ),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 == v2 { 1 } else { 0 };
 
@@ -1461,8 +1462,8 @@ define_instruction_fn! {
     f64_ne,
     fuel_check = flat(instructions::F64_NE),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 != v2 { 1 } else { 0 };
 
@@ -1476,8 +1477,8 @@ define_instruction_fn! {
     f64_lt,
     fuel_check = flat(instructions::F64_LT),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 < v2 { 1 } else { 0 };
 
@@ -1491,8 +1492,8 @@ define_instruction_fn! {
     f64_gt,
     fuel_check = flat(instructions::F64_GT),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 > v2 { 1 } else { 0 };
 
@@ -1506,8 +1507,8 @@ define_instruction_fn! {
     f64_le,
     fuel_check = flat(instructions::F64_LE),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 <= v2 { 1 } else { 0 };
 
@@ -1521,8 +1522,8 @@ define_instruction_fn! {
     f64_ge,
     fuel_check = flat(instructions::F64_GE),
     |Args { resumable, .. }| {
-        let v2: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v2: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
 
         let res = if v1 >= v2 { 1 } else { 0 };
 
@@ -1550,14 +1551,14 @@ define_instruction_fn! {
     i32_trunc_f32_s,
     fuel_check = flat(instructions::I32_TRUNC_F32_S),
     |Args { resumable, .. }| {
-        let v: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
         if v.is_infinity() {
             return Err(TrapError::UnrepresentableResult.into());
         }
         if v.is_nan() {
             return Err(TrapError::BadConversionToInteger.into());
         }
-        if v >= value::F32(2147483648.0) || v <= value::F32(-2147483904.0) {
+        if v >= F32(2147483648.0) || v <= F32(-2147483904.0) {
             return Err(TrapError::UnrepresentableResult.into());
         }
 
@@ -1573,14 +1574,14 @@ define_instruction_fn! {
     i32_trunc_f32_u,
     fuel_check = flat(instructions::I32_TRUNC_F32_U),
     |Args { resumable, .. }| {
-        let v: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
         if v.is_infinity() {
             return Err(TrapError::UnrepresentableResult.into());
         }
         if v.is_nan() {
             return Err(TrapError::BadConversionToInteger.into());
         }
-        if v >= value::F32(4294967296.0) || v <= value::F32(-1.0) {
+        if v >= F32(4294967296.0) || v <= F32(-1.0) {
             return Err(TrapError::UnrepresentableResult.into());
         }
 
@@ -1596,14 +1597,14 @@ define_instruction_fn! {
     i32_trunc_f64_s,
     fuel_check = flat(instructions::I32_TRUNC_F64_S),
     |Args { resumable, .. }| {
-        let v: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
         if v.is_infinity() {
             return Err(TrapError::UnrepresentableResult.into());
         }
         if v.is_nan() {
             return Err(TrapError::BadConversionToInteger.into());
         }
-        if v >= value::F64(2147483648.0) || v <= value::F64(-2147483649.0) {
+        if v >= F64(2147483648.0) || v <= F64(-2147483649.0) {
             return Err(TrapError::UnrepresentableResult.into());
         }
 
@@ -1619,14 +1620,14 @@ define_instruction_fn! {
     i32_trunc_f64_u,
     fuel_check = flat(instructions::I32_TRUNC_F64_U),
     |Args { resumable, .. }| {
-        let v: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
         if v.is_infinity() {
             return Err(TrapError::UnrepresentableResult.into());
         }
         if v.is_nan() {
             return Err(TrapError::BadConversionToInteger.into());
         }
-        if v >= value::F64(4294967296.0) || v <= value::F64(-1.0) {
+        if v >= F64(4294967296.0) || v <= F64(-1.0) {
             return Err(TrapError::UnrepresentableResult.into());
         }
 
@@ -1642,7 +1643,7 @@ define_instruction_fn! {
     i32_reinterpret_f32,
     fuel_check = flat(instructions::I32_REINTERPRET_F32),
     |Args { resumable, .. }| {
-        let v: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let res: i32 = v.reinterpret_as_i32();
 
         trace!("Instruction: i32.reinterpret_f32 [{v:.7}] -> [{res}]");
@@ -1699,7 +1700,7 @@ define_instruction_fn! {
     i32_trunc_sat_f32_s,
     fuel_check = flat_fc(instructions::fc_extensions::I32_TRUNC_SAT_F32_S),
     |Args { resumable, .. }| {
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let res = {
             if v1.is_nan() {
                 0
@@ -1722,7 +1723,7 @@ define_instruction_fn! {
     i32_trunc_sat_f32_u,
     fuel_check = flat_fc(instructions::fc_extensions::I32_TRUNC_SAT_F32_U),
     |Args { resumable, .. }| {
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let res = {
             if v1.is_nan() || v1.is_negative_infinity() {
                 0
@@ -1743,7 +1744,7 @@ define_instruction_fn! {
     i32_trunc_sat_f64_s,
     fuel_check = flat_fc(instructions::fc_extensions::I32_TRUNC_SAT_F64_S),
     |Args { resumable, .. }| {
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
         let res = {
             if v1.is_nan() {
                 0
@@ -1766,7 +1767,7 @@ define_instruction_fn! {
     i32_trunc_sat_f64_u,
     fuel_check = flat_fc(instructions::fc_extensions::I32_TRUNC_SAT_F64_U),
     |Args { resumable, .. }| {
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
         let res = {
             if v1.is_nan() || v1.is_negative_infinity() {
                 0
@@ -1816,14 +1817,14 @@ define_instruction_fn! {
     i64_trunc_f32_s,
     fuel_check = flat(instructions::I64_TRUNC_F32_S),
     |Args { resumable, .. }| {
-        let v: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
         if v.is_infinity() {
             return Err(TrapError::UnrepresentableResult.into());
         }
         if v.is_nan() {
             return Err(TrapError::BadConversionToInteger.into());
         }
-        if v >= value::F32(9223372036854775808.0) || v <= value::F32(-9223373136366403584.0) {
+        if v >= F32(9223372036854775808.0) || v <= F32(-9223373136366403584.0) {
             return Err(TrapError::UnrepresentableResult.into());
         }
 
@@ -1839,14 +1840,14 @@ define_instruction_fn! {
     i64_trunc_f32_u,
     fuel_check = flat(instructions::I64_TRUNC_F32_U),
     |Args { resumable, .. }| {
-        let v: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
         if v.is_infinity() {
             return Err(TrapError::UnrepresentableResult.into());
         }
         if v.is_nan() {
             return Err(TrapError::BadConversionToInteger.into());
         }
-        if v >= value::F32(18446744073709551616.0) || v <= value::F32(-1.0) {
+        if v >= F32(18446744073709551616.0) || v <= F32(-1.0) {
             return Err(TrapError::UnrepresentableResult.into());
         }
 
@@ -1862,14 +1863,14 @@ define_instruction_fn! {
     i64_trunc_f64_s,
     fuel_check = flat(instructions::I64_TRUNC_F64_S),
     |Args { resumable, .. }| {
-        let v: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
         if v.is_infinity() {
             return Err(TrapError::UnrepresentableResult.into());
         }
         if v.is_nan() {
             return Err(TrapError::BadConversionToInteger.into());
         }
-        if v >= value::F64(9223372036854775808.0) || v <= value::F64(-9223372036854777856.0) {
+        if v >= F64(9223372036854775808.0) || v <= F64(-9223372036854777856.0) {
             return Err(TrapError::UnrepresentableResult.into());
         }
 
@@ -1885,14 +1886,14 @@ define_instruction_fn! {
     i64_trunc_f64_u,
     fuel_check = flat(instructions::I64_TRUNC_F64_U),
     |Args { resumable, .. }| {
-        let v: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
         if v.is_infinity() {
             return Err(TrapError::UnrepresentableResult.into());
         }
         if v.is_nan() {
             return Err(TrapError::BadConversionToInteger.into());
         }
-        if v >= value::F64(18446744073709551616.0) || v <= value::F64(-1.0) {
+        if v >= F64(18446744073709551616.0) || v <= F64(-1.0) {
             return Err(TrapError::UnrepresentableResult.into());
         }
 
@@ -1908,7 +1909,7 @@ define_instruction_fn! {
     i64_reinterpret_f64,
     fuel_check = flat(instructions::I64_REINTERPRET_F64),
     |Args { resumable, .. }| {
-        let v: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
         let res: i64 = v.reinterpret_as_i64();
 
         trace!("Instruction: i64.reinterpret_f64 [{v:.17}] -> [{res}]");
@@ -1993,7 +1994,7 @@ define_instruction_fn! {
     i64_trunc_sat_f32_s,
     fuel_check = flat_fc(instructions::fc_extensions::I64_TRUNC_SAT_F32_S),
     |Args { resumable, .. }| {
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let res = {
             if v1.is_nan() {
                 0
@@ -2016,7 +2017,7 @@ define_instruction_fn! {
     i64_trunc_sat_f32_u,
     fuel_check = flat_fc(instructions::fc_extensions::I64_TRUNC_SAT_F32_U),
     |Args { resumable, .. }| {
-        let v1: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let res = {
             if v1.is_nan() || v1.is_negative_infinity() {
                 0
@@ -2037,7 +2038,7 @@ define_instruction_fn! {
     i64_trunc_sat_f64_s,
     fuel_check = flat_fc(instructions::fc_extensions::I64_TRUNC_SAT_F64_S),
     |Args { resumable, .. }| {
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
         let res = {
             if v1.is_nan() {
                 0
@@ -2060,7 +2061,7 @@ define_instruction_fn! {
     i64_trunc_sat_f64_u,
     fuel_check = flat_fc(instructions::fc_extensions::I64_TRUNC_SAT_F64_U),
     |Args { resumable, .. }| {
-        let v1: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
         let res = {
             if v1.is_nan() || v1.is_negative_infinity() {
                 0
@@ -2083,7 +2084,7 @@ define_instruction_fn! {
     fuel_check = flat(instructions::F32_CONVERT_I32_S),
     |Args { resumable, .. }| {
         let v: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = value::F32(v as f32);
+        let res: F32 = F32(v as f32);
 
         trace!("Instruction: f32.convert_i32_s [{v}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -2096,7 +2097,7 @@ define_instruction_fn! {
     fuel_check = flat(instructions::F32_CONVERT_I32_U),
     |Args { resumable, .. }| {
         let v: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = value::F32(v as u32 as f32);
+        let res: F32 = F32(v as u32 as f32);
 
         trace!("Instruction: f32.convert_i32_u [{v}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -2109,7 +2110,7 @@ define_instruction_fn! {
     fuel_check = flat(instructions::F32_CONVERT_I64_S),
     |Args { resumable, .. }| {
         let v: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = value::F32(v as f32);
+        let res: F32 = F32(v as f32);
 
         trace!("Instruction: f32.convert_i64_s [{v}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -2122,7 +2123,7 @@ define_instruction_fn! {
     fuel_check = flat(instructions::F32_CONVERT_I64_U),
     |Args { resumable, .. }| {
         let v: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = value::F32(v as u64 as f32);
+        let res: F32 = F32(v as u64 as f32);
 
         trace!("Instruction: f32.convert_i64_u [{v}] -> [{res}]");
         resumable.stack.push_value(res.into())?;
@@ -2134,8 +2135,8 @@ define_instruction_fn! {
     f32_demote_f64,
     fuel_check = flat(instructions::F32_DEMOTE_F64),
     |Args { resumable, .. }| {
-        let v: value::F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = v.as_f32();
+        let v: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F32 = v.as_f32();
 
         trace!("Instruction: f32.demote_f64 [{v:.17}] -> [{res:.7}]");
         resumable.stack.push_value(res.into())?;
@@ -2148,7 +2149,7 @@ define_instruction_fn! {
     fuel_check = flat(instructions::F32_REINTERPRET_I32),
     |Args { resumable, .. }| {
         let v1: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F32 = value::F32::from_bits(v1 as u32);
+        let res: F32 = F32::from_bits(v1 as u32);
 
         trace!("Instruction: f32.reinterpret_i32 [{v1}] -> [{res:.7}]");
         resumable.stack.push_value(res.into())?;
@@ -2162,7 +2163,7 @@ define_instruction_fn! {
     fuel_check = flat(instructions::F64_CONVERT_I32_S),
     |Args { resumable, .. }| {
         let v: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = value::F64(v as f64);
+        let res: F64 = F64(v as f64);
 
         trace!("Instruction: f64.convert_i32_s [{v}] -> [{res:.17}]");
         resumable.stack.push_value(res.into())?;
@@ -2175,7 +2176,7 @@ define_instruction_fn! {
     fuel_check = flat(instructions::F64_CONVERT_I32_U),
     |Args { resumable, .. }| {
         let v: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = value::F64(v as u32 as f64);
+        let res: F64 = F64(v as u32 as f64);
 
         trace!("Instruction: f64.convert_i32_u [{v}] -> [{res:.17}]");
         resumable.stack.push_value(res.into())?;
@@ -2188,7 +2189,7 @@ define_instruction_fn! {
     fuel_check = flat(instructions::F64_CONVERT_I64_S),
     |Args { resumable, .. }| {
         let v: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = value::F64(v as f64);
+        let res: F64 = F64(v as f64);
 
         trace!("Instruction: f64.convert_i64_s [{v}] -> [{res:.17}]");
         resumable.stack.push_value(res.into())?;
@@ -2201,7 +2202,7 @@ define_instruction_fn! {
     fuel_check = flat(instructions::F64_CONVERT_I64_U),
     |Args { resumable, .. }| {
         let v: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = value::F64(v as u64 as f64);
+        let res: F64 = F64(v as u64 as f64);
 
         trace!("Instruction: f64.convert_i64_u [{v}] -> [{res:.17}]");
         resumable.stack.push_value(res.into())?;
@@ -2213,8 +2214,8 @@ define_instruction_fn! {
     f64_promote_f32,
     fuel_check = flat(instructions::F64_PROMOTE_F32),
     |Args { resumable, .. }| {
-        let v: value::F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = v.as_f64();
+        let v: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let res: F64 = v.as_f64();
 
         trace!("Instruction: f64.promote_f32 [{v:.7}] -> [{res:.17}]");
         resumable.stack.push_value(res.into())?;
@@ -2227,7 +2228,7 @@ define_instruction_fn! {
     fuel_check = flat(instructions::F64_REINTERPRET_I64),
     |Args { resumable, .. }| {
         let v1: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let res: value::F64 = value::F64::from_bits(v1 as u64);
+        let res: F64 = F64::from_bits(v1 as u64);
 
         trace!("Instruction: f64.reinterpret_i64 [{v1}] -> [{res:.17}]");
         resumable.stack.push_value(res.into())?;

@@ -10,8 +10,6 @@ use alloc::vec::Vec;
 use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
-    addrs::{AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, TableAddr},
-    assert_validated::UnwrapValidatedExt,
     core::{
         decoding::reader::WasmReader,
         sidetable::Sidetable,
@@ -22,17 +20,19 @@ use crate::{
         utils::ToUsizeExt,
     },
     execution::{
+        assert_validated::UnwrapValidatedExt,
         config::Config,
         interpreter_loop::dispatch_tables::{
             HasBaseDispatchTable, HasFcDispatchTable, HasFdDispatchTable,
         },
-        store::Hostcode,
+        store::{
+            instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
+            Hostcode,
+        },
+        value_stack::Stack,
     },
-    instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
-    resumable::WasmResumable,
-    unreachable_validated,
-    value_stack::Stack,
-    RuntimeError, TrapError, Value,
+    unreachable_validated, AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr,
+    RuntimeError, TableAddr, TrapError, Value, WasmResumable,
 };
 
 use super::{little_endian::LittleEndianBytes, store::Store, store::StoreInner};
@@ -425,7 +425,7 @@ macro_rules! define_instruction_fn {
         /// [`Args`](crate::execution::interpreter_loop::Args).
         // Disable inlining to inspect the emitted code of individual instruction handlers:
         // #[inline(never)]
-        pub(crate) unsafe fn $name<'wasm, 'modules, T: $crate::config::Config>(
+        pub(crate) unsafe fn $name<'wasm, 'modules, T: $crate::execution::config::Config>(
             wasm: &mut $crate::core::decoding::reader::WasmReader<'wasm>,
             resumable: &mut $crate::execution::resumable::WasmResumable,
             current_sidetable: &mut &'modules $crate::core::sidetable::Sidetable,

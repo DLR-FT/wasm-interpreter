@@ -1,5 +1,4 @@
 use crate::{
-    assert_validated::UnwrapValidatedExt,
     core::{
         decoding::reader::WasmReader,
         structure::{
@@ -7,6 +6,7 @@ use crate::{
             types::BlockType,
         },
     },
+    execution::assert_validated::UnwrapValidatedExt,
     DecodingError, FuncType, Limits, MemType, RefType, TableType, ValType, ValidationError,
 };
 
