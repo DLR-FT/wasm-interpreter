@@ -3,8 +3,7 @@ use crate::core::{
     structure::{
         modules::indices::TypeIdx,
         types::{
-            BlockType, FuncType, GlobalType, Limits, MemArg, MemType, NumType, RefType, ResultType,
-            TableType, ValType, VecType,
+            BlockType, FuncType, GlobalType, MemArg, NumType, RefType, ResultType, ValType, VecType,
         },
     },
 };
@@ -107,66 +106,6 @@ impl BlockType {
             let index = wasm.read_var_i33_as_u32().unwrap();
             BlockType::Type(TypeIdx::new(index))
         }
-    }
-}
-
-impl Limits {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
-        let limits = match wasm.read_u8()? {
-            0x00 => {
-                let min = wasm.read_var_u32()?;
-                Self { min, max: None }
-            }
-            0x01 => {
-                let min = wasm.read_var_u32()?;
-                let max = wasm.read_var_u32()?;
-                Self {
-                    min,
-                    max: Some(max),
-                }
-            }
-            other => return Err(DecodingError::MalformedLimitsDiscriminator(other)),
-        };
-
-        if let Some(max) = limits.max {
-            if limits.min > max {
-                return Err(DecodingError::MalformedLimitsMinLargerThanMax {
-                    min: limits.min,
-                    max,
-                });
-            }
-        }
-
-        Ok(limits)
-    }
-}
-
-impl TableType {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
-        let et = RefType::read(wasm)?;
-        let mut lim = Limits::read(wasm)?;
-        if lim.max.is_none() {
-            lim.max = Some(u32::MAX)
-        };
-        trace!("Table: {:?}", Self { et, lim });
-        Ok(Self { et, lim })
-    }
-}
-
-impl MemType {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
-        let limit = Limits::read(wasm)?;
-        // Memory can only grow to 65536 pages of 64kb size (4GiB)
-        if limit.min > (1 << 16) {
-            return Err(DecodingError::MemoryTooLarge);
-        }
-        if let Some(max_limit) = limit.max {
-            if max_limit > (1 << 16) {
-                return Err(DecodingError::MemoryTooLarge);
-            }
-        }
-
-        Ok(Self { limits: limit })
     }
 }
 

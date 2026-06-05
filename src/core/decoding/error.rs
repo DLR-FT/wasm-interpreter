@@ -29,8 +29,6 @@ pub enum DecodingError {
     MalformedImportDescDiscriminator(u8),
     /// The discriminator of a limits type is malformed.
     MalformedLimitsDiscriminator(u8),
-    /// The min field of a limits type is larger than the max field.
-    MalformedLimitsMinLargerThanMax { min: u32, max: u32 },
     /// The discriminator of a mut type is malformed.
     MalformedMutDiscriminator(u8),
     /// Block types use a special 33-bit signed integer for encoding type indices.
@@ -45,8 +43,6 @@ pub enum DecodingError {
     I33IsNegative,
     /// A function specifies too many locals, i.e. more than 2^32 - 1
     TooManyLocals(u64),
-    /// The memory size specified by a mem type exceeds the maximum size.
-    MemoryTooLarge,
 }
 
 impl error::Error for DecodingError {}
@@ -67,14 +63,12 @@ impl fmt::Display for DecodingError {
             DecodingError::MalformedExportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an export description discriminator"),
             DecodingError::MalformedImportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an import description discriminator"),
             DecodingError::MalformedLimitsDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a limits type discriminator"),
-            DecodingError::MalformedLimitsMinLargerThanMax { min, max } => write!(f, "Limits are malformed because min={min} is larger than max={max}"),
             DecodingError::MalformedMutDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a mute type discriminator"),
             DecodingError::MalformedBlockTypeTypeIdx(idx) => write!(f, "The type index {idx} which is encoded as a singed 33-bit integer inside a block type is malformed"),
             DecodingError::MalformedVariableLengthInteger => write!(f, "Reading a variable-length integer overflowed"),
             DecodingError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
             DecodingError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
             DecodingError::TooManyLocals(n) => write!(f,"There are {n} locals and this exceeds the maximum allowed number of 2^32-1"),
-            DecodingError::MemoryTooLarge => write!(f, "The size specified by a memory type exceeds the maximum size"),
         }
     }
 }
