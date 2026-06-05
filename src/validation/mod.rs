@@ -145,7 +145,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         _ => None,
     });
     let local_tables = handle_section(&mut wasm, &mut header, SectionTy::Table, |wasm, _| {
-        wasm.read_vec(TableType::read)
+        wasm.read_vec(TableType::read_and_validate)
     })?
     .unwrap_or_default();
 
@@ -160,7 +160,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     });
     // let imported_memories_length = imported_memories.len();
     let local_memories = handle_section(&mut wasm, &mut header, SectionTy::Memory, |wasm, _| {
-        wasm.read_vec(MemType::read)
+        wasm.read_vec(MemType::read_and_validate)
     })?
     .unwrap_or_default();
 
