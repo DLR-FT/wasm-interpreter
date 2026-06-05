@@ -1,23 +1,17 @@
 use core::ops::ControlFlow;
 
 use crate::{
-    assert_validated::UnwrapValidatedExt,
-    core::{
-        decoding::error::DecodingError,
+    TrapError, assert_validated::UnwrapValidatedExt, core::{
+        decoding::{error::DecodingError, modules::indices::read_label_idx_unchecked},
         structure::{
             instructions,
-            modules::indices::{read_label_idx_unchecked, FuncIdx, TableIdx, TypeIdx},
+            modules::indices::{FuncIdx, TableIdx, TypeIdx},
             types::BlockType,
         },
         utils::ToUsizeExt,
-    },
-    execution::interpreter_loop::{
-        define_instruction_fn, do_sidetable_control_transfer, Args, InterpreterLoopOutcome,
-    },
-    instances::FuncInst,
-    unreachable_validated,
-    value::Ref,
-    TrapError,
+    }, execution::interpreter_loop::{
+        Args, InterpreterLoopOutcome, define_instruction_fn, do_sidetable_control_transfer
+    }, instances::FuncInst, unreachable_validated, value::Ref
 };
 
 define_instruction_fn! {nop, fuel_check = flat(instructions::NOP), |_args| Ok(
