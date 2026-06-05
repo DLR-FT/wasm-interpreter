@@ -1,9 +1,4 @@
-use crate::core::decoding::error::DecodingError;
-use crate::core::structure::modules::indices::{IdxVec, TypeIdx};
-use crate::core::reader::WasmReader;
-use crate::core::structure::types::{ExternType, FuncType, GlobalType, MemType, TableType};
-use crate::{ValidationError, ValidationInfo};
-
+use crate::{DecodingError, ExternType, FuncType, GlobalType, MemType, TableType, ValidationError, ValidationInfo, core::{reader::WasmReader, structure::modules::indices::{IdxVec, TypeIdx}}};
 
 #[derive(Debug, Clone)]
 pub struct Import<'wasm> {

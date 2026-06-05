@@ -1,20 +1,15 @@
 use alloc::vec::Vec;
 
 use crate::{
-    core::{
-        reader::{
-            section_header::{SectionHeader, SectionTy},
-            types::data::{DataMode, DataModeActive, DataSegment},
-            WasmReader,
-        },
-        structure::{
-            modules::indices::{FuncIdx, IdxVec, MemIdx, TypeIdx},
+    MemType, ValidationError, core::{
+        decoding::modules::section_header::{SectionHeader, SectionTy}, reader::WasmReader, structure::{
+            modules::{
+                data_segments::{DataMode, DataModeActive, DataSegment},
+                indices::{FuncIdx, IdxVec, MemIdx, TypeIdx},
+            },
             types::GlobalType,
-        },
-    },
-    read_constant_expression::read_constant_expression,
-    validation_stack::ValidationStack,
-    MemType, ValidationError,
+        }
+    }, read_constant_expression::read_constant_expression, validation_stack::ValidationStack
 };
 
 /// Validate the data section.

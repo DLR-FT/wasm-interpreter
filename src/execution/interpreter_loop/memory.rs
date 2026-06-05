@@ -1,10 +1,10 @@
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        reader::types::memarg::MemArg,
         structure::{
             instructions,
             modules::indices::{DataIdx, Idx, MemIdx},
+            types::MemArg,
         },
         utils::ToUsizeExt,
     },

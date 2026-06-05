@@ -13,9 +13,12 @@ use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
-        reader::{types::memarg::MemArg, WasmReader},
+        reader::WasmReader,
         sidetable::Sidetable,
-        structure::modules::indices::{DataIdx, ElemIdx, MemIdx, TableIdx},
+        structure::{
+            modules::indices::{DataIdx, ElemIdx, MemIdx, TableIdx},
+            types::MemArg,
+        },
         utils::ToUsizeExt,
     },
     execution::{

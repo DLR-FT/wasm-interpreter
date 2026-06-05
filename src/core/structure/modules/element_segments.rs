@@ -1,15 +1,12 @@
-use crate::core::decoding::error::DecodingError;
-use crate::core::structure::modules::indices::{FuncIdx, IdxVec, TableIdx, TypeIdx};
-use crate::core::reader::span::Span;
-use crate::core::reader::WasmReader;
-use crate::core::structure::types::{GlobalType, RefType, TableType};
-use crate::read_constant_expression::read_constant_expression;
-use crate::validation_stack::ValidationStack;
-use crate::{NumType, ValType, ValidationError};
+use core::fmt;
 
-use alloc::collections::btree_set::BTreeSet;
-use alloc::vec::Vec;
-use core::fmt::Debug;
+use alloc::{collections::btree_set::BTreeSet, vec::Vec};
+
+use crate::{
+    GlobalType, NumType, RefType, TableType, ValType, ValidationError, core::{
+        decoding::modules::parse_elemkind, reader::{WasmReader, span::Span}, structure::modules::indices::{FuncIdx, IdxVec, TableIdx, TypeIdx}
+    }, read_constant_expression::read_constant_expression, validation_stack::ValidationStack
+};
 
 #[derive(Clone)]
 pub struct ElemType {
@@ -17,8 +14,8 @@ pub struct ElemType {
     pub mode: ElemMode,
 }
 
-impl Debug for ElemType {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl fmt::Debug for ElemType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "ElemType {{\n\tinit: {:?},\n\tmode: {:?},\n\t#ty: {:?}\n}}",
@@ -350,16 +347,4 @@ fn parse_validate_generic_initializer_list(
         Ok(span)
     })
     .map(|v| ElemItems::Exprs(expected_type, v))
-}
-
-/// Parse an elemkind: <https://webassembly.github.io/spec/core/binary/modules.html#element-section>
-/// # Returns
-/// - `Ok(elemkind)` if parsing is successful, Err(_) otherwise
-fn parse_elemkind(wasm: &mut WasmReader) -> Result<u8, DecodingError> {
-    let et = wasm.read_u8()?;
-    if et != 0x00 {
-        Err(DecodingError::MalformedElemKindDiscriminator(et))
-    } else {
-        Ok(et)
-    }
 }

@@ -4,20 +4,22 @@ use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
 use crate::core::decoding::error::DecodingError;
+use crate::core::decoding::modules::section_header::{SectionHeader, SectionTy};
+use crate::core::reader::span::Span;
+use crate::core::reader::WasmReader;
+use crate::core::sidetable::Sidetable;
+use crate::core::structure::modules::data_segments::DataSegment;
+use crate::core::structure::modules::element_segments::ElemType;
+use crate::core::structure::modules::exports::{Export, ExportDesc};
+use crate::core::structure::modules::globals::Global;
+use crate::core::structure::modules::imports::{Import, ImportDesc};
 use crate::core::structure::modules::indices::{
     DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, IdxVecOverflowError, MemIdx,
     TableIdx, TypeIdx,
 };
-use crate::core::reader::section_header::{SectionHeader, SectionTy};
-use crate::core::reader::span::Span;
-use crate::core::reader::types::data::DataSegment;
-use crate::core::reader::types::element::ElemType;
-use crate::core::reader::types::export::{Export, ExportDesc};
-use crate::core::reader::types::global::Global;
-use crate::core::reader::types::import::{Import, ImportDesc};
-use crate::core::reader::WasmReader;
-use crate::core::sidetable::Sidetable;
-use crate::core::structure::types::{ExternType, FuncType, GlobalType, MemType, ResultType, TableType};
+use crate::core::structure::types::{
+    ExternType, FuncType, GlobalType, MemType, ResultType, TableType,
+};
 use crate::core::utils::ToUsizeExt;
 use crate::custom_section::CustomSection;
 use crate::ValidationError;

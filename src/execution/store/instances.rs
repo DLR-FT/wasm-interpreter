@@ -5,7 +5,9 @@ use crate::{
         reader::span::Span,
         sidetable::Sidetable,
         structure::{
-            modules::indices::{DataIdx, ElemIdx, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
+            modules::indices::{
+                DataIdx, ElemIdx, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx,
+            },
             types::{FuncType, MemType, TableType},
         },
         utils::ToUsizeExt,
