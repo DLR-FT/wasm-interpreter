@@ -1,6 +1,5 @@
-use core::fmt;
-
 use alloc::{format, vec::Vec};
+use core::fmt;
 
 use crate::core::{decoding::reader::span::Span, structure::modules::indices::MemIdx};
 

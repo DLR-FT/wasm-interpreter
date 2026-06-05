@@ -1,4 +1,4 @@
-use core::fmt::{Display, Formatter};
+use core::fmt;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RuntimeError {
@@ -40,8 +40,8 @@ pub enum RuntimeError {
     UnsupportedHostCallDuringInstantiation,
 }
 
-impl Display for RuntimeError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+impl fmt::Display for RuntimeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             RuntimeError::Trap(trap_error) => write!(f, "Execution trapped: {trap_error}"),
             RuntimeError::FunctionNotFound => f.write_str("Function not found"),
@@ -118,8 +118,8 @@ pub enum TrapError {
     ReachedUnreachable,
 }
 
-impl Display for TrapError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+impl fmt::Display for TrapError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TrapError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
             TrapError::UnrepresentableResult => f.write_str("Result is unrepresentable"),

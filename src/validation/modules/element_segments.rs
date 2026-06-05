@@ -1,16 +1,20 @@
 use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::{
-    GlobalType, NumType, RefType, TableType, ValType, ValidationError, core::{
+    core::{
         decoding::{
             modules::parse_elemkind,
-            reader::{WasmReader, span::Span},
+            reader::{span::Span, WasmReader},
         },
         structure::modules::{
             element_segments::{ActiveElem, ElemItems, ElemMode, ElemType},
             indices::{FuncIdx, IdxVec, TableIdx, TypeIdx},
         },
-    }, validation::{read_constant_expression::read_constant_expression, validation_stack::ValidationStack}
+    },
+    validation::{
+        read_constant_expression::read_constant_expression, validation_stack::ValidationStack,
+    },
+    GlobalType, NumType, RefType, TableType, ValType, ValidationError,
 };
 
 impl ElemType {

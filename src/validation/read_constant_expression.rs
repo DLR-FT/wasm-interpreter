@@ -1,13 +1,17 @@
 use alloc::vec::Vec;
 
-use crate::core::decoding::reader::span::Span;
-use crate::core::decoding::reader::WasmReader;
-use crate::core::structure::modules::indices::{FuncIdx, IdxVec, TypeIdx};
-use crate::core::structure::types::GlobalType;
-use crate::core::utils::ToUsizeExt;
-use crate::{NumType, RefType, ValType, ValidationError};
-
-use super::validation_stack::ValidationStack;
+use crate::{
+    core::{
+        decoding::reader::{span::Span, WasmReader},
+        structure::{
+            modules::indices::{FuncIdx, IdxVec, TypeIdx},
+            types::GlobalType,
+        },
+        utils::ToUsizeExt,
+    },
+    validation::validation_stack::ValidationStack,
+    NumType, RefType, ValType, ValidationError,
+};
 
 /// Read and validate constant expressions.
 ///

@@ -9,26 +9,24 @@ extern crate alloc;
 #[macro_use]
 extern crate log_wrapper;
 
-pub use core::{
-    decoding::error::DecodingError,
-    rw_spinlock,
-    structure::instructions,
-    structure::types::{
-        ExternType, FuncType, GlobalType, Limits, MemType, NumType, RefType, ResultType, TableType,
-        ValType,
+pub use crate::{
+    core::{
+        decoding::error::DecodingError,
+        rw_spinlock,
+        structure::instructions,
+        structure::types::{
+            ExternType, FuncType, GlobalType, Limits, MemType, NumType, RefType, ResultType,
+            TableType, ValType,
+        },
     },
-};
-
-pub use validation::{
-    custom_section::CustomSection, error::ValidationError, validate, ValidationInfo,
-};
-
-pub use execution::{
-    config::Config,
-    error::{RuntimeError, TrapError},
-    resumable::*,
-    store::{addrs::*, ExternVal, Hostcode, InstantiationOutcome, Store},
-    value::{ExternAddr, Ref, Value, F32, F64},
+    execution::{
+        config::Config,
+        error::{RuntimeError, TrapError},
+        resumable::*,
+        store::{addrs::*, ExternVal, Hostcode, InstantiationOutcome, Store},
+        value::{ExternAddr, Ref, Value, F32, F64, ValueTypeMismatchError},
+    },
+    validation::{custom_section::CustomSection, error::ValidationError, validate, ValidationInfo},
 };
 
 pub(crate) mod core;

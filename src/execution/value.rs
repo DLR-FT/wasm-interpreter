@@ -1,9 +1,9 @@
-use core::fmt::{Debug, Display};
-use core::ops::{Add, Div, Mul, Sub};
-use core::{f32, f64};
+use core::{
+    fmt::{Debug, Display},
+    ops::{Add, Div, Mul, Sub},
+};
 
-use crate::core::structure::types::{NumType, ValType};
-use crate::{FuncAddr, RefType};
+use crate::{FuncAddr, NumType, RefType, ValType};
 
 #[derive(Clone, Debug, Copy, PartialOrd)]
 #[repr(transparent)]

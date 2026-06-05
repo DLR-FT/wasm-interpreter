@@ -30,9 +30,8 @@
 //!
 //! See: WebAssembly Specification - 2.5.1 - Indices
 
-use core::marker::PhantomData;
-
 use alloc::{boxed::Box, vec::Vec};
+use core::marker::PhantomData;
 
 use crate::core::utils::ToUsizeExt;
 

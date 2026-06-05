@@ -1,7 +1,7 @@
 use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
-    GlobalType, Hostcode, Limits, Ref, RefType, RuntimeError, TrapError, ValType, Value, core::{
+    core::{
         decoding::reader::span::Span,
         sidetable::Sidetable,
         structure::{
@@ -11,12 +11,10 @@ use crate::{
             types::{FuncType, MemType, TableType},
         },
         utils::ToUsizeExt,
-    }, execution::store::linear_memory::LinearMemory
-};
-
-use super::{
-    addrs::{DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
-    ExternVal,
+    },
+    execution::store::linear_memory::LinearMemory,
+    DataAddr, ElemAddr, ExternVal, FuncAddr, GlobalAddr, GlobalType, Hostcode, Limits, MemAddr,
+    ModuleAddr, Ref, RefType, RuntimeError, TableAddr, TrapError, ValType, Value,
 };
 
 #[derive(Debug)]

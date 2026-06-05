@@ -1,14 +1,24 @@
-use alloc::collections::btree_set::BTreeSet;
-use alloc::vec::Vec;
+use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 
-use crate::core::decoding::modules::section_header::{SectionHeader, SectionTy};
-use crate::core::decoding::reader::WasmReader;
-use crate::core::structure::modules::globals::Global;
-use crate::core::structure::modules::indices::{FuncIdx, IdxVec, TypeIdx};
-use crate::core::structure::types::GlobalType;
-use crate::ValidationError;
-use crate::validation::read_constant_expression::read_constant_expression;
-use crate::validation::validation_stack::ValidationStack;
+use crate::{
+    core::{
+        decoding::{
+            modules::section_header::{SectionHeader, SectionTy},
+            reader::WasmReader,
+        },
+        structure::{
+            modules::{
+                globals::Global,
+                indices::{FuncIdx, IdxVec, TypeIdx},
+            },
+            types::GlobalType,
+        },
+    },
+    validation::{
+        read_constant_expression::read_constant_expression, validation_stack::ValidationStack,
+    },
+    ValidationError,
+};
 
 /// Validate the global section.
 ///

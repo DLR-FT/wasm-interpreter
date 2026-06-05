@@ -1,10 +1,12 @@
 //! TODO
 
+use alloc::vec::Vec;
 use core::num::NonZeroU64;
 
-use alloc::vec::Vec;
-
-use crate::{FuncAddr, Value, execution::{store::Hostcode, value_stack::Stack}};
+use crate::{
+    execution::{store::Hostcode, value_stack::Stack},
+    FuncAddr, Value,
+};
 
 /// A [`WasmResumable`] is an object used to resume execution of Wasm code.
 ///

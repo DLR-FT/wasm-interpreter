@@ -25,17 +25,16 @@ use crate::{
         interpreter_loop::dispatch_tables::{
             HasBaseDispatchTable, HasFcDispatchTable, HasFdDispatchTable,
         },
+        little_endian::LittleEndianBytes,
         store::{
             instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
-            Hostcode,
+            Hostcode, StoreInner,
         },
         value_stack::Stack,
     },
     unreachable_validated, AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr,
-    RuntimeError, TableAddr, TrapError, Value, WasmResumable,
+    RuntimeError, Store, TableAddr, TrapError, Value, WasmResumable,
 };
-
-use super::{little_endian::LittleEndianBytes, store::Store, store::StoreInner};
 
 mod control;
 mod memory;

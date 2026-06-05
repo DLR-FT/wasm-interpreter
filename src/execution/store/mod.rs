@@ -1,38 +1,40 @@
+use alloc::{borrow::ToOwned, collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 use core::convert::Infallible;
 
-use crate::core::decoding::reader::span::Span;
-use crate::core::decoding::reader::WasmReader;
-use crate::core::structure::import_subtyping::ImportSubTypeRelation;
-use crate::core::structure::modules::data_segments::{DataMode, DataModeActive, DataSegment};
-use crate::core::structure::modules::element_segments::{
-    ActiveElem, ElemItems, ElemMode, ElemType,
-};
-use crate::core::structure::modules::exports::ExportDesc;
-use crate::core::structure::modules::indices::{ElemIdx, IdxVec, TypeIdx};
-use crate::core::structure::types::{ExternType, FuncType, GlobalType, MemType, TableType};
-use crate::core::utils::ToUsizeExt;
-use crate::execution::interpreter_loop::{self, memory_init, table_init, InterpreterLoopOutcome};
-use crate::execution::value::{Ref, Value};
-use crate::execution::{run_const_span, Stack};
-use crate::validation::code;
 use crate::{
-    AddrVec, Config, DataAddr, ElemAddr, FuncAddr, GlobalAddr, HostCall, HostResumable, MemAddr,
-    ModuleAddr, RefType, Resumable, RunState, RuntimeError, TableAddr, ValidationInfo,
-    WasmResumable,
+    core::{
+        decoding::reader::{span::Span, WasmReader},
+        structure::{
+            import_subtyping::ImportSubTypeRelation,
+            modules::{
+                data_segments::{DataMode, DataModeActive, DataSegment},
+                element_segments::{ActiveElem, ElemItems, ElemMode, ElemType},
+                exports::ExportDesc,
+                indices::{ElemIdx, IdxVec, TypeIdx},
+            },
+        },
+        utils::ToUsizeExt,
+    },
+    execution::{
+        assert_validated::UnwrapValidatedExt,
+        const_interpreter_loop::run_const_span,
+        interpreter_loop::{
+            self, data_drop, elem_drop, memory_init, table_init, InterpreterLoopOutcome,
+        },
+        store::{
+            instances::{
+                DataInst, ElemInst, FuncInst, GlobalInst, HostFuncInst, MemInst, ModuleInst,
+                TableInst, WasmFuncInst,
+            },
+            linear_memory::LinearMemory,
+        },
+        value_stack::Stack,
+    },
+    validation::code::read_declared_locals,
+    AddrVec, Config, DataAddr, ElemAddr, ExternType, FuncAddr, FuncType, GlobalAddr, GlobalType,
+    HostCall, HostResumable, MemAddr, MemType, ModuleAddr, Ref, RefType, Resumable, RunState,
+    RuntimeError, TableAddr, TableType, ValidationInfo, Value, WasmResumable,
 };
-use alloc::borrow::ToOwned;
-use alloc::collections::btree_map::BTreeMap;
-use alloc::string::String;
-use alloc::vec;
-use alloc::vec::Vec;
-use instances::{
-    DataInst, ElemInst, FuncInst, GlobalInst, HostFuncInst, MemInst, ModuleInst, TableInst,
-    WasmFuncInst,
-};
-use linear_memory::LinearMemory;
-
-use super::interpreter_loop::{data_drop, elem_drop};
-use super::UnwrapValidatedExt;
 
 pub mod addrs;
 pub(crate) mod instances;
@@ -1186,7 +1188,7 @@ impl<'b, T: Config> Store<'b, T> {
         wasm_reader.move_start_to(span).unwrap_validated();
 
         let (locals, bytes_read) = wasm_reader
-            .measure_num_read_bytes(code::read_declared_locals)
+            .measure_num_read_bytes(read_declared_locals)
             .unwrap_validated();
 
         let code_expr = wasm_reader

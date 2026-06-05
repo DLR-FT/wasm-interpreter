@@ -7,10 +7,12 @@
 //! This implementation is largely inspired by the book
 //! ["Rust Atomics and Locks" by Mara Bos](https://marabos.nl/atomics/).
 
-use core::cell::UnsafeCell;
-use core::hint::{self};
-use core::ops::{Deref, DerefMut};
-use core::sync::atomic::{AtomicU32, Ordering};
+use core::{
+    cell::UnsafeCell,
+    hint,
+    ops::{Deref, DerefMut},
+    sync::atomic::{AtomicU32, Ordering},
+};
 
 /// A spinlock based, read-write lock which favours writers over readers
 ///
