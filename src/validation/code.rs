@@ -4,6 +4,7 @@ use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
 
 use crate::core::decoding::error::DecodingError;
+use crate::core::decoding::modules::indices::read_label_idx;
 use crate::core::decoding::modules::section_header::{SectionHeader, SectionTy};
 use crate::core::decoding::reader::span::Span;
 use crate::core::decoding::reader::WasmReader;
@@ -11,8 +12,8 @@ use crate::core::sidetable::{Sidetable, SidetableEntry};
 use crate::core::structure::modules::element_segments::ElemType;
 use crate::core::structure::modules::globals::Global;
 use crate::core::structure::modules::indices::{
-    read_label_idx, DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, LocalIdx, MemIdx,
-    TableIdx, TypeIdx,
+    DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, LocalIdx, MemIdx, TableIdx,
+    TypeIdx,
 };
 use crate::core::structure::types::{
     BlockType, FuncType, MemArg, MemType, NumType, TableType, ValType,
