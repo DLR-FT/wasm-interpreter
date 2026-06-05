@@ -114,6 +114,13 @@ pub enum ValidationError {
     /// The module contains too many globals, i.e. imported or locally-defined
     /// globals. The maximum number of memories is [`u32::MAX`].
     TooManyGlobals,
+    /// The min field of a limits type is larger than the max field.
+    LimitsMinLargerThanMax {
+        min: u32,
+        max: u32,
+    },
+    /// The min or max field of a limits type is not within the expected range.
+    LimitsNotWithinRange(u32),
 }
 
 impl core::error::Error for ValidationError {}
@@ -170,6 +177,8 @@ impl Display for ValidationError {
             ValidationError::TooManyTables => f.write_str("The module contains too many tables. The maximum number of tables (either imported or locally-defined) is 2^32 - 1"),
             ValidationError::TooManyMemories => f.write_str("The module contains too many memories. The maximum number of memories (either imported or locally-defined) is 2^32 - 1"),
             ValidationError::TooManyGlobals => f.write_str("The module contains too many globals. The maximum number of globals (either imported or locally-defined) is 2^32 - 1"),
+            ValidationError::LimitsMinLargerThanMax { min, max } => write!(f, "Limits are invalid because min={min} is larger than max={max}"),
+            ValidationError::LimitsNotWithinRange(range) => write!(f, "The min or max field of a limits type is not within the expected range of {range}"),
         }
     }
 }
