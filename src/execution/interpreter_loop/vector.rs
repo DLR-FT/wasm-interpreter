@@ -5,7 +5,7 @@ use core::{
 
 use crate::{
     assert_validated::UnwrapValidatedExt,
-    core::reader::types::opcode,
+    core::structure::instructions,
     execution::interpreter_loop::{define_instruction_fn, from_lanes, to_lanes, Args},
     value::{F32, F64},
     Value,
@@ -14,7 +14,7 @@ use crate::{
 // v128.const
 define_instruction_fn! {
     v128_const,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_CONST),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_CONST),
     |Args {
          wasm, resumable, ..
      }| {
@@ -31,7 +31,7 @@ define_instruction_fn! {
 // v128.vvunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvunop>
 define_instruction_fn! {
     v128_not,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_NOT),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_NOT),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         resumable
@@ -44,7 +44,7 @@ define_instruction_fn! {
 // v128.vvbinop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvbinop>
 define_instruction_fn! {
     v128_and,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_AND),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_AND),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -55,7 +55,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_andnot,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_ANDNOT),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_ANDNOT),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -66,7 +66,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_or,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_OR),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_OR),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -77,7 +77,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_xor,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_XOR),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_XOR),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -90,7 +90,7 @@ define_instruction_fn! {
 // v128.vvternop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvternop>
 define_instruction_fn! {
     v128_bitselect,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_BITSELECT),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_BITSELECT),
     |Args { resumable, .. }| {
         let data3: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -104,7 +104,7 @@ define_instruction_fn! {
 // v128.vvtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvtestop>
 define_instruction_fn! {
     v128_any_true,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_ANY_TRUE),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_ANY_TRUE),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let any_true = data.into_iter().any(|byte| byte > 0);
@@ -116,7 +116,7 @@ define_instruction_fn! {
 // i8x16.swizzle
 define_instruction_fn! {
     i8x16_swizzle,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_SWIZZLE),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_SWIZZLE),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -129,7 +129,7 @@ define_instruction_fn! {
 // i8x16.shuffle
 define_instruction_fn! {
     i8x16_shuffle,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_SHUFFLE),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_SHUFFLE),
     |Args {
          wasm, resumable, ..
      }| {
@@ -153,7 +153,7 @@ define_instruction_fn! {
 // shape.splat
 define_instruction_fn! {
     i8x16_splat,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_SPLAT),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_SPLAT),
     |Args { resumable, .. }| {
         let value: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let lane = value as u8;
@@ -164,7 +164,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_splat,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_SPLAT),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_SPLAT),
     |Args { resumable, .. }| {
         let value: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let lane = value as u16;
@@ -175,7 +175,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_splat,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_SPLAT),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_SPLAT),
     |Args { resumable, .. }| {
         let lane: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data = from_lanes([lane; 4]);
@@ -185,7 +185,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_splat,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_SPLAT),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_SPLAT),
     |Args { resumable, .. }| {
         let lane: u64 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data = from_lanes([lane; 2]);
@@ -195,7 +195,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_splat,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_SPLAT),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_SPLAT),
     |Args { resumable, .. }| {
         let lane: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data = from_lanes([lane; 4]);
@@ -205,7 +205,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_splat,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_SPLAT),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_SPLAT),
     |Args { resumable, .. }| {
         let lane: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data = from_lanes([lane; 2]);
@@ -217,7 +217,7 @@ define_instruction_fn! {
 // shape.extract_lane
 define_instruction_fn! {
     i8x16_extract_lane_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_EXTRACT_LANE_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_EXTRACT_LANE_S),
     |Args {
          wasm, resumable, ..
      }| {
@@ -231,7 +231,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_extract_lane_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_EXTRACT_LANE_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_EXTRACT_LANE_U),
     |Args {
          wasm, resumable, ..
      }| {
@@ -245,7 +245,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_extract_lane_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTRACT_LANE_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTRACT_LANE_S),
     |Args {
          wasm, resumable, ..
      }| {
@@ -259,7 +259,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_extract_lane_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTRACT_LANE_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTRACT_LANE_U),
     |Args {
          wasm, resumable, ..
      }| {
@@ -273,7 +273,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_extract_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EXTRACT_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EXTRACT_LANE),
     |Args {
          wasm, resumable, ..
      }| {
@@ -287,7 +287,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_extract_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_EXTRACT_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_EXTRACT_LANE),
     |Args {
          wasm, resumable, ..
      }| {
@@ -301,7 +301,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_extract_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_EXTRACT_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_EXTRACT_LANE),
     |Args {
          wasm, resumable, ..
      }| {
@@ -315,7 +315,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_extract_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_EXTRACT_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_EXTRACT_LANE),
     |Args {
          wasm, resumable, ..
      }| {
@@ -331,7 +331,7 @@ define_instruction_fn! {
 // shape.replace_lane
 define_instruction_fn! {
     i8x16_replace_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_REPLACE_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_REPLACE_LANE),
     |Args {
          wasm, resumable, ..
      }| {
@@ -347,7 +347,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_replace_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_REPLACE_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_REPLACE_LANE),
     |Args {
          wasm, resumable, ..
      }| {
@@ -363,7 +363,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_replace_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_REPLACE_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_REPLACE_LANE),
     |Args {
          wasm, resumable, ..
      }| {
@@ -378,7 +378,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_replace_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_REPLACE_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_REPLACE_LANE),
     |Args {
          wasm, resumable, ..
      }| {
@@ -393,7 +393,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_replace_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_REPLACE_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_REPLACE_LANE),
     |Args {
          wasm, resumable, ..
      }| {
@@ -408,7 +408,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_replace_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_REPLACE_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_REPLACE_LANE),
     |Args {
          wasm, resumable, ..
      }| {
@@ -425,7 +425,7 @@ define_instruction_fn! {
 // shape.vunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vunop>
 define_instruction_fn! {
     i8x16_abs,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_ABS),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_ABS),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i8; 16] = to_lanes(data);
@@ -438,7 +438,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_abs,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_ABS),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_ABS),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i16; 8] = to_lanes(data);
@@ -451,7 +451,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_abs,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_ABS),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_ABS),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i32; 4] = to_lanes(data);
@@ -464,7 +464,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_abs,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_ABS),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_ABS),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i64; 2] = to_lanes(data);
@@ -477,7 +477,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_neg,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_NEG),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_NEG),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i8; 16] = to_lanes(data);
@@ -490,7 +490,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_neg,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_NEG),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_NEG),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i16; 8] = to_lanes(data);
@@ -503,7 +503,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_neg,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_NEG),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_NEG),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i32; 4] = to_lanes(data);
@@ -516,7 +516,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_neg,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_NEG),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_NEG),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i64; 2] = to_lanes(data);
@@ -529,7 +529,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_abs,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_ABS),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_ABS),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F32; 4] = to_lanes(data);
@@ -542,7 +542,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_abs,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_ABS),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_ABS),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F64; 2] = to_lanes(data);
@@ -555,7 +555,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_neg,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_NEG),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_NEG),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F32; 4] = to_lanes(data);
@@ -568,7 +568,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_neg,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_NEG),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_NEG),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F64; 2] = to_lanes(data);
@@ -581,7 +581,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_sqrt,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_SQRT),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_SQRT),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F32; 4] = to_lanes(data);
@@ -594,7 +594,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_sqrt,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_SQRT),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_SQRT),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F64; 2] = to_lanes(data);
@@ -607,7 +607,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_ceil,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_CEIL),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_CEIL),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F32; 4] = to_lanes(data);
@@ -620,7 +620,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_ceil,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_CEIL),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_CEIL),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F64; 2] = to_lanes(data);
@@ -633,7 +633,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_floor,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_FLOOR),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_FLOOR),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F32; 4] = to_lanes(data);
@@ -646,7 +646,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_floor,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_FLOOR),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_FLOOR),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F64; 2] = to_lanes(data);
@@ -659,7 +659,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_trunc,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_TRUNC),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_TRUNC),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F32; 4] = to_lanes(data);
@@ -672,7 +672,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_trunc,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_TRUNC),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_TRUNC),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F64; 2] = to_lanes(data);
@@ -685,7 +685,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_nearest,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_NEAREST),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_NEAREST),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F32; 4] = to_lanes(data);
@@ -698,7 +698,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_nearest,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_NEAREST),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_NEAREST),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F64; 2] = to_lanes(data);
@@ -711,7 +711,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_popcnt,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_POPCNT),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_POPCNT),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u8; 16] = to_lanes(data);
@@ -726,7 +726,7 @@ define_instruction_fn! {
 // shape.vbinop  <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vbinop>
 define_instruction_fn! {
     i8x16_add,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_ADD),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_ADD),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -741,7 +741,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_add,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_ADD),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_ADD),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -756,7 +756,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_add,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_ADD),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_ADD),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -771,7 +771,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_add,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_ADD),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_ADD),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -786,7 +786,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_sub,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_SUB),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_SUB),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -801,7 +801,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_sub,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_SUB),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_SUB),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -816,7 +816,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_sub,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_SUB),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_SUB),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -831,7 +831,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_sub,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_SUB),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_SUB),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -846,7 +846,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_add,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_ADD),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_ADD),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -861,7 +861,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_add,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_ADD),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_ADD),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -876,7 +876,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_sub,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_SUB),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_SUB),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -891,7 +891,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_sub,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_SUB),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_SUB),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -906,7 +906,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_mul,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_MUL),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_MUL),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -921,7 +921,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_mul,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_MUL),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_MUL),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -936,7 +936,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_div,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_DIV),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_DIV),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -951,7 +951,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_div,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_DIV),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_DIV),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -966,7 +966,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_min,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_MIN),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_MIN),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -981,7 +981,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_min,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_MIN),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_MIN),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -996,7 +996,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_max,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_MAX),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_MAX),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1011,7 +1011,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_max,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_MAX),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_MAX),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1026,7 +1026,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_pmin,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_PMIN),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_PMIN),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1049,7 +1049,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_pmin,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_PMIN),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_PMIN),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1072,7 +1072,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_pmax,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_PMAX),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_PMAX),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1095,7 +1095,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_pmax,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_PMAX),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_PMAX),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1118,7 +1118,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_min_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_MIN_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_MIN_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1133,7 +1133,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_min_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_MIN_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_MIN_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1148,7 +1148,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_min_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_MIN_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_MIN_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1163,7 +1163,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_min_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_MIN_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_MIN_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1178,7 +1178,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_min_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_MIN_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_MIN_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1193,7 +1193,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_min_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_MIN_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_MIN_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1208,7 +1208,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_max_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_MAX_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_MAX_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1223,7 +1223,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_max_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_MAX_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_MAX_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1238,7 +1238,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_max_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_MAX_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_MAX_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1253,7 +1253,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_max_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_MAX_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_MAX_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1268,7 +1268,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_max_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_MAX_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_MAX_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1283,7 +1283,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_max_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_MAX_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_MAX_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1299,7 +1299,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i8x16_add_sat_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_ADD_SAT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_ADD_SAT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1314,7 +1314,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_add_sat_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_ADD_SAT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_ADD_SAT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1329,7 +1329,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_add_sat_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_ADD_SAT_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_ADD_SAT_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1344,7 +1344,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_add_sat_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_ADD_SAT_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_ADD_SAT_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1359,7 +1359,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_sub_sat_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_SUB_SAT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_SUB_SAT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1374,7 +1374,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_sub_sat_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_SUB_SAT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_SUB_SAT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1389,7 +1389,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_sub_sat_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_SUB_SAT_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_SUB_SAT_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1404,7 +1404,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_sub_sat_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_SUB_SAT_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_SUB_SAT_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1419,7 +1419,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_mul,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_MUL),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_MUL),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1434,7 +1434,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_mul,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_MUL),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_MUL),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1449,7 +1449,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_mul,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_MUL),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_MUL),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1464,7 +1464,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_avgr_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_AVGR_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_AVGR_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1480,7 +1480,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_avgr_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_AVGR_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_AVGR_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1496,7 +1496,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_q15mulrsat_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_Q15MULRSAT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_Q15MULRSAT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1516,7 +1516,7 @@ define_instruction_fn! {
 // txN.vrelop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vrelop>
 define_instruction_fn! {
     i8x16_eq,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_EQ),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_EQ),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1531,7 +1531,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_eq,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EQ),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EQ),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1546,7 +1546,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_eq,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EQ),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EQ),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1561,7 +1561,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_eq,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_EQ),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_EQ),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1576,7 +1576,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_ne,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_NE),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_NE),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1591,7 +1591,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_ne,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_NE),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_NE),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1606,7 +1606,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_ne,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_NE),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_NE),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1621,7 +1621,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_ne,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_NE),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_NE),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1636,7 +1636,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_lt_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_LT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_LT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1651,7 +1651,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_lt_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_LT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_LT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1666,7 +1666,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_lt_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_LT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_LT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1681,7 +1681,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_lt_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_LT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_LT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1696,7 +1696,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_lt_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_LT_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_LT_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1711,7 +1711,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_lt_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_LT_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_LT_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1726,7 +1726,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_lt_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_LT_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_LT_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1741,7 +1741,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_gt_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_GT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_GT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1756,7 +1756,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_gt_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_GT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_GT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1771,7 +1771,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_gt_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_GT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_GT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1786,7 +1786,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_gt_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_GT_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_GT_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1801,7 +1801,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_gt_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_GT_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_GT_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1816,7 +1816,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_gt_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_GT_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_GT_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1831,7 +1831,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_gt_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_GT_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_GT_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1846,7 +1846,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_le_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_LE_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_LE_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1861,7 +1861,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_le_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_LE_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_LE_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1876,7 +1876,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_le_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_LE_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_LE_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1891,7 +1891,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_le_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_LE_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_LE_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1906,7 +1906,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_le_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_LE_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_LE_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1921,7 +1921,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_le_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_LE_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_LE_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1936,7 +1936,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_le_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_LE_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_LE_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1952,7 +1952,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i8x16_ge_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_GE_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_GE_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1967,7 +1967,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_ge_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_GE_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_GE_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1982,7 +1982,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_ge_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_GE_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_GE_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1997,7 +1997,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_ge_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_GE_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_GE_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2012,7 +2012,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_ge_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_GE_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_GE_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2027,7 +2027,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_ge_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_GE_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_GE_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2042,7 +2042,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_ge_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_GE_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_GE_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2058,7 +2058,7 @@ define_instruction_fn! {
 // vfrelop
 define_instruction_fn! {
     f32x4_eq,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_EQ),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_EQ),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2073,7 +2073,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_eq,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_EQ),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_EQ),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2088,7 +2088,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_ne,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_NE),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_NE),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2103,7 +2103,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_ne,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_NE),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_NE),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2118,7 +2118,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_lt,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_LT),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_LT),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2133,7 +2133,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_lt,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_LT),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_LT),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2148,7 +2148,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_gt,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_GT),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_GT),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2163,7 +2163,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_gt,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_GT),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_GT),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2178,7 +2178,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_le,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_LE),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_LE),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2193,7 +2193,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_le,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_LE),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_LE),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2208,7 +2208,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_ge,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_GE),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_GE),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2223,7 +2223,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_ge,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_GE),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_GE),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2240,7 +2240,7 @@ define_instruction_fn! {
 // txN.vishiftop
 define_instruction_fn! {
     i8x16_shl,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_SHL),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_SHL),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2254,7 +2254,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_shl,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_SHL),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_SHL),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2268,7 +2268,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_shl,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_SHL),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_SHL),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2282,7 +2282,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_shl,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_SHL),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_SHL),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2296,7 +2296,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_shr_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_SHR_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_SHR_S),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2310,7 +2310,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_shr_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_SHR_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_SHR_U),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2324,7 +2324,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_shr_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_SHR_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_SHR_S),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2338,7 +2338,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_shr_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_SHR_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_SHR_U),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2352,7 +2352,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_shr_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_SHR_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_SHR_S),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2366,7 +2366,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_shr_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_SHR_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_SHR_U),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2380,7 +2380,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_shr_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_SHR_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_SHR_S),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2394,7 +2394,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_shr_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_SHR_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_SHR_U),
     |Args { resumable, .. }| {
         let shift: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2410,7 +2410,7 @@ define_instruction_fn! {
 // shape.vtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vtestop>
 define_instruction_fn! {
     i8x16_all_true,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_ALL_TRUE),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_ALL_TRUE),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u8; 16] = to_lanes(data);
@@ -2421,7 +2421,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_all_true,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_ALL_TRUE),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_ALL_TRUE),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u16; 8] = to_lanes(data);
@@ -2432,7 +2432,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_all_true,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_ALL_TRUE),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_ALL_TRUE),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u32; 4] = to_lanes(data);
@@ -2443,7 +2443,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_all_true,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_ALL_TRUE),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_ALL_TRUE),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u64; 2] = to_lanes(data);
@@ -2456,7 +2456,7 @@ define_instruction_fn! {
 // ishape.bitmask
 define_instruction_fn! {
     i8x16_bitmask,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_BITMASK),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_BITMASK),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i8; 16] = to_lanes(data);
@@ -2471,7 +2471,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_bitmask,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_BITMASK),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_BITMASK),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i16; 8] = to_lanes(data);
@@ -2486,7 +2486,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_bitmask,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_BITMASK),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_BITMASK),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i32; 4] = to_lanes(data);
@@ -2501,7 +2501,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_bitmask,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_BITMASK),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_BITMASK),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i64; 2] = to_lanes(data);
@@ -2518,7 +2518,7 @@ define_instruction_fn! {
 // ishape.narrow_ishape_sx
 define_instruction_fn! {
     i8x16_narrow_i16x8_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_NARROW_I16X8_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_NARROW_I16X8_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2537,7 +2537,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i8x16_narrow_i16x8_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I8X16_NARROW_I16X8_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I8X16_NARROW_I16X8_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2556,7 +2556,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_narrow_i32x4_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_NARROW_I32X4_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_NARROW_I32X4_S),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2575,7 +2575,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_narrow_i32x4_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_NARROW_I32X4_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_NARROW_I32X4_U),
     |Args { resumable, .. }| {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2596,7 +2596,7 @@ define_instruction_fn! {
 // t_2xN.vcvtop_t_1xM_sx
 define_instruction_fn! {
     i32x4_trunc_sat_f32x4_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_TRUNC_SAT_F32X4_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_TRUNC_SAT_F32X4_S),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F32; 4] = to_lanes(data);
@@ -2619,7 +2619,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_trunc_sat_f32x4_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_TRUNC_SAT_F32X4_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_TRUNC_SAT_F32X4_U),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F32; 4] = to_lanes(data);
@@ -2640,7 +2640,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_convert_i32x4_s,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_CONVERT_I32X4_S),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_CONVERT_I32X4_S),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i32; 4] = to_lanes(data);
@@ -2653,7 +2653,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_convert_i32x4_u,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_CONVERT_I32X4_U),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_CONVERT_I32X4_U),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u32; 4] = to_lanes(data);
@@ -2668,7 +2668,7 @@ define_instruction_fn! {
 // t_2xN.vcvtop_half_t_1xM_sx? <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vcvtop>
 define_instruction_fn! {
     i16x8_extend_high_i8x16_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTEND_HIGH_I8X16_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTEND_HIGH_I8X16_S),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i8; 16] = to_lanes(data);
@@ -2682,7 +2682,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_extend_high_i8x16_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTEND_HIGH_I8X16_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTEND_HIGH_I8X16_U),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u8; 16] = to_lanes(data);
@@ -2696,7 +2696,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_extend_low_i8x16_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTEND_LOW_I8X16_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTEND_LOW_I8X16_S),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i8; 16] = to_lanes(data);
@@ -2710,7 +2710,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_extend_low_i8x16_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTEND_LOW_I8X16_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTEND_LOW_I8X16_U),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u8; 16] = to_lanes(data);
@@ -2724,7 +2724,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_extend_high_i16x8_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EXTEND_HIGH_I16X8_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EXTEND_HIGH_I16X8_S),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i16; 8] = to_lanes(data);
@@ -2738,7 +2738,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_extend_high_i16x8_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EXTEND_HIGH_I16X8_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EXTEND_HIGH_I16X8_U),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u16; 8] = to_lanes(data);
@@ -2752,7 +2752,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_extend_low_i16x8_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EXTEND_LOW_I16X8_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EXTEND_LOW_I16X8_S),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i16; 8] = to_lanes(data);
@@ -2766,7 +2766,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_extend_low_i16x8_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EXTEND_LOW_I16X8_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EXTEND_LOW_I16X8_U),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u16; 8] = to_lanes(data);
@@ -2780,7 +2780,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_extend_high_i32x4_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_EXTEND_HIGH_I32X4_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_EXTEND_HIGH_I32X4_S),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i32; 4] = to_lanes(data);
@@ -2794,7 +2794,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_extend_high_i32x4_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_EXTEND_HIGH_I32X4_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_EXTEND_HIGH_I32X4_U),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u32; 4] = to_lanes(data);
@@ -2808,7 +2808,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_extend_low_i32x4_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_EXTEND_LOW_I32X4_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_EXTEND_LOW_I32X4_S),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i32; 4] = to_lanes(data);
@@ -2822,7 +2822,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_extend_low_i32x4_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_EXTEND_LOW_I32X4_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_EXTEND_LOW_I32X4_U),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u32; 4] = to_lanes(data);
@@ -2836,7 +2836,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_convert_low_i32x4_s,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_CONVERT_LOW_I32X4_S),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_CONVERT_LOW_I32X4_S),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i32; 4] = to_lanes(data);
@@ -2850,7 +2850,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_convert_low_i32x4_u,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_CONVERT_LOW_I32X4_U),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_CONVERT_LOW_I32X4_U),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u32; 4] = to_lanes(data);
@@ -2864,7 +2864,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f64x2_promote_low_f32x4,
-    fuel_check = flat_fd(opcode::fd_extensions::F64X2_PROMOTE_LOW_F32X4),
+    fuel_check = flat_fc(instructions::fd_extensions::F64X2_PROMOTE_LOW_F32X4),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F32; 4] = to_lanes(data);
@@ -2880,7 +2880,7 @@ define_instruction_fn! {
 // t_2xN.vcvtop_t_1xM_sx?_zero
 define_instruction_fn! {
     i32x4_trunc_sat_f64x2_s_zero,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_TRUNC_SAT_F64X2_S_ZERO),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_TRUNC_SAT_F64X2_S_ZERO),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F64; 2] = to_lanes(data);
@@ -2903,7 +2903,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_trunc_sat_f64x2_u_zero,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_TRUNC_SAT_F64X2_U_ZERO),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_TRUNC_SAT_F64X2_U_ZERO),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F64; 2] = to_lanes(data);
@@ -2924,7 +2924,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     f32x4_demote_f64x2_zero,
-    fuel_check = flat_fd(opcode::fd_extensions::F32X4_DEMOTE_F64X2_ZERO),
+    fuel_check = flat_fc(instructions::fd_extensions::F32X4_DEMOTE_F64X2_ZERO),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes = to_lanes::<8, 2, F64>(data);
@@ -2940,7 +2940,7 @@ define_instruction_fn! {
 // i32x4.dot_i16x8_s
 define_instruction_fn! {
     i32x4_dot_i16x8_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_DOT_I16X8_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_DOT_I16X8_S),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2964,7 +2964,7 @@ define_instruction_fn! {
 // ishape.extmul_half_ishape_sx
 define_instruction_fn! {
     i16x8_extmul_high_i8x16_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTMUL_HIGH_I8X16_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTMUL_HIGH_I8X16_S),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -2985,7 +2985,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_extmul_high_i8x16_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTMUL_HIGH_I8X16_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTMUL_HIGH_I8X16_U),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -3006,7 +3006,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_extmul_low_i8x16_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTMUL_LOW_I8X16_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTMUL_LOW_I8X16_S),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -3027,7 +3027,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_extmul_low_i8x16_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTMUL_LOW_I8X16_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTMUL_LOW_I8X16_U),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -3048,7 +3048,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_extmul_high_i16x8_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EXTMUL_HIGH_I16X8_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EXTMUL_HIGH_I16X8_S),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -3069,7 +3069,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_extmul_high_i16x8_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EXTMUL_HIGH_I16X8_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EXTMUL_HIGH_I16X8_U),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -3090,7 +3090,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_extmul_low_i16x8_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EXTMUL_LOW_I16X8_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EXTMUL_LOW_I16X8_S),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -3111,7 +3111,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_extmul_low_i16x8_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EXTMUL_LOW_I16X8_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EXTMUL_LOW_I16X8_U),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -3132,7 +3132,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_extmul_high_i32x4_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_EXTMUL_HIGH_I32X4_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_EXTMUL_HIGH_I32X4_S),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -3153,7 +3153,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_extmul_high_i32x4_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_EXTMUL_HIGH_I32X4_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_EXTMUL_HIGH_I32X4_U),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -3174,7 +3174,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_extmul_low_i32x4_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_EXTMUL_LOW_I32X4_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_EXTMUL_LOW_I32X4_S),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -3195,7 +3195,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i64x2_extmul_low_i32x4_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I64X2_EXTMUL_LOW_I32X4_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I64X2_EXTMUL_LOW_I32X4_U),
     |Args { resumable, .. }| {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -3218,7 +3218,7 @@ define_instruction_fn! {
 // ishape.extadd_pairwise_ishape_sx
 define_instruction_fn! {
     i16x8_extadd_pairwise_i8x16_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTADD_PAIRWISE_I8X16_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTADD_PAIRWISE_I8X16_S),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i8; 16] = to_lanes(data);
@@ -3235,7 +3235,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i16x8_extadd_pairwise_i8x16_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I16X8_EXTADD_PAIRWISE_I8X16_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I16X8_EXTADD_PAIRWISE_I8X16_U),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u8; 16] = to_lanes(data);
@@ -3252,7 +3252,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_extadd_pairwise_i16x8_s,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EXTADD_PAIRWISE_I16X8_S),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EXTADD_PAIRWISE_I16X8_S),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i16; 8] = to_lanes(data);
@@ -3269,7 +3269,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     i32x4_extadd_pairwise_i16x8_u,
-    fuel_check = flat_fd(opcode::fd_extensions::I32X4_EXTADD_PAIRWISE_I16X8_U),
+    fuel_check = flat_fc(instructions::fd_extensions::I32X4_EXTADD_PAIRWISE_I16X8_U),
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u16; 8] = to_lanes(data);

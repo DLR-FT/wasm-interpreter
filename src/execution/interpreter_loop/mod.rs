@@ -142,7 +142,7 @@ pub(super) unsafe fn run<T: Config>(
         #[cfg(debug_assertions)]
         trace!(
             "Executing instruction {}",
-            crate::opcodes::opcode_byte_to_str(first_instr_byte)
+            crate::instructions::instruction_byte_to_str(first_instr_byte)
         );
 
         let instruction_fn = T::DISPATCH_TABLE
@@ -451,14 +451,14 @@ macro_rules! define_instruction_fn {
         }
     };
 
-    ($name:ident, fuel_check = flat($opcode:expr), $contents:expr) => {
+    ($name:ident, fuel_check = flat($instruction:expr), $contents:expr) => {
         define_instruction_fn! {
             $name,
             fuel_check = omit,
             |args: $crate::execution::interpreter_loop::Args| {
                 if let core::ops::ControlFlow::Break(outcome) =
                     $crate::execution::interpreter_loop::decrement_fuel(
-                        T::get_flat_cost($opcode),
+                        T::get_flat_cost($instruction),
                         &mut args.resumable.maybe_fuel,
                     )
                 {
@@ -470,14 +470,14 @@ macro_rules! define_instruction_fn {
         }
     };
 
-    ($name: ident, fuel_check = flat_fc($opcode: expr), $contents:expr) => {
+    ($name: ident, fuel_check = flat_fc($instruction: expr), $contents:expr) => {
         define_instruction_fn! {
             $name,
             fuel_check = omit,
             |args: $crate::execution::interpreter_loop::Args| {
                 if let core::ops::ControlFlow::Break(outcome) =
                     $crate::execution::interpreter_loop::decrement_fuel(
-                        T::get_fc_extension_flat_cost($opcode),
+                        T::get_fc_extension_flat_cost($instruction),
                         &mut args.resumable.maybe_fuel,
                     )
                 {
@@ -489,14 +489,14 @@ macro_rules! define_instruction_fn {
         }
     };
 
-    ($name: ident, fuel_check = flat_fd($opcode: expr), $contents:expr) => {
+    ($name: ident, fuel_check = flat_fd($instruction: expr), $contents:expr) => {
         define_instruction_fn! {
             $name,
             fuel_check = omit,
             |args: $crate::execution::interpreter_loop::Args| {
                 if let core::ops::ControlFlow::Break(outcome) =
                     $crate::execution::interpreter_loop::decrement_fuel(
-                        T::get_fd_extension_flat_cost($opcode),
+                        T::get_fd_extension_flat_cost($instruction),
                         &mut args.resumable.maybe_fuel,
                     )
                 {

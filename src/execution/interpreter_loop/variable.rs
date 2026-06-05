@@ -4,14 +4,14 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{GlobalIdx, LocalIdx},
-        reader::types::opcode,
+        structure::instructions,
     },
     execution::interpreter_loop::{define_instruction_fn, Args},
 };
 
 define_instruction_fn! {
     local_get,
-    fuel_check = flat(opcode::LOCAL_GET),
+    fuel_check = flat(instructions::LOCAL_GET),
     |Args {
          resumable, wasm, ..
      }| {
@@ -27,7 +27,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     local_set,
-    fuel_check = flat(opcode::LOCAL_SET),
+    fuel_check = flat(instructions::LOCAL_SET),
     |Args {
          resumable, wasm, ..
      }| {
@@ -43,7 +43,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     local_tee,
-    fuel_check = flat(opcode::LOCAL_TEE),
+    fuel_check = flat(instructions::LOCAL_TEE),
     |Args {
          resumable, wasm, ..
      }| {
@@ -59,7 +59,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     global_get,
-    fuel_check = flat(opcode::GLOBAL_GET),
+    fuel_check = flat(instructions::GLOBAL_GET),
     |Args {
          store_inner,
          modules,
@@ -97,7 +97,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     global_set,
-    fuel_check = flat(opcode::GLOBAL_SET),
+    fuel_check = flat(instructions::GLOBAL_SET),
     |Args {
          store_inner,
          modules,

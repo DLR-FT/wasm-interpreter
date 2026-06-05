@@ -37,7 +37,7 @@ pub(crate) unsafe fn run_const<'wasm, T: Config>(
     module: ModuleAddr,
     store: &Store<'wasm, T>,
 ) -> Result<(), RuntimeError> {
-    use crate::core::reader::types::opcode::*;
+    use crate::core::structure::instructions::*;
     loop {
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
@@ -126,7 +126,7 @@ struct Args<'reader, 'resumable, 'store, 'wasm, T: Config> {
 }
 
 macro_rules! define_instruction {
-    ($name:ident, $opcode:expr, $contents:expr) => {
+    ($name:ident, $instruction:expr, $contents:expr) => {
         /// # Safety
         ///
         /// 1. the constant expression in the reader must be valid
@@ -139,14 +139,14 @@ macro_rules! define_instruction {
     };
 }
 
-define_instruction!(end, opcode::END, |Args { .. }| {
+define_instruction!(end, instructions::END, |Args { .. }| {
     trace!("Constant instruction: END");
     Ok(true)
 });
 
 define_instruction!(
     global_get,
-    opcode::GLOBAL_GET,
+    instructions::GLOBAL_GET,
     |Args {
          wasm,
          module,
@@ -180,7 +180,7 @@ define_instruction!(
 
 define_instruction!(
     i32_const,
-    opcode::I32_CONST,
+    instructions::I32_CONST,
     |Args { wasm, stack, .. }| {
         let constant = wasm.read_var_i32().unwrap_validated();
         trace!("Constant instruction: i32.const [] -> [{constant}]");
@@ -191,7 +191,7 @@ define_instruction!(
 
 define_instruction!(
     f32_const,
-    opcode::F32_CONST,
+    instructions::F32_CONST,
     |Args { wasm, stack, .. }| {
         let constant = value::F32::from_bits(wasm.read_f32().unwrap_validated());
         trace!("Constanting instruction: f32.const [] -> [{constant}]");
@@ -202,7 +202,7 @@ define_instruction!(
 
 define_instruction!(
     f64_const,
-    opcode::F64_CONST,
+    instructions::F64_CONST,
     |Args { wasm, stack, .. }| {
         let constant = value::F64::from_bits(wasm.read_f64().unwrap_validated());
         trace!("Constanting instruction: f64.const [] -> [{constant}]");
@@ -213,7 +213,7 @@ define_instruction!(
 
 define_instruction!(
     i64_const,
-    opcode::I64_CONST,
+    instructions::I64_CONST,
     |Args { wasm, stack, .. }| {
         let constant = wasm.read_var_i64().unwrap_validated();
         trace!("Constant instruction: i64.const [] -> [{constant}]");
@@ -224,7 +224,7 @@ define_instruction!(
 
 define_instruction!(
     ref_null,
-    opcode::REF_NULL,
+    instructions::REF_NULL,
     |Args { wasm, stack, .. }| {
         let reftype = RefType::read(wasm).unwrap_validated();
 
@@ -236,7 +236,7 @@ define_instruction!(
 
 define_instruction!(
     ref_func,
-    opcode::REF_FUNC,
+    instructions::REF_FUNC,
     |Args {
          wasm,
          module,
@@ -256,9 +256,9 @@ define_instruction!(
 
 define_instruction!(
     fd_extensions,
-    opcode::FD_EXTENSIONS,
+    instructions::FD_EXTENSIONS,
     |Args { wasm, stack, .. }| {
-        use crate::core::reader::types::opcode::fd_extensions::*;
+        use crate::core::structure::instructions::fd_extensions::*;
 
         match wasm.read_var_u32().unwrap_validated() {
             V128_CONST => {

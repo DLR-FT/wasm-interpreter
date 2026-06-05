@@ -18,7 +18,6 @@ pub mod export;
 pub mod global;
 pub mod import;
 pub mod memarg;
-pub mod opcode;
 pub mod values;
 
 /// <https://webassembly.github.io/spec/core/binary/types.html#number-types>

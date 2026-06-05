@@ -4,7 +4,7 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{ElemIdx, TableIdx},
-        reader::types::opcode,
+        structure::instructions,
         utils::ToUsizeExt,
     },
     execution::interpreter_loop::{
@@ -16,7 +16,7 @@ use crate::{
 
 define_instruction_fn! {
     table_get,
-    fuel_check = flat(opcode::TABLE_GET),
+    fuel_check = flat(instructions::TABLE_GET),
     |Args {
          store_inner,
          modules,
@@ -61,7 +61,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     table_set,
-    fuel_check = flat(opcode::TABLE_SET),
+    fuel_check = flat(instructions::TABLE_SET),
     |Args {
          store_inner,
          modules,
@@ -105,7 +105,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     table_size,
-    fuel_check = flat_fc(opcode::fc_extensions::TABLE_SIZE),
+    fuel_check = flat_fc(instructions::fc_extensions::TABLE_SIZE),
     |Args {
          wasm,
          resumable,
@@ -173,9 +173,9 @@ define_instruction_fn! {
         let sz = tab.elem.len() as u32;
 
         let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::TABLE_GROW)
+        let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_GROW)
             + u64::from(n)
-                * T::get_fc_extension_cost_per_element(opcode::fc_extensions::TABLE_GROW);
+                * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_GROW);
         if let Some(fuel) = &mut resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
@@ -236,9 +236,9 @@ define_instruction_fn! {
         let tab = unsafe { store_inner.tables.get_mut(table_addr) };
 
         let len: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::TABLE_FILL)
+        let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_FILL)
             + u64::from(len)
-                * T::get_fc_extension_cost_per_element(opcode::fc_extensions::TABLE_FILL);
+                * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_FILL);
         if let Some(fuel) = &mut resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
@@ -320,9 +320,9 @@ define_instruction_fn! {
         let tab_y_elem_len = unsafe { store_inner.tables.get(table_addr_y) }.elem.len();
 
         let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated(); // size
-        let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::TABLE_COPY)
+        let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_COPY)
             + u64::from(n)
-                * T::get_fc_extension_cost_per_element(opcode::fc_extensions::TABLE_COPY);
+                * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_COPY);
         if let Some(fuel) = &mut resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
@@ -418,9 +418,9 @@ define_instruction_fn! {
         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
         let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated(); // size
-        let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::TABLE_INIT)
+        let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_INIT)
             + u64::from(n)
-                * T::get_fc_extension_cost_per_element(opcode::fc_extensions::TABLE_INIT);
+                * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_INIT);
         if let Some(fuel) = &mut resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
@@ -470,7 +470,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     elem_drop_fn,
-    fuel_check = flat_fc(opcode::fc_extensions::ELEM_DROP),
+    fuel_check = flat_fc(instructions::fc_extensions::ELEM_DROP),
     |Args {
          wasm,
          modules,
