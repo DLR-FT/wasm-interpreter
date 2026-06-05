@@ -3,7 +3,7 @@ use core::ops::{Add, Div, Mul, Sub};
 use core::{f32, f64};
 
 use crate::addrs::FuncAddr;
-use crate::core::reader::types::{NumType, ValType};
+use crate::core::structure::types::{NumType, ValType};
 use crate::RefType;
 
 #[derive(Clone, Debug, Copy, PartialOrd)]

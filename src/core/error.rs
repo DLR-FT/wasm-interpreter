@@ -5,7 +5,8 @@ use core::fmt::{Display, Formatter};
 
 use super::indices::FuncIdx;
 use crate::core::reader::section_header::SectionTy;
-use crate::core::reader::types::ValType;
+use crate::core::structure::types::ValType;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValidationError {
     Decoding(DecodingError),

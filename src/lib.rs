@@ -11,12 +11,12 @@ extern crate log_wrapper;
 
 pub use core::decoding::error::DecodingError;
 pub use core::error::ValidationError;
-pub use core::reader::types::{
-    global::GlobalType, ExternType, FuncType, Limits, MemType, NumType, RefType, ResultType,
-    TableType, ValType,
-};
 pub use core::rw_spinlock;
 pub use core::structure::instructions;
+pub use core::structure::types::{
+    ExternType, FuncType, GlobalType, Limits, MemType, NumType, RefType, ResultType, TableType,
+    ValType,
+};
 pub use execution::error::{RuntimeError, TrapError};
 
 pub use execution::store::*;
