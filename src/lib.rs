@@ -9,7 +9,8 @@ extern crate alloc;
 #[macro_use]
 extern crate log_wrapper;
 
-pub use core::error::{DecodingError, ValidationError};
+pub use core::decoding::error::DecodingError;
+pub use core::error::ValidationError;
 pub use core::reader::types::opcode as opcodes;
 pub use core::reader::types::{
     global::GlobalType, ExternType, FuncType, Limits, MemType, NumType, RefType, ResultType,
@@ -54,7 +55,7 @@ impl From<RuntimeError> for Error {
 
 #[cfg(test)]
 mod test {
-    use crate::{core::error::DecodingError, Error, RuntimeError, ValidationError};
+    use crate::{core::decoding::error::DecodingError, Error, RuntimeError, ValidationError};
 
     #[test]
     fn error_conversion_validation_error() {

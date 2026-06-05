@@ -7,7 +7,7 @@
 
 use alloc::vec::Vec;
 
-use crate::core::error::DecodingError;
+use crate::core::decoding::error::DecodingError;
 use crate::core::reader::WasmReader;
 use crate::core::utils::ToUsizeExt;
 

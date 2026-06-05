@@ -3,7 +3,7 @@ use core::iter;
 use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
 
-use crate::core::error::DecodingError;
+use crate::core::decoding::error::DecodingError;
 use crate::core::indices::{
     read_label_idx, DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, LocalIdx, MemIdx,
     TableIdx, TypeIdx,

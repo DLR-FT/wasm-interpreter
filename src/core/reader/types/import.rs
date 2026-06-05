@@ -1,4 +1,4 @@
-use crate::core::error::DecodingError;
+use crate::core::decoding::error::DecodingError;
 use crate::core::indices::{IdxVec, TypeIdx};
 use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;

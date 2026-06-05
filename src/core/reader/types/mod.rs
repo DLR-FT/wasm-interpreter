@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter};
 use global::GlobalType;
 
-use crate::core::error::DecodingError;
+use crate::core::decoding::error::DecodingError;
 use crate::core::indices::{IdxVec, TypeIdx};
 use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;

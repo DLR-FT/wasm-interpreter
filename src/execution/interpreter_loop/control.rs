@@ -3,7 +3,7 @@ use core::ops::ControlFlow;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        error::DecodingError,
+        decoding::error::DecodingError,
         indices::{read_label_idx_unchecked, FuncIdx, TableIdx, TypeIdx},
         reader::types::{opcode, BlockType},
         utils::ToUsizeExt,

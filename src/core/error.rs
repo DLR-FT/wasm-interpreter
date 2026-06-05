@@ -1,91 +1,11 @@
+use crate::core::decoding::error::DecodingError;
 use crate::validation_stack::ValidationStackEntry;
 use crate::RefType;
 use core::fmt::{Display, Formatter};
-use core::str::Utf8Error;
 
 use super::indices::FuncIdx;
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum DecodingError {
-    /// The magic number at the start of the Wasm bytecode is invalid.
-    InvalidMagic,
-    /// The binary format version at the start of the Wasm bytecode is invalid.
-    InvalidBinaryFormatVersion,
-    /// The end of the binary file was reached unexpectedly.
-    Eof,
-
-    /// A UTF-8 string is malformed.
-    MalformedUtf8(Utf8Error),
-    /// The type of a section is malformed.
-    MalformedSectionTypeDiscriminator(u8),
-    /// The discriminator of a number type is malformed.
-    MalformedNumTypeDiscriminator(u8),
-    /// The discriminator of a vector type is malformed.
-    MalformedVecTypeDiscriminator(u8),
-    /// The discriminator of a function type is malformed.
-    MalformedFuncTypeDiscriminator(u8),
-    /// The discriminator of a reference type is malformed.
-    MalformedRefTypeDiscriminator(u8),
-    /// A valtype is malformed because it is neither a number, reference nor vector type.
-    MalformedValType,
-    /// The discriminator of an export description is malformed.
-    MalformedExportDescDiscriminator(u8),
-    /// The discriminator of an import description is malformed.
-    MalformedImportDescDiscriminator(u8),
-    /// The discriminator of a limits type is malformed.
-    MalformedLimitsDiscriminator(u8),
-    /// The min field of a limits type is larger than the max field.
-    MalformedLimitsMinLargerThanMax { min: u32, max: u32 },
-    /// The discriminator of a mut type is malformed.
-    MalformedMutDiscriminator(u8),
-    /// Block types use a special 33-bit signed integer for encoding type indices.
-    MalformedBlockTypeTypeIdx(i64),
-    /// A variable-length integer was read but it overflowed.
-    MalformedVariableLengthInteger,
-    /// The discriminator of an element kind is malformed.
-    MalformedElemKindDiscriminator(u8),
-    /// 33-bit signed integers are sometimes used to encode unsigned 32-bit
-    /// integers to prevent collisions between bit patterns of different types.
-    /// Therefore, 33-bit signed integers may never be negative.
-    I33IsNegative,
-    /// A function specifies too many locals, i.e. more than 2^32 - 1
-    TooManyLocals(u64),
-    /// The memory size specified by a mem type exceeds the maximum size.
-    MemoryTooLarge,
-}
-
-impl core::error::Error for DecodingError {}
-
-impl Display for DecodingError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        match self {
-            DecodingError::InvalidMagic => write!(f, "The magic number is invalid"),
-            DecodingError::InvalidBinaryFormatVersion => write!(f, "The Wasm binary format version is invalid"),
-            DecodingError::Eof => write!(f, "The end of the Wasm bytecode was reached unexpectedly"),
-            DecodingError::MalformedUtf8(utf8_error) => write!(f, "Failed to parse a UTF-8 string: {utf8_error}"),
-            DecodingError::MalformedSectionTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a section type discriminator"),
-            DecodingError::MalformedNumTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a number type discriminator"),
-            DecodingError::MalformedVecTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a vector type discriminator"),
-            DecodingError::MalformedFuncTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a function type discriminator"),
-            DecodingError::MalformedRefTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a reference type discriminator"),
-            DecodingError::MalformedValType => write!(f, "Failed to read a value type because it is neither a number, reference or vector type"),
-            DecodingError::MalformedExportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an export description discriminator"),
-            DecodingError::MalformedImportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an import description discriminator"),
-            DecodingError::MalformedLimitsDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a limits type discriminator"),
-            DecodingError::MalformedLimitsMinLargerThanMax { min, max } => write!(f, "Limits are malformed because min={min} is larger than max={max}"),
-            DecodingError::MalformedMutDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a mute type discriminator"),
-            DecodingError::MalformedBlockTypeTypeIdx(idx) => write!(f, "The type index {idx} which is encoded as a singed 33-bit integer inside a block type is malformed"),
-            DecodingError::MalformedVariableLengthInteger => write!(f, "Reading a variable-length integer overflowed"),
-            DecodingError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
-            DecodingError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
-            DecodingError::TooManyLocals(n) => write!(f,"There are {n} locals and this exceeds the maximum allowed number of 2^32-1"),
-            DecodingError::MemoryTooLarge => write!(f, "The size specified by a memory type exceeds the maximum size"),
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValidationError {
     Decoding(DecodingError),
@@ -271,7 +191,7 @@ impl From<DecodingError> for ValidationError {
 mod test {
     use alloc::string::ToString;
 
-    use crate::core::error::DecodingError;
+    use crate::core::decoding::error::DecodingError;
 
     #[test]
     fn fmt_invalid_magic() {

@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use crate::core::{error::DecodingError, reader::WasmReader};
+use crate::core::{decoding::error::DecodingError, reader::WasmReader};
 
 #[derive(Debug)]
 pub struct MemArg {
