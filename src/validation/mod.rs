@@ -28,6 +28,7 @@ pub(crate) mod code;
 pub(crate) mod custom_section;
 pub(crate) mod data;
 pub(crate) mod globals;
+pub(crate) mod modules;
 pub(crate) mod read_constant_expression;
 pub(crate) mod validation_stack;
 
