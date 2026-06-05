@@ -4,11 +4,10 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use crate::{
-    core::{
-        reader::types::{FuncType, ResultType},
+    ValidationError, core::{
+        structure::types::{FuncType, NumType, RefType, ResultType, ValType},
         utils::ToUsizeExt,
-    },
-    NumType, RefType, ValType, ValidationError,
+    }
 };
 
 #[derive(Debug, PartialEq, Eq)]

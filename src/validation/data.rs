@@ -5,12 +5,10 @@ use crate::{
         indices::{FuncIdx, IdxVec, MemIdx, TypeIdx},
         reader::{
             section_header::{SectionHeader, SectionTy},
-            types::{
-                data::{DataMode, DataModeActive, DataSegment},
-                global::GlobalType,
-            },
+            types::data::{DataMode, DataModeActive, DataSegment},
             WasmReader,
         },
+        structure::types::GlobalType,
     },
     read_constant_expression::read_constant_expression,
     validation_stack::ValidationStack,

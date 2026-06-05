@@ -1,18 +1,13 @@
 use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
-    core::{
+    GlobalType, Hostcode, Limits, RefType, RuntimeError, TrapError, ValType, Value, core::{
         indices::{DataIdx, ElemIdx, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
-        reader::{
-            span::Span,
-            types::{FuncType, MemType, TableType},
-        },
+        reader::span::Span,
         sidetable::Sidetable,
+        structure::types::{FuncType, MemType, TableType},
         utils::ToUsizeExt,
-    },
-    linear_memory::LinearMemory,
-    value::Ref,
-    GlobalType, Hostcode, Limits, RefType, RuntimeError, TrapError, ValType, Value,
+    }, linear_memory::LinearMemory, value::Ref
 };
 
 use super::{

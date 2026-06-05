@@ -1,21 +1,11 @@
 use alloc::vec::Vec;
 
 use crate::{
-    addrs::ModuleAddr,
-    assert_validated::UnwrapValidatedExt,
-    config::Config,
-    core::{
+    RefType, RuntimeError, Store, Value, addrs::ModuleAddr, assert_validated::UnwrapValidatedExt, config::Config, core::{
         indices::{FuncIdx, GlobalIdx},
-        reader::{
-            span::Span,
-            types::{FuncType, ResultType},
-            WasmReader,
-        },
-    },
-    unreachable_validated,
-    value::{self, Ref},
-    value_stack::Stack,
-    RefType, RuntimeError, Store, Value,
+        reader::{WasmReader, span::Span},
+        structure::types::{FuncType, ResultType},
+    }, unreachable_validated, value::{self, Ref}, value_stack::Stack
 };
 
 // TODO update this documentation

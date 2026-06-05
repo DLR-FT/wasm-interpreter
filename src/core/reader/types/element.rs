@@ -1,10 +1,8 @@
-use super::global::GlobalType;
-use super::RefType;
 use crate::core::decoding::error::DecodingError;
 use crate::core::indices::{FuncIdx, IdxVec, TableIdx, TypeIdx};
 use crate::core::reader::span::Span;
-use crate::core::reader::types::TableType;
 use crate::core::reader::WasmReader;
+use crate::core::structure::types::{GlobalType, RefType, TableType};
 use crate::read_constant_expression::read_constant_expression;
 use crate::validation_stack::ValidationStack;
 use crate::{NumType, ValType, ValidationError};
