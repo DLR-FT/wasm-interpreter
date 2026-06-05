@@ -1,9 +1,11 @@
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{DataIdx, Idx, MemIdx},
         reader::types::memarg::MemArg,
-        structure::instructions,
+        structure::{
+            instructions,
+            modules::indices::{DataIdx, Idx, MemIdx},
+        },
         utils::ToUsizeExt,
     },
     execution::interpreter_loop::{

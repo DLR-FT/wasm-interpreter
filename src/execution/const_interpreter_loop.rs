@@ -5,9 +5,11 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     config::Config,
     core::{
-        indices::{FuncIdx, GlobalIdx},
         reader::{span::Span, WasmReader},
-        structure::types::{FuncType, ResultType},
+        structure::{
+            modules::indices::{FuncIdx, GlobalIdx},
+            types::{FuncType, ResultType},
+        },
     },
     unreachable_validated,
     value::{self, Ref},

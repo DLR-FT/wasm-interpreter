@@ -4,13 +4,13 @@ use crate::addrs::{
     AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr,
 };
 use crate::config::Config;
-use crate::core::indices::{ElemIdx, IdxVec, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
 use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
 use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::ImportSubTypeRelation;
 use crate::core::reader::WasmReader;
+use crate::core::structure::modules::indices::{ElemIdx, IdxVec, TypeIdx};
 use crate::core::structure::types::{ExternType, FuncType, GlobalType, MemType, TableType};
 use crate::core::utils::ToUsizeExt;
 use crate::execution::interpreter_loop::{self, memory_init, table_init, InterpreterLoopOutcome};

@@ -1,8 +1,8 @@
 use alloc::vec::Vec;
 
-use crate::core::indices::{FuncIdx, IdxVec, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::WasmReader;
+use crate::core::structure::modules::indices::{FuncIdx, IdxVec, TypeIdx};
 use crate::core::structure::types::GlobalType;
 use crate::core::utils::ToUsizeExt;
 use crate::{NumType, RefType, ValType, ValidationError};

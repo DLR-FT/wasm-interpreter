@@ -1,7 +1,9 @@
 use crate::core::decoding::error::DecodingError;
-use crate::core::indices::{FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx};
 use crate::core::reader::types::global::Global;
 use crate::core::reader::WasmReader;
+use crate::core::structure::modules::indices::{
+    FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx,
+};
 use crate::{MemType, TableType, ValidationError, ValidationInfo};
 
 use super::ExternType;
