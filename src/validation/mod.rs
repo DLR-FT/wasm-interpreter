@@ -4,7 +4,7 @@ use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
 use crate::core::decoding::error::DecodingError;
-use crate::core::indices::{
+use crate::core::structure::modules::indices::{
     DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, IdxVecOverflowError, MemIdx,
     TableIdx, TypeIdx,
 };

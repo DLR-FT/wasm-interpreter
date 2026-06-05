@@ -1,5 +1,5 @@
 use crate::core::decoding::error::DecodingError;
-use crate::core::indices::{FuncIdx, IdxVec, TableIdx, TypeIdx};
+use crate::core::structure::modules::indices::{FuncIdx, IdxVec, TableIdx, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::WasmReader;
 use crate::core::structure::types::{GlobalType, RefType, TableType};

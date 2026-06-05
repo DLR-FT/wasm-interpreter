@@ -2,9 +2,9 @@ use core::ops::ControlFlow;
 
 use crate::{
     assert_validated::UnwrapValidatedExt,
-    core::{
-        indices::{GlobalIdx, LocalIdx},
-        structure::instructions,
+    core::structure::{
+        instructions,
+        modules::indices::{GlobalIdx, LocalIdx},
     },
     execution::interpreter_loop::{define_instruction_fn, Args},
 };

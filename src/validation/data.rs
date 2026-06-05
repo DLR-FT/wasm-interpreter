@@ -2,13 +2,15 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{
-        indices::{FuncIdx, IdxVec, MemIdx, TypeIdx},
         reader::{
             section_header::{SectionHeader, SectionTy},
             types::data::{DataMode, DataModeActive, DataSegment},
             WasmReader,
         },
-        structure::types::GlobalType,
+        structure::{
+            modules::indices::{FuncIdx, IdxVec, MemIdx, TypeIdx},
+            types::GlobalType,
+        },
     },
     read_constant_expression::read_constant_expression,
     validation_stack::ValidationStack,

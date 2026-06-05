@@ -1,9 +1,9 @@
 use crate::core::decoding::error::DecodingError;
+use crate::core::structure::modules::indices::FuncIdx;
 use crate::validation_stack::ValidationStackEntry;
 use crate::RefType;
 use core::fmt::{Display, Formatter};
 
-use super::indices::FuncIdx;
 use crate::core::reader::section_header::SectionTy;
 use crate::core::structure::types::ValType;
 
