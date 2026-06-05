@@ -5,8 +5,7 @@ use crate::{
     core::{
         decoding::error::DecodingError,
         indices::{read_label_idx_unchecked, FuncIdx, TableIdx, TypeIdx},
-        reader::types::BlockType,
-        structure::instructions,
+        structure::{instructions, types::BlockType},
         utils::ToUsizeExt,
     },
     execution::interpreter_loop::{

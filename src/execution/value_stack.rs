@@ -6,7 +6,7 @@ use crate::addrs::FuncAddr;
 use crate::config::Config;
 use crate::core::fixed_capacity_vec::FixedCapacityVec;
 use crate::core::indices::LocalIdx;
-use crate::core::reader::types::{FuncType, ValType};
+use crate::core::structure::types::{FuncType, ValType};
 use crate::core::utils::ToUsizeExt;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;

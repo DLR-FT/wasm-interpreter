@@ -6,11 +6,8 @@ use crate::{
     config::Config,
     core::{
         indices::{FuncIdx, GlobalIdx},
-        reader::{
-            span::Span,
-            types::{FuncType, ResultType},
-            WasmReader,
-        },
+        reader::{span::Span, WasmReader},
+        structure::types::{FuncType, ResultType},
     },
     unreachable_validated,
     value::{self, Ref},
