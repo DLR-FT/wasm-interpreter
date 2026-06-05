@@ -36,7 +36,7 @@ use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
     core::{
-        error::DecodingError,
+        decoding::error::DecodingError,
         reader::{types::FuncType, WasmReader},
         utils::ToUsizeExt,
     },
