@@ -2,33 +2,33 @@
 
 #[cfg(feature = "log")]
 pub fn print_beautiful_instruction_name_1_byte(first_byte: u8, pc: usize) {
-    use crate::core::reader::types::opcode::opcode_byte_to_str;
+    use crate::core::structure::instructions::instruction_byte_to_str;
 
     trace!(
         "Read instruction {} at wasm_binary[{}]",
-        opcode_byte_to_str(first_byte),
+        instruction_byte_to_str(first_byte),
         pc
     );
 }
 
 #[cfg(feature = "log")]
 pub fn print_beautiful_fc_extension(second_byte: u32, pc: usize) {
-    use crate::core::reader::types::opcode::fc_extension_opcode_to_str;
+    use crate::core::structure::instructions::fc_extension_instruction_to_str;
 
     trace!(
         "Read instruction {} at wasm_binary[{}]",
-        fc_extension_opcode_to_str(second_byte),
+        fc_extension_instruction_to_str(second_byte),
         pc,
     );
 }
 
 #[cfg(feature = "log")]
 pub fn print_beautiful_fd_extension(second_byte: u32, pc: usize) {
-    use crate::core::reader::types::opcode::fd_extension_opcode_to_str;
+    use crate::core::structure::instructions::fd_extension_instruction_to_str;
 
     trace!(
         "Read instruction {} at wasm_binary[{}]",
-        fd_extension_opcode_to_str(second_byte),
+        fd_extension_instruction_to_str(second_byte),
         pc,
     );
 }

@@ -2,14 +2,14 @@ use core::ops::ControlFlow;
 
 use crate::{
     assert_validated::UnwrapValidatedExt,
-    core::reader::types::opcode,
+    core::structure::instructions,
     execution::interpreter_loop::{define_instruction_fn, Args},
     ValType,
 };
 
 define_instruction_fn! {
     drop,
-    fuel_check = flat(opcode::DROP),
+    fuel_check = flat(instructions::DROP),
     |Args { resumable, .. }| {
         resumable.stack.pop_value();
         trace!("Instruction: DROP");
@@ -20,7 +20,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     select,
-    fuel_check = flat(opcode::SELECT),
+    fuel_check = flat(instructions::SELECT),
     |Args { resumable, .. }| {
         let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let val2 = resumable.stack.pop_value();
@@ -37,7 +37,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     select_t,
-    fuel_check = flat(opcode::SELECT_T),
+    fuel_check = flat(instructions::SELECT_T),
     |Args {
          resumable, wasm, ..
      }| {

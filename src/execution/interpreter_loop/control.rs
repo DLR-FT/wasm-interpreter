@@ -5,7 +5,8 @@ use crate::{
     core::{
         decoding::error::DecodingError,
         indices::{read_label_idx_unchecked, FuncIdx, TableIdx, TypeIdx},
-        reader::types::{opcode, BlockType},
+        reader::types::BlockType,
+        structure::instructions,
         utils::ToUsizeExt,
     },
     execution::interpreter_loop::{
@@ -17,19 +18,19 @@ use crate::{
     TrapError,
 };
 
-define_instruction_fn! {nop, fuel_check = flat(opcode::NOP), |_args| Ok(
+define_instruction_fn! {nop, fuel_check = flat(instructions::NOP), |_args| Ok(
     ControlFlow::Continue(())
 )}
 
 define_instruction_fn! {
     unreachable,
-    fuel_check = flat(opcode::UNREACHABLE),
+    fuel_check = flat(instructions::UNREACHABLE),
     |Args { .. }| { Err(TrapError::ReachedUnreachable.into()) }
 }
 
 define_instruction_fn! {
     block,
-    fuel_check = flat(opcode::BLOCK),
+    fuel_check = flat(instructions::BLOCK),
     |Args { wasm, .. }| {
         // SAFETY: Validation guarantess there to be a valid block type
         // next.
@@ -40,7 +41,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     end,
-    fuel_check = flat(opcode::END),
+    fuel_check = flat(instructions::END),
     |Args {
          store_inner,
          modules,
@@ -108,7 +109,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     r#loop,
-    fuel_check = flat(opcode::LOOP),
+    fuel_check = flat(instructions::LOOP),
     |Args { wasm, .. }| {
         // SAFETY: Validation guarantees there to be a valid block type
         // next.
@@ -119,7 +120,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     r#if,
-    fuel_check = flat(opcode::IF),
+    fuel_check = flat(instructions::IF),
     |Args {
          resumable,
          wasm,
@@ -150,7 +151,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     r#else,
-    fuel_check = flat(opcode::ELSE),
+    fuel_check = flat(instructions::ELSE),
     |Args {
          wasm,
          resumable,
@@ -169,7 +170,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     br,
-    fuel_check = flat(opcode::BR),
+    fuel_check = flat(instructions::BR),
     |Args {
          resumable,
          wasm,
@@ -191,7 +192,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     br_if,
-    fuel_check = flat(opcode::BR_IF),
+    fuel_check = flat(instructions::BR_IF),
     |Args {
          resumable,
          wasm,
@@ -221,7 +222,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     br_table,
-    fuel_check = flat(opcode::BR_TABLE),
+    fuel_check = flat(instructions::BR_TABLE),
     |Args {
          resumable,
          wasm,
@@ -261,7 +262,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     r#return,
-    fuel_check = flat(opcode::RETURN),
+    fuel_check = flat(instructions::RETURN),
     |Args {
          resumable,
          wasm,
@@ -281,7 +282,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     call,
-    fuel_check = flat(opcode::CALL),
+    fuel_check = flat(instructions::CALL),
     |Args {
          store_inner,
          modules,
@@ -375,7 +376,7 @@ define_instruction_fn! {
 // TODO: fix push_call_frame, because the func idx that you get from the table is global func idx
 define_instruction_fn! {
     call_indirect,
-    fuel_check = flat(opcode::CALL_INDIRECT),
+    fuel_check = flat(instructions::CALL_INDIRECT),
     |Args {
          store_inner,
          modules,

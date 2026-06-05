@@ -2,7 +2,8 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{DataIdx, Idx, MemIdx},
-        reader::types::{memarg::MemArg, opcode},
+        reader::types::memarg::MemArg,
+        structure::instructions,
         utils::ToUsizeExt,
     },
     execution::interpreter_loop::{
@@ -17,7 +18,7 @@ use core::{array, num::NonZeroU64, ops::ControlFlow};
 // t.load
 define_instruction_fn! {
     i32_load,
-    fuel_check = flat(opcode::I32_LOAD),
+    fuel_check = flat(instructions::I32_LOAD),
     |Args {
          store_inner,
          modules,
@@ -52,7 +53,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i64_load,
-    fuel_check = flat(opcode::I64_LOAD),
+    fuel_check = flat(instructions::I64_LOAD),
     |Args {
          store_inner,
          modules,
@@ -87,7 +88,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     f32_load,
-    fuel_check = flat(opcode::F32_LOAD),
+    fuel_check = flat(instructions::F32_LOAD),
     |Args {
          store_inner,
          modules,
@@ -122,7 +123,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     f64_load,
-    fuel_check = flat(opcode::F64_LOAD),
+    fuel_check = flat(instructions::F64_LOAD),
     |Args {
          store_inner,
          modules,
@@ -157,7 +158,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     v128_load,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD),
     |Args {
          wasm,
          resumable,
@@ -193,7 +194,7 @@ define_instruction_fn! {
 // t.loadN_sx
 define_instruction_fn! {
     i32_load8_s,
-    fuel_check = flat(opcode::I32_LOAD8_S),
+    fuel_check = flat(instructions::I32_LOAD8_S),
     |Args {
          store_inner,
          modules,
@@ -228,7 +229,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i32_load8_u,
-    fuel_check = flat(opcode::I32_LOAD8_U),
+    fuel_check = flat(instructions::I32_LOAD8_U),
     |Args {
          store_inner,
          modules,
@@ -263,7 +264,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i32_load16_s,
-    fuel_check = flat(opcode::I32_LOAD16_S),
+    fuel_check = flat(instructions::I32_LOAD16_S),
     |Args {
          store_inner,
          modules,
@@ -298,7 +299,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i32_load16_u,
-    fuel_check = flat(opcode::I32_LOAD16_U),
+    fuel_check = flat(instructions::I32_LOAD16_U),
     |Args {
          store_inner,
          modules,
@@ -333,7 +334,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i64_load8_s,
-    fuel_check = flat(opcode::I64_LOAD8_S),
+    fuel_check = flat(instructions::I64_LOAD8_S),
     |Args {
          store_inner,
          modules,
@@ -368,7 +369,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i64_load8_u,
-    fuel_check = flat(opcode::I64_LOAD8_U),
+    fuel_check = flat(instructions::I64_LOAD8_U),
     |Args {
          store_inner,
          modules,
@@ -403,7 +404,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i64_load16_s,
-    fuel_check = flat(opcode::I64_LOAD16_S),
+    fuel_check = flat(instructions::I64_LOAD16_S),
     |Args {
          store_inner,
          modules,
@@ -438,7 +439,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i64_load16_u,
-    fuel_check = flat(opcode::I64_LOAD16_U),
+    fuel_check = flat(instructions::I64_LOAD16_U),
     |Args {
          store_inner,
          modules,
@@ -473,7 +474,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i64_load32_s,
-    fuel_check = flat(opcode::I64_LOAD32_S),
+    fuel_check = flat(instructions::I64_LOAD32_S),
     |Args {
          store_inner,
          modules,
@@ -508,7 +509,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i64_load32_u,
-    fuel_check = flat(opcode::I64_LOAD32_U),
+    fuel_check = flat(instructions::I64_LOAD32_U),
     |Args {
          store_inner,
          modules,
@@ -544,7 +545,7 @@ define_instruction_fn! {
 // v128.loadNxM_sx
 define_instruction_fn! {
     v128_load8x8_s,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8X8_S),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD8X8_S),
     |Args {
          wasm,
          resumable,
@@ -587,7 +588,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_load8x8_u,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8X8_U),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD8X8_U),
     |Args {
          wasm,
          resumable,
@@ -630,7 +631,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_load16x4_s,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16X4_S),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD16X4_S),
     |Args {
          wasm,
          resumable,
@@ -673,7 +674,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_load16x4_u,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16X4_U),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD16X4_U),
     |Args {
          wasm,
          resumable,
@@ -716,7 +717,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_load32x2_s,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32X2_S),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD32X2_S),
     |Args {
          wasm,
          resumable,
@@ -759,7 +760,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_load32x2_u,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32X2_U),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD32X2_U),
     |Args {
          wasm,
          resumable,
@@ -804,7 +805,7 @@ define_instruction_fn! {
 // v128.loadN_splat
 define_instruction_fn! {
     v128_load8_splat,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8_SPLAT),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD8_SPLAT),
     |Args {
          wasm,
          resumable,
@@ -839,7 +840,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_load16_splat,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16_SPLAT),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD16_SPLAT),
     |Args {
          wasm,
          resumable,
@@ -874,7 +875,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_load32_splat,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32_SPLAT),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD32_SPLAT),
     |Args {
          wasm,
          resumable,
@@ -909,7 +910,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_load64_splat,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD64_SPLAT),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD64_SPLAT),
     |Args {
          wasm,
          resumable,
@@ -946,7 +947,7 @@ define_instruction_fn! {
 // v128.loadN_zero
 define_instruction_fn! {
     v128_load32_zero,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32_ZERO),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD32_ZERO),
     |Args {
          wasm,
          resumable,
@@ -983,7 +984,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_load64_zero,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD64_ZERO),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD64_ZERO),
     |Args {
          wasm,
          resumable,
@@ -1021,7 +1022,7 @@ define_instruction_fn! {
 // v128.loadN_lane
 define_instruction_fn! {
     v128_load8_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD8_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD8_LANE),
     |Args {
          wasm,
          resumable,
@@ -1057,7 +1058,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     v128_load16_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD16_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD16_LANE),
     |Args {
          wasm,
          resumable,
@@ -1092,7 +1093,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_load32_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD32_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD32_LANE),
     |Args {
          wasm,
          resumable,
@@ -1127,7 +1128,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_load64_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_LOAD64_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_LOAD64_LANE),
     |Args {
          wasm,
          resumable,
@@ -1164,7 +1165,7 @@ define_instruction_fn! {
 // t.store
 define_instruction_fn! {
     i32_store,
-    fuel_check = flat(opcode::I32_STORE),
+    fuel_check = flat(instructions::I32_STORE),
     |Args {
          store_inner,
          modules,
@@ -1200,7 +1201,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i64_store,
-    fuel_check = flat(opcode::I64_STORE),
+    fuel_check = flat(instructions::I64_STORE),
     |Args {
          store_inner,
          modules,
@@ -1236,7 +1237,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     f32_store,
-    fuel_check = flat(opcode::F32_STORE),
+    fuel_check = flat(instructions::F32_STORE),
     |Args {
          store_inner,
          modules,
@@ -1272,7 +1273,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     f64_store,
-    fuel_check = flat(opcode::F64_STORE),
+    fuel_check = flat(instructions::F64_STORE),
     |Args {
          store_inner,
          modules,
@@ -1308,7 +1309,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     v128_store,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_STORE),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_STORE),
     |Args {
          wasm,
          resumable,
@@ -1344,7 +1345,7 @@ define_instruction_fn! {
 // t.storeN
 define_instruction_fn! {
     i32_store8,
-    fuel_check = flat(opcode::I32_STORE8),
+    fuel_check = flat(instructions::I32_STORE8),
     |Args {
          store_inner,
          modules,
@@ -1382,7 +1383,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i32_store16,
-    fuel_check = flat(opcode::I32_STORE16),
+    fuel_check = flat(instructions::I32_STORE16),
     |Args {
          store_inner,
          modules,
@@ -1420,7 +1421,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i64_store8,
-    fuel_check = flat(opcode::I64_STORE8),
+    fuel_check = flat(instructions::I64_STORE8),
     |Args {
          store_inner,
          modules,
@@ -1458,7 +1459,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i64_store16,
-    fuel_check = flat(opcode::I64_STORE16),
+    fuel_check = flat(instructions::I64_STORE16),
     |Args {
          store_inner,
          modules,
@@ -1496,7 +1497,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     i64_store32,
-    fuel_check = flat(opcode::I64_STORE32),
+    fuel_check = flat(instructions::I64_STORE32),
     |Args {
          store_inner,
          modules,
@@ -1535,7 +1536,7 @@ define_instruction_fn! {
 // v128.storeN_lane
 define_instruction_fn! {
     v128_store8_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_STORE8_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_STORE8_LANE),
     |Args {
          wasm,
          resumable,
@@ -1571,7 +1572,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_store16_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_STORE16_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_STORE16_LANE),
     |Args {
          wasm,
          resumable,
@@ -1607,7 +1608,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_store32_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_STORE32_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_STORE32_LANE),
     |Args {
          wasm,
          resumable,
@@ -1643,7 +1644,7 @@ define_instruction_fn! {
 }
 define_instruction_fn! {
     v128_store64_lane,
-    fuel_check = flat_fd(opcode::fd_extensions::V128_STORE64_LANE),
+    fuel_check = flat_fc(instructions::fd_extensions::V128_STORE64_LANE),
     |Args {
          wasm,
          resumable,
@@ -1681,7 +1682,7 @@ define_instruction_fn! {
 // memory.size
 define_instruction_fn! {
     memory_size,
-    fuel_check = flat(opcode::MEMORY_SIZE),
+    fuel_check = flat(instructions::MEMORY_SIZE),
     |Args {
          store_inner,
          modules,
@@ -1742,8 +1743,8 @@ define_instruction_fn! {
 
         let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         // decrement fuel, but push n back if it fails
-        let cost = T::get_flat_cost(opcode::MEMORY_GROW)
-            + u64::from(n) * T::get_cost_per_element(opcode::MEMORY_GROW);
+        let cost = T::get_flat_cost(instructions::MEMORY_GROW)
+            + u64::from(n) * T::get_cost_per_element(instructions::MEMORY_GROW);
         if let Some(fuel) = &mut resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
@@ -1808,9 +1809,9 @@ define_instruction_fn! {
 
         let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         // decrement fuel, but push n back if it fails
-        let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::MEMORY_FILL)
+        let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_FILL)
             + u64::from(n)
-                * T::get_fc_extension_cost_per_element(opcode::fc_extensions::MEMORY_FILL);
+                * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_FILL);
         if let Some(fuel) = &mut resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
@@ -1877,9 +1878,9 @@ define_instruction_fn! {
 
         let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         // decrement fuel, but push n back if it fails
-        let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::MEMORY_COPY)
+        let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_COPY)
             + u64::from(n)
-                * T::get_fc_extension_cost_per_element(opcode::fc_extensions::MEMORY_COPY);
+                * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_COPY);
         if let Some(fuel) = &mut resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
@@ -1944,9 +1945,9 @@ define_instruction_fn! {
 
         let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         // decrement fuel, but push n back if it fails
-        let cost = T::get_fc_extension_flat_cost(opcode::fc_extensions::MEMORY_INIT)
+        let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_INIT)
             + u64::from(n)
-                * T::get_fc_extension_cost_per_element(opcode::fc_extensions::MEMORY_INIT);
+                * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_INIT);
         if let Some(fuel) = &mut resumable.maybe_fuel {
             if *fuel >= cost {
                 *fuel -= cost;
@@ -1996,7 +1997,7 @@ define_instruction_fn! {
 // data.drop
 define_instruction_fn! {
     data_drop_fn,
-    fuel_check = flat_fc(opcode::fc_extensions::DATA_DROP),
+    fuel_check = flat_fc(instructions::fc_extensions::DATA_DROP),
     |Args {
          wasm,
          modules,
