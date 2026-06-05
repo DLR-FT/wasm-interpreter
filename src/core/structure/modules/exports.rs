@@ -1,7 +1,4 @@
-use crate::{
-    core::structure::modules::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx},
-    ExternType, ValidationInfo,
-};
+use crate::core::structure::modules::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
 
 #[derive(Debug, Clone)]
 pub struct Export<'wasm> {
@@ -15,62 +12,4 @@ pub enum ExportDesc {
     Table(TableIdx),
     Mem(MemIdx),
     Global(GlobalIdx),
-}
-
-impl ExportDesc {
-    /// returns the external type of `self` according to typing relation,
-    /// taking `validation_info` as validation context C
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that `self` comes from the same
-    /// [`ValidationInfo`] that is passed as an argument here.
-    #[allow(unused)] // reason = "this function is analogous to ImportDesc::extern_type, however it is not yet clear if it is needed in the future"
-    pub unsafe fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
-        // TODO clean up logic for checking if an exported definition is an
-        // import
-        match self {
-            ExportDesc::Func(func_idx) => {
-                // SAFETY: The caller ensures that the current `ExportDesc`
-                // comes from the same `ValidationInfo` that is passed into the
-                // current function. Therefore, the function index stored in
-                // `self` must be valid in the given `ValidationInfo`.
-                let type_idx = unsafe { validation_info.functions.inner().get(*func_idx) };
-                // SAFETY: The type index was just read from the passed
-                // `ValidationInfo`.  Because the `ValidationInfo` struct
-                // guarantees that all indices contained in it are valid for all
-                // other `IdxVec` vectors in it, this is sound.
-                let func_type = unsafe { validation_info.types.get(*type_idx) };
-                // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
-                ExternType::Func(func_type.clone())
-            }
-            ExportDesc::Table(table_idx) => {
-                // SAFETY: The caller ensures that the current `ExportDesc`
-                // comes from the same `ValidationInfo` that is passed into the
-                // current function. Therefore, the table index stored in `self`
-                // must be valid in the given `ValidationInfo`.
-                let table_type = unsafe { validation_info.tables.inner().get(*table_idx) };
-
-                ExternType::Table(*table_type)
-            }
-            ExportDesc::Mem(mem_idx) => {
-                // SAFETY: The caller ensures that the current `ExportDesc`
-                // comes from the same `ValidationInfo` that is passed into the
-                // current function. Therefore, the memory index stored in
-                // `self` must be valid in the given `ValidationInfo`.
-                let mem_type = unsafe { validation_info.memories.inner().get(*mem_idx) };
-
-                ExternType::Mem(*mem_type)
-            }
-            ExportDesc::Global(global_idx) => {
-                // SAFETY: The caller ensures that the current `ExportDesc`
-                // comes from the same `ValidationInfo` that is passed into the
-                // current function. Therefore, the global index stored in
-                // `self` must be valid in the given `ValidationInfo`.
-                let global = unsafe { validation_info.globals.inner().get(*global_idx) };
-
-                ExternType::Global(global.ty)
-            }
-        }
-    }
 }
