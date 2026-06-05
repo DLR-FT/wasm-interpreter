@@ -34,13 +34,9 @@ use core::marker::PhantomData;
 
 use alloc::{boxed::Box, vec::Vec};
 
-use crate::{
-    core::{
-        decoding::{error::DecodingError, reader::WasmReader},
-        structure::types::FuncType,
-        utils::ToUsizeExt,
-    },
-    ValType, ValidationError,
+use crate::core::{
+    decoding::{error::DecodingError, reader::WasmReader},
+    utils::ToUsizeExt,
 };
 
 /// A trait for all index types.
@@ -104,7 +100,7 @@ impl<I: Idx, T> IdxVec<I, T> {
         })
     }
 
-    fn validate_index(&self, index: u32) -> Option<I> {
+    pub(crate) fn validate_index(&self, index: u32) -> Option<I> {
         let index_as_usize = index.into_usize();
         let _element = self.inner.get(index_as_usize)?;
         Some(I::new(index))
@@ -286,29 +282,6 @@ impl TypeIdx {
         Self(index)
     }
 
-    /// Validates that a given index is a valid type index.
-    ///
-    /// On success a new [`TypeIdx`] is returned, otherwise a
-    /// [`ValidationError`] is returned.
-    pub fn validate(
-        index: u32,
-        c_types: &IdxVec<TypeIdx, FuncType>,
-    ) -> Result<Self, ValidationError> {
-        c_types
-            .validate_index(index)
-            .ok_or(ValidationError::InvalidTypeIdx(index))
-    }
-
-    /// Reads a type index from Wasm code and validates that it is a valid index
-    /// for a given types vector.
-    pub fn read_and_validate(
-        wasm: &mut WasmReader,
-        c_types: &IdxVec<TypeIdx, FuncType>,
-    ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
-        Self::validate(index, c_types)
-    }
-
     /// Reads a type index from Wasm code without validating it. Using the
     /// returned type requires some other form of validation to be done.
     ///
@@ -342,26 +315,6 @@ impl Idx for FuncIdx {
 }
 
 impl FuncIdx {
-    /// Validates that a given index is a valid function index.
-    ///
-    /// On success a new [`FuncIdx`] is returned, otherwise a
-    /// [`ValidationError`] is returned.
-    pub fn validate<T>(index: u32, c_funcs: &IdxVec<FuncIdx, T>) -> Result<Self, ValidationError> {
-        c_funcs
-            .validate_index(index)
-            .ok_or(ValidationError::InvalidFuncIdx(index))
-    }
-
-    /// Reads a function index from Wasm code and validates that it is a valid
-    /// index for a given functions vector.
-    pub fn read_and_validate<T>(
-        wasm: &mut WasmReader,
-        c_funcs: &IdxVec<FuncIdx, T>,
-    ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
-        Self::validate(index, c_funcs)
-    }
-
     /// Reads a function index from Wasm code without validating it.
     ///
     /// # Safety
@@ -395,29 +348,6 @@ impl Idx for TableIdx {
 }
 
 impl TableIdx {
-    /// Validates that a given index is a valid table index.
-    ///
-    /// On success a new [`TableIdx`] is returned, otherwise a
-    /// [`ValidationError`] is returned.
-    pub fn validate<T>(
-        index: u32,
-        c_tables: &IdxVec<TableIdx, T>,
-    ) -> Result<Self, ValidationError> {
-        c_tables
-            .validate_index(index)
-            .ok_or(ValidationError::InvalidTableIdx(index))
-    }
-
-    /// Reads a table index from Wasm code and validates that it is a valid
-    /// index for a given tables vector.
-    pub fn read_and_validate<T>(
-        wasm: &mut WasmReader,
-        c_tables: &IdxVec<TableIdx, T>,
-    ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
-        Self::validate(index, c_tables)
-    }
-
     /// Reads a table index from Wasm code without validating it.
     ///
     /// # Safety
@@ -451,26 +381,6 @@ impl Idx for MemIdx {
 }
 
 impl MemIdx {
-    /// Validates that a given index is a valid memory index.
-    ///
-    /// On success a new [`MemIdx`] is returned, otherwise a [`ValidationError`]
-    /// is returned.
-    pub fn validate<T>(index: u32, c_mems: &IdxVec<MemIdx, T>) -> Result<Self, ValidationError> {
-        c_mems
-            .validate_index(index)
-            .ok_or(ValidationError::InvalidMemIdx(index))
-    }
-
-    /// Reads a memory index from Wasm code and validates that it is a valid
-    /// index for a given memories vector.
-    pub fn read_and_validate<T>(
-        wasm: &mut WasmReader,
-        c_mems: &IdxVec<MemIdx, T>,
-    ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
-        Self::validate(index, c_mems)
-    }
-
     /// Reads a memory index from Wasm code without validating it.
     ///
     /// # Safety
@@ -505,29 +415,6 @@ impl Idx for GlobalIdx {
 }
 
 impl GlobalIdx {
-    /// Validates that a given index is a valid global index.
-    ///
-    /// On success a new [`GlobalIdx`] is returned, otherwise a
-    /// [`ValidationError`] is returned.
-    pub fn validate<T>(
-        index: u32,
-        c_globals: &IdxVec<GlobalIdx, T>,
-    ) -> Result<Self, ValidationError> {
-        c_globals
-            .validate_index(index)
-            .ok_or(ValidationError::InvalidGlobalIdx(index))
-    }
-
-    /// Reads a global index from Wasm code and validates that it is a valid
-    /// index for a given globals vector.
-    pub fn read_and_validate<T>(
-        wasm: &mut WasmReader,
-        c_globals: &IdxVec<GlobalIdx, T>,
-    ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
-        Self::validate(index, c_globals)
-    }
-
     /// Reads a global index from Wasm code without validating it.
     ///
     /// # Safety
@@ -561,26 +448,6 @@ impl Idx for ElemIdx {
 }
 
 impl ElemIdx {
-    /// Validates that a given index is a valid element index.
-    ///
-    /// On success a new [`ElemIdx`] is returned, otherwise a
-    /// [`ValidationError`] is returned.
-    pub fn validate<T>(index: u32, c_elems: &IdxVec<ElemIdx, T>) -> Result<Self, ValidationError> {
-        c_elems
-            .validate_index(index)
-            .ok_or(ValidationError::InvalidElemIdx(index))
-    }
-
-    /// Reads an element index from Wasm code and validates that it is a valid
-    /// index for a given elements vector.
-    pub fn read_and_validate<T>(
-        wasm: &mut WasmReader,
-        c_elems: &IdxVec<ElemIdx, T>,
-    ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
-        Self::validate(index, c_elems)
-    }
-
     /// Reads an element index from Wasm code without validating it.
     ///
     /// # Safety
@@ -614,26 +481,6 @@ impl Idx for DataIdx {
 }
 
 impl DataIdx {
-    /// Validates that a given index is a valid data index.
-    ///
-    /// On success a new [`DataIdx`] is returned, otherwise a
-    /// [`ValidationError`] is returned.
-    pub fn validate(index: u32, data_count: u32) -> Result<Self, ValidationError> {
-        (index < data_count)
-            .then_some(Self(index))
-            .ok_or(ValidationError::InvalidDataIdx(index))
-    }
-
-    /// Reads a data index from Wasm code and validates that it is a valid
-    /// by comparing it to the total number of data segments.
-    pub fn read_and_validate(
-        wasm: &mut WasmReader,
-        data_count: u32,
-    ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
-        Self::validate(index, data_count)
-    }
-
     /// Reads a data index from Wasm code without validating it.
     ///
     /// # Safety
@@ -648,7 +495,7 @@ impl DataIdx {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LocalIdx(u32);
+pub struct LocalIdx(pub(crate) u32);
 
 impl core::fmt::Display for LocalIdx {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -659,21 +506,6 @@ impl core::fmt::Display for LocalIdx {
 impl LocalIdx {
     pub fn into_inner(self) -> u32 {
         self.0
-    }
-
-    /// Reads a local index from Wasm code and validates that it is valid for a
-    /// given slice of locals.
-    pub fn read_and_validate(
-        wasm: &mut WasmReader,
-        locals_of_current_function: &[ValType],
-    ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
-        let index_as_usize = usize::try_from(index).expect("architecture to be at least 32 bits");
-
-        match locals_of_current_function.get(index_as_usize) {
-            Some(_local) => Ok(Self(index)),
-            None => Err(ValidationError::InvalidLocalIdx(index)),
-        }
     }
 
     /// Reads a local index from Wasm code without validating it.
