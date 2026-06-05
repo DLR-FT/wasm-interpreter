@@ -1,7 +1,7 @@
 use crate::{
-    core::reader::{
-        section_header::{SectionHeader, SectionTy},
-        WasmReader,
+    core::{
+        decoding::modules::section_header::{SectionHeader, SectionTy},
+        reader::WasmReader,
     },
     ValidationError,
 };

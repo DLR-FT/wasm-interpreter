@@ -185,3 +185,9 @@ pub enum ExternType {
     Mem(MemType),
     Global(GlobalType),
 }
+
+#[derive(Debug)]
+pub struct MemArg {
+    pub offset: u32,
+    pub align: u32,
+}

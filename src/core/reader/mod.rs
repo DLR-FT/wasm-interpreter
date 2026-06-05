@@ -1,7 +1,6 @@
 use crate::core::decoding::error::DecodingError;
 use crate::core::reader::span::Span;
 
-pub mod section_header;
 pub mod types;
 
 /// A struct for managing and reading WASM bytecode

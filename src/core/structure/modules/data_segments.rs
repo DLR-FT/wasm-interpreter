@@ -1,4 +1,4 @@
-use core::fmt::{Debug, Formatter};
+use core::fmt;
 
 use alloc::{format, vec::Vec};
 
@@ -22,8 +22,8 @@ pub struct DataModeActive {
     pub offset: Span,
 }
 
-impl Debug for DataSegment {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+impl fmt::Debug for DataSegment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut init_str = alloc::string::String::new();
 
         let iter = self.init.iter().peekable();
@@ -55,8 +55,8 @@ impl Debug for DataSegment {
 ///
 /// Since the span has only the start and length and acts a reference, we print the start and end (both inclusive, notice the '..=')
 /// We print it in both decimal and hexadecimal so it's easy to trace in something like <https://webassembly.github.io/wabt/demo/wat2wasm/>
-impl Debug for DataMode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+impl fmt::Debug for DataMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             DataMode::Passive => f.debug_struct("Passive").finish(),
             DataMode::Active(active_data_mode) => {
@@ -79,8 +79,8 @@ pub struct _PassiveData {
     pub init: Vec<u8>,
 }
 
-impl Debug for _PassiveData {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+impl fmt::Debug for _PassiveData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> core::fmt::Result {
         let mut init_str = alloc::string::String::new();
 
         let iter = self.init.iter().peekable();

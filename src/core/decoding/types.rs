@@ -4,7 +4,7 @@ use crate::core::{
     structure::{
         modules::indices::TypeIdx,
         types::{
-            BlockType, FuncType, GlobalType, Limits, MemType, NumType, RefType, ResultType,
+            BlockType, FuncType, GlobalType, Limits, MemArg, MemType, NumType, RefType, ResultType,
             TableType, ValType, VecType,
         },
     },
@@ -180,5 +180,13 @@ impl GlobalType {
             other => return Err(DecodingError::MalformedMutDiscriminator(other)),
         };
         Ok(Self { ty, is_mut })
+    }
+}
+
+impl MemArg {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
+        let align = wasm.read_var_u32()?;
+        let offset = wasm.read_var_u32()?;
+        Ok(Self { offset, align })
     }
 }
