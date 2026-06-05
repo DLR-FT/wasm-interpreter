@@ -5,8 +5,8 @@ use alloc::vec::Vec;
 
 use crate::core::decoding::error::DecodingError;
 use crate::core::decoding::modules::section_header::{SectionHeader, SectionTy};
-use crate::core::reader::span::Span;
-use crate::core::reader::WasmReader;
+use crate::core::decoding::reader::span::Span;
+use crate::core::decoding::reader::WasmReader;
 use crate::core::sidetable::{Sidetable, SidetableEntry};
 use crate::core::structure::modules::element_segments::ElemType;
 use crate::core::structure::modules::globals::Global;

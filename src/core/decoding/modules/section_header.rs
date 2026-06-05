@@ -1,4 +1,10 @@
-use crate::{DecodingError, core::{reader::{WasmReader, span::Span}, utils::ToUsizeExt}};
+use crate::core::{
+    decoding::{
+        error::DecodingError,
+        reader::{span::Span, WasmReader},
+    },
+    utils::ToUsizeExt,
+};
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SectionTy {

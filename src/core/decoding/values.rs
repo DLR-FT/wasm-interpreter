@@ -8,7 +8,7 @@
 use alloc::vec::Vec;
 
 use crate::core::decoding::error::DecodingError;
-use crate::core::reader::WasmReader;
+use crate::core::decoding::reader::WasmReader;
 use crate::core::utils::ToUsizeExt;
 
 /// Wasm encodes integers according to the LEB128 format, which specifies that
@@ -397,7 +397,7 @@ impl<'wasm> WasmReader<'wasm> {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::reader::WasmReader;
+    use crate::core::decoding::reader::WasmReader;
 
     #[test]
     fn test_var_i32() {

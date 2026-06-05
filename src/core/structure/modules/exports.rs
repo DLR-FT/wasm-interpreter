@@ -1,6 +1,6 @@
 use crate::{
     core::{
-        reader::WasmReader,
+        decoding::reader::WasmReader,
         structure::modules::{
             globals::Global,
             indices::{FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},

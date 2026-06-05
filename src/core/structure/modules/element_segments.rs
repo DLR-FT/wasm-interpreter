@@ -3,9 +3,16 @@ use core::fmt;
 use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::{
-    GlobalType, NumType, RefType, TableType, ValType, ValidationError, core::{
-        decoding::modules::parse_elemkind, reader::{WasmReader, span::Span}, structure::modules::indices::{FuncIdx, IdxVec, TableIdx, TypeIdx}
-    }, read_constant_expression::read_constant_expression, validation_stack::ValidationStack
+    core::{
+        decoding::{
+            modules::parse_elemkind,
+            reader::{span::Span, WasmReader},
+        },
+        structure::modules::indices::{FuncIdx, IdxVec, TableIdx, TypeIdx},
+    },
+    read_constant_expression::read_constant_expression,
+    validation_stack::ValidationStack,
+    GlobalType, NumType, RefType, TableType, ValType, ValidationError,
 };
 
 #[derive(Clone)]

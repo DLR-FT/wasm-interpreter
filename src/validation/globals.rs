@@ -2,7 +2,7 @@ use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
 
 use crate::core::decoding::modules::section_header::{SectionHeader, SectionTy};
-use crate::core::reader::WasmReader;
+use crate::core::decoding::reader::WasmReader;
 use crate::core::structure::modules::globals::Global;
 use crate::core::structure::modules::indices::{FuncIdx, IdxVec, TypeIdx};
 use crate::core::structure::types::GlobalType;

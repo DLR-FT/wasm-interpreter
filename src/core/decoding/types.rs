@@ -1,6 +1,5 @@
 use crate::core::{
-    decoding::error::DecodingError,
-    reader::WasmReader,
+    decoding::{error::DecodingError, reader::WasmReader},
     structure::{
         modules::indices::TypeIdx,
         types::{
