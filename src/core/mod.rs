@@ -1,5 +1,5 @@
+pub mod decoding;
 pub mod error;
-
 pub mod fixed_capacity_vec;
 pub mod indices;
 pub mod reader;

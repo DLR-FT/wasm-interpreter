@@ -1,6 +1,6 @@
 use super::global::GlobalType;
 use super::RefType;
-use crate::core::error::DecodingError;
+use crate::core::decoding::error::DecodingError;
 use crate::core::indices::{FuncIdx, IdxVec, TableIdx, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::TableType;
