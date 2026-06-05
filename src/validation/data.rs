@@ -2,13 +2,13 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{
-        reader::{
-            section_header::{SectionHeader, SectionTy},
-            types::data::{DataMode, DataModeActive, DataSegment},
-            WasmReader,
-        },
+        decoding::modules::section_header::{SectionHeader, SectionTy},
+        reader::WasmReader,
         structure::{
-            modules::indices::{FuncIdx, IdxVec, MemIdx, TypeIdx},
+            modules::{
+                data_segments::{DataMode, DataModeActive, DataSegment},
+                indices::{FuncIdx, IdxVec, MemIdx, TypeIdx},
+            },
             types::GlobalType,
         },
     },

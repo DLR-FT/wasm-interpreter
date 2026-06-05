@@ -5,11 +5,13 @@ use crate::addrs::{
 };
 use crate::config::Config;
 use crate::core::reader::span::Span;
-use crate::core::reader::types::data::{DataModeActive, DataSegment};
-use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
-use crate::core::reader::types::export::ExportDesc;
-use crate::core::reader::types::ImportSubTypeRelation;
 use crate::core::reader::WasmReader;
+use crate::core::structure::import_subtyping::ImportSubTypeRelation;
+use crate::core::structure::modules::data_segments::{DataMode, DataModeActive, DataSegment};
+use crate::core::structure::modules::element_segments::{
+    ActiveElem, ElemItems, ElemMode, ElemType,
+};
+use crate::core::structure::modules::exports::ExportDesc;
 use crate::core::structure::modules::indices::{ElemIdx, IdxVec, TypeIdx};
 use crate::core::structure::types::{ExternType, FuncType, GlobalType, MemType, TableType};
 use crate::core::utils::ToUsizeExt;
@@ -545,7 +547,7 @@ impl<'b, T: Config> Store<'b, T> {
         // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
         for (i, DataSegment { init, mode }) in validation_info.data.iter_enumerated() {
             match mode {
-                crate::core::reader::types::data::DataMode::Active(DataModeActive {
+                DataMode::Active(DataModeActive {
                     memory_idx,
                     offset: dinstr_i,
                 }) => {
@@ -610,7 +612,7 @@ impl<'b, T: Config> Store<'b, T> {
                     //    module instance that is part of the current store itself.
                     unsafe { data_drop(&self.modules, &mut self.inner.data, module_addr, i) };
                 }
-                crate::core::reader::types::data::DataMode::Passive => (),
+                DataMode::Passive => (),
             }
         }
 
