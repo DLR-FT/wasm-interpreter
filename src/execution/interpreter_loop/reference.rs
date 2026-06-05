@@ -2,7 +2,8 @@ use core::ops::ControlFlow;
 
 use crate::{
     assert_validated::UnwrapValidatedExt,
-    core::{indices::FuncIdx, reader::types::opcode},
+    core::indices::FuncIdx,
+    core::structure::instructions,
     execution::interpreter_loop::{define_instruction_fn, Args},
     value::Ref,
     RefType, Value,
@@ -10,7 +11,7 @@ use crate::{
 
 define_instruction_fn! {
     ref_null,
-    fuel_check = flat(opcode::REF_NULL),
+    fuel_check = flat(instructions::REF_NULL),
     |Args {
          wasm, resumable, ..
      }| {
@@ -24,7 +25,7 @@ define_instruction_fn! {
 
 define_instruction_fn! {
     ref_is_null,
-    fuel_check = flat(opcode::REF_IS_NULL),
+    fuel_check = flat(instructions::REF_IS_NULL),
     |Args { resumable, .. }| {
         let rref: Ref = resumable.stack.pop_value().try_into().unwrap_validated();
         let is_null = matches!(rref, Ref::Null(_));
@@ -39,7 +40,7 @@ define_instruction_fn! {
 // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
 define_instruction_fn! {
     ref_func,
-    fuel_check = flat(opcode::REF_FUNC),
+    fuel_check = flat(instructions::REF_FUNC),
     |Args {
          wasm,
          resumable,

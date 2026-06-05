@@ -241,7 +241,7 @@ unsafe fn read_instructions(
         #[cfg(feature = "log")]
         crate::core::utils::print_beautiful_instruction_name_1_byte(first_instr_byte, wasm.pc);
 
-        use crate::core::reader::types::opcode::*;
+        use crate::core::structure::instructions::*;
         match first_instr_byte {
             // nop: [] -> []
             NOP => {}
@@ -1137,7 +1137,7 @@ unsafe fn read_instructions(
                     wasm.pc
                 );
 
-                use crate::core::reader::types::opcode::fc_extensions::*;
+                use crate::core::structure::instructions::fc_extensions::*;
                 match second_instr {
                     I32_TRUNC_SAT_F32_S => {
                         stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
@@ -1361,7 +1361,7 @@ unsafe fn read_instructions(
                 #[cfg(feature = "log")]
                 crate::core::utils::print_beautiful_fd_extension(second_instr, wasm.pc);
 
-                use crate::core::reader::types::opcode::fd_extensions::*;
+                use crate::core::structure::instructions::fd_extensions::*;
 
                 match second_instr {
                     V128_LOAD => {

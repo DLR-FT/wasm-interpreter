@@ -110,10 +110,10 @@ pub fn read_constant_expression(
         #[cfg(debug_assertions)]
         trace!(
             "Validation - Executing instruction {}",
-            opcode_byte_to_str(first_instr_byte)
+            instruction_byte_to_str(first_instr_byte)
         );
 
-        use crate::core::reader::types::opcode::*;
+        use crate::core::structure::instructions::*;
         match first_instr_byte {
             END => {
                 // The code here for checking the global type was moved to where the global is actually validated
@@ -161,7 +161,7 @@ pub fn read_constant_expression(
                 stack.push_valtype(ValType::RefType(crate::RefType::FuncRef));
             }
             FD_EXTENSIONS => {
-                use crate::core::reader::types::opcode::fd_extensions::*;
+                use crate::core::structure::instructions::fd_extensions::*;
 
                 let Ok(second_instr) = wasm.read_var_u32() else {
                     return Err(ValidationError::ExprMissingEnd);

@@ -1,4 +1,4 @@
-//! All opcodes, in alphanumerical order by their numeric (hex-)value
+//! All instructions, in alphanumerical order by their numeric (hex-)value
 pub const UNREACHABLE: u8 = 0x00;
 pub const NOP: u8 = 0x01;
 pub const BLOCK: u8 = 0x02;
@@ -206,7 +206,7 @@ pub mod fc_extensions {
     pub const TABLE_FILL: u32 = 0x11;
 }
 
-pub fn fc_extension_opcode_to_str(instr: u32) -> alloc::borrow::Cow<'static, str> {
+pub fn fc_extension_instruction_to_str(instr: u32) -> alloc::borrow::Cow<'static, str> {
     match instr {
         0x00 => "I32_TRUNC_SAT_F32_S",
         0x01 => "I32_TRUNC_SAT_F32_U",
@@ -507,7 +507,7 @@ pub mod fd_extensions {
     pub const F64X2_CONVERT_LOW_I32X4_U: u32 = 255;
 }
 
-pub fn fd_extension_opcode_to_str(instr: u32) -> alloc::borrow::Cow<'static, str> {
+pub fn fd_extension_instruction_to_str(instr: u32) -> alloc::borrow::Cow<'static, str> {
     use fd_extensions::*;
 
     match instr {
@@ -769,7 +769,7 @@ pub fn fd_extension_opcode_to_str(instr: u32) -> alloc::borrow::Cow<'static, str
     .into()
 }
 
-pub fn opcode_byte_to_str(byte: u8) -> alloc::borrow::Cow<'static, str> {
+pub fn instruction_byte_to_str(byte: u8) -> alloc::borrow::Cow<'static, str> {
     match byte {
         UNREACHABLE => "UNREACHABLE",
         NOP => "NOP",
