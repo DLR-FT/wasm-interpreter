@@ -5,7 +5,7 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     config::Config,
     core::{
-        reader::{span::Span, WasmReader},
+        decoding::reader::{span::Span, WasmReader},
         structure::{
             modules::indices::{FuncIdx, GlobalIdx},
             types::{FuncType, ResultType},

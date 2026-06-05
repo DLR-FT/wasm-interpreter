@@ -13,7 +13,7 @@ use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
-        reader::WasmReader,
+        decoding::reader::WasmReader,
         sidetable::Sidetable,
         structure::{
             modules::indices::{DataIdx, ElemIdx, MemIdx, TableIdx},
@@ -426,7 +426,7 @@ macro_rules! define_instruction_fn {
         // Disable inlining to inspect the emitted code of individual instruction handlers:
         // #[inline(never)]
         pub(crate) unsafe fn $name<'wasm, 'modules, T: $crate::config::Config>(
-            wasm: &mut $crate::core::reader::WasmReader<'wasm>,
+            wasm: &mut $crate::core::decoding::reader::WasmReader<'wasm>,
             resumable: &mut $crate::execution::resumable::WasmResumable,
             current_sidetable: &mut &'modules $crate::core::sidetable::Sidetable,
             store_inner: &mut $crate::execution::store::StoreInner,

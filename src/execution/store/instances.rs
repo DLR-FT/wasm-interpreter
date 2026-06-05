@@ -2,7 +2,7 @@ use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
     core::{
-        reader::span::Span,
+        decoding::reader::span::Span,
         sidetable::Sidetable,
         structure::{
             modules::indices::{

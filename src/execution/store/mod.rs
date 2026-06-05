@@ -4,8 +4,8 @@ use crate::addrs::{
     AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr,
 };
 use crate::config::Config;
-use crate::core::reader::span::Span;
-use crate::core::reader::WasmReader;
+use crate::core::decoding::reader::span::Span;
+use crate::core::decoding::reader::WasmReader;
 use crate::core::structure::import_subtyping::ImportSubTypeRelation;
 use crate::core::structure::modules::data_segments::{DataMode, DataModeActive, DataSegment};
 use crate::core::structure::modules::element_segments::{
