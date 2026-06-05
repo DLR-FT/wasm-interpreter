@@ -1,3 +1,5 @@
+use core::{array, num::NonZeroU64, ops::ControlFlow};
+
 use crate::{
     core::{
         structure::{
@@ -16,7 +18,6 @@ use crate::{
     },
     Value, F32, F64,
 };
-use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 // t.load
 define_instruction_fn! {

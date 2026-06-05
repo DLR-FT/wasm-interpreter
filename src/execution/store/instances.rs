@@ -13,12 +13,8 @@ use crate::{
         utils::ToUsizeExt,
     },
     execution::store::linear_memory::LinearMemory,
-    GlobalType, Hostcode, Limits, Ref, RefType, RuntimeError, TrapError, ValType, Value,
-};
-
-use super::{
-    addrs::{DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
-    ExternVal,
+    DataAddr, ElemAddr, ExternVal, FuncAddr, GlobalAddr, GlobalType, Hostcode, Limits, MemAddr,
+    ModuleAddr, Ref, RefType, RuntimeError, TableAddr, TrapError, ValType, Value,
 };
 
 #[derive(Debug)]

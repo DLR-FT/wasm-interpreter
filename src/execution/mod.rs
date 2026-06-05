@@ -1,8 +1,3 @@
-use const_interpreter_loop::run_const_span;
-use value_stack::Stack;
-
-use crate::execution::assert_validated::UnwrapValidatedExt;
-
 pub(crate) mod assert_validated;
 pub mod config;
 pub mod const_interpreter_loop;

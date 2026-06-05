@@ -1,9 +1,8 @@
+use alloc::vec::Vec;
 use core::{
     iter,
     sync::atomic::{AtomicU8, Ordering},
 };
-
-use alloc::vec::Vec;
 
 use crate::{
     execution::little_endian::LittleEndianBytes,

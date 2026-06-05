@@ -2,7 +2,7 @@ use core::ops::ControlFlow;
 
 use crate::{
     core::{
-        decoding::{error::DecodingError, modules::indices::read_label_idx_unchecked},
+        decoding::modules::indices::read_label_idx_unchecked,
         structure::{
             instructions,
             modules::indices::{FuncIdx, TableIdx, TypeIdx},
@@ -17,7 +17,7 @@ use crate::{
         },
         store::instances::FuncInst,
     },
-    unreachable_validated, Ref, TrapError,
+    unreachable_validated, DecodingError, Ref, TrapError,
 };
 
 define_instruction_fn! {nop, fuel_check = flat(instructions::NOP), |_args| Ok(
