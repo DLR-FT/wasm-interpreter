@@ -27,6 +27,7 @@ use crate::ValidationError;
 pub(crate) mod code;
 pub(crate) mod custom_section;
 pub(crate) mod data;
+pub(crate) mod error;
 pub(crate) mod globals;
 pub(crate) mod modules;
 pub(crate) mod read_constant_expression;

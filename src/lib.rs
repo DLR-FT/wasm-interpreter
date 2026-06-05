@@ -10,7 +10,6 @@ extern crate alloc;
 extern crate log_wrapper;
 
 pub use core::decoding::error::DecodingError;
-pub use core::error::ValidationError;
 pub use core::rw_spinlock;
 pub use core::structure::instructions;
 pub use core::structure::types::{
@@ -18,6 +17,7 @@ pub use core::structure::types::{
     ValType,
 };
 pub use execution::error::{RuntimeError, TrapError};
+pub use validation::error::ValidationError;
 
 pub use execution::store::*;
 pub use execution::value::Value;
