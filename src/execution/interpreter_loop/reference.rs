@@ -1,11 +1,12 @@
 use core::ops::ControlFlow;
 
 use crate::{
-    assert_validated::UnwrapValidatedExt,
     core::structure::{instructions, modules::indices::FuncIdx},
-    execution::interpreter_loop::{define_instruction_fn, Args},
-    value::Ref,
-    RefType, Value,
+    execution::{
+        assert_validated::UnwrapValidatedExt,
+        interpreter_loop::{define_instruction_fn, Args},
+    },
+    Ref, RefType, Value,
 };
 
 define_instruction_fn! {

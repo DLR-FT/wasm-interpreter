@@ -1,19 +1,15 @@
 use core::{num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
-    assert_validated::UnwrapValidatedExt,
-    core::{
+    Ref, TrapError, Value, core::{
         structure::{
             instructions,
             modules::indices::{ElemIdx, TableIdx},
         },
         utils::ToUsizeExt,
-    },
-    execution::interpreter_loop::{
-        define_instruction_fn, elem_drop, table_init, Args, InterpreterLoopOutcome,
-    },
-    value::Ref,
-    TrapError, Value,
+    }, execution::{assert_validated::UnwrapValidatedExt, interpreter_loop::{
+        Args, InterpreterLoopOutcome, define_instruction_fn, elem_drop, table_init
+    }}
 };
 
 define_instruction_fn! {

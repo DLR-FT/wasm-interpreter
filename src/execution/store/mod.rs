@@ -1,9 +1,5 @@
 use core::convert::Infallible;
 
-use crate::addrs::{
-    AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr,
-};
-use crate::config::Config;
 use crate::core::decoding::reader::span::Span;
 use crate::core::decoding::reader::WasmReader;
 use crate::core::structure::import_subtyping::ImportSubTypeRelation;
@@ -18,8 +14,12 @@ use crate::core::utils::ToUsizeExt;
 use crate::execution::interpreter_loop::{self, memory_init, table_init, InterpreterLoopOutcome};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
-use crate::resumable::{HostCall, HostResumable, Resumable, RunState, WasmResumable};
-use crate::{RefType, RuntimeError, ValidationInfo};
+use crate::validation::code;
+use crate::{
+    AddrVec, Config, DataAddr, ElemAddr, FuncAddr, GlobalAddr, HostCall, HostResumable, MemAddr,
+    ModuleAddr, RefType, Resumable, RunState, RuntimeError, TableAddr, ValidationInfo,
+    WasmResumable,
+};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
@@ -1186,7 +1186,7 @@ impl<'b, T: Config> Store<'b, T> {
         wasm_reader.move_start_to(span).unwrap_validated();
 
         let (locals, bytes_read) = wasm_reader
-            .measure_num_read_bytes(crate::code::read_declared_locals)
+            .measure_num_read_bytes(code::read_declared_locals)
             .unwrap_validated();
 
         let code_expr = wasm_reader

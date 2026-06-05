@@ -19,7 +19,7 @@ use crate::core::structure::types::{
     BlockType, FuncType, MemArg, MemType, NumType, TableType, ValType,
 };
 use crate::core::utils::ToUsizeExt;
-use crate::validation_stack::{LabelInfo, ValidationStack};
+use crate::validation::validation_stack::{LabelInfo, ValidationStack};
 use crate::{RefType, ValidationError};
 
 /// # Safety

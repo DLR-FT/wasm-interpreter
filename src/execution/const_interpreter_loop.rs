@@ -1,9 +1,6 @@
 use alloc::vec::Vec;
 
 use crate::{
-    addrs::ModuleAddr,
-    assert_validated::UnwrapValidatedExt,
-    config::Config,
     core::{
         decoding::reader::{span::Span, WasmReader},
         structure::{
@@ -11,10 +8,8 @@ use crate::{
             types::{FuncType, ResultType},
         },
     },
-    unreachable_validated,
-    value::{self, Ref},
-    value_stack::Stack,
-    RefType, RuntimeError, Store, Value,
+    execution::{assert_validated::UnwrapValidatedExt, value_stack::Stack},
+    unreachable_validated, Config, ModuleAddr, Ref, RefType, RuntimeError, Store, Value, F32, F64,
 };
 
 // TODO update this documentation
@@ -192,7 +187,7 @@ define_instruction!(
     f32_const,
     instructions::F32_CONST,
     |Args { wasm, stack, .. }| {
-        let constant = value::F32::from_bits(wasm.read_f32().unwrap_validated());
+        let constant = F32::from_bits(wasm.read_f32().unwrap_validated());
         trace!("Constanting instruction: f32.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
         Ok(false)
@@ -203,7 +198,7 @@ define_instruction!(
     f64_const,
     instructions::F64_CONST,
     |Args { wasm, stack, .. }| {
-        let constant = value::F64::from_bits(wasm.read_f64().unwrap_validated());
+        let constant = F64::from_bits(wasm.read_f64().unwrap_validated());
         trace!("Constanting instruction: f64.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
         Ok(false)

@@ -6,9 +6,9 @@ use crate::core::decoding::reader::WasmReader;
 use crate::core::structure::modules::globals::Global;
 use crate::core::structure::modules::indices::{FuncIdx, IdxVec, TypeIdx};
 use crate::core::structure::types::GlobalType;
-use crate::read_constant_expression::read_constant_expression;
-use crate::validation_stack::ValidationStack;
 use crate::ValidationError;
+use crate::validation::read_constant_expression::read_constant_expression;
+use crate::validation::validation_stack::ValidationStack;
 
 /// Validate the global section.
 ///

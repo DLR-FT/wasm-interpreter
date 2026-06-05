@@ -21,18 +21,17 @@ use crate::core::structure::types::{
     ExternType, FuncType, GlobalType, MemType, ResultType, TableType,
 };
 use crate::core::utils::ToUsizeExt;
-use crate::custom_section::CustomSection;
-use crate::ValidationError;
+use crate::{CustomSection, ValidationError};
 
-pub(crate) mod code;
-pub(crate) mod custom_section;
-pub(crate) mod data;
-pub(crate) mod globals;
-pub(crate) mod modules;
-pub(crate) mod read_constant_expression;
-pub(crate) mod types;
-pub(crate) mod validation_stack;
-pub(crate) mod error;
+pub mod code;
+pub mod custom_section;
+pub mod data;
+pub mod error;
+pub mod globals;
+pub mod modules;
+pub mod read_constant_expression;
+pub mod types;
+pub mod validation_stack;
 
 /// Information collected from validating a module.
 ///
