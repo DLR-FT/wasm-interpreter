@@ -1,4 +1,4 @@
-use crate::core::decoding::{error::DecodingError, reader::span::Span};
+use crate::{core::decoding::reader::span::Span, DecodingError};
 
 /// A struct for managing and reading WASM bytecode
 ///

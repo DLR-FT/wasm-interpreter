@@ -1,27 +1,34 @@
+use alloc::{
+    collections::btree_set::{self, BTreeSet},
+    vec::Vec,
+};
 use core::iter::Map;
 
-use alloc::collections::btree_set::{self, BTreeSet};
-use alloc::vec::Vec;
-
-use crate::core::decoding::error::DecodingError;
-use crate::core::decoding::modules::section_header::{SectionHeader, SectionTy};
-use crate::core::decoding::reader::span::Span;
-use crate::core::decoding::reader::WasmReader;
-use crate::core::sidetable::Sidetable;
-use crate::core::structure::modules::data_segments::DataSegment;
-use crate::core::structure::modules::element_segments::ElemType;
-use crate::core::structure::modules::exports::{Export, ExportDesc};
-use crate::core::structure::modules::globals::Global;
-use crate::core::structure::modules::imports::{Import, ImportDesc};
-use crate::core::structure::modules::indices::{
-    DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, IdxVecOverflowError, MemIdx,
-    TableIdx, TypeIdx,
+use crate::{
+    core::{
+        decoding::{
+            modules::section_header::{SectionHeader, SectionTy},
+            reader::{span::Span, WasmReader},
+        },
+        sidetable::Sidetable,
+        structure::{
+            modules::{
+                data_segments::DataSegment,
+                element_segments::ElemType,
+                exports::{Export, ExportDesc},
+                globals::Global,
+                imports::{Import, ImportDesc},
+                indices::{
+                    DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec,
+                    IdxVecOverflowError, MemIdx, TableIdx, TypeIdx,
+                },
+            },
+            types::{ExternType, FuncType, GlobalType, MemType, ResultType, TableType},
+        },
+        utils::ToUsizeExt,
+    },
+    CustomSection, DecodingError, ValidationError,
 };
-use crate::core::structure::types::{
-    ExternType, FuncType, GlobalType, MemType, ResultType, TableType,
-};
-use crate::core::utils::ToUsizeExt;
-use crate::{CustomSection, ValidationError};
 
 pub mod code;
 pub mod custom_section;

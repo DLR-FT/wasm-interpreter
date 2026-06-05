@@ -1,10 +1,13 @@
-use crate::core::decoding::{error::DecodingError, modules::section_header::SectionTy};
-use crate::core::structure::modules::indices::FuncIdx;
-use crate::validation::validation_stack::ValidationStackEntry;
-use crate::RefType;
 use core::fmt::{Display, Formatter};
 
-use crate::core::structure::types::ValType;
+use crate::{
+    core::{
+        decoding::modules::section_header::SectionTy,
+        structure::{modules::indices::FuncIdx, types::ValType},
+    },
+    validation::validation_stack::ValidationStackEntry,
+    DecodingError, RefType,
+};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValidationError {

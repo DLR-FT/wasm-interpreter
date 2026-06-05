@@ -19,9 +19,8 @@
 //! the [`Store`](crate::Store) are possible, while providing a nice API, even
 //! if it is just used internally.
 
-use core::{cmp::Ordering, marker::PhantomData};
-
 use alloc::vec::Vec;
+use core::{cmp::Ordering, marker::PhantomData};
 
 /// A trait for all address types.
 pub(crate) trait Addr: Copy + core::fmt::Debug + core::fmt::Display + Eq {

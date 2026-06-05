@@ -1,8 +1,7 @@
 //! TODO
 
-use core::num::NonZeroU64;
-
 use alloc::vec::Vec;
+use core::num::NonZeroU64;
 
 use crate::{
     execution::{store::Hostcode, value_stack::Stack},

@@ -1,26 +1,32 @@
+use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 use core::iter;
 
-use alloc::collections::btree_set::BTreeSet;
-use alloc::vec::Vec;
-
-use crate::core::decoding::error::DecodingError;
-use crate::core::decoding::modules::indices::read_label_idx;
-use crate::core::decoding::modules::section_header::{SectionHeader, SectionTy};
-use crate::core::decoding::reader::span::Span;
-use crate::core::decoding::reader::WasmReader;
-use crate::core::sidetable::{Sidetable, SidetableEntry};
-use crate::core::structure::modules::element_segments::ElemType;
-use crate::core::structure::modules::globals::Global;
-use crate::core::structure::modules::indices::{
-    DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, LocalIdx, MemIdx, TableIdx,
-    TypeIdx,
+use crate::{
+    core::{
+        decoding::{
+            modules::{
+                indices::read_label_idx,
+                section_header::{SectionHeader, SectionTy},
+            },
+            reader::{span::Span, WasmReader},
+        },
+        sidetable::{Sidetable, SidetableEntry},
+        structure::{
+            modules::{
+                element_segments::ElemType,
+                globals::Global,
+                indices::{
+                    DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, LocalIdx, MemIdx,
+                    TableIdx, TypeIdx,
+                },
+            },
+            types::{BlockType, FuncType, MemArg, MemType, NumType, TableType, ValType},
+        },
+        utils::ToUsizeExt,
+    },
+    validation::validation_stack::{LabelInfo, ValidationStack},
+    DecodingError, RefType, ValidationError,
 };
-use crate::core::structure::types::{
-    BlockType, FuncType, MemArg, MemType, NumType, TableType, ValType,
-};
-use crate::core::utils::ToUsizeExt;
-use crate::validation::validation_stack::{LabelInfo, ValidationStack};
-use crate::{RefType, ValidationError};
 
 /// # Safety
 ///

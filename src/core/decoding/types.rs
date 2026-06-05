@@ -1,11 +1,15 @@
-use crate::core::{
-    decoding::{error::DecodingError, reader::WasmReader},
-    structure::{
-        modules::indices::TypeIdx,
-        types::{
-            BlockType, FuncType, GlobalType, MemArg, NumType, RefType, ResultType, ValType, VecType,
+use crate::{
+    core::{
+        decoding::reader::WasmReader,
+        structure::{
+            modules::indices::TypeIdx,
+            types::{
+                BlockType, FuncType, GlobalType, MemArg, NumType, RefType, ResultType, ValType,
+                VecType,
+            },
         },
     },
+    DecodingError,
 };
 
 impl NumType {

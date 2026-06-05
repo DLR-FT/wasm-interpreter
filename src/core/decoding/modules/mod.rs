@@ -1,4 +1,4 @@
-use crate::core::decoding::{error::DecodingError, reader::WasmReader};
+use crate::{core::decoding::reader::WasmReader, DecodingError};
 
 pub mod indices;
 pub mod section_header;

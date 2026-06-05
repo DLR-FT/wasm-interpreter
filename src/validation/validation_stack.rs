@@ -1,7 +1,5 @@
+use alloc::{vec, vec::Vec};
 use core::iter;
-
-use alloc::vec;
-use alloc::vec::Vec;
 
 use crate::{
     core::{

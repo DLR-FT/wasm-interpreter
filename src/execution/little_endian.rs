@@ -1,7 +1,7 @@
 //! This module contains the definition and implementation of [`LittleEndianBytes`], a trait to
 //! convert values (such as integers or floats) to bytes in little endian byter order
 
-use super::value::{F32, F64};
+use crate::{F32, F64};
 
 /// This macro implements the [`LittleEndianBytes`] trait for a provided list of types.
 ///

@@ -7,9 +7,10 @@
 
 use alloc::vec::Vec;
 
-use crate::core::decoding::error::DecodingError;
-use crate::core::decoding::reader::WasmReader;
-use crate::core::utils::ToUsizeExt;
+use crate::{
+    core::{decoding::reader::WasmReader, utils::ToUsizeExt},
+    DecodingError,
+};
 
 /// Wasm encodes integers according to the LEB128 format, which specifies that
 /// only 7 bits of every byte are used to store the integer's bits. The 8th bit

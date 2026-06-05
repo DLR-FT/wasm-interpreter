@@ -1,6 +1,5 @@
-use core::mem::MaybeUninit;
-
 use alloc::boxed::Box;
+use core::mem::MaybeUninit;
 
 /// The operation would remove more elements than currently present or tries to access an element
 /// when none are present
