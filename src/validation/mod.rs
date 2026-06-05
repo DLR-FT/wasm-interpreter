@@ -30,6 +30,7 @@ pub(crate) mod data;
 pub(crate) mod globals;
 pub(crate) mod modules;
 pub(crate) mod read_constant_expression;
+pub(crate) mod types;
 pub(crate) mod validation_stack;
 
 /// Information collected from validating a module.
