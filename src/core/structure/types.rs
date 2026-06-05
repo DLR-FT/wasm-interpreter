@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        reader::WasmReader,
+        decoding::reader::WasmReader,
         structure::modules::indices::{IdxVec, TypeIdx},
     },
     ValidationError,

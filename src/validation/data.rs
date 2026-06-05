@@ -2,8 +2,10 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{
-        decoding::modules::section_header::{SectionHeader, SectionTy},
-        reader::WasmReader,
+        decoding::{
+            modules::section_header::{SectionHeader, SectionTy},
+            reader::WasmReader,
+        },
         structure::{
             modules::{
                 data_segments::{DataMode, DataModeActive, DataSegment},

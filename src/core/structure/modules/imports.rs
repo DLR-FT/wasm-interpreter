@@ -1,6 +1,6 @@
 use crate::{
     core::{
-        reader::WasmReader,
+        decoding::reader::WasmReader,
         structure::modules::indices::{IdxVec, TypeIdx},
     },
     DecodingError, ExternType, FuncType, GlobalType, MemType, TableType, ValidationError,

@@ -4,8 +4,10 @@ use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::{
     core::{
-        decoding::modules::parse_elemkind,
-        reader::{span::Span, WasmReader},
+        decoding::{
+            modules::parse_elemkind,
+            reader::{span::Span, WasmReader},
+        },
         structure::modules::indices::{FuncIdx, IdxVec, TableIdx, TypeIdx},
     },
     read_constant_expression::read_constant_expression,

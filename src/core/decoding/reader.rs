@@ -1,7 +1,4 @@
-use crate::core::decoding::error::DecodingError;
-use crate::core::reader::span::Span;
-
-pub mod types;
+use crate::core::decoding::{error::DecodingError, reader::span::Span};
 
 /// A struct for managing and reading WASM bytecode
 ///
@@ -167,7 +164,7 @@ impl<'a> WasmReader<'a> {
 pub mod span {
     use core::ops::Index;
 
-    use crate::core::reader::WasmReader;
+    use crate::core::decoding::reader::WasmReader;
 
     /// An index and offset to describe a (sub-) slice into WASM bytecode
     ///
