@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use crate::{
     core::{
         decoding::reader::WasmReader,
@@ -7,7 +9,8 @@ use crate::{
         },
     },
     execution::assert_validated::UnwrapValidatedExt,
-    DecodingError, FuncType, Limits, MemType, RefType, TableType, ValType, ValidationError,
+    DecodingError, FuncType, Limits, MemType, RefType, ResultType, TableType, ValType,
+    ValidationError,
 };
 
 impl BlockType {
@@ -26,6 +29,47 @@ impl BlockType {
             // An index to a function type
             let index = wasm.read_var_i33_as_u32()?;
             TypeIdx::validate(index, c_types).map(BlockType::Type)
+        }
+    }
+
+    /// Converts this block type to a specific [`FuncType`].
+    ///
+    /// A vector of function types is required, in case the current block type
+    /// stores a type index.
+    ///
+    /// # Safety
+    ///
+    /// The given [`IdxVec<TypeIdx, FuncType>`] must be the same on that was
+    /// used to validate `self` through [`BlockType::read_and_validate`].
+    // TODO maybe make this function return a `Cow<'a, FuncType>`. This could
+    // prevent one allocation per call.
+    pub unsafe fn as_func_type(
+        &self,
+        func_types: &IdxVec<TypeIdx, FuncType>,
+    ) -> Result<FuncType, ValidationError> {
+        match self {
+            BlockType::Empty => Ok(FuncType {
+                params: ResultType {
+                    valtypes: Vec::new(),
+                },
+                returns: ResultType {
+                    valtypes: Vec::new(),
+                },
+            }),
+            BlockType::Returns(val_type) => Ok(FuncType {
+                params: ResultType {
+                    valtypes: Vec::new(),
+                },
+                returns: ResultType {
+                    valtypes: [*val_type].into(),
+                },
+            }),
+            BlockType::Type(type_idx) => {
+                // SAFETY: The caller ensures that this `IdxVec` is the same one
+                // used to validate the `TypeIdx` in `self`.
+                let func_type = unsafe { func_types.get(*type_idx) };
+                Ok(func_type.clone())
+            }
         }
     }
 }
