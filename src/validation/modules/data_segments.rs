@@ -1,11 +1,6 @@
-use alloc::vec::Vec;
-
 use crate::{
     core::{
-        decoding::{
-            modules::section_header::{SectionHeader, SectionTy},
-            reader::WasmDecoder,
-        },
+        decoding::reader::WasmDecoder,
         structure::{
             modules::{
                 data_segments::{DataMode, DataModeActive, DataSegment},
@@ -21,17 +16,13 @@ use crate::{
     MemType, ValidationError,
 };
 
-/// Validate the data section.
-pub fn decode_and_validate_data_section(
-    wasm: &mut WasmDecoder,
-    section_header: SectionHeader,
-    imported_global_types: &[GlobalType],
-    c_funcs: &IdxVec<FuncIdx, TypeIdx>,
-    c_mems: &IdxVec<MemIdx, MemType>,
-) -> Result<Vec<DataSegment>, ValidationError> {
-    assert_eq!(section_header.ty, SectionTy::Data);
-
-    wasm.decode_vec(|wasm| {
+impl DataSegment {
+    pub fn decode_and_validate(
+        wasm: &mut WasmDecoder,
+        imported_global_types: &[GlobalType],
+        c_funcs: &IdxVec<FuncIdx, TypeIdx>,
+        c_mems: &IdxVec<MemIdx, MemType>,
+    ) -> Result<Self, ValidationError> {
         use crate::{NumType, ValType};
         let mode = wasm.decode_var_u32()?;
         let data_sec: DataSegment = match mode {
@@ -113,5 +104,5 @@ pub fn decode_and_validate_data_section(
 
         trace!("{:?}", data_sec.init);
         Ok(data_sec)
-    })
+    }
 }

@@ -232,7 +232,7 @@ define_instruction_fn! {
          ..
      }| {
         let label_vec = wasm
-            .read_vec::<_, _, DecodingError>(|wasm| {
+            .decode_vec::<_, _, DecodingError>(|wasm| {
                 // SAFETY: Validation guarantees that there is a
                 // valid vec of label indices.
                 Ok(unsafe { decode_label_idx_unchecked(wasm) })

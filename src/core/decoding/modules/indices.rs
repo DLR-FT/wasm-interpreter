@@ -14,8 +14,7 @@ impl TypeIdx {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that there is a valid type index in the
-    /// [`WasmDecoder`].
+    /// The caller must ensure that there is a valid type index in the [`WasmDecoder`].
     pub unsafe fn decode_unchecked(wasm: &mut WasmDecoder) -> Self {
         let index = wasm.decode_var_u32().unwrap();
         <Self as Idx>::new(index)
@@ -40,7 +39,6 @@ impl TableIdx {
     /// # Safety
     ///
     /// The caller must ensure that there is a valid table index in the [`WasmDecoder`].
-    /// [`Self::decode_and_validate`].
     pub unsafe fn decode_unchecked(wasm: &mut WasmDecoder) -> Self {
         let index = wasm.decode_var_u32().unwrap();
         <Self as Idx>::new(index)
