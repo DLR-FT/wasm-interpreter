@@ -1,10 +1,7 @@
 use alloc::vec::Vec;
 use core::fmt;
 
-use crate::{
-    core::structure::modules::indices::{IdxVec, TypeIdx},
-    ValidationError,
-};
+use crate::core::structure::modules::indices::TypeIdx;
 
 /// <https://webassembly.github.io/spec/core/binary/types.html#number-types>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -64,49 +61,6 @@ pub enum BlockType {
     Empty,
     Returns(ValType),
     Type(TypeIdx),
-}
-
-impl BlockType {
-    /// Converts this block type to a specific [`FuncType`].
-    ///
-    /// A vector of function types is required, in case the current block type
-    /// stores a type index.
-    ///
-    /// # Safety
-    ///
-    /// The given [`IdxVec<TypeIdx, FuncType>`] must be the same on that was
-    /// used to validate `self` through [`BlockType::read_and_validate`].
-    // TODO maybe make this function return a `Cow<'a, FuncType>`. This could
-    // prevent one allocation per call.
-    pub unsafe fn as_func_type(
-        &self,
-        func_types: &IdxVec<TypeIdx, FuncType>,
-    ) -> Result<FuncType, ValidationError> {
-        match self {
-            BlockType::Empty => Ok(FuncType {
-                params: ResultType {
-                    valtypes: Vec::new(),
-                },
-                returns: ResultType {
-                    valtypes: Vec::new(),
-                },
-            }),
-            BlockType::Returns(val_type) => Ok(FuncType {
-                params: ResultType {
-                    valtypes: Vec::new(),
-                },
-                returns: ResultType {
-                    valtypes: [*val_type].into(),
-                },
-            }),
-            BlockType::Type(type_idx) => {
-                // SAFETY: The caller ensures that this `IdxVec` is the same one
-                // used to validate the `TypeIdx` in `self`.
-                let func_type = unsafe { func_types.get(*type_idx) };
-                Ok(func_type.clone())
-            }
-        }
-    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
