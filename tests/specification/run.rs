@@ -9,7 +9,7 @@ use itertools::enumerate;
 use log::debug;
 use registry::Registry;
 use wasm::addrs::ModuleAddr;
-use wasm::validate;
+use wasm::decode_and_validate;
 use wasm::value::F32;
 use wasm::value::F64;
 use wasm::GlobalType;
@@ -75,8 +75,8 @@ fn validate_instantiate<'a, 'b: 'a>(
     linker: &mut Linker,
     last_instantiated_module: &mut Option<Stored<ModuleAddr>>,
 ) -> Result<Stored<ModuleAddr>, WastError> {
-    let validation_info =
-        catch_unwind_and_suppress_panic_handler(|| validate(bytes)).map_err(WastError::Panic)??;
+    let validation_info = catch_unwind_and_suppress_panic_handler(|| decode_and_validate(bytes))
+        .map_err(WastError::Panic)??;
 
     let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
         linker.module_instantiate(store, &validation_info, None)

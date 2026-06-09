@@ -3,7 +3,7 @@ use core::convert::Infallible;
 
 use crate::{
     core::{
-        decoding::reader::{span::Span, WasmReader},
+        decoding::reader::{span::Span, WasmDecoder},
         structure::{
             import_subtyping::ImportSubTypeRelation,
             modules::{
@@ -32,8 +32,8 @@ use crate::{
     },
     validation::code::read_declared_locals,
     AddrVec, Config, DataAddr, ElemAddr, ExternType, FuncAddr, FuncType, GlobalAddr, GlobalType,
-    HostCall, HostResumable, MemAddr, MemType, ModuleAddr, Ref, RefType, Resumable, RunState,
-    RuntimeError, TableAddr, TableType, ValidationInfo, Value, WasmResumable,
+    HostCall, HostResumable, MemAddr, MemType, Module, ModuleAddr, Ref, RefType, Resumable,
+    RunState, RuntimeError, TableAddr, TableType, Value, WasmResumable,
 };
 
 pub mod addrs;
@@ -110,7 +110,7 @@ impl<'b, T: Config> Store<'b, T> {
         }
     }
 
-    /// Instantiate a new module instance from a [`ValidationInfo`] in this [`Store`].
+    /// Instantiate a new module instance from a [`Module`] in this [`Store`].
     ///
     /// Note that if this returns an `Err(_)`, the store might be left in an ill-defined state. This might cause further
     /// operations to have unexpected results.
@@ -123,13 +123,13 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`ExternVal`]s came from the current [`Store`] object.
     pub unsafe fn module_instantiate(
         &mut self,
-        validation_info: &ValidationInfo<'b>,
+        validation_info: &Module<'b>,
         extern_vals: Vec<ExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<InstantiationOutcome, RuntimeError> {
         // instantiation: step 1
         // The module is guaranteed to be valid, because only validation can
-        // produce `ValidationInfo`s.
+        // produce `Module`s.
 
         // instantiation: step 3
         if validation_info.imports.len() != extern_vals.len() {
@@ -190,7 +190,7 @@ impl<'b, T: Config> Store<'b, T> {
                 // SAFETY: The module address is valid for the current store,
                 // because it was just created and the type index is valid for
                 // that same module because it came from that module's
-                // `ValidationInfo`.
+                // `Module`.
                 unsafe { self.alloc_func((*ty_idx, (*span, *stp)), module_addr) }
             });
 
@@ -244,7 +244,7 @@ impl<'b, T: Config> Store<'b, T> {
                             let module = unsafe { self.modules.get(module_addr) };
                             // SAFETY: Both the function index and the module
                             // instance's `func_addrs` come from the same
-                            // `ValidationInfo`, i.e. the one passed into this
+                            // `Module`, i.e. the one passed into this
                             // function.
                             let func_addr = unsafe { module.func_addrs.get(*func_idx) };
 
@@ -627,9 +627,9 @@ impl<'b, T: Config> Store<'b, T> {
             // SAFETY: The module with this module address was just inserted
             // into this `AddrVec`
             let module = unsafe { self.modules.get(module_addr) };
-            // SAFETY: The function index comes from the passed `ValidationInfo`
+            // SAFETY: The function index comes from the passed `Module`
             // and the `IdxVec<FuncIdx, FuncAddr>` comes from the module
-            // instance that originated from that same `ValidationInfo`.
+            // instance that originated from that same `Module`.
             // Therefore, this is sound.
             let func_addr = unsafe { module.func_addrs.get(func_idx) };
 
@@ -1184,7 +1184,7 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that the given module address is valid in
         // the current store.
         let module = unsafe { self.modules.get(module_addr) };
-        let mut wasm_reader = WasmReader::new(module.wasm_bytecode);
+        let mut wasm_reader = WasmDecoder::new(module.wasm_bytecode);
         wasm_reader.move_start_to(span).unwrap_validated();
 
         let (locals, bytes_read) = wasm_reader

@@ -1,23 +1,22 @@
 use crate::{
     core::{
-        decoding::reader::WasmReader,
+        decoding::reader::WasmDecoder,
         structure::modules::{
             imports::{Import, ImportDesc},
             indices::{IdxVec, TypeIdx},
         },
     },
-    DecodingError, ExternType, FuncType, GlobalType, MemType, TableType, ValidationError,
-    ValidationInfo,
+    DecodingError, ExternType, FuncType, GlobalType, MemType, Module, TableType, ValidationError,
 };
 
 impl<'wasm> Import<'wasm> {
-    pub fn read_and_validate(
-        wasm: &mut WasmReader<'wasm>,
+    pub fn decode_and_validate(
+        wasm: &mut WasmDecoder<'wasm>,
         c_types: &IdxVec<TypeIdx, FuncType>,
     ) -> Result<Self, ValidationError> {
-        let module_name = wasm.read_name()?;
-        let name = wasm.read_name()?;
-        let desc = ImportDesc::read_and_validate(wasm, c_types)?;
+        let module_name = wasm.decode_name()?;
+        let name = wasm.decode_name()?;
+        let desc = ImportDesc::decode_and_validate(wasm, c_types)?;
 
         Ok(Self {
             module_name,
@@ -28,16 +27,16 @@ impl<'wasm> Import<'wasm> {
 }
 
 impl ImportDesc {
-    pub fn read_and_validate(
-        wasm: &mut WasmReader,
+    pub fn decode_and_validate(
+        wasm: &mut WasmDecoder,
         c_types: &IdxVec<TypeIdx, FuncType>,
     ) -> Result<Self, ValidationError> {
-        let desc = match wasm.read_u8()? {
-            0x00 => Self::Func(TypeIdx::read_and_validate(wasm, c_types)?),
+        let desc = match wasm.decode_u8()? {
+            0x00 => Self::Func(TypeIdx::decode_and_validate(wasm, c_types)?),
             // https://webassembly.github.io/spec/core/binary/types.html#table-types
-            0x01 => Self::Table(TableType::read_and_validate(wasm)?),
-            0x02 => Self::Mem(MemType::read_and_validate(wasm)?),
-            0x03 => Self::Global(GlobalType::read(wasm)?),
+            0x01 => Self::Table(TableType::decode_and_validate(wasm)?),
+            0x02 => Self::Mem(MemType::decode_and_validate(wasm)?),
+            0x03 => Self::Global(GlobalType::decode(wasm)?),
             other => return Err(DecodingError::MalformedImportDescDiscriminator(other).into()),
         };
 
@@ -50,19 +49,18 @@ impl ImportDesc {
     /// # Safety
     ///
     /// The caller must ensure that `self` comes from the same
-    /// [`ValidationInfo`] that is passed as an argument here.
-    pub unsafe fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+    /// [`Module`] that is passed as an argument here.
+    pub unsafe fn extern_type(&self, module: &Module) -> ExternType {
         match self {
             ImportDesc::Func(type_idx) => {
                 // unlike ExportDescs, these directly refer to the types section
                 // since a corresponding function entry in function section or body
                 // in code section does not exist for these
 
-                // SAFETY: The caller ensures that the current `ImportDesc`
-                // comes from the same `ValidationInfo`. Because all type
-                // indices contained by a `ValidationInfo` must always be valid,
+                // SAFETY: The caller ensures that the current `ImportDesc` comes from the same
+                // `Module`. Because all type indices contained by a `Module` must always be valid,
                 // this is safe.
-                let func_type = unsafe { validation_info.types.get(*type_idx) };
+                let func_type = unsafe { module.types.get(*type_idx) };
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }

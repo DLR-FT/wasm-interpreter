@@ -2,7 +2,7 @@ use core::ops::ControlFlow;
 
 use crate::{
     core::{
-        decoding::modules::indices::read_label_idx_unchecked,
+        decoding::modules::indices::decode_label_idx_unchecked,
         structure::{
             instructions,
             modules::indices::{FuncIdx, TableIdx, TypeIdx},
@@ -36,7 +36,7 @@ define_instruction_fn! {
     |Args { wasm, .. }| {
         // SAFETY: Validation guarantess there to be a valid block type
         // next.
-        let _ = unsafe { BlockType::read_unchecked(wasm) };
+        let _ = unsafe { BlockType::decode_unchecked(wasm) };
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -115,7 +115,7 @@ define_instruction_fn! {
     |Args { wasm, .. }| {
         // SAFETY: Validation guarantees there to be a valid block type
         // next.
-        let _ = unsafe { BlockType::read_unchecked(wasm) };
+        let _ = unsafe { BlockType::decode_unchecked(wasm) };
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -131,7 +131,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid block type
         // next.
-        let _block_type = unsafe { BlockType::read_unchecked(wasm) };
+        let _block_type = unsafe { BlockType::decode_unchecked(wasm) };
 
         let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -181,7 +181,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid label index
         // next.
-        let _label_idx = unsafe { read_label_idx_unchecked(wasm) };
+        let _label_idx = unsafe { decode_label_idx_unchecked(wasm) };
         do_sidetable_control_transfer(
             wasm,
             &mut resumable.stack,
@@ -203,7 +203,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid label index
         // next.
-        let _label_idx = unsafe { read_label_idx_unchecked(wasm) };
+        let _label_idx = unsafe { decode_label_idx_unchecked(wasm) };
 
         let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -235,12 +235,12 @@ define_instruction_fn! {
             .read_vec::<_, _, DecodingError>(|wasm| {
                 // SAFETY: Validation guarantees that there is a
                 // valid vec of label indices.
-                Ok(unsafe { read_label_idx_unchecked(wasm) })
+                Ok(unsafe { decode_label_idx_unchecked(wasm) })
             }).unwrap();
 
         // SAFETY: Validation guarantees there to be another label index
         // for the default case.
-        let _default_label_idx = unsafe { read_label_idx_unchecked(wasm) };
+        let _default_label_idx = unsafe { decode_label_idx_unchecked(wasm) };
 
         // TODO is this correct?
         let case_val_i32: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -297,7 +297,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid function
         // index next.
-        let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
+        let func_idx = unsafe { FuncIdx::decode_unchecked(wasm) };
 
         // SAFETY: The current function address must come from the given
         // resumable or the current store, because these are the only
@@ -391,10 +391,10 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid type index
         // next.
-        let given_type_idx = unsafe { TypeIdx::read_unchecked(wasm) };
+        let given_type_idx = unsafe { TypeIdx::decode_unchecked(wasm) };
         // SAFETY: Validation guarantees there to be a valid table index
         // next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::decode_unchecked(wasm) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that

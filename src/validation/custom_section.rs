@@ -1,7 +1,7 @@
 use crate::{
     core::decoding::{
         modules::section_header::{SectionHeader, SectionTy},
-        reader::WasmReader,
+        reader::WasmDecoder,
     },
     ValidationError,
 };
@@ -13,8 +13,8 @@ pub struct CustomSection<'wasm> {
 }
 
 impl<'wasm> CustomSection<'wasm> {
-    pub(crate) fn read_and_validate(
-        wasm: &mut WasmReader<'wasm>,
+    pub(crate) fn decode_and_validate(
+        wasm: &mut WasmDecoder<'wasm>,
         header: SectionHeader,
     ) -> Result<CustomSection<'wasm>, ValidationError> {
         assert_eq!(header.ty, SectionTy::Custom);
@@ -23,7 +23,7 @@ impl<'wasm> CustomSection<'wasm> {
         // custom ::= name byte*
         // name ::= b*:vec(byte) => name (if utf8(name) = b*)
         // vec(B) ::= n:u32 (x:B)^n => x^n
-        let name = wasm.read_name()?;
+        let name = wasm.decode_name()?;
 
         let section_start = wasm.pc;
         let section_end = header

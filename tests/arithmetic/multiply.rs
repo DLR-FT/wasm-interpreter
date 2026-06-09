@@ -1,5 +1,5 @@
 use checked::Store;
-use wasm::validate;
+use wasm::decode_and_validate;
 
 const MULTIPLY_WAT_TEMPLATE: &str = r#"
     (module
@@ -17,7 +17,7 @@ pub fn i32_multiply() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = decode_and_validate(&wasm_bytes).expect("validation failed");
 
     let mut store = Store::new(());
     let module = store
@@ -52,7 +52,7 @@ pub fn i64_multiply() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = decode_and_validate(&wasm_bytes).expect("validation failed");
 
     let mut store = Store::new(());
     let module = store

@@ -1,5 +1,5 @@
 use checked::Store;
-use wasm::validate;
+use wasm::decode_and_validate;
 
 const BASE_WAT: &str = r#"
     (module
@@ -18,7 +18,7 @@ fn basic_memory() {
     let wat = String::from(BASE_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = decode_and_validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -47,7 +47,7 @@ fn f32_basic_memory() {
     let wat = String::from(BASE_WAT).replace("{{TYPE}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = decode_and_validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)

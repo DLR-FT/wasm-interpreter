@@ -4,7 +4,7 @@ use crate::{
     core::{
         decoding::{
             modules::section_header::{SectionHeader, SectionTy},
-            reader::WasmReader,
+            reader::WasmDecoder,
         },
         structure::{
             modules::{
@@ -15,14 +15,15 @@ use crate::{
         },
     },
     validation::{
-        read_constant_expression::read_constant_expression, validation_stack::ValidationStack,
+        read_constant_expression::decode_and_validate_constant_expression,
+        validation_stack::ValidationStack,
     },
     MemType, ValidationError,
 };
 
 /// Validate the data section.
-pub(super) fn validate_data_section(
-    wasm: &mut WasmReader,
+pub(super) fn decode_and_validate_data_section(
+    wasm: &mut WasmDecoder,
     section_header: SectionHeader,
     imported_global_types: &[GlobalType],
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
@@ -30,9 +31,9 @@ pub(super) fn validate_data_section(
 ) -> Result<Vec<DataSegment>, ValidationError> {
     assert_eq!(section_header.ty, SectionTy::Data);
 
-    wasm.read_vec(|wasm| {
+    wasm.decode_vec(|wasm| {
         use crate::{NumType, ValType};
-        let mode = wasm.read_var_u32()?;
+        let mode = wasm.decode_var_u32()?;
         let data_sec: DataSegment = match mode {
             0 => {
                 // active { memory 0, offset e }
@@ -42,7 +43,7 @@ pub(super) fn validate_data_section(
 
                 let mut valid_stack = ValidationStack::new();
                 let (offset, _) = {
-                    read_constant_expression(
+                    decode_and_validate_constant_expression(
                         wasm,
                         &mut valid_stack,
                         imported_global_types,
@@ -52,7 +53,7 @@ pub(super) fn validate_data_section(
 
                 valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
 
-                let byte_vec = wasm.read_vec(|el| el.read_u8())?;
+                let byte_vec = wasm.decode_vec(|el| el.decode_u8())?;
 
                 // WARN: we currently don't take into consideration how we act when we are dealing with globals here
                 DataSegment {
@@ -69,16 +70,16 @@ pub(super) fn validate_data_section(
                 trace!("Data section: passive");
                 DataSegment {
                     mode: DataMode::Passive,
-                    init: wasm.read_vec(|el| el.read_u8())?,
+                    init: wasm.decode_vec(|el| el.decode_u8())?,
                 }
             }
             2 => {
                 trace!("Data section: active {{ memory x, offset e }}");
-                let mem_idx = MemIdx::read_and_validate(wasm, c_mems)?;
+                let mem_idx = MemIdx::decode_and_validate(wasm, c_mems)?;
 
                 let mut valid_stack = ValidationStack::new();
                 let (offset, _) = {
-                    read_constant_expression(
+                    decode_and_validate_constant_expression(
                         wasm,
                         &mut valid_stack,
                         imported_global_types,
@@ -88,7 +89,7 @@ pub(super) fn validate_data_section(
 
                 valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
 
-                let byte_vec = wasm.read_vec(|el| el.read_u8())?;
+                let byte_vec = wasm.decode_vec(|el| el.decode_u8())?;
 
                 DataSegment {
                     mode: DataMode::Active(DataModeActive {

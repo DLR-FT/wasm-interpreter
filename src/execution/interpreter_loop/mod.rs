@@ -1,17 +1,11 @@
-//! This module solely contains the actual interpretation loop that matches instructions, interpreting the WASM bytecode
-//!
-//!
-//! # Note to Developer:
-//!
-//! 1. There must be only imports and one `impl` with one function (`run`) in it.
-//! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::ValidationError).
+//! This module contains the actual interpretation loop
 
 use alloc::vec::Vec;
 use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
     core::{
-        decoding::reader::WasmReader,
+        decoding::reader::WasmDecoder,
         sidetable::Sidetable,
         structure::{
             modules::indices::{DataIdx, ElemIdx, MemIdx, TableIdx},
@@ -71,7 +65,7 @@ pub enum InterpreterLoopOutcome {
 
 type InstructionHandlerFn =
     for<'wasm, 'modules> unsafe fn(
-        wasm: &mut WasmReader<'wasm>,
+        wasm: &mut WasmDecoder<'wasm>,
         resumable: &mut WasmResumable,
         current_sidetable: &mut &'modules Sidetable,
         store_inner: &mut StoreInner,
@@ -120,7 +114,7 @@ pub(super) unsafe fn run<T: Config>(
     // store guarantees all addresses contained in it to be valid within itself.
     let module = unsafe { store.modules.get(current_module) };
     let wasm_bytecode = module.wasm_bytecode;
-    let wasm = &mut WasmReader::new(wasm_bytecode);
+    let wasm = &mut WasmDecoder::new(wasm_bytecode);
 
     let mut current_sidetable: &Sidetable = &module.sidetable;
 
@@ -139,7 +133,7 @@ pub(super) unsafe fn run<T: Config>(
 
         let prev_pc = wasm.pc;
 
-        let first_instr_byte = wasm.read_u8().unwrap_validated();
+        let first_instr_byte = wasm.decode_u8().unwrap_validated();
 
         #[cfg(debug_assertions)]
         trace!(
@@ -180,7 +174,7 @@ pub(super) unsafe fn run<T: Config>(
 
 //helper function for avoiding code duplication at intraprocedural jumps
 fn do_sidetable_control_transfer(
-    wasm: &mut WasmReader,
+    wasm: &mut WasmDecoder,
     stack: &mut Stack,
     current_stp: &mut usize,
     current_sidetable: &Sidetable,
@@ -405,7 +399,7 @@ pub(crate) fn from_lanes<const M: usize, const N: usize, T: LittleEndianBytes<M>
 }
 
 pub(crate) struct Args<'a, 'sidetable, 'wasm, 'other, 'resumable> {
-    wasm: &'a mut WasmReader<'wasm>,
+    wasm: &'a mut WasmDecoder<'wasm>,
     resumable: &'resumable mut WasmResumable,
     current_sidetable: &'a mut &'sidetable Sidetable,
     store_inner: &'other mut StoreInner,
@@ -425,7 +419,7 @@ macro_rules! define_instruction_fn {
         // Disable inlining to inspect the emitted code of individual instruction handlers:
         // #[inline(never)]
         pub(crate) unsafe fn $name<'wasm, 'modules, T: $crate::execution::config::Config>(
-            wasm: &mut $crate::core::decoding::reader::WasmReader<'wasm>,
+            wasm: &mut $crate::core::decoding::reader::WasmDecoder<'wasm>,
             resumable: &mut $crate::execution::resumable::WasmResumable,
             current_sidetable: &mut &'modules $crate::core::sidetable::Sidetable,
             store_inner: &mut $crate::execution::store::StoreInner,
@@ -531,7 +525,7 @@ fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> ControlFlow<Interp
 
 define_instruction_fn! {fc_extensions, fuel_check = omit, |args: Args| {
     // should we call instruction hook here as well? multibyte instruction
-    let second_instr = args.wasm.read_var_u32().unwrap_validated();
+    let second_instr = args.wasm.decode_var_u32().unwrap_validated();
 
     let instruction_fn = T::FC_DISPATCH_TABLE
         .get(second_instr.into_usize())
@@ -556,7 +550,7 @@ define_instruction_fn! {fc_extensions, fuel_check = omit, |args: Args| {
 
 define_instruction_fn! {fd_extensions, fuel_check = omit, |args: Args| {
     // Should we call instruction hook here as well? Multibyte instruction
-    let second_instr = args.wasm.read_var_u32().unwrap_validated();
+    let second_instr = args.wasm.decode_var_u32().unwrap_validated();
 
     let instruction_fn = T::FD_DISPATCH_TABLE
         .get(second_instr.into_usize())

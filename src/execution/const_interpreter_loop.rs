@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{
-        decoding::reader::{span::Span, WasmReader},
+        decoding::reader::{span::Span, WasmDecoder},
         structure::{
             modules::indices::{FuncIdx, GlobalIdx},
             types::{FuncType, ResultType},
@@ -26,14 +26,14 @@ use crate::{
 ///
 // TODO this signature might change to support hooks or match the spec better
 pub(crate) unsafe fn run_const<'wasm, T: Config>(
-    wasm: &mut WasmReader<'wasm>,
+    wasm: &mut WasmDecoder<'wasm>,
     stack: &mut Stack,
     module: ModuleAddr,
     store: &Store<'wasm, T>,
 ) -> Result<(), RuntimeError> {
     use crate::core::structure::instructions::*;
     loop {
-        let first_instr_byte = wasm.read_u8().unwrap_validated();
+        let first_instr_byte = wasm.decode_u8().unwrap_validated();
 
         #[cfg(feature = "log")]
         crate::core::utils::print_beautiful_instruction_name_1_byte(first_instr_byte, wasm.pc);
@@ -89,7 +89,7 @@ pub(crate) unsafe fn run_const_span<T: Config>(
     module: ModuleAddr,
     store: &Store<T>,
 ) -> Result<Option<Value>, RuntimeError> {
-    let mut wasm = WasmReader::new(wasm);
+    let mut wasm = WasmDecoder::new(wasm);
 
     wasm.move_start_to(*span).unwrap_validated();
 
@@ -113,7 +113,7 @@ pub(crate) unsafe fn run_const_span<T: Config>(
 }
 
 struct Args<'reader, 'resumable, 'store, 'wasm, T: Config> {
-    wasm: &'reader mut WasmReader<'wasm>,
+    wasm: &'reader mut WasmDecoder<'wasm>,
     stack: &'resumable mut Stack,
     module: ModuleAddr,
     store: &'store Store<'wasm, T>,
@@ -149,7 +149,7 @@ define_instruction!(
      }| {
         // SAFETY: Validation guarantees there to be a valid global
         // index next.
-        let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };
+        let global_idx = unsafe { GlobalIdx::decode_unchecked(wasm) };
 
         // SAFETY: The caller ensures that the given module address is
         // valid in the given store.
@@ -176,7 +176,7 @@ define_instruction!(
     i32_const,
     instructions::I32_CONST,
     |Args { wasm, stack, .. }| {
-        let constant = wasm.read_var_i32().unwrap_validated();
+        let constant = wasm.decode_var_i32().unwrap_validated();
         trace!("Constant instruction: i32.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
         Ok(false)
@@ -187,7 +187,7 @@ define_instruction!(
     f32_const,
     instructions::F32_CONST,
     |Args { wasm, stack, .. }| {
-        let constant = F32::from_bits(wasm.read_f32().unwrap_validated());
+        let constant = F32::from_bits(wasm.decode_f32().unwrap_validated());
         trace!("Constanting instruction: f32.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
         Ok(false)
@@ -198,7 +198,7 @@ define_instruction!(
     f64_const,
     instructions::F64_CONST,
     |Args { wasm, stack, .. }| {
-        let constant = F64::from_bits(wasm.read_f64().unwrap_validated());
+        let constant = F64::from_bits(wasm.decode_f64().unwrap_validated());
         trace!("Constanting instruction: f64.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
         Ok(false)
@@ -209,7 +209,7 @@ define_instruction!(
     i64_const,
     instructions::I64_CONST,
     |Args { wasm, stack, .. }| {
-        let constant = wasm.read_var_i64().unwrap_validated();
+        let constant = wasm.decode_var_i64().unwrap_validated();
         trace!("Constant instruction: i64.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
         Ok(false)
@@ -220,7 +220,7 @@ define_instruction!(
     ref_null,
     instructions::REF_NULL,
     |Args { wasm, stack, .. }| {
-        let reftype = RefType::read(wasm).unwrap_validated();
+        let reftype = RefType::decode(wasm).unwrap_validated();
 
         stack.push_value(Value::Ref(Ref::Null(reftype)))?;
         trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
@@ -239,7 +239,7 @@ define_instruction!(
      }| {
         // SAFETY: Validation guarantees there to be a valid function
         // index next.
-        let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
+        let func_idx = unsafe { FuncIdx::decode_unchecked(wasm) };
         // SAFETY: Validation guarantees the function index to be valid
         // in the current module.
         let func_addr = unsafe { store.modules.get(module).func_addrs.get(func_idx) };
@@ -254,11 +254,11 @@ define_instruction!(
     |Args { wasm, stack, .. }| {
         use crate::core::structure::instructions::fd_extensions::*;
 
-        match wasm.read_var_u32().unwrap_validated() {
+        match wasm.decode_var_u32().unwrap_validated() {
             V128_CONST => {
                 let mut data = [0; 16];
                 for byte_ref in &mut data {
-                    *byte_ref = wasm.read_u8().unwrap_validated();
+                    *byte_ref = wasm.decode_u8().unwrap_validated();
                 }
 
                 stack.push_value(Value::V128(data))?;
