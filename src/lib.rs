@@ -11,7 +11,7 @@ extern crate log_wrapper;
 
 pub use crate::{
     core::{
-        decoding::error::DecodingError,
+        decoding::{error::DecodingError, modules::custom_section::CustomSection},
         rw_spinlock,
         structure::instructions,
         structure::types::{
@@ -26,9 +26,7 @@ pub use crate::{
         store::{addrs::*, ExternVal, Hostcode, InstantiationOutcome, Store},
         value::{ExternAddr, Ref, Value, ValueTypeMismatchError, F32, F64},
     },
-    validation::{
-        custom_section::CustomSection, decode_and_validate, error::ValidationError, Module,
-    },
+    validation::{decode_and_validate, error::ValidationError, Module},
 };
 
 pub(crate) mod core;

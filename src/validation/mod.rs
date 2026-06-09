@@ -27,14 +27,11 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    validation::modules::data_segments::decode_and_validate_data_section,
     CustomSection, DecodingError, ValidationError,
 };
 
 pub mod code;
-pub mod custom_section;
 pub mod error;
-pub mod globals;
 pub mod modules;
 pub mod read_constant_expression;
 pub mod types;
@@ -187,14 +184,15 @@ pub fn decode_and_validate(wasm: &[u8]) -> Result<Module<'_>, ValidationError> {
             _ => None,
         })
         .collect();
-    let local_globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, h| {
-        globals::decode_and_validate_global_section(
-            wasm,
-            h,
-            &imported_global_types,
-            &mut validation_context_refs,
-            functions.inner(),
-        )
+    let local_globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, _| {
+        wasm.decode_vec(|wasm| {
+            Global::decode_and_validate(
+                wasm,
+                &imported_global_types,
+                &mut validation_context_refs,
+                functions.inner(),
+            )
+        })
     })?
     .unwrap_or_default();
 
@@ -319,9 +317,10 @@ pub fn decode_and_validate(wasm: &[u8]) -> Result<Module<'_>, ValidationError> {
 
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
-    let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
-        // wasm.read_vec(DataSegment::read)
-        decode_and_validate_data_section(wasm, h, &imported_global_types, functions.inner(), memories.inner())
+    let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, _| {
+    wasm.decode_vec(|wasm| {
+        DataSegment::decode_and_validate(wasm, &imported_global_types, functions.inner(), memories.inner())
+    })
             .map(|data_segments| IdxVec::new(data_segments).expect("that index space creation never fails because the length of the data segments vector is encoded as a 32-bit integer in the bytecode"))
     })?
     .unwrap_or_default();
@@ -408,7 +407,7 @@ fn read_all_custom_sections<'wasm>(
             wasm,
             section_header,
             SectionTy::Custom,
-            CustomSection::decode_and_validate,
+            CustomSection::decode,
         )
     };
 

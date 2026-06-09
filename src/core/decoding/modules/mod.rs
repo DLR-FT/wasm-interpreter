@@ -1,5 +1,6 @@
 use crate::{core::decoding::reader::WasmDecoder, DecodingError};
 
+pub mod custom_section;
 pub mod indices;
 pub mod section_header;
 
