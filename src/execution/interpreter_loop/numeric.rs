@@ -16,7 +16,7 @@ define_instruction_fn! {
     |Args {
          resumable, wasm, ..
      }| {
-        let constant = wasm.read_var_i32().unwrap_validated();
+        let constant = wasm.decode_var_i32().unwrap_validated();
         trace!("Instruction: i32.const [] -> [{constant}]");
         resumable.stack.push_value(constant.into())?;
         Ok(ControlFlow::Continue(()))
@@ -29,7 +29,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let constant = wasm.read_var_i64().unwrap_validated();
+        let constant = wasm.decode_var_i64().unwrap_validated();
         trace!("Instruction: i64.const [] -> [{constant}]");
         resumable.stack.push_value(constant.into())?;
         Ok(ControlFlow::Continue(()))
@@ -42,7 +42,7 @@ define_instruction_fn! {
     |Args {
          resumable, wasm, ..
      }| {
-        let constant = F32::from_bits(wasm.read_f32().unwrap_validated());
+        let constant = F32::from_bits(wasm.decode_f32().unwrap_validated());
         trace!("Instruction: f32.const [] -> [{constant:.7}]");
         resumable.stack.push_value(constant.into())?;
         Ok(ControlFlow::Continue(()))
@@ -55,7 +55,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let constant = F64::from_bits(wasm.read_f64().unwrap_validated());
+        let constant = F64::from_bits(wasm.decode_f64().unwrap_validated());
         trace!("Instruction: f64.const [] -> [{constant}]");
         resumable.stack.push_value(constant.into())?;
         Ok(ControlFlow::Continue(()))

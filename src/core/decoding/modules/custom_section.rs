@@ -13,7 +13,8 @@ pub struct CustomSection<'wasm> {
 }
 
 impl<'wasm> CustomSection<'wasm> {
-    pub(crate) fn decode_and_validate(
+    // TODO this should return a Result<_, DecodingError>
+    pub(crate) fn decode(
         wasm: &mut WasmDecoder<'wasm>,
         header: SectionHeader,
     ) -> Result<CustomSection<'wasm>, ValidationError> {
