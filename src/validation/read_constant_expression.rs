@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{
-        decoding::reader::{span::Span, WasmReader},
+        decoding::reader::{span::Span, WasmDecoder},
         structure::{
             modules::indices::{FuncIdx, IdxVec, TypeIdx},
             types::GlobalType,
@@ -89,8 +89,8 @@ use crate::{
 /// - `ref.null`
 /// - `ref.func`
 /// - `global.get`
-pub fn read_constant_expression(
-    wasm: &mut WasmReader,
+pub fn decode_and_validate_constant_expression(
+    wasm: &mut WasmDecoder,
     stack: &mut ValidationStack,
     // The globals slice should contain ONLY imported globals IF AND ONLY IF we are calling `read_constant_expression` for local globals instantiation
     // As per https://webassembly.github.io/spec/core/valid/modules.html (bottom of the page):
@@ -104,7 +104,7 @@ pub fn read_constant_expression(
     let mut seen_func_idxs: Vec<FuncIdx> = Vec::new();
 
     loop {
-        let Ok(first_instr_byte) = wasm.read_u8() else {
+        let Ok(first_instr_byte) = wasm.decode_u8() else {
             return Err(ValidationError::ExprMissingEnd);
         };
 
@@ -128,7 +128,7 @@ pub fn read_constant_expression(
                 // constant expressions may only access imported globals.  Wasm
                 // specifies that only imported globals may be accessed (see
                 // comment on `imported_globals` parameter).
-                let imported_global_idx = wasm.read_var_u32()?;
+                let imported_global_idx = wasm.decode_var_u32()?;
 
                 let global = imported_globals
                     .get(imported_global_idx.into_usize())
@@ -137,26 +137,26 @@ pub fn read_constant_expression(
                 stack.push_valtype(global.ty);
             }
             I32_CONST => {
-                let _num = wasm.read_var_i32()?;
+                let _num = wasm.decode_var_i32()?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             F32_CONST => {
-                let _num = wasm.read_f32();
+                let _num = wasm.decode_f32();
                 stack.push_valtype(ValType::NumType(NumType::F32));
             }
             F64_CONST => {
-                let _num = wasm.read_f64();
+                let _num = wasm.decode_f64();
                 stack.push_valtype(ValType::NumType(NumType::F64));
             }
             I64_CONST => {
-                let _num = wasm.read_var_i64()?;
+                let _num = wasm.decode_var_i64()?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             REF_NULL => {
-                stack.push_valtype(ValType::RefType(RefType::read(wasm)?));
+                stack.push_valtype(ValType::RefType(RefType::decode(wasm)?));
             }
             REF_FUNC => {
-                let func_idx = FuncIdx::read_and_validate(wasm, c_funcs)?;
+                let func_idx = FuncIdx::decode_and_validate(wasm, c_funcs)?;
 
                 // This func_idx is automatically in C.refs. No need to check.
                 // as we are single pass validating, add it to C.refs set.
@@ -167,13 +167,13 @@ pub fn read_constant_expression(
             FD_EXTENSIONS => {
                 use crate::core::structure::instructions::fd_extensions::*;
 
-                let Ok(second_instr) = wasm.read_var_u32() else {
+                let Ok(second_instr) = wasm.decode_var_u32() else {
                     return Err(ValidationError::ExprMissingEnd);
                 };
                 match second_instr {
                     V128_CONST => {
                         for _ in 0..16 {
-                            let _data = wasm.read_u8()?;
+                            let _data = wasm.decode_u8()?;
                         }
                         stack.push_valtype(ValType::VecType);
                     }

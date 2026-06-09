@@ -1,6 +1,6 @@
 use crate::{
     core::{
-        decoding::reader::WasmReader,
+        decoding::reader::WasmDecoder,
         structure::modules::indices::{
             DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, LocalIdx, MemIdx, TableIdx, TypeIdx,
         },
@@ -15,9 +15,9 @@ impl TypeIdx {
     /// # Safety
     ///
     /// The caller must ensure that there is a valid type index in the
-    /// [`WasmReader`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
+    /// [`WasmDecoder`].
+    pub unsafe fn decode_unchecked(wasm: &mut WasmDecoder) -> Self {
+        let index = wasm.decode_var_u32().unwrap();
         <Self as Idx>::new(index)
     }
 }
@@ -27,11 +27,9 @@ impl FuncIdx {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that there is a valid function index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
-    /// through [`Self::read_and_validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
+    /// The caller must ensure that there is a valid function index in the [`WasmDecoder`].
+    pub unsafe fn decode_unchecked(wasm: &mut WasmDecoder) -> Self {
+        let index = wasm.decode_var_u32().unwrap();
         <Self as Idx>::new(index)
     }
 }
@@ -41,11 +39,10 @@ impl TableIdx {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that there is a valid table index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`ExtendedIdxVec`]
-    /// through [`Self::read_and_validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
+    /// The caller must ensure that there is a valid table index in the [`WasmDecoder`].
+    /// [`Self::decode_and_validate`].
+    pub unsafe fn decode_unchecked(wasm: &mut WasmDecoder) -> Self {
+        let index = wasm.decode_var_u32().unwrap();
         <Self as Idx>::new(index)
     }
 }
@@ -55,12 +52,10 @@ impl MemIdx {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that there is a valid memory index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`ExtendedIdxVec`]
-    /// through [`Self::read_and_validate`].
+    /// The caller must ensure that there is a valid memory index in the [`WasmDecoder`].
     #[allow(unused)] // reason = "unused until multiple memories proposal is implemented"
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
+    pub unsafe fn decode_unchecked(wasm: &mut WasmDecoder) -> Self {
+        let index = wasm.decode_var_u32().unwrap();
         Self::new(index)
     }
 }
@@ -70,11 +65,9 @@ impl GlobalIdx {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that there is a valid global index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
-    /// through [`Self::read_and_validate`] or [`Self::validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
+    /// The caller must ensure that there is a valid global index in the [`WasmDecoder`].
+    pub unsafe fn decode_unchecked(wasm: &mut WasmDecoder) -> Self {
+        let index = wasm.decode_var_u32().unwrap();
         <Self as Idx>::new(index)
     }
 }
@@ -84,11 +77,9 @@ impl ElemIdx {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that there is a valid element index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
-    /// through [`Self::read_and_validate`] or [`Self::validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
+    /// The caller must ensure that there is a valid element index in the [`WasmDecoder`].
+    pub unsafe fn decode_unchecked(wasm: &mut WasmDecoder) -> Self {
+        let index = wasm.decode_var_u32().unwrap();
         <Self as Idx>::new(index)
     }
 }
@@ -98,11 +89,9 @@ impl DataIdx {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that there is a valid data index in the
-    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
-    /// through [`Self::read_and_validate`] or [`Self::validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
+    /// The caller must ensure that there is a valid data index in the [`WasmDecoder`].
+    pub unsafe fn decode_unchecked(wasm: &mut WasmDecoder) -> Self {
+        let index = wasm.decode_var_u32().unwrap();
         <Self as Idx>::new(index)
     }
 }
@@ -112,26 +101,24 @@ impl LocalIdx {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that there is a valid local index in the
-    /// [`WasmReader`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
-        let index = wasm.read_var_u32().unwrap();
+    /// The caller must ensure that there is a valid local index in the [`WasmDecoder`].
+    pub unsafe fn decode_unchecked(wasm: &mut WasmDecoder) -> Self {
+        let index = wasm.decode_var_u32().unwrap();
         Self(index)
     }
 }
 
 /// Reads a label index from Wasm code without validating it.
-pub fn read_label_idx(wasm: &mut WasmReader) -> Result<u32, DecodingError> {
-    wasm.read_var_u32()
+pub fn decode_label_idx(wasm: &mut WasmDecoder) -> Result<u32, DecodingError> {
+    wasm.decode_var_u32()
 }
 
 /// Reads a label index from Wasm code without validating it.
 ///
 /// # Safety
 ///
-/// The caller must ensure that there is a valid label index in the
-/// [`WasmReader`].
-pub unsafe fn read_label_idx_unchecked(wasm: &mut WasmReader) -> u32 {
+/// The caller must ensure that there is a valid label index in the [`WasmDecoder`].
+pub unsafe fn decode_label_idx_unchecked(wasm: &mut WasmDecoder) -> u32 {
     // TODO use `unwrap_unchecked` instead
-    wasm.read_var_u32().unwrap()
+    wasm.decode_var_u32().unwrap()
 }

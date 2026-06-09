@@ -24,9 +24,11 @@ pub use crate::{
         error::{RuntimeError, TrapError},
         resumable::*,
         store::{addrs::*, ExternVal, Hostcode, InstantiationOutcome, Store},
-        value::{ExternAddr, Ref, Value, F32, F64, ValueTypeMismatchError},
+        value::{ExternAddr, Ref, Value, ValueTypeMismatchError, F32, F64},
     },
-    validation::{custom_section::CustomSection, error::ValidationError, validate, ValidationInfo},
+    validation::{
+        custom_section::CustomSection, decode_and_validate, error::ValidationError, Module,
+    },
 };
 
 pub(crate) mod core;

@@ -5,7 +5,7 @@ use std::str::FromStr;
 use log::{error, LevelFilter};
 
 use checked::Store;
-use wasm::validate;
+use wasm::decode_and_validate;
 
 fn main() -> ExitCode {
     let level = LevelFilter::from_str(&env::var("RUST_LOG").unwrap_or("TRACE".to_owned())).unwrap();
@@ -35,7 +35,7 @@ fn main() -> ExitCode {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = match validate(&wasm_bytes) {
+    let validation_info = match decode_and_validate(&wasm_bytes) {
         Ok(table) => table,
         Err(err) => {
             error!("Validation failed: {err:?} [{err}]");

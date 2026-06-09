@@ -43,7 +43,7 @@ define_instruction_fn! {
     |Args {
          resumable, wasm, ..
      }| {
-        let _type_vec = wasm.read_vec(ValType::read).unwrap_validated();
+        let _type_vec = wasm.read_vec(ValType::decode).unwrap_validated();
         let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let val2 = resumable.stack.pop_value();
         let val1 = resumable.stack.pop_value();

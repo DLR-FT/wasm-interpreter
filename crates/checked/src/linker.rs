@@ -1,5 +1,5 @@
 use alloc::{string::String, vec::Vec};
-use wasm::{addrs::ModuleAddr, config::Config, RuntimeError, ValidationInfo};
+use wasm::{addrs::ModuleAddr, config::Config, Module, RuntimeError};
 
 use crate::{
     store::Store,
@@ -111,10 +111,7 @@ impl Linker {
 
     /// This is a variant of
     /// [`Linker::instantiate_pre`](linker::Linker::instantiate_pre).
-    pub fn instantiate_pre(
-        &self,
-        validation_info: &ValidationInfo,
-    ) -> Option<Vec<StoredExternVal>> {
+    pub fn instantiate_pre(&self, validation_info: &Module) -> Option<Vec<StoredExternVal>> {
         // Special case: If the module has no imports, we don't perform any
         // linking. We need this special case, so that a `Linker`, that has not
         // yet been associated with some `Store`, can still be used to
@@ -144,7 +141,7 @@ impl Linker {
     pub fn module_instantiate<'b, T: Config>(
         &mut self,
         store: &mut Store<'b, T>,
-        validation_info: &ValidationInfo<'b>,
+        validation_info: &Module<'b>,
         maybe_fuel: Option<u64>,
     ) -> Option<Result<StoredInstantiationOutcome, RuntimeError>> {
         // 1. get or insert `StoreId`

@@ -5,7 +5,7 @@ use criterion::{
     PlotConfiguration, Throughput,
 };
 
-use wasm::{validate, Store};
+use wasm::{decode_and_validate, Store};
 
 macro_rules! bench_wasm {
     {

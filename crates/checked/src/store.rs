@@ -3,7 +3,7 @@ use wasm::{
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
     config::Config,
     resumable::{HostResumable, WasmResumable},
-    FuncType, GlobalType, Hostcode, MemType, RuntimeError, TableType, ValidationInfo,
+    FuncType, GlobalType, Hostcode, MemType, Module, RuntimeError, TableType,
 };
 
 use crate::{
@@ -56,7 +56,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`Store::module_instantiate`](wasm::Store::module_instantiate).
     pub fn module_instantiate(
         &mut self,
-        validation_info: &ValidationInfo<'b>,
+        validation_info: &Module<'b>,
         extern_vals: Vec<StoredExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<StoredInstantiationOutcome, RuntimeError> {

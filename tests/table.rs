@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use checked::{Store, StoredExternVal, StoredRef, StoredRefFunc};
-use wasm::validate;
+use wasm::decode_and_validate;
 use wasm::DecodingError;
 use wasm::ValidationError;
 
@@ -37,7 +37,7 @@ fn table_basic() {
 
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
-        let validation_info = validate(&wasm_bytes).expect("validation failed");
+        let validation_info = decode_and_validate(&wasm_bytes).expect("validation failed");
         let mut store = Store::new(());
         store
             .module_instantiate(&validation_info, Vec::new(), None)
@@ -76,7 +76,7 @@ fn unknown_table() {
 
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
-        let validation_info = validate(&wasm_bytes);
+        let validation_info = decode_and_validate(&wasm_bytes);
         assert_eq!(
             validation_info.err(),
             Some(ValidationError::InvalidTableIdx(0))
@@ -89,7 +89,7 @@ fn table_size_minimum_must_not_be_greater_than_maximum() {
     {
         let module = "(module (table 1 0 funcref))";
         let wasm_bytes = wat::parse_str(module).unwrap();
-        let validation_info = validate(&wasm_bytes);
+        let validation_info = decode_and_validate(&wasm_bytes);
         assert_eq!(
             validation_info.err(),
             Some(ValidationError::Decoding(
@@ -101,7 +101,7 @@ fn table_size_minimum_must_not_be_greater_than_maximum() {
     {
         let module = "(module (table 0xffff_ffff 0 funcref))";
         let wasm_bytes = wat::parse_str(module).unwrap();
-        let validation_info = validate(&wasm_bytes);
+        let validation_info = decode_and_validate(&wasm_bytes);
         assert_eq!(
             validation_info.err(),
             Some(ValidationError::Decoding(
@@ -130,7 +130,7 @@ fn table_elem_test() {
             i32.const 13)
     )"#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = decode_and_validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -174,7 +174,7 @@ fn table_get_set_test() {
 )
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = decode_and_validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -256,7 +256,7 @@ fn call_indirect_type_check() {
     )
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = decode_and_validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)

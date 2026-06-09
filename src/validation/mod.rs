@@ -8,7 +8,7 @@ use crate::{
     core::{
         decoding::{
             modules::section_header::{SectionHeader, SectionTy},
-            reader::{span::Span, WasmReader},
+            reader::{span::Span, WasmDecoder},
         },
         sidetable::Sidetable,
         structure::{
@@ -46,7 +46,7 @@ pub mod validation_stack;
 /// [`Store`](crate::Store) thorugh
 /// [`Store::module_instantiate`](crate::Store::module_instantiate)
 #[derive(Clone, Debug)]
-pub struct ValidationInfo<'bytecode> {
+pub struct Module<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import<'bytecode>>,
@@ -67,7 +67,7 @@ pub struct ValidationInfo<'bytecode> {
     // pub(crate) exports_length: Exported,
 }
 
-fn validate_no_duplicate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationError> {
+fn validate_no_duplicate_exports(validation_info: &Module) -> Result<(), ValidationError> {
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
     for export in &validation_info.exports {
         if found_export_names.contains(export.name) {
@@ -78,8 +78,8 @@ fn validate_no_duplicate_exports(validation_info: &ValidationInfo) -> Result<(),
     Ok(())
 }
 
-pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
-    let mut wasm = WasmReader::new(wasm);
+pub fn decode_and_validate(wasm: &[u8]) -> Result<Module<'_>, ValidationError> {
+    let mut wasm = WasmDecoder::new(wasm);
 
     // represents C.refs in https://webassembly.github.io/spec/core/valid/conventions.html#context
     // A func.ref instruction is onlv valid if it has an immediate that is a member of C.refs.
@@ -112,14 +112,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let types = handle_section(&mut wasm, &mut header, SectionTy::Type, |wasm, _| {
-        wasm.read_vec(FuncType::read).map(|types| IdxVec::new(types).expect("that index space creation never fails because the length of the types vector is encoded as a 32-bit integer in the bytecode"))
+        wasm.decode_vec(FuncType::decode).map(|types| IdxVec::new(types).expect("that index space creation never fails because the length of the types vector is encoded as a 32-bit integer in the bytecode"))
     })?
     .unwrap_or_default();
 
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let imports = handle_section(&mut wasm, &mut header, SectionTy::Import, |wasm, _| {
-        wasm.read_vec(|wasm| Import::read_and_validate(wasm, &types))
+        wasm.decode_vec(|wasm| Import::decode_and_validate(wasm, &types))
     })?
     .unwrap_or_default();
 
@@ -133,7 +133,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     // only after that do the local functions get assigned their indices.
     let local_functions =
         handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
-            wasm.read_vec(|wasm| TypeIdx::read_and_validate(wasm, &types))
+            wasm.decode_vec(|wasm| TypeIdx::decode_and_validate(wasm, &types))
         })?
         .unwrap_or_default();
 
@@ -152,7 +152,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         _ => None,
     });
     let local_tables = handle_section(&mut wasm, &mut header, SectionTy::Table, |wasm, _| {
-        wasm.read_vec(TableType::read_and_validate)
+        wasm.decode_vec(TableType::decode_and_validate)
     })?
     .unwrap_or_default();
 
@@ -167,7 +167,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     });
     // let imported_memories_length = imported_memories.len();
     let local_memories = handle_section(&mut wasm, &mut header, SectionTy::Memory, |wasm, _| {
-        wasm.read_vec(MemType::read_and_validate)
+        wasm.decode_vec(MemType::decode_and_validate)
     })?
     .unwrap_or_default();
 
@@ -188,7 +188,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         })
         .collect();
     let local_globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, h| {
-        globals::validate_global_section(
+        globals::decode_and_validate_global_section(
             wasm,
             h,
             &imported_global_types,
@@ -210,8 +210,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
-        wasm.read_vec(|wasm| {
-            Export::read_and_validate(
+        wasm.decode_vec(|wasm| {
+            Export::decode_and_validate(
                 wasm,
                 functions.inner(),
                 tables.inner(),
@@ -231,7 +231,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
-        let func_idx = FuncIdx::read_and_validate(wasm, functions.inner())?;
+        let func_idx = FuncIdx::decode_and_validate(wasm, functions.inner())?;
 
         // start function signature must be [] -> []
         // https://webassembly.github.io/spec/core/valid/modules.html#start-function
@@ -262,7 +262,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let elements = handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
-        ElemType::read_and_validate(
+        ElemType::decode_and_validate(
             wasm,
             functions.inner(),
             &mut validation_context_refs,
@@ -281,7 +281,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     // The data count section is used to simplify single-pass validation. Since the data section occurs after the code section, the `memory.init` and `data.drop` and instructions would not be able to check whether the data segment index is valid until the data section is read. The data count section occurs before the code section, so a single-pass validator can use this count instead of deferring validation.
     let data_count: Option<u32> =
         handle_section(&mut wasm, &mut header, SectionTy::DataCount, |wasm, _| {
-            wasm.read_var_u32()
+            wasm.decode_var_u32()
         })?;
 
     trace!("data count: {data_count:?}");
@@ -296,7 +296,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         // different generics. Therefore, all index types must be valid in their
         // relevant `IdxVec`s.
         unsafe {
-            code::validate_code_section(
+            code::decode_and_validate_code_section(
                 wasm,
                 h,
                 &types,
@@ -321,7 +321,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
         // wasm.read_vec(DataSegment::read)
-        data::validate_data_section(wasm, h, &imported_global_types, functions.inner(), memories.inner())
+        data::decode_and_validate_data_section(wasm, h, &imported_global_types, functions.inner(), memories.inner())
             .map(|data_segments| IdxVec::new(data_segments).expect("that index space creation never fails because the length of the data segments vector is encoded as a 32-bit integer in the bytecode"))
     })?
     .unwrap_or_default();
@@ -341,7 +341,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     }
 
     debug!("Validation was successful");
-    let validation_info = ValidationInfo {
+    let validation_info = Module {
         wasm: wasm.into_inner(),
         types,
         imports,
@@ -363,25 +363,25 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 }
 
 fn read_next_header(
-    wasm: &mut WasmReader,
+    wasm: &mut WasmDecoder,
     header: &mut Option<SectionHeader>,
 ) -> Result<(), DecodingError> {
     if header.is_none() && !wasm.remaining_bytes().is_empty() {
-        *header = Some(SectionHeader::read(wasm)?);
+        *header = Some(SectionHeader::decode(wasm)?);
     }
     Ok(())
 }
 
 #[inline(always)]
 fn handle_section<'wasm, T, F, E>(
-    wasm: &mut WasmReader<'wasm>,
+    wasm: &mut WasmDecoder<'wasm>,
     header: &mut Option<SectionHeader>,
     section_ty: SectionTy,
     handler: F,
 ) -> Result<Option<T>, E>
 where
     T: 'wasm,
-    F: FnOnce(&mut WasmReader<'wasm>, SectionHeader) -> Result<T, E>,
+    F: FnOnce(&mut WasmDecoder<'wasm>, SectionHeader) -> Result<T, E>,
     E: From<DecodingError>,
 {
     match &header {
@@ -399,7 +399,7 @@ where
 /// Reads the next sections as long as they are custom sections and pushes them
 /// into the `custom_sections` vector.
 fn read_all_custom_sections<'wasm>(
-    wasm: &mut WasmReader<'wasm>,
+    wasm: &mut WasmDecoder<'wasm>,
     section_header: &mut Option<SectionHeader>,
     custom_sections: &mut Vec<CustomSection<'wasm>>,
 ) -> Result<(), ValidationError> {
@@ -408,7 +408,7 @@ fn read_all_custom_sections<'wasm>(
             wasm,
             section_header,
             SectionTy::Custom,
-            CustomSection::read_and_validate,
+            CustomSection::decode_and_validate,
         )
     };
 
@@ -419,7 +419,7 @@ fn read_all_custom_sections<'wasm>(
     Ok(())
 }
 
-impl<'wasm> ValidationInfo<'wasm> {
+impl<'wasm> Module<'wasm> {
     /// Returns the imports of this module as an iterator. Each import consist
     /// of a module name, a name and an extern type.
     ///

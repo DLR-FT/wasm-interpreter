@@ -19,7 +19,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid local index
         // next.
-        let local_idx = unsafe { LocalIdx::read_unchecked(wasm) };
+        let local_idx = unsafe { LocalIdx::decode_unchecked(wasm) };
         let value = *resumable.stack.get_local(local_idx);
         resumable.stack.push_value(value)?;
         trace!("Instruction: local.get {} [] -> [t]", local_idx);
@@ -35,7 +35,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid local index
         // next.
-        let local_idx = unsafe { LocalIdx::read_unchecked(wasm) };
+        let local_idx = unsafe { LocalIdx::decode_unchecked(wasm) };
         let value = resumable.stack.pop_value();
         *resumable.stack.get_local_mut(local_idx) = value;
         trace!("Instruction: local.set {} [t] -> []", local_idx);
@@ -51,7 +51,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid local index
         // next.
-        let local_idx = unsafe { LocalIdx::read_unchecked(wasm) };
+        let local_idx = unsafe { LocalIdx::decode_unchecked(wasm) };
         let value = resumable.stack.peek_value().unwrap_validated();
         *resumable.stack.get_local_mut(local_idx) = value;
         trace!("Instruction: local.tee {} [t] -> [t]", local_idx);
@@ -72,7 +72,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid global
         // index next.
-        let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };
+        let global_idx = unsafe { GlobalIdx::decode_unchecked(wasm) };
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -110,7 +110,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid global
         // index next.
-        let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };
+        let global_idx = unsafe { GlobalIdx::decode_unchecked(wasm) };
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all

@@ -17,7 +17,7 @@
 use checked::Store;
 use interop::RefExtern;
 use wasm::value::ExternAddr;
-use wasm::{validate, RuntimeError, TrapError};
+use wasm::{decode_and_validate, RuntimeError, TrapError};
 
 #[test_log::test]
 fn table_fill_test() {
@@ -40,7 +40,7 @@ fn table_fill_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = decode_and_validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)

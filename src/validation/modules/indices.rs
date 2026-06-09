@@ -1,6 +1,6 @@
 use crate::{
     core::{
-        decoding::reader::WasmReader,
+        decoding::reader::WasmDecoder,
         structure::modules::indices::{
             DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, IdxVec, LocalIdx, MemIdx, TableIdx, TypeIdx,
         },
@@ -24,11 +24,11 @@ impl TypeIdx {
 
     /// Reads a type index from Wasm code and validates that it is a valid index
     /// for a given types vector.
-    pub fn read_and_validate(
-        wasm: &mut WasmReader,
+    pub fn decode_and_validate(
+        wasm: &mut WasmDecoder,
         c_types: &IdxVec<TypeIdx, FuncType>,
     ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
+        let index = wasm.decode_var_u32()?;
         Self::validate(index, c_types)
     }
 }
@@ -46,11 +46,11 @@ impl FuncIdx {
 
     /// Reads a function index from Wasm code and validates that it is a valid
     /// index for a given functions vector.
-    pub fn read_and_validate<T>(
-        wasm: &mut WasmReader,
+    pub fn decode_and_validate<T>(
+        wasm: &mut WasmDecoder,
         c_funcs: &IdxVec<FuncIdx, T>,
     ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
+        let index = wasm.decode_var_u32()?;
         Self::validate(index, c_funcs)
     }
 }
@@ -71,11 +71,11 @@ impl TableIdx {
 
     /// Reads a table index from Wasm code and validates that it is a valid
     /// index for a given tables vector.
-    pub fn read_and_validate<T>(
-        wasm: &mut WasmReader,
+    pub fn decode_and_validate<T>(
+        wasm: &mut WasmDecoder,
         c_tables: &IdxVec<TableIdx, T>,
     ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
+        let index = wasm.decode_var_u32()?;
         Self::validate(index, c_tables)
     }
 }
@@ -93,11 +93,11 @@ impl MemIdx {
 
     /// Reads a memory index from Wasm code and validates that it is a valid
     /// index for a given memories vector.
-    pub fn read_and_validate<T>(
-        wasm: &mut WasmReader,
+    pub fn decode_and_validate<T>(
+        wasm: &mut WasmDecoder,
         c_mems: &IdxVec<MemIdx, T>,
     ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
+        let index = wasm.decode_var_u32()?;
         Self::validate(index, c_mems)
     }
 }
@@ -118,11 +118,11 @@ impl GlobalIdx {
 
     /// Reads a global index from Wasm code and validates that it is a valid
     /// index for a given globals vector.
-    pub fn read_and_validate<T>(
-        wasm: &mut WasmReader,
+    pub fn decode_and_validate<T>(
+        wasm: &mut WasmDecoder,
         c_globals: &IdxVec<GlobalIdx, T>,
     ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
+        let index = wasm.decode_var_u32()?;
         Self::validate(index, c_globals)
     }
 }
@@ -140,11 +140,11 @@ impl ElemIdx {
 
     /// Reads an element index from Wasm code and validates that it is a valid
     /// index for a given elements vector.
-    pub fn read_and_validate<T>(
-        wasm: &mut WasmReader,
+    pub fn decode_and_validate<T>(
+        wasm: &mut WasmDecoder,
         c_elems: &IdxVec<ElemIdx, T>,
     ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
+        let index = wasm.decode_var_u32()?;
         Self::validate(index, c_elems)
     }
 }
@@ -162,11 +162,11 @@ impl DataIdx {
 
     /// Reads a data index from Wasm code and validates that it is a valid
     /// by comparing it to the total number of data segments.
-    pub fn read_and_validate(
-        wasm: &mut WasmReader,
+    pub fn decode_and_validate(
+        wasm: &mut WasmDecoder,
         data_count: u32,
     ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
+        let index = wasm.decode_var_u32()?;
         Self::validate(index, data_count)
     }
 }
@@ -174,11 +174,11 @@ impl DataIdx {
 impl LocalIdx {
     /// Reads a local index from Wasm code and validates that it is valid for a
     /// given slice of locals.
-    pub fn read_and_validate(
-        wasm: &mut WasmReader,
+    pub fn decode_and_validate(
+        wasm: &mut WasmDecoder,
         locals_of_current_function: &[ValType],
     ) -> Result<Self, ValidationError> {
-        let index = wasm.read_var_u32()?;
+        let index = wasm.decode_var_u32()?;
         let index_as_usize = usize::try_from(index).expect("architecture to be at least 32 bits");
 
         match locals_of_current_function.get(index_as_usize) {

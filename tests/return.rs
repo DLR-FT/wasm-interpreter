@@ -1,5 +1,5 @@
 use checked::Store;
-use wasm::validate;
+use wasm::decode_and_validate;
 
 /// A simple function to add 2 two i32s but using the RETURN opcode.
 #[test_log::test]
@@ -22,7 +22,7 @@ fn return_valid() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = decode_and_validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
