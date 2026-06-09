@@ -1,5 +1,5 @@
 use checked::{Store, StoredValue};
-use wasm::validate;
+use wasm::decode_and_validate;
 
 /// A simple function to add two numbers and return the result, using [invoke_dynamic](wasm::RuntimeInstance::invoke_dynamic)
 /// instead of [invoke_named](wasm::RuntimeInstance::invoke_named).
@@ -15,7 +15,7 @@ fn dynamic_add() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = decode_and_validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)

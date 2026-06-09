@@ -1,44 +1,44 @@
 use crate::{
     core::{
-        decoding::reader::WasmReader,
+        decoding::reader::WasmDecoder,
         structure::modules::{
             exports::{Export, ExportDesc},
             globals::Global,
             indices::{FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
         },
     },
-    DecodingError, ExternType, MemType, TableType, ValidationError, ValidationInfo,
+    DecodingError, ExternType, MemType, Module, TableType, ValidationError,
 };
 
 impl<'wasm> Export<'wasm> {
-    pub fn read_and_validate(
-        wasm: &mut WasmReader<'wasm>,
+    pub fn decode_and_validate(
+        wasm: &mut WasmDecoder<'wasm>,
         c_funcs: &IdxVec<FuncIdx, TypeIdx>,
         c_tables: &IdxVec<TableIdx, TableType>,
         c_mems: &IdxVec<MemIdx, MemType>,
         c_globals: &IdxVec<GlobalIdx, Global>,
     ) -> Result<Self, ValidationError> {
-        let name = wasm.read_name()?;
-        let desc = ExportDesc::read_and_validate(wasm, c_funcs, c_tables, c_mems, c_globals)?;
+        let name = wasm.decode_name()?;
+        let desc = ExportDesc::decode_and_validate(wasm, c_funcs, c_tables, c_mems, c_globals)?;
         Ok(Export { name, desc })
     }
 }
 
 impl ExportDesc {
-    pub fn read_and_validate(
-        wasm: &mut WasmReader,
+    pub fn decode_and_validate(
+        wasm: &mut WasmDecoder,
         c_functions: &IdxVec<FuncIdx, TypeIdx>,
         c_tables: &IdxVec<TableIdx, TableType>,
         c_mems: &IdxVec<MemIdx, MemType>,
         c_globals: &IdxVec<GlobalIdx, Global>,
     ) -> Result<Self, ValidationError> {
-        let desc_id = wasm.read_u8()?;
+        let desc_id = wasm.decode_u8()?;
 
         let desc = match desc_id {
-            0x00 => ExportDesc::Func(FuncIdx::read_and_validate(wasm, c_functions)?),
-            0x01 => ExportDesc::Table(TableIdx::read_and_validate(wasm, c_tables)?),
-            0x02 => ExportDesc::Mem(MemIdx::read_and_validate(wasm, c_mems)?),
-            0x03 => ExportDesc::Global(GlobalIdx::read_and_validate(wasm, c_globals)?),
+            0x00 => ExportDesc::Func(FuncIdx::decode_and_validate(wasm, c_functions)?),
+            0x01 => ExportDesc::Table(TableIdx::decode_and_validate(wasm, c_tables)?),
+            0x02 => ExportDesc::Mem(MemIdx::decode_and_validate(wasm, c_mems)?),
+            0x03 => ExportDesc::Global(GlobalIdx::decode_and_validate(wasm, c_globals)?),
             other => return Err(DecodingError::MalformedExportDescDiscriminator(other).into()),
         };
         Ok(desc)
@@ -50,20 +50,20 @@ impl ExportDesc {
     /// # Safety
     ///
     /// The caller must ensure that `self` comes from the same
-    /// [`ValidationInfo`] that is passed as an argument here.
+    /// [`Module`] that is passed as an argument here.
     #[allow(unused)] // reason = "this function is analogous to ImportDesc::extern_type, however it is not yet clear if it is needed in the future"
-    pub unsafe fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+    pub unsafe fn extern_type(&self, validation_info: &Module) -> ExternType {
         // TODO clean up logic for checking if an exported definition is an
         // import
         match self {
             ExportDesc::Func(func_idx) => {
                 // SAFETY: The caller ensures that the current `ExportDesc`
-                // comes from the same `ValidationInfo` that is passed into the
+                // comes from the same `Module` that is passed into the
                 // current function. Therefore, the function index stored in
-                // `self` must be valid in the given `ValidationInfo`.
+                // `self` must be valid in the given `Module`.
                 let type_idx = unsafe { validation_info.functions.inner().get(*func_idx) };
                 // SAFETY: The type index was just read from the passed
-                // `ValidationInfo`.  Because the `ValidationInfo` struct
+                // `Module`.  Because the `Module` struct
                 // guarantees that all indices contained in it are valid for all
                 // other `IdxVec` vectors in it, this is sound.
                 let func_type = unsafe { validation_info.types.get(*type_idx) };
@@ -72,27 +72,27 @@ impl ExportDesc {
             }
             ExportDesc::Table(table_idx) => {
                 // SAFETY: The caller ensures that the current `ExportDesc`
-                // comes from the same `ValidationInfo` that is passed into the
+                // comes from the same `Module` that is passed into the
                 // current function. Therefore, the table index stored in `self`
-                // must be valid in the given `ValidationInfo`.
+                // must be valid in the given `Module`.
                 let table_type = unsafe { validation_info.tables.inner().get(*table_idx) };
 
                 ExternType::Table(*table_type)
             }
             ExportDesc::Mem(mem_idx) => {
                 // SAFETY: The caller ensures that the current `ExportDesc`
-                // comes from the same `ValidationInfo` that is passed into the
+                // comes from the same `Module` that is passed into the
                 // current function. Therefore, the memory index stored in
-                // `self` must be valid in the given `ValidationInfo`.
+                // `self` must be valid in the given `Module`.
                 let mem_type = unsafe { validation_info.memories.inner().get(*mem_idx) };
 
                 ExternType::Mem(*mem_type)
             }
             ExportDesc::Global(global_idx) => {
                 // SAFETY: The caller ensures that the current `ExportDesc`
-                // comes from the same `ValidationInfo` that is passed into the
+                // comes from the same `Module` that is passed into the
                 // current function. Therefore, the global index stored in
-                // `self` must be valid in the given `ValidationInfo`.
+                // `self` must be valid in the given `Module`.
                 let global = unsafe { validation_info.globals.inner().get(*global_idx) };
 
                 ExternType::Global(global.ty)

@@ -3,8 +3,8 @@ use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 use crate::{
     core::{
         decoding::{
-            modules::parse_elemkind,
-            reader::{span::Span, WasmReader},
+            modules::decode_elemkind,
+            reader::{span::Span, WasmDecoder},
         },
         structure::modules::{
             element_segments::{ActiveElem, ElemItems, ElemMode, ElemType},
@@ -12,7 +12,8 @@ use crate::{
         },
     },
     validation::{
-        read_constant_expression::read_constant_expression, validation_stack::ValidationStack,
+        read_constant_expression::decode_and_validate_constant_expression,
+        validation_stack::ValidationStack,
     },
     GlobalType, NumType, RefType, TableType, ValType, ValidationError,
 };
@@ -25,28 +26,28 @@ impl ElemType {
     /// This comes in handy later on when we are validating the actual code of
     /// the functions so that we can make sure we are not referencing invalid
     /// functions
-    pub fn read_and_validate(
-        wasm: &mut WasmReader,
+    pub fn decode_and_validate(
+        wasm: &mut WasmDecoder,
         c_funcs: &IdxVec<FuncIdx, TypeIdx>,
         validation_context_refs: &mut BTreeSet<FuncIdx>,
         c_tables: &IdxVec<TableIdx, TableType>,
         imported_global_types: &[GlobalType],
     ) -> Result<Vec<Self>, ValidationError> {
-        wasm.read_vec(|wasm| {
-            let prop = wasm.read_var_u32()?;
+        wasm.decode_vec(|wasm| {
+            let prop = wasm.decode_var_u32()?;
 
             let elem = match prop {
                 0 => {
                     // binary format is: 0:u32 e:expr y*:vec(funcidx)
                     // should parse to spec struct {type funcref, init ((ref.func y) end)*, mode active {table 0, offset e}}
                     // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Active{0, e}} here
-                    let e = parse_validate_active_segment_offset_expr(
+                    let e = decode_and_validate_active_segment_offset_expr(
                         wasm,
                         imported_global_types,
                         c_funcs,
                         validation_context_refs,
                     )?;
-                    let init = parse_validate_shortened_initializer_list(
+                    let init = decode_and_validate_shortened_initializer_list(
                         wasm,
                         c_funcs,
                         validation_context_refs,
@@ -61,8 +62,8 @@ impl ElemType {
                     // binary format is: 1:u32 et:elemkind y*:vec(funcidx)
                     // should parse to spec struct {type et, init ((ref.func y) end)*, mode passive}
                     // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Passive} here
-                    let _et = parse_elemkind(wasm)?;
-                    let init = parse_validate_shortened_initializer_list(
+                    let _et = decode_elemkind(wasm)?;
+                    let init = decode_and_validate_shortened_initializer_list(
                         wasm,
                         c_funcs,
                         validation_context_refs,
@@ -74,15 +75,15 @@ impl ElemType {
                     // binary format is: 2:u32 x:tableidx e:expr et:elemkind y*:vec(funcidx)
                     // should parse to spec struct {type et, init ((ref.func y) end)*, mode active {table x, offset e}}
                     // which reflects to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Active{x, e}} here
-                    let x = TableIdx::read_and_validate(wasm, c_tables)?;
-                    let e = parse_validate_active_segment_offset_expr(
+                    let x = TableIdx::decode_and_validate(wasm, c_tables)?;
+                    let e = decode_and_validate_active_segment_offset_expr(
                         wasm,
                         imported_global_types,
                         c_funcs,
                         validation_context_refs,
                     )?;
-                    let _et = parse_elemkind(wasm)?;
-                    let init = parse_validate_shortened_initializer_list(
+                    let _et = decode_elemkind(wasm)?;
+                    let init = decode_and_validate_shortened_initializer_list(
                         wasm,
                         c_funcs,
                         validation_context_refs,
@@ -97,8 +98,8 @@ impl ElemType {
                     // binary format is: 3:u32 et:elemkind y*:vec(funcidx)
                     // should parse to spec struct {type et, init ((ref.func y) end)*, mode declarative}
                     // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Declarative} here
-                    let _et = parse_elemkind(wasm)?;
-                    let init = parse_validate_shortened_initializer_list(
+                    let _et = decode_elemkind(wasm)?;
+                    let init = decode_and_validate_shortened_initializer_list(
                         wasm,
                         c_funcs,
                         validation_context_refs,
@@ -110,13 +111,13 @@ impl ElemType {
                     // binary format is: 4:u32 e:expr el*:vec(expr)
                     // should parse to spec struct {type funcref, init el*, mode active { table 0, offset e}}
                     // which is equivalent to ElemType{init: ElemItems::Exprs(funcref, el*), mode: ElemMode::Active{0, e}}
-                    let e = parse_validate_active_segment_offset_expr(
+                    let e = decode_and_validate_active_segment_offset_expr(
                         wasm,
                         imported_global_types,
                         c_funcs,
                         validation_context_refs,
                     )?;
-                    let init = parse_validate_generic_initializer_list(
+                    let init = decode_and_validate_generic_initializer_list(
                         wasm,
                         RefType::FuncRef,
                         imported_global_types,
@@ -133,8 +134,8 @@ impl ElemType {
                     // binary format is 5:u32 et: reftype el*:vec(expr)
                     // should parse to spec struct {type et, init el*, mode passive}
                     // which is equivalent to ElemType{init: ElemItems::Exprs(et, el*), mode: ElemMode::Passive} here
-                    let et = RefType::read(wasm)?;
-                    let init = parse_validate_generic_initializer_list(
+                    let et = RefType::decode(wasm)?;
+                    let init = decode_and_validate_generic_initializer_list(
                         wasm,
                         et,
                         imported_global_types,
@@ -148,15 +149,15 @@ impl ElemType {
                     // binary format is 6:u32 x:table_idx e:expr et:reftype el*:vec(expr)
                     // should parse to spec struct {type et, init el*, mode passive}
                     // which is equivalent to ElemType{init: Exprs(et, el*), mode: ElemMode::Active{table x, offset e}} here
-                    let x = TableIdx::read_and_validate(wasm, c_tables)?;
-                    let e = parse_validate_active_segment_offset_expr(
+                    let x = TableIdx::decode_and_validate(wasm, c_tables)?;
+                    let e = decode_and_validate_active_segment_offset_expr(
                         wasm,
                         imported_global_types,
                         c_funcs,
                         validation_context_refs,
                     )?;
-                    let et = RefType::read(wasm)?;
-                    let init = parse_validate_generic_initializer_list(
+                    let et = RefType::decode(wasm)?;
+                    let init = decode_and_validate_generic_initializer_list(
                         wasm,
                         et,
                         imported_global_types,
@@ -173,8 +174,8 @@ impl ElemType {
                     // binary format is 7:u32 et:reftype el*:vec(expr)
                     // should parse to spec struct {type et, init el*, mode declarative}
                     // which is equivalent to ElemType{init: Exprs(et, el*), mode: ElemMode::Declarative} here
-                    let et = RefType::read(wasm)?;
-                    let init = parse_validate_generic_initializer_list(
+                    let et = RefType::decode(wasm)?;
+                    let init = decode_and_validate_generic_initializer_list(
                         wasm,
                         et,
                         imported_global_types,
@@ -230,15 +231,19 @@ impl ElemType {
 ///
 /// # Returns
 /// - `Ok(Span)` of the expr validated to be of type I32 if parsing & validating succeeds, `Err(_)` otherwise.
-fn parse_validate_active_segment_offset_expr(
-    wasm: &mut WasmReader,
+fn decode_and_validate_active_segment_offset_expr(
+    wasm: &mut WasmDecoder,
     imported_global_types: &[GlobalType],
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<Span, ValidationError> {
     let mut valid_stack = ValidationStack::new();
-    let (span, seen_func_refs) =
-        read_constant_expression(wasm, &mut valid_stack, imported_global_types, c_funcs)?;
+    let (span, seen_func_refs) = decode_and_validate_constant_expression(
+        wasm,
+        &mut valid_stack,
+        imported_global_types,
+        c_funcs,
+    )?;
     validation_context_refs.extend(seen_func_refs);
     valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
     Ok(span)
@@ -252,13 +257,13 @@ fn parse_validate_active_segment_offset_expr(
 ///
 /// # Returns
 /// - `Ok(ElemItems::RefFuncs(_))` corresponding to the parsed list if parsing & validating succeeds, `Err(_)` otherwise.
-fn parse_validate_shortened_initializer_list(
-    wasm: &mut WasmReader,
+fn decode_and_validate_shortened_initializer_list(
+    wasm: &mut WasmDecoder,
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
-    wasm.read_vec(|w| {
-        let func_idx = FuncIdx::read_and_validate(w, c_funcs)?;
+    wasm.decode_vec(|w| {
+        let func_idx = FuncIdx::decode_and_validate(w, c_funcs)?;
         validation_context_refs.insert(func_idx);
         Ok(func_idx)
     })
@@ -273,17 +278,21 @@ fn parse_validate_shortened_initializer_list(
 ///
 /// # Returns
 /// - `Ok(ElemItems::Exprs(expected_type, _))` corresponding to the parsed list if parsing & validating succeeds, `Err(_)` otherwise.
-fn parse_validate_generic_initializer_list(
-    wasm: &mut WasmReader,
+fn decode_and_validate_generic_initializer_list(
+    wasm: &mut WasmDecoder,
     expected_type: RefType,
     imported_global_types: &[GlobalType],
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
-    wasm.read_vec(|w| {
+    wasm.decode_vec(|w| {
         let mut valid_stack = ValidationStack::new();
-        let (span, seen_func_refs) =
-            read_constant_expression(w, &mut valid_stack, imported_global_types, c_funcs)?;
+        let (span, seen_func_refs) = decode_and_validate_constant_expression(
+            w,
+            &mut valid_stack,
+            imported_global_types,
+            c_funcs,
+        )?;
         validation_context_refs.extend(seen_func_refs);
         valid_stack.assert_val_types(&[ValType::RefType(expected_type)], true)?;
         Ok(span)

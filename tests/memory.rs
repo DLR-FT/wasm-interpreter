@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use checked::Store;
-use wasm::{validate, DecodingError, ValidationError};
+use wasm::{decode_and_validate, DecodingError, ValidationError};
 
 #[test_log::test]
 fn memory_basic() {
@@ -34,7 +34,7 @@ fn memory_basic() {
 
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
-        let validation_info = validate(&wasm_bytes).expect("validation failed");
+        let validation_info = decode_and_validate(&wasm_bytes).expect("validation failed");
         let mut store = Store::new(());
         store
             .module_instantiate(&validation_info, Vec::new(), None)
@@ -54,7 +54,7 @@ fn memory_min_greater_than_max() {
 
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
-        let validation_info = validate(&wasm_bytes);
+        let validation_info = decode_and_validate(&wasm_bytes);
         assert_eq!(
             validation_info.err().unwrap(),
             ValidationError::Decoding(DecodingError::MalformedLimitsMinLargerThanMax {
@@ -82,7 +82,7 @@ fn memory_size_must_be_at_most_4gib() {
 
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
-        let validation_info = validate(&wasm_bytes);
+        let validation_info = decode_and_validate(&wasm_bytes);
         assert_eq!(
             validation_info.err().unwrap(),
             ValidationError::Decoding(DecodingError::MemoryTooLarge)
@@ -182,7 +182,7 @@ fn i32_and_i64_loads() {
       "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = decode_and_validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -391,7 +391,7 @@ fn memory_test_exporting_rand_globals_doesnt_change_a_memory_s_semantics() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = decode_and_validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)

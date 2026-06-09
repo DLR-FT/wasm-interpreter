@@ -30,7 +30,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid table index
         // next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::decode_unchecked(wasm) };
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -75,7 +75,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be valid table index
         // next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::decode_unchecked(wasm) };
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
         // can contain module addresses. All stores guarantee all
@@ -119,7 +119,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be valid table
         // index next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::decode_unchecked(wasm) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -157,7 +157,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::decode_unchecked(wasm) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -222,7 +222,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::decode_unchecked(wasm) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -295,10 +295,10 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
-        let table_x_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_x_idx = unsafe { TableIdx::decode_unchecked(wasm) };
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
-        let table_y_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_y_idx = unsafe { TableIdx::decode_unchecked(wasm) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -415,10 +415,10 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid
         // element index next.
-        let elem_idx = unsafe { ElemIdx::read_unchecked(wasm) };
+        let elem_idx = unsafe { ElemIdx::decode_unchecked(wasm) };
         // SAFETY: Validation guarantees there to be a valid
         // table index next.
-        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::decode_unchecked(wasm) };
 
         let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated(); // size
         let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_INIT)
@@ -483,7 +483,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there a valid element
         // index next.
-        let elem_idx = unsafe { ElemIdx::read_unchecked(wasm) };
+        let elem_idx = unsafe { ElemIdx::decode_unchecked(wasm) };
 
         // SAFETY: All requirements are met:
         // 1. The current module address must come from the

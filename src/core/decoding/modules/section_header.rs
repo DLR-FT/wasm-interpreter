@@ -1,6 +1,6 @@
 use crate::{
     core::{
-        decoding::reader::{span::Span, WasmReader},
+        decoding::reader::{span::Span, WasmDecoder},
         utils::ToUsizeExt,
     },
     DecodingError,
@@ -24,9 +24,9 @@ pub enum SectionTy {
 }
 
 impl SectionTy {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
+    pub fn decode(wasm: &mut WasmDecoder) -> Result<Self, DecodingError> {
         use SectionTy::*;
-        let ty = match wasm.read_u8()? {
+        let ty = match wasm.decode_u8()? {
             0 => Custom,
             1 => Type,
             2 => Import,
@@ -54,9 +54,9 @@ pub(crate) struct SectionHeader {
 }
 
 impl SectionHeader {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
-        let ty = SectionTy::read(wasm)?;
-        let size: u32 = wasm.read_var_u32()?;
+    pub fn decode(wasm: &mut WasmDecoder) -> Result<Self, DecodingError> {
+        let ty = SectionTy::decode(wasm)?;
+        let size: u32 = wasm.decode_var_u32()?;
         let contents_span = wasm.make_span(size.into_usize())?;
 
         Ok(SectionHeader {

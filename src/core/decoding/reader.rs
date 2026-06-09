@@ -4,7 +4,7 @@ use crate::{core::decoding::reader::span::Span, DecodingError};
 ///
 /// Its purpose is to abstract parsing basic WASM values from the bytecode.
 #[derive(Clone)]
-pub struct WasmReader<'a> {
+pub struct WasmDecoder<'a> {
     /// Entire WASM binary as slice
     pub full_wasm_binary: &'a [u8],
 
@@ -26,8 +26,8 @@ pub struct WasmReader<'a> {
     pub pc: usize,
 }
 
-impl<'a> WasmReader<'a> {
-    /// Initialize a new [WasmReader] from a WASM byte slice
+impl<'a> WasmDecoder<'a> {
+    /// Initialize a new [WasmDecoder] from a WASM byte slice
     pub const fn new(wasm: &'a [u8]) -> Self {
         Self {
             full_wasm_binary: wasm,
@@ -39,9 +39,9 @@ impl<'a> WasmReader<'a> {
     ///
     /// # Note
     ///
-    /// This allows setting the [`pc`](WasmReader::pc) to one byte *past* the end of
-    /// [full_wasm_binary](WasmReader::full_wasm_binary), **if** the [Span]'s length is 0. For
-    /// further information, refer to the [field documentation of `pc`](WasmReader::pc).
+    /// This allows setting the [`pc`](WasmDecoder::pc) to one byte *past* the end of
+    /// [full_wasm_binary](WasmDecoder::full_wasm_binary), **if** the [Span]'s length is 0. For
+    /// further information, refer to the [field documentation of `pc`](WasmDecoder::pc).
     pub fn move_start_to(&mut self, span: Span) -> Result<(), DecodingError> {
         if span.from + span.len > self.full_wasm_binary.len() {
             return Err(DecodingError::Eof);
@@ -74,10 +74,10 @@ impl<'a> WasmReader<'a> {
     ///
     /// # Note
     ///
-    /// This allows setting the [`pc`](WasmReader::pc) to one byte *past* the end of
-    /// [full_wasm_binary](WasmReader::full_wasm_binary), **if** `N` equals the remaining bytes
+    /// This allows setting the [`pc`](WasmDecoder::pc) to one byte *past* the end of
+    /// [full_wasm_binary](WasmDecoder::full_wasm_binary), **if** `N` equals the remaining bytes
     /// slice's length. For further information, refer to the [field documentation of `pc`]
-    /// (WasmReader::pc).
+    /// (WasmDecoder::pc).
     pub fn strip_bytes<const N: usize>(&mut self) -> Result<[u8; N], DecodingError> {
         if N > self.full_wasm_binary.len() - self.pc {
             return Err(DecodingError::Eof);
@@ -99,9 +99,9 @@ impl<'a> WasmReader<'a> {
             .ok_or(DecodingError::Eof)
     }
 
-    /// Call a closure that may mutate the [WasmReader]
+    /// Call a closure that may mutate the [WasmDecoder]
     ///
-    /// Returns a tuple of the closure's return value and the number of bytes that the [`WasmReader`]
+    /// Returns a tuple of the closure's return value and the number of bytes that the [`WasmDecoder`]
     /// was advanced by.
     ///
     /// # Panics
@@ -110,7 +110,7 @@ impl<'a> WasmReader<'a> {
     /// [move_start_to](Self::move_start_to) is called.
     pub fn measure_num_read_bytes<T, E>(
         &mut self,
-        f: impl FnOnce(&mut WasmReader) -> Result<T, E>,
+        f: impl FnOnce(&mut WasmDecoder) -> Result<T, E>,
     ) -> Result<(T, usize), E> {
         let before = self.pc;
         let ret = f(self)?;
@@ -132,7 +132,7 @@ impl<'a> WasmReader<'a> {
     /// This can move the [`pc`](Self::pc) past the last byte of the WASM binary, so that reading
     /// more than 0 further bytes would panick. However, it can not move the [`pc`](Self::pc) any
     /// further than that, instead an error is returned. For further information, refer to the
-    /// [field documentation of `pc`] (WasmReader::pc).
+    /// [field documentation of `pc`] (WasmDecoder::pc).
     pub fn skip(&mut self, num_bytes: usize) -> Result<(), DecodingError> {
         if num_bytes > self.full_wasm_binary.len() - self.pc {
             return Err(DecodingError::Eof);
@@ -152,7 +152,7 @@ impl<'a> WasmReader<'a> {
     /// However if the closure returns `Err(_)`, `self` will be reset as if the closure was never called.
     pub fn handle_transaction<T, E>(
         &mut self,
-        f: impl FnOnce(&mut WasmReader<'a>) -> Result<T, E>,
+        f: impl FnOnce(&mut WasmDecoder<'a>) -> Result<T, E>,
     ) -> Result<T, E> {
         let original = self.clone();
         f(self).inspect_err(|_| {
@@ -164,11 +164,11 @@ impl<'a> WasmReader<'a> {
 pub mod span {
     use core::ops::Index;
 
-    use crate::core::decoding::reader::WasmReader;
+    use crate::core::decoding::reader::WasmDecoder;
 
     /// An index and offset to describe a (sub-) slice into WASM bytecode
     ///
-    /// Can be used to index into a [WasmReader], yielding a byte slice. As it does not
+    /// Can be used to index into a [WasmDecoder], yielding a byte slice. As it does not
     /// actually own the indexed data, this struct is free of lifetimes. Caution is advised when
     /// indexing unknown slices, as a [Span] does not validate the length of the indexed slice.
     #[derive(Copy, Clone, Debug, Hash)]
@@ -193,7 +193,7 @@ pub mod span {
         }
     }
 
-    impl<'a> Index<Span> for WasmReader<'a> {
+    impl<'a> Index<Span> for WasmDecoder<'a> {
         type Output = [u8];
 
         fn index(&self, index: Span) -> &'a Self::Output {
@@ -212,7 +212,7 @@ mod test {
     #[test]
     fn move_start_to() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmReader::new(&my_bytes);
+        let mut wasm_reader = WasmDecoder::new(&my_bytes);
 
         let span = Span::new(0, 0);
         wasm_reader.move_start_to(span).unwrap();
@@ -237,7 +237,7 @@ mod test {
     #[test]
     fn move_start_to_out_of_bounds_1() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmReader::new(&my_bytes);
+        let mut wasm_reader = WasmDecoder::new(&my_bytes);
 
         let span = Span::new(my_bytes.len(), 1);
         assert_eq!(wasm_reader.move_start_to(span), Err(DecodingError::Eof));
@@ -246,7 +246,7 @@ mod test {
     #[test]
     fn move_start_to_out_of_bounds_2() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmReader::new(&my_bytes);
+        let mut wasm_reader = WasmDecoder::new(&my_bytes);
 
         let span = Span::new(0, my_bytes.len() + 1);
         assert_eq!(wasm_reader.move_start_to(span), Err(DecodingError::Eof));
@@ -255,7 +255,7 @@ mod test {
     #[test]
     fn remaining_bytes_1() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmReader::new(&my_bytes);
+        let mut wasm_reader = WasmDecoder::new(&my_bytes);
 
         assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
         wasm_reader.skip(4).unwrap();
@@ -267,7 +267,7 @@ mod test {
     #[test]
     fn remaining_bytes_2() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmReader::new(&my_bytes);
+        let mut wasm_reader = WasmDecoder::new(&my_bytes);
 
         assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
         wasm_reader.skip(5).unwrap();
@@ -278,7 +278,7 @@ mod test {
     #[test]
     fn strip_bytes_1() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmReader::new(&my_bytes);
+        let mut wasm_reader = WasmDecoder::new(&my_bytes);
 
         assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
         let stripped_bytes = wasm_reader.strip_bytes::<4>().unwrap();
@@ -289,7 +289,7 @@ mod test {
     #[test]
     fn strip_bytes_2() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmReader::new(&my_bytes);
+        let mut wasm_reader = WasmDecoder::new(&my_bytes);
 
         assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
         wasm_reader.skip(1).unwrap();
@@ -301,7 +301,7 @@ mod test {
     #[test]
     fn strip_bytes_3() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmReader::new(&my_bytes);
+        let mut wasm_reader = WasmDecoder::new(&my_bytes);
 
         assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
         wasm_reader.skip(2).unwrap();
@@ -312,7 +312,7 @@ mod test {
     #[test]
     fn strip_bytes_4() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmReader::new(&my_bytes);
+        let mut wasm_reader = WasmDecoder::new(&my_bytes);
 
         assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
         wasm_reader.skip(5).unwrap();
@@ -323,7 +323,7 @@ mod test {
     #[test]
     fn skip_1() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmReader::new(&my_bytes);
+        let mut wasm_reader = WasmDecoder::new(&my_bytes);
         assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
         assert_eq!(wasm_reader.skip(6), Err(DecodingError::Eof));
     }
@@ -331,7 +331,7 @@ mod test {
     #[test]
     fn reader_transaction() {
         let bytes = [0x1, 0x2, 0x3, 0x4, 0x5, 0x6];
-        let mut reader = WasmReader::new(&bytes);
+        let mut reader = WasmDecoder::new(&bytes);
 
         assert_eq!(
             reader.handle_transaction(|reader| { reader.strip_bytes::<2>() }),
@@ -352,12 +352,12 @@ mod test {
     #[test]
     fn reader_transaction_ergonomics() {
         let bytes = [0x1, 0x2, 0x3, 0x4, 0x5, 0x6];
-        let mut reader = WasmReader::new(&bytes);
+        let mut reader = WasmDecoder::new(&bytes);
 
-        assert_eq!(reader.handle_transaction(WasmReader::read_u8), Ok(0x1));
+        assert_eq!(reader.handle_transaction(WasmDecoder::decode_u8), Ok(0x1));
 
         assert_eq!(
-            reader.handle_transaction(ValType::read),
+            reader.handle_transaction(ValType::decode),
             Err(DecodingError::MalformedValType)
         );
     }
