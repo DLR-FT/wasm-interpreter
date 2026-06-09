@@ -22,7 +22,7 @@ use crate::{
 };
 
 /// Validate the data section.
-pub(super) fn decode_and_validate_data_section(
+pub fn decode_and_validate_data_section(
     wasm: &mut WasmDecoder,
     section_header: SectionHeader,
     imported_global_types: &[GlobalType],

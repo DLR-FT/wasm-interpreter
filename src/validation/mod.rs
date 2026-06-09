@@ -27,12 +27,12 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
+    validation::modules::data_segments::decode_and_validate_data_section,
     CustomSection, DecodingError, ValidationError,
 };
 
 pub mod code;
 pub mod custom_section;
-pub mod data;
 pub mod error;
 pub mod globals;
 pub mod modules;
@@ -321,7 +321,7 @@ pub fn decode_and_validate(wasm: &[u8]) -> Result<Module<'_>, ValidationError> {
 
     let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
         // wasm.read_vec(DataSegment::read)
-        data::decode_and_validate_data_section(wasm, h, &imported_global_types, functions.inner(), memories.inner())
+        decode_and_validate_data_section(wasm, h, &imported_global_types, functions.inner(), memories.inner())
             .map(|data_segments| IdxVec::new(data_segments).expect("that index space creation never fails because the length of the data segments vector is encoded as a 32-bit integer in the bytecode"))
     })?
     .unwrap_or_default();
