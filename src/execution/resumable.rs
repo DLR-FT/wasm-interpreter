@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use core::num::NonZeroU64;
 
 use crate::{
-    execution::{runtime_structure::value_stack::Stack, store::Hostcode},
+    execution::runtime_structure::{store::Hostcode, value_stack::Stack},
     FuncAddr, Value,
 };
 
