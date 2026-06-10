@@ -1,5 +1,7 @@
 use core::{error, fmt, str};
 
+use crate::core::decoding::modules::sections::SectionTy;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum DecodingError {
     /// The magic number at the start of the Wasm bytecode is invalid.
@@ -46,6 +48,8 @@ pub enum DecodingError {
     /// A section's contents were successfully decoded, but either too many or not enough bytes of
     /// the section's bytecode were consumed.
     SectionSizeMismatch,
+    /// A section with given type is out of order. All section types have a fixed order in which they must occur.
+    SectionOutOfOrder(SectionTy),
 }
 
 impl error::Error for DecodingError {}
@@ -73,6 +77,7 @@ impl fmt::Display for DecodingError {
             DecodingError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
             DecodingError::TooManyLocals(n) => write!(f,"There are {n} locals and this exceeds the maximum allowed number of 2^32-1"),
             DecodingError::SectionSizeMismatch => f.write_str("A section's contents were successfully decoded, but either too many or not enough bytes of the section's bytecode were consumed."),
+            DecodingError::SectionOutOfOrder(ty) => write!(f, "A section of type `{ty:?}` is defined out of order"),
         }
     }
 }

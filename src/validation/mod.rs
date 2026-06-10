@@ -335,7 +335,7 @@ pub fn decode_and_validate(wasm: &[u8]) -> Result<Module<'_>, ValidationError> {
         let remaining_section_ty = SectionTy::decode(&mut wasm).expect(
             "that the section type is not malformed, because it must have been peeked before",
         );
-        return Err(ValidationError::SectionOutOfOrder(remaining_section_ty));
+        return Err(DecodingError::SectionOutOfOrder(remaining_section_ty).into());
     }
 
     debug!("Validation was successful");

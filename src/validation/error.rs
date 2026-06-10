@@ -1,10 +1,7 @@
 use core::fmt::{Display, Formatter};
 
 use crate::{
-    core::{
-        decoding::modules::sections::SectionTy,
-        structure::{modules::indices::FuncIdx, types::ValType},
-    },
+    core::structure::{modules::indices::FuncIdx, types::ValType},
     validation::validation_stack::ValidationStackEntry,
     DecodingError, RefType,
 };
@@ -33,8 +30,6 @@ pub enum ValidationError {
     /// An index for a lane of some vector type is invalid.
     InvalidLaneIdx(u8),
 
-    /// A section with given type is out of order. All section types have a fixed order in which they must occur.
-    SectionOutOfOrder(SectionTy),
     ExprMissingEnd,
     InvalidInstr(u8),
     InvalidMultiByteInstr(u8, u32),
@@ -142,7 +137,6 @@ impl Display for ValidationError {
             ValidationError::InvalidLabelIdx(idx) => write!(f, "The label index {idx} is invalid"),
             ValidationError::InvalidLaneIdx(idx) => write!(f, "The lane index {idx} is invalid"),
 
-            ValidationError::SectionOutOfOrder(ty) => write!(f, "A section of type `{ty:?}` is defined out of order"),
             ValidationError::ExprMissingEnd => write!(f, "An expr type is missing an end byte"),
             ValidationError::InvalidInstr(byte) => write!(f, "The instruction {byte:#x} is invalid"),
             ValidationError::InvalidMultiByteInstr(first_byte, second_instr) => write!(f, "The multi-byte instruction {first_byte:#x} {second_instr} is invalid"),
