@@ -117,6 +117,8 @@ pub enum ValidationError {
     },
     /// The min or max field of a limits type is not within the expected range.
     LimitsNotWithinRange(u32),
+    /// A mutable global was referenced in some global.get instruction in a constant expression.
+    MutGlobalInConstGlobalGet,
 }
 
 impl core::error::Error for ValidationError {}
@@ -173,6 +175,7 @@ impl Display for ValidationError {
             ValidationError::TooManyGlobals => f.write_str("The module contains too many globals. The maximum number of globals (either imported or locally-defined) is 2^32 - 1"),
             ValidationError::LimitsMinLargerThanMax { min, max } => write!(f, "Limits are invalid because min={min} is larger than max={max}"),
             ValidationError::LimitsNotWithinRange(range) => write!(f, "The min or max field of a limits type is not within the expected range of {range}"),
+            ValidationError::MutGlobalInConstGlobalGet => f.write_str("A mutable global was referenced in some global.get instruction in a constant expression"),
         }
     }
 }
