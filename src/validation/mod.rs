@@ -27,6 +27,7 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
+    validation::modules::functions::decode_and_validate_code_section,
     CustomSection, DecodingError, ValidationError,
 };
 
@@ -290,7 +291,7 @@ pub fn decode_and_validate(wasm: &[u8]) -> Result<Module<'_>, ValidationError> {
         // different generics. Therefore, all index types must be valid in their
         // relevant `IdxVec`s.
         unsafe {
-            instructions::code::decode_and_validate_code_section(
+            decode_and_validate_code_section(
                 wasm,
                 &types,
                 &functions,

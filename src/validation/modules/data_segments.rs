@@ -10,7 +10,7 @@ use crate::{
         },
     },
     validation::{
-        instructions::const_expr::decode_and_validate_constant_expression,
+        instructions::constant_expressions::decode_and_validate_constant_expression,
         validation_stack::ValidationStack,
     },
     MemType, ValidationError,
