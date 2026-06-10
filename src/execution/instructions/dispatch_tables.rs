@@ -1,5 +1,5 @@
 use crate::{
-    execution::interpreter_loop::{
+    execution::instructions::{
         control, fc_extensions, fd_extensions, memory, numeric, parametric, reference, table,
         unset, variable, vector, InstructionHandlerFn,
     },

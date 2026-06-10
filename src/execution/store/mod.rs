@@ -20,9 +20,9 @@ use crate::{
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
-        const_interpreter_loop::run_const_span,
-        interpreter_loop::{
-            self, data_drop, elem_drop, memory_init, table_init, InterpreterLoopOutcome,
+        instructions::{
+            self, const_interpreter_loop::run_const_span, data_drop, elem_drop, memory_init,
+            table_init, InterpreterLoopOutcome,
         },
         store::{
             instances::{
@@ -1392,7 +1392,7 @@ impl<'b, T: Config> Store<'b, T> {
         mut resumable: WasmResumable,
     ) -> Result<RunState, RuntimeError> {
         // SAFETY: The caller guarantees that the resumable comes from the current store.
-        let result = unsafe { interpreter_loop::run(&mut resumable, self) }?;
+        let result = unsafe { instructions::run(&mut resumable, self) }?;
 
         let run_state = match result {
             InterpreterLoopOutcome::ExecutionReturned => RunState::Finished {
