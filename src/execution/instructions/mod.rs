@@ -19,7 +19,7 @@ use crate::{
         instructions::dispatch_tables::{
             HasBaseDispatchTable, HasFcDispatchTable, HasFdDispatchTable,
         },
-        little_endian::LittleEndianBytes,
+        numerics::representations::LittleEndianBytes,
         runtime_structure::{
             data_instances::DataInst,
             element_instances::ElemInst,
