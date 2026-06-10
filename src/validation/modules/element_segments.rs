@@ -1,21 +1,16 @@
 use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::{
-    core::{
-        decoding::{
-            modules::decode_elemkind,
-            reader::{span::Span, WasmDecoder},
-        },
+    GlobalType, NumType, RefType, TableType, ValType, ValidationError, core::{
+        decoding::{modules::element_section::ElemKind, reader::{WasmDecoder, span::Span}},
         structure::modules::{
             element_segments::{ActiveElem, ElemItems, ElemMode, ElemType},
             indices::{FuncIdx, IdxVec, TableIdx, TypeIdx},
         },
-    },
-    validation::{
+    }, validation::{
         instructions::const_expr::decode_and_validate_constant_expression,
         validation_stack::ValidationStack,
-    },
-    GlobalType, NumType, RefType, TableType, ValType, ValidationError,
+    }
 };
 
 impl ElemType {
@@ -62,7 +57,7 @@ impl ElemType {
                     // binary format is: 1:u32 et:elemkind y*:vec(funcidx)
                     // should parse to spec struct {type et, init ((ref.func y) end)*, mode passive}
                     // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Passive} here
-                    let _et = decode_elemkind(wasm)?;
+                    let _et = ElemKind::decode(wasm)?;
                     let init = decode_and_validate_shortened_initializer_list(
                         wasm,
                         c_funcs,
@@ -82,7 +77,7 @@ impl ElemType {
                         c_funcs,
                         validation_context_refs,
                     )?;
-                    let _et = decode_elemkind(wasm)?;
+                    let _et = ElemKind::decode(wasm)?;
                     let init = decode_and_validate_shortened_initializer_list(
                         wasm,
                         c_funcs,
@@ -98,7 +93,7 @@ impl ElemType {
                     // binary format is: 3:u32 et:elemkind y*:vec(funcidx)
                     // should parse to spec struct {type et, init ((ref.func y) end)*, mode declarative}
                     // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Declarative} here
-                    let _et = decode_elemkind(wasm)?;
+                    let _et = ElemKind::decode(wasm)?;
                     let init = decode_and_validate_shortened_initializer_list(
                         wasm,
                         c_funcs,
