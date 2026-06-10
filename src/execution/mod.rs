@@ -1,8 +1,7 @@
 pub(crate) mod assert_validated;
 pub mod config;
-pub mod const_interpreter_loop;
 pub mod error;
-mod interpreter_loop;
+mod instructions;
 pub(crate) mod little_endian;
 pub mod resumable;
 pub mod store;

@@ -12,7 +12,7 @@ use crate::{
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
-        interpreter_loop::{
+        instructions::{
             define_instruction_fn, do_sidetable_control_transfer, Args, InterpreterLoopOutcome,
         },
         store::instances::FuncInst,

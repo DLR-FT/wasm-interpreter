@@ -16,7 +16,7 @@ use crate::{
     execution::{
         assert_validated::UnwrapValidatedExt,
         config::Config,
-        interpreter_loop::dispatch_tables::{
+        instructions::dispatch_tables::{
             HasBaseDispatchTable, HasFcDispatchTable, HasFdDispatchTable,
         },
         little_endian::LittleEndianBytes,
@@ -39,6 +39,7 @@ mod table;
 mod variable;
 mod vector;
 
+pub mod const_interpreter_loop;
 mod dispatch_tables;
 
 /// A non-error outcome of execution of the interpreter loop
@@ -413,9 +414,9 @@ macro_rules! define_instruction_fn {
         /// # Safety
         ///
         /// The given [`WasmResumable`](crate::execution::resumable::WasmResumable) and all address
-        /// types contained in the [`Args`](crate::execution::interpreter_loop::Args) must be valid
+        /// types contained in the [`Args`](crate::execution::instructions::Args) must be valid
         /// in the [`StoreInner`](crate::execution::store::StoreInner) that is also contained in the
-        /// [`Args`](crate::execution::interpreter_loop::Args).
+        /// [`Args`](crate::execution::instructions::Args).
         // Disable inlining to inspect the emitted code of individual instruction handlers:
         // #[inline(never)]
         pub(crate) unsafe fn $name<'wasm, 'modules, T: $crate::execution::config::Config>(
@@ -430,10 +431,10 @@ macro_rules! define_instruction_fn {
             current_module: &mut $crate::execution::store::addrs::ModuleAddr,
             current_function_end_marker: &mut usize,
         ) -> Result<
-            core::ops::ControlFlow<$crate::execution::interpreter_loop::InterpreterLoopOutcome>,
+            core::ops::ControlFlow<$crate::execution::instructions::InterpreterLoopOutcome>,
             $crate::RuntimeError,
         > {
-            let args = $crate::execution::interpreter_loop::Args {
+            let args = $crate::execution::instructions::Args {
                 store_inner,
                 modules,
                 wasm,
@@ -451,9 +452,9 @@ macro_rules! define_instruction_fn {
         define_instruction_fn! {
             $name,
             fuel_check = omit,
-            |args: $crate::execution::interpreter_loop::Args| {
+            |args: $crate::execution::instructions::Args| {
                 if let core::ops::ControlFlow::Break(outcome) =
-                    $crate::execution::interpreter_loop::decrement_fuel(
+                    $crate::execution::instructions::decrement_fuel(
                         T::get_flat_cost($instruction),
                         &mut args.resumable.maybe_fuel,
                     )
@@ -470,9 +471,9 @@ macro_rules! define_instruction_fn {
         define_instruction_fn! {
             $name,
             fuel_check = omit,
-            |args: $crate::execution::interpreter_loop::Args| {
+            |args: $crate::execution::instructions::Args| {
                 if let core::ops::ControlFlow::Break(outcome) =
-                    $crate::execution::interpreter_loop::decrement_fuel(
+                    $crate::execution::instructions::decrement_fuel(
                         T::get_fc_extension_flat_cost($instruction),
                         &mut args.resumable.maybe_fuel,
                     )
@@ -489,9 +490,9 @@ macro_rules! define_instruction_fn {
         define_instruction_fn! {
             $name,
             fuel_check = omit,
-            |args: $crate::execution::interpreter_loop::Args| {
+            |args: $crate::execution::instructions::Args| {
                 if let core::ops::ControlFlow::Break(outcome) =
-                    $crate::execution::interpreter_loop::decrement_fuel(
+                    $crate::execution::instructions::decrement_fuel(
                         T::get_fd_extension_flat_cost($instruction),
                         &mut args.resumable.maybe_fuel,
                     )
