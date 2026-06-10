@@ -30,7 +30,7 @@ use crate::{
         },
         value_stack::Stack,
     },
-    validation::code::read_declared_locals,
+    validation::instructions::code::read_declared_locals,
     AddrVec, Config, DataAddr, ElemAddr, ExternType, FuncAddr, FuncType, GlobalAddr, GlobalType,
     HostCall, HostResumable, MemAddr, MemType, Module, ModuleAddr, Ref, RefType, Resumable,
     RunState, RuntimeError, TableAddr, TableType, Value, WasmResumable,
