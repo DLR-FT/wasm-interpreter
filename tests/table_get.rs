@@ -17,7 +17,7 @@
 
 use checked::{Store, StoredRefFunc};
 use interop::RefExtern;
-use wasm::{decode_and_validate, value::ExternAddr, RuntimeError, TrapError};
+use wasm::{decode_and_validate, ExternAddr, RuntimeError, TrapError};
 
 #[test_log::test]
 fn table_funcref_test() {

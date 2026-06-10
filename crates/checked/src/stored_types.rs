@@ -2,9 +2,8 @@ use core::{num::NonZeroU64, ops::Deref};
 
 use alloc::vec::Vec;
 use wasm::{
-    addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
-    resumable::{HostCall, HostResumable, Resumable, RunState, WasmResumable},
-    ExternVal, Hostcode, InstantiationOutcome,
+    ExternVal, FuncAddr, GlobalAddr, HostCall, HostResumable, Hostcode, InstantiationOutcome,
+    MemAddr, ModuleAddr, Resumable, RunState, TableAddr, WasmResumable,
 };
 
 use crate::{AbstractStored, StoreId, StoredValue};

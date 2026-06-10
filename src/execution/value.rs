@@ -548,11 +548,7 @@ impl TryFrom<Value> for f64 {
 mod test {
     use alloc::string::ToString;
 
-    use crate::{
-        addrs::Addr,
-        value::{ExternAddr, F32, F64},
-        RefType,
-    };
+    use crate::{Addr, ExternAddr, RefType, F32, F64};
 
     use super::{FuncAddr, Ref};
 

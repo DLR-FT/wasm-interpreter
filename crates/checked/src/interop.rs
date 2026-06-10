@@ -1,10 +1,8 @@
 use alloc::{fmt::Debug, vec, vec::Vec};
 use interop::RefExtern;
 use wasm::{
-    addrs::FuncAddr,
-    config::Config,
-    value::{ValueTypeMismatchError, F32, F64},
-    FuncType, Hostcode, NumType, RefType, ResultType, RuntimeError, ValType,
+    Config, FuncAddr, FuncType, Hostcode, NumType, RefType, ResultType, RuntimeError, ValType,
+    ValueTypeMismatchError, F32, F64,
 };
 
 use crate::{stored_types::Stored, Store, StoredRef, StoredValue};

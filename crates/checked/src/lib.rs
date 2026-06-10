@@ -6,13 +6,13 @@
 //!
 //! All extension methods defined in this module use special _stored_ objects.
 //! These objects are essentially normal objects like
-//! [`FuncAddr`](wasm::addrs::FuncAddr), [`RunState`](wasm::resumable::RunState)
+//! [`FuncAddr`](wasm::FuncAddr), [`RunState`](wasm::RunState)
 //! or [`Value`](wasm::Value). However, they also contain an additional field of
 //! type [`StoreId`] as a tag to know to which [`Store`](wasm::Store) they
 //! belong to.
 //!
 //! While this is easy for address types like
-//! [`FuncAddr`](wasm::addrs::FuncAddr) or [`MemAddr`](wasm::addrs::MemAddr),
+//! [`FuncAddr`](wasm::FuncAddr) or [`MemAddr`](wasm::MemAddr),
 //! some types are enums and their variants are visible to the user. For
 //! example, consider the [`Value`](wasm::Value) enum, where users have full
 //! access to all of its variants. To be able to attach a tag only to the

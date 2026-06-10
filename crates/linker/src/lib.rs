@@ -16,10 +16,7 @@ use alloc::{
     vec::Vec,
 };
 
-use wasm::{
-    addrs::ModuleAddr, config::Config, store::InstantiationOutcome, ExternVal, Module,
-    RuntimeError, Store,
-};
+use wasm::{Config, ExternVal, InstantiationOutcome, Module, ModuleAddr, RuntimeError, Store};
 
 /// A linker used to link a module's imports against extern values previously
 /// defined in this [`Linker`] context.

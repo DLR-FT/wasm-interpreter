@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use checked::Store;
-use wasm::{decode_and_validate, DecodingError, ValidationError};
+use wasm::{decode_and_validate, ValidationError};
 
 #[test_log::test]
 fn memory_basic() {
@@ -57,10 +57,7 @@ fn memory_min_greater_than_max() {
         let validation_info = decode_and_validate(&wasm_bytes);
         assert_eq!(
             validation_info.err().unwrap(),
-            ValidationError::Decoding(DecodingError::MalformedLimitsMinLargerThanMax {
-                min: 1,
-                max: 0
-            })
+            ValidationError::LimitsMinLargerThanMax { min: 1, max: 0 },
         );
     });
 }
@@ -85,7 +82,7 @@ fn memory_size_must_be_at_most_4gib() {
         let validation_info = decode_and_validate(&wasm_bytes);
         assert_eq!(
             validation_info.err().unwrap(),
-            ValidationError::Decoding(DecodingError::MemoryTooLarge)
+            ValidationError::LimitsNotWithinRange(2u32.pow(16))
         );
     });
 }

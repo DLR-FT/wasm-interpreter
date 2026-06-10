@@ -1,8 +1,4 @@
-use wasm::{
-    addrs::FuncAddr,
-    value::{ExternAddr, Ref, ValueTypeMismatchError, F32, F64},
-    RefType, Value,
-};
+use wasm::{ExternAddr, FuncAddr, Ref, RefType, Value, ValueTypeMismatchError, F32, F64};
 
 use crate::stored_types::Stored;
 
