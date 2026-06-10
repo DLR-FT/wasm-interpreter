@@ -10,7 +10,7 @@ use crate::{
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
-        interpreter_loop::{
+        instructions::{
             define_instruction_fn, elem_drop, table_init, Args, InterpreterLoopOutcome,
         },
     },

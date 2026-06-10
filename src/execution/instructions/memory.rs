@@ -11,7 +11,7 @@ use crate::{
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
-        interpreter_loop::{
+        instructions::{
             calculate_mem_address, data_drop, define_instruction_fn, from_lanes, memory_init,
             to_lanes, Args, InterpreterLoopOutcome,
         },

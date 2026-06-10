@@ -4,7 +4,7 @@ use crate::{
     core::structure::instructions,
     execution::{
         assert_validated::UnwrapValidatedExt,
-        interpreter_loop::{define_instruction_fn, Args},
+        instructions::{define_instruction_fn, Args},
     },
     ValType,
 };
