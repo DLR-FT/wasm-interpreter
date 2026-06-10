@@ -17,8 +17,7 @@ use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
 
 use checked::{Store, Stored, StoredHostCall, StoredInteropValueList, StoredRunState, StoredValue};
 use wasm::{
-    addrs::FuncAddr, config::Config, resumable::HostResumable, value::ValueTypeMismatchError,
-    FuncType, ResultType, RuntimeError,
+    Config, FuncAddr, FuncType, HostResumable, ResultType, RuntimeError, ValueTypeMismatchError,
 };
 
 type BoxedHostFn<T> = Box<dyn FnMut(&mut T, Vec<StoredValue>) -> Vec<StoredValue>>;

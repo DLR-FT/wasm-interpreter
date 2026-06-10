@@ -555,7 +555,7 @@ mod test {
     use alloc::format;
     use core::mem;
 
-    use crate::value::{F32, F64};
+    use crate::{F32, F64};
 
     use super::*;
 

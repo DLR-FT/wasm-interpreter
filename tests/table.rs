@@ -15,9 +15,7 @@
 # limitations under the License.
 */
 use checked::{Store, StoredExternVal, StoredRef, StoredRefFunc};
-use wasm::decode_and_validate;
-use wasm::DecodingError;
-use wasm::ValidationError;
+use wasm::{decode_and_validate, ValidationError};
 
 #[test_log::test]
 fn table_basic() {
@@ -92,9 +90,7 @@ fn table_size_minimum_must_not_be_greater_than_maximum() {
         let validation_info = decode_and_validate(&wasm_bytes);
         assert_eq!(
             validation_info.err(),
-            Some(ValidationError::Decoding(
-                DecodingError::MalformedLimitsMinLargerThanMax { min: 1, max: 0 }
-            ))
+            Some(ValidationError::LimitsMinLargerThanMax { min: 1, max: 0 }),
         );
     }
 
@@ -104,12 +100,10 @@ fn table_size_minimum_must_not_be_greater_than_maximum() {
         let validation_info = decode_and_validate(&wasm_bytes);
         assert_eq!(
             validation_info.err(),
-            Some(ValidationError::Decoding(
-                DecodingError::MalformedLimitsMinLargerThanMax {
-                    min: 0xFFFF_FFFF,
-                    max: 0
-                }
-            ))
+            Some(ValidationError::LimitsMinLargerThanMax {
+                min: 0xFFFF_FFFF,
+                max: 0
+            }),
         );
     }
 }

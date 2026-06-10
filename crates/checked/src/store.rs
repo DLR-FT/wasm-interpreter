@@ -1,9 +1,7 @@
 use alloc::{string::String, vec::Vec};
 use wasm::{
-    addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
-    config::Config,
-    resumable::{HostResumable, WasmResumable},
-    FuncType, GlobalType, Hostcode, MemType, Module, RuntimeError, TableType,
+    Config, FuncAddr, FuncType, GlobalAddr, GlobalType, HostResumable, Hostcode, MemAddr, MemType,
+    Module, ModuleAddr, RuntimeError, TableAddr, TableType, WasmResumable,
 };
 
 use crate::{

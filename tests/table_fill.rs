@@ -16,8 +16,8 @@
 */
 use checked::Store;
 use interop::RefExtern;
-use wasm::value::ExternAddr;
-use wasm::{decode_and_validate, RuntimeError, TrapError};
+
+use wasm::{decode_and_validate, ExternAddr, RuntimeError, TrapError};
 
 #[test_log::test]
 fn table_fill_test() {

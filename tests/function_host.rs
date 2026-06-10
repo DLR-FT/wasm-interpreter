@@ -2,11 +2,7 @@ use log::info;
 
 use checked::{Store, StoredExternVal, StoredValue};
 use registry::Registry;
-use wasm::{
-    decode_and_validate,
-    value::{F32, F64},
-    FuncType, NumType, ResultType, RuntimeError, ValType,
-};
+use wasm::{decode_and_validate, FuncType, NumType, ResultType, RuntimeError, ValType, F32, F64};
 
 #[test_log::test]
 pub fn host_func_call_within_module() {
