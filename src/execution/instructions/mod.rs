@@ -21,11 +21,15 @@ use crate::{
         },
         little_endian::LittleEndianBytes,
         runtime_structure::{
-            data_instances::DataInst, element_instances::ElemInst, function_instances::FuncInst,
-            memory_instances::MemInst, module_instances::ModuleInst, table_instances::TableInst,
+            data_instances::DataInst,
+            element_instances::ElemInst,
+            function_instances::FuncInst,
+            memory_instances::MemInst,
+            module_instances::ModuleInst,
+            store::{Hostcode, StoreInner},
+            table_instances::TableInst,
             value_stack::Stack,
         },
-        store::{Hostcode, StoreInner},
     },
     unreachable_validated, AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr,
     RuntimeError, Store, TableAddr, TrapError, Value, WasmResumable,
@@ -416,7 +420,7 @@ macro_rules! define_instruction_fn {
         ///
         /// The given [`WasmResumable`](crate::execution::resumable::WasmResumable) and all address
         /// types contained in the [`Args`](crate::execution::instructions::Args) must be valid
-        /// in the [`StoreInner`](crate::execution::store::StoreInner) that is also contained in the
+        /// in the [`StoreInner`](crate::execution::runtime_structure::store::StoreInner) that is also contained in the
         /// [`Args`](crate::execution::instructions::Args).
         // Disable inlining to inspect the emitted code of individual instruction handlers:
         // #[inline(never)]
@@ -424,7 +428,7 @@ macro_rules! define_instruction_fn {
             wasm: &mut $crate::core::decoding::reader::WasmDecoder<'wasm>,
             resumable: &mut $crate::execution::resumable::WasmResumable,
             current_sidetable: &mut &'modules $crate::core::sidetable::Sidetable,
-            store_inner: &mut $crate::execution::store::StoreInner,
+            store_inner: &mut $crate::execution::runtime_structure::store::StoreInner,
             modules: &'modules $crate::execution::runtime_structure::addresses::AddrVec<
                 $crate::execution::runtime_structure::addresses::ModuleAddr,
                 $crate::execution::runtime_structure::module_instances::ModuleInst<'wasm>,

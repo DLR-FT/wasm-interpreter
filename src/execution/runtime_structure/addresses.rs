@@ -121,7 +121,7 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     }
 }
 
-/// An address to a function instance that lives in a specific [`Store`](crate::execution::store::Store).
+/// An address to a function instance that lives in a specific [`Store`](crate::Store).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct FuncAddr(usize);
 
