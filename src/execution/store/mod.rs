@@ -3,7 +3,10 @@ use core::convert::Infallible;
 
 use crate::{
     core::{
-        decoding::reader::{span::Span, WasmDecoder},
+        decoding::{
+            modules::code_section::decode_locals,
+            reader::{span::Span, WasmDecoder},
+        },
         structure::{
             import_subtyping::ImportSubTypeRelation,
             modules::{
@@ -30,7 +33,6 @@ use crate::{
         },
         value_stack::Stack,
     },
-    validation::instructions::code::read_declared_locals,
     AddrVec, Config, DataAddr, ElemAddr, ExternType, FuncAddr, FuncType, GlobalAddr, GlobalType,
     HostCall, HostResumable, MemAddr, MemType, Module, ModuleAddr, Ref, RefType, Resumable,
     RunState, RuntimeError, TableAddr, TableType, Value, WasmResumable,
@@ -1188,7 +1190,7 @@ impl<'b, T: Config> Store<'b, T> {
         wasm_reader.move_start_to(span).unwrap_validated();
 
         let (locals, bytes_read) = wasm_reader
-            .measure_num_read_bytes(read_declared_locals)
+            .measure_num_read_bytes(decode_locals)
             .unwrap_validated();
 
         let code_expr = wasm_reader
