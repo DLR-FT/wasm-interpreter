@@ -4,10 +4,7 @@ use core::iter;
 use crate::{
     core::{
         decoding::{
-            modules::{
-                indices::decode_label_idx,
-                section_header::{SectionHeader, SectionTy},
-            },
+            modules::indices::decode_label_idx,
             reader::{span::Span, WasmDecoder},
         },
         sidetable::{Sidetable, SidetableEntry},
@@ -42,7 +39,6 @@ use crate::{
 #[allow(clippy::too_many_arguments)]
 pub unsafe fn decode_and_validate_code_section(
     wasm: &mut WasmDecoder,
-    section_header: SectionHeader,
     fn_types: &IdxVec<TypeIdx, FuncType>,
     c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
     c_globals: &IdxVec<GlobalIdx, Global>,
@@ -53,7 +49,6 @@ pub unsafe fn decode_and_validate_code_section(
     validation_context_refs: &BTreeSet<FuncIdx>,
     sidetable: &mut Sidetable,
 ) -> Result<Vec<(Span, usize)>, ValidationError> {
-    assert_eq!(section_header.ty, SectionTy::Code);
     let code_block_spans_stps = wasm.decode_vec_enumerated(|wasm, idx| {
         // We need to offset the index by the number of functions that were
         // imported. Imported functions always live at the start of the index

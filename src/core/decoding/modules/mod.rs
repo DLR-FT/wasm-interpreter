@@ -2,7 +2,7 @@ use crate::{core::decoding::reader::WasmDecoder, DecodingError};
 
 pub mod custom_section;
 pub mod indices;
-pub mod section_header;
+pub mod sections;
 
 /// Decodes an elemkind: <https://webassembly.github.io/spec/core/binary/modules.html#element-section>
 /// # Returns
