@@ -23,10 +23,12 @@ pub enum SectionTy {
     DataCount = 12,
 }
 
-impl SectionTy {
-    pub fn decode(wasm: &mut WasmDecoder) -> Result<Self, DecodingError> {
+impl TryFrom<u8> for SectionTy {
+    type Error = DecodingError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         use SectionTy::*;
-        let ty = match wasm.decode_u8()? {
+        let ty = match value {
             0 => Custom,
             1 => Type,
             2 => Import,
@@ -42,30 +44,17 @@ impl SectionTy {
             12 => DataCount,
             other => return Err(DecodingError::MalformedSectionTypeDiscriminator(other)),
         };
-
         Ok(ty)
+    }
+}
+
+impl SectionTy {
+    pub fn decode(wasm: &mut WasmDecoder) -> Result<Self, DecodingError> {
+        wasm.decode_u8().and_then(Self::try_from)
     }
 
     pub fn peek(wasm: &WasmDecoder) -> Result<Self, DecodingError> {
-        use SectionTy::*;
-        let ty = match wasm.peek_u8()? {
-            0 => Custom,
-            1 => Type,
-            2 => Import,
-            3 => Function,
-            4 => Table,
-            5 => Memory,
-            6 => Global,
-            7 => Export,
-            8 => Start,
-            9 => Element,
-            10 => Code,
-            11 => Data,
-            12 => DataCount,
-            other => return Err(DecodingError::MalformedSectionTypeDiscriminator(other)),
-        };
-
-        Ok(ty)
+        wasm.peek_u8().and_then(Self::try_from)
     }
 }
 
