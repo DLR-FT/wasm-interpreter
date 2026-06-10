@@ -43,6 +43,9 @@ pub enum DecodingError {
     I33IsNegative,
     /// A function specifies too many locals, i.e. more than 2^32 - 1
     TooManyLocals(u64),
+    /// A section's contents were successfully decoded, but either too many or not enough bytes of
+    /// the section's bytecode were consumed.
+    SectionSizeMismatch,
 }
 
 impl error::Error for DecodingError {}
@@ -69,6 +72,7 @@ impl fmt::Display for DecodingError {
             DecodingError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
             DecodingError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
             DecodingError::TooManyLocals(n) => write!(f,"There are {n} locals and this exceeds the maximum allowed number of 2^32-1"),
+            DecodingError::SectionSizeMismatch => f.write_str("A section's contents were successfully decoded, but either too many or not enough bytes of the section's bytecode were consumed."),
         }
     }
 }
