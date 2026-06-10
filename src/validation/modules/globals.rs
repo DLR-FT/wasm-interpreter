@@ -9,7 +9,7 @@ use crate::{
         },
     },
     validation::{
-        read_constant_expression::decode_and_validate_constant_expression,
+        instructions::const_expr::decode_and_validate_constant_expression,
         validation_stack::ValidationStack,
     },
     GlobalType, ValidationError,
