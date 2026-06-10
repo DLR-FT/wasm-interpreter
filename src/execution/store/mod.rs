@@ -24,21 +24,23 @@ use crate::{
             self, const_interpreter_loop::run_const_span, data_drop, elem_drop, memory_init,
             table_init, InterpreterLoopOutcome,
         },
-        runtime_structure::value_stack::Stack,
-        store::{
-            instances::{
-                DataInst, ElemInst, FuncInst, GlobalInst, HostFuncInst, MemInst, ModuleInst,
-                TableInst, WasmFuncInst,
-            },
-            linear_memory::LinearMemory,
+        runtime_structure::{
+            data_instances::DataInst,
+            element_instances::ElemInst,
+            function_instances::{FuncInst, HostFuncInst, WasmFuncInst},
+            global_instances::GlobalInst,
+            memory_instances::MemInst,
+            module_instances::ModuleInst,
+            table_instances::TableInst,
+            value_stack::Stack,
         },
+        store::linear_memory::LinearMemory,
     },
     AddrVec, Config, DataAddr, ElemAddr, ExternType, FuncAddr, FuncType, GlobalAddr, GlobalType,
     HostCall, HostResumable, MemAddr, MemType, Module, ModuleAddr, Ref, RefType, Resumable,
     RunState, RuntimeError, TableAddr, TableType, Value, WasmResumable,
 };
 
-pub(crate) mod instances;
 pub(crate) mod linear_memory;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
