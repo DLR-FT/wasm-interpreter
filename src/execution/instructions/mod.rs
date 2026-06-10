@@ -20,11 +20,12 @@ use crate::{
             HasBaseDispatchTable, HasFcDispatchTable, HasFdDispatchTable,
         },
         little_endian::LittleEndianBytes,
-        runtime_structure::value_stack::Stack,
-        store::{
-            instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
-            Hostcode, StoreInner,
+        runtime_structure::{
+            data_instances::DataInst, element_instances::ElemInst, function_instances::FuncInst,
+            memory_instances::MemInst, module_instances::ModuleInst, table_instances::TableInst,
+            value_stack::Stack,
         },
+        store::{Hostcode, StoreInner},
     },
     unreachable_validated, AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr,
     RuntimeError, Store, TableAddr, TrapError, Value, WasmResumable,
@@ -426,7 +427,7 @@ macro_rules! define_instruction_fn {
             store_inner: &mut $crate::execution::store::StoreInner,
             modules: &'modules $crate::execution::runtime_structure::addresses::AddrVec<
                 $crate::execution::runtime_structure::addresses::ModuleAddr,
-                $crate::execution::store::instances::ModuleInst<'wasm>,
+                $crate::execution::runtime_structure::module_instances::ModuleInst<'wasm>,
             >,
             current_module: &mut $crate::execution::runtime_structure::addresses::ModuleAddr,
             current_function_end_marker: &mut usize,
