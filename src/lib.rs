@@ -23,8 +23,11 @@ pub use crate::{
         config::Config,
         error::{RuntimeError, TrapError},
         resumable::*,
-        store::{addrs::*, ExternVal, Hostcode, InstantiationOutcome, Store},
-        value::{ExternAddr, Ref, Value, ValueTypeMismatchError, F32, F64},
+        runtime_structure::{
+            addresses::*,
+            values::{ExternAddr, Ref, Value, ValueTypeMismatchError, F32, F64},
+        },
+        store::{ExternVal, Hostcode, InstantiationOutcome, Store},
     },
     validation::{decode_and_validate, error::ValidationError, Module},
 };

@@ -8,7 +8,7 @@ use crate::{
             types::{FuncType, ResultType},
         },
     },
-    execution::{assert_validated::UnwrapValidatedExt, value_stack::Stack},
+    execution::{assert_validated::UnwrapValidatedExt, runtime_structure::value_stack::Stack},
     unreachable_validated, Config, ModuleAddr, Ref, RefType, RuntimeError, Store, Value, F32, F64,
 };
 
