@@ -15,7 +15,7 @@ use crate::{
         instructions::{
             define_instruction_fn, do_sidetable_control_transfer, Args, InterpreterLoopOutcome,
         },
-        store::instances::FuncInst,
+        runtime_structure::function_instances::FuncInst,
     },
     unreachable_validated, DecodingError, Ref, TrapError,
 };
