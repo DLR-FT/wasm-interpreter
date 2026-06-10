@@ -75,7 +75,7 @@ impl Stack {
         Ok(stack)
     }
 
-    pub(super) fn into_values(mut self) -> Vec<Value> {
+    pub fn into_values(mut self) -> Vec<Value> {
         self.values
             .pop_into_slice(self.values.len())
             .unwrap_validated()

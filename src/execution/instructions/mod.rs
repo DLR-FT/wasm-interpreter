@@ -20,11 +20,11 @@ use crate::{
             HasBaseDispatchTable, HasFcDispatchTable, HasFdDispatchTable,
         },
         little_endian::LittleEndianBytes,
+        runtime_structure::value_stack::Stack,
         store::{
             instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
             Hostcode, StoreInner,
         },
-        value_stack::Stack,
     },
     unreachable_validated, AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr,
     RuntimeError, Store, TableAddr, TrapError, Value, WasmResumable,
@@ -424,11 +424,11 @@ macro_rules! define_instruction_fn {
             resumable: &mut $crate::execution::resumable::WasmResumable,
             current_sidetable: &mut &'modules $crate::core::sidetable::Sidetable,
             store_inner: &mut $crate::execution::store::StoreInner,
-            modules: &'modules $crate::execution::store::addrs::AddrVec<
-                $crate::execution::store::addrs::ModuleAddr,
+            modules: &'modules $crate::execution::runtime_structure::addresses::AddrVec<
+                $crate::execution::runtime_structure::addresses::ModuleAddr,
                 $crate::execution::store::instances::ModuleInst<'wasm>,
             >,
-            current_module: &mut $crate::execution::store::addrs::ModuleAddr,
+            current_module: &mut $crate::execution::runtime_structure::addresses::ModuleAddr,
             current_function_end_marker: &mut usize,
         ) -> Result<
             core::ops::ControlFlow<$crate::execution::instructions::InterpreterLoopOutcome>,

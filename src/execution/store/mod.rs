@@ -24,6 +24,7 @@ use crate::{
             self, const_interpreter_loop::run_const_span, data_drop, elem_drop, memory_init,
             table_init, InterpreterLoopOutcome,
         },
+        runtime_structure::value_stack::Stack,
         store::{
             instances::{
                 DataInst, ElemInst, FuncInst, GlobalInst, HostFuncInst, MemInst, ModuleInst,
@@ -31,14 +32,12 @@ use crate::{
             },
             linear_memory::LinearMemory,
         },
-        value_stack::Stack,
     },
     AddrVec, Config, DataAddr, ElemAddr, ExternType, FuncAddr, FuncType, GlobalAddr, GlobalType,
     HostCall, HostResumable, MemAddr, MemType, Module, ModuleAddr, Ref, RefType, Resumable,
     RunState, RuntimeError, TableAddr, TableType, Value, WasmResumable,
 };
 
-pub mod addrs;
 pub(crate) mod instances;
 pub(crate) mod linear_memory;
 
@@ -751,10 +750,9 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the given [`FuncAddr`] and any
-    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
-    /// values contained in the parameter values came from the current [`Store`]
-    /// object.
+    /// The caller has to guarantee that the given [`FuncAddr`] and any [`FuncAddr`] or
+    /// [`ExternAddr`](crate::ExternAddr) values contained in the parameter values came from the
+    /// current [`Store`] object.
     pub unsafe fn invoke(
         &mut self,
         func_addr: FuncAddr,
@@ -776,7 +774,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that any [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
+    /// The caller has to guarantee that any [`FuncAddr`] or [`ExternAddr`](crate::ExternAddr)
     /// values contained in `r#ref` came from the current [`Store`] object.
     pub unsafe fn table_alloc(
         &mut self,
@@ -851,10 +849,9 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the given [`TableAddr`] and any
-    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
-    /// values contained in the [`Ref`] must come from the current [`Store`]
-    /// object.
+    /// The caller has to guarantee that the given [`TableAddr`] and any [`FuncAddr`] or
+    /// [`ExternAddr`](crate::ExternAddr) values contained in the [`Ref`] must come from the current
+    /// [`Store`] object.
     pub unsafe fn table_write(
         &mut self,
         table_addr: TableAddr,
@@ -913,10 +910,9 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the given [`TableAddr`] and any
-    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
-    /// values contained in the [`Ref`] must come from the current [`Store`]
-    /// object.
+    /// The caller has to guarantee that the given [`TableAddr`] and any [`FuncAddr`] or
+    /// [`ExternAddr`](crate::ExternAddr) values contained in the [`Ref`] must come from the current
+    /// [`Store`] object.
     pub unsafe fn table_grow(
         &mut self,
         table_addr: TableAddr,
@@ -1058,9 +1054,8 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that any [`FuncAddr`] or
-    /// [`ExternAddr`](crate::execution::value::ExternAddr) values contained in
-    /// the [`Value`] came from the current [`Store`] object.
+    /// The caller has to guarantee that any [`FuncAddr`] or [`ExternAddr`](crate::ExternAddr)
+    /// values contained in the [`Value`] came from the current [`Store`] object.
     pub unsafe fn global_alloc(
         &mut self,
         global_type: GlobalType,
@@ -1129,10 +1124,9 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the given [`GlobalAddr`] and any
-    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
-    /// values contained in the [`Value`] came from the current [`Store`]
-    /// object.
+    /// The caller has to guarantee that the given [`GlobalAddr`] and any [`FuncAddr`] or
+    /// [`ExternAddr`](crate::ExternAddr) values contained in the [`Value`] came from the current
+    /// [`Store`] object.
     pub unsafe fn global_write(
         &mut self,
         global_addr: GlobalAddr,
@@ -1219,9 +1213,8 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that any [`FuncAddr`] or
-    /// [`ExternAddr`](crate::execution::value::ExternAddr) values contained in
-    /// the [`Ref`] came from the current [`Store`] object.
+    /// The caller has to guarantee that any [`FuncAddr`] or [`ExternAddr`](crate::ExternAddr)
+    /// values contained in the [`Ref`] came from the current [`Store`] object.
     unsafe fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> TableAddr {
         let table_inst = TableInst {
             ty: table_type,
@@ -1247,9 +1240,8 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that any [`FuncAddr`] or
-    /// [`ExternAddr`](crate::execution::value::ExternAddr) values contained in
-    /// the [`Value`] came from the current [`Store`] object.
+    /// The caller has to guarantee that any [`FuncAddr`] or [`ExternAddr`](crate::ExternAddr)
+    /// values contained in the [`Value`] came from the current [`Store`] object.
     unsafe fn alloc_global(&mut self, global_type: GlobalType, val: Value) -> GlobalAddr {
         let global_inst = GlobalInst {
             ty: global_type,
@@ -1263,8 +1255,8 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that any [`FuncAddr`] or
-    /// [`ExternAddr`](crate::execution::value::ExternAddr) values contained in
+    /// The caller has to guarantee that any [`FuncAddr`] or [`ExternAddr`](crate::ExternAddr)
+    /// values contained in
     /// the [`Ref`]s came from the current [`Store`] object.
     unsafe fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> ElemAddr {
         let elem_inst = ElemInst {
@@ -1290,9 +1282,9 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the [`FuncAddr`] and any [`FuncAddr`]
-    /// or [`ExternAddr`](crate::execution::value::ExternAddr) values contained
-    /// in the parameter values came from the current [`Store`] object.
+    /// The caller has to guarantee that the [`FuncAddr`] and any [`FuncAddr`] or
+    /// [`ExternAddr`](crate::ExternAddr) values contained in the parameter values came from the
+    /// current [`Store`] object.
     pub unsafe fn create_resumable(
         &self,
         func_addr: FuncAddr,
@@ -1476,10 +1468,9 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the given [`FuncAddr`] and any
-    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
-    /// values contained in the parameter values came from the current [`Store`]
-    /// object.
+    /// The caller has to guarantee that the given [`FuncAddr`] and any [`FuncAddr`] or
+    /// [`ExternAddr`](crate::ExternAddr) values contained in the parameter values came from the
+    /// current [`Store`] object.
     pub unsafe fn invoke_simple(
         &mut self,
         function: FuncAddr,
