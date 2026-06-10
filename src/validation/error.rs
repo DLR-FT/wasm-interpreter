@@ -2,7 +2,7 @@ use core::fmt::{Display, Formatter};
 
 use crate::{
     core::{
-        decoding::modules::section_header::SectionTy,
+        decoding::modules::sections::SectionTy,
         structure::{modules::indices::FuncIdx, types::ValType},
     },
     validation::validation_stack::ValidationStackEntry,
@@ -35,8 +35,6 @@ pub enum ValidationError {
 
     /// A section with given type is out of order. All section types have a fixed order in which they must occur.
     SectionOutOfOrder(SectionTy),
-    /// A custom section contains more bytes than its section header specifies.
-    InvalidCustomSectionLength,
     ExprMissingEnd,
     InvalidInstr(u8),
     InvalidMultiByteInstr(u8, u32),
@@ -145,7 +143,6 @@ impl Display for ValidationError {
             ValidationError::InvalidLaneIdx(idx) => write!(f, "The lane index {idx} is invalid"),
 
             ValidationError::SectionOutOfOrder(ty) => write!(f, "A section of type `{ty:?}` is defined out of order"),
-            ValidationError::InvalidCustomSectionLength => write!(f, "A custom section contains more bytes than its section header specifies"),
             ValidationError::ExprMissingEnd => write!(f, "An expr type is missing an end byte"),
             ValidationError::InvalidInstr(byte) => write!(f, "The instruction {byte:#x} is invalid"),
             ValidationError::InvalidMultiByteInstr(first_byte, second_instr) => write!(f, "The multi-byte instruction {first_byte:#x} {second_instr} is invalid"),
