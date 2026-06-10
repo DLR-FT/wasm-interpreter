@@ -137,6 +137,10 @@ pub fn decode_and_validate_constant_expression(
                     .get(imported_global_idx.into_usize())
                     .ok_or(ValidationError::InvalidGlobalIdx(imported_global_idx))?;
 
+                if global.is_mut {
+                    return Err(ValidationError::MutGlobalInConstGlobalGet);
+                }
+
                 stack.push_valtype(global.ty);
             }
             I32_CONST => {
