@@ -25,9 +25,9 @@ pub use crate::{
         resumable::*,
         runtime_structure::{
             addresses::*,
+            store::{ExternVal, Hostcode, InstantiationOutcome, Store},
             values::{ExternAddr, Ref, Value, ValueTypeMismatchError, F32, F64},
         },
-        store::{ExternVal, Hostcode, InstantiationOutcome, Store},
     },
     validation::{decode_and_validate, error::ValidationError, Module},
 };

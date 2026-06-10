@@ -5,4 +5,3 @@ mod instructions;
 pub(crate) mod little_endian;
 pub mod resumable;
 pub mod runtime_structure;
-pub mod store;
