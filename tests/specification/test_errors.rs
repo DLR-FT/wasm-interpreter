@@ -18,10 +18,7 @@
 use std::error::Error;
 
 use checked::{StoredRef, StoredValue};
-use wasm::{
-    value::{F32, F64},
-    RefType,
-};
+use wasm::{RefType, F32, F64};
 use wast::core::{AbstractHeapType, HeapType, NanPattern, V128Const, WastRetCore};
 
 #[derive(Debug, PartialEq, Eq, Clone)]

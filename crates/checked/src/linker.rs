@@ -1,5 +1,6 @@
 use alloc::{string::String, vec::Vec};
-use wasm::{addrs::ModuleAddr, config::Config, Module, RuntimeError};
+
+use wasm::{Config, Module, ModuleAddr, RuntimeError};
 
 use crate::{
     store::Store,
