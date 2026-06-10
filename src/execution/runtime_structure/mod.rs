@@ -1,4 +1,5 @@
 pub mod addresses;
+pub mod external_values;
 pub mod store;
 pub mod value_stack;
 pub mod values;
