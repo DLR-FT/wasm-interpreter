@@ -1,11 +1,10 @@
-use crate::{
-    core::utils::ToUsizeExt, execution::store::linear_memory::LinearMemory, Limits, MemType,
-    RuntimeError, TrapError,
-};
+use crate::{core::utils::ToUsizeExt, Limits, MemType, RuntimeError, TrapError};
+
+pub mod linear_memory;
 
 pub struct MemInst {
     pub ty: MemType,
-    pub mem: LinearMemory,
+    pub mem: linear_memory::LinearMemory,
 }
 impl core::fmt::Debug for MemInst {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
