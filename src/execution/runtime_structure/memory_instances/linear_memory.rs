@@ -5,7 +5,7 @@ use core::{
 };
 
 use crate::{
-    execution::little_endian::LittleEndianBytes,
+    execution::numerics::representations::LittleEndianBytes,
     rw_spinlock::{ReadLockGuard, RwSpinLock},
     RuntimeError, TrapError,
 };
