@@ -13,7 +13,10 @@ use crate::{
     NumType, RefType, ValType, ValidationError,
 };
 
-/// Read and validate constant expressions.
+/// Decodes a constant expression[^binary-format] and validates it[^validation].
+///
+/// [^binary-format]: [WebAssembly Specification 2.0 - 5.4.9. Expressions](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-expr).
+/// [^validation]: [WebAssembly Specification 2.0 - 3.3.10. Expressions](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#expressions%E2%91%A2).
 ///
 /// This function is used to validate that a constant expression produces the expected result. The main use case for
 /// this is to validate that an initialization expression for a global returns the correct value.
