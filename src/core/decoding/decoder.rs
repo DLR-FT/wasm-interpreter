@@ -106,9 +106,9 @@ impl<'a> WasmDecoder<'a> {
     ///
     /// May panic if the closure moved the [`pc`](Self::pc) backwards, e.g. when
     /// [move_start_to](Self::move_start_to) is called.
-    pub fn measure_num_read_bytes<T, E>(
+    pub fn measure_num_read_bytes<T: 'a, E>(
         &mut self,
-        f: impl FnOnce(&mut WasmDecoder) -> Result<T, E>,
+        f: impl FnOnce(&mut WasmDecoder<'a>) -> Result<T, E>,
     ) -> Result<(T, usize), E> {
         let before = self.pc;
         let ret = f(self)?;

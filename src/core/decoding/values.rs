@@ -388,18 +388,31 @@ impl<'wasm> WasmDecoder<'wasm> {
     pub fn decode_vec_map<'a, 'f, T, F, E>(
         &'a mut self,
         mut read_element: F,
-    ) -> Result<
-        impl ExactSizeIterator<Item = Result<T, E>> + use<'a, 'wasm, 'f, F, T, E>,
-        DecodingError,
-    >
+    ) -> Result<impl Iterator<Item = Result<T, E>> + use<'a, 'wasm, 'f, F, T, E>, DecodingError>
     where
         T: 'wasm,
         F: FnMut(&mut WasmDecoder<'wasm>) -> Result<T, E> + 'f,
         E: From<DecodingError>,
     {
         let len = self.decode_var_u32()?;
-        let i = (0..len).map(move |_| read_element(self));
-        Ok(i)
+        let all_elements = (0..len).map(move |_| read_element(self));
+
+        // End the iterator after the first error was been encountered.
+        let mut found_err = false;
+        let elements_until_first_error_inclusive = all_elements.take_while(move |result| {
+            if result.is_err() {
+                if found_err {
+                    false
+                } else {
+                    found_err = true;
+                    true
+                }
+            } else {
+                true
+            }
+        });
+
+        Ok(elements_until_first_error_inclusive)
     }
 }
 
