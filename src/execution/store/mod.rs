@@ -126,11 +126,13 @@ impl<'b, T: Config> Store<'b, T> {
         // instantiation: step 1
         // The module is guaranteed to be valid, because only validation can
         // produce `ValidationInfo`s.
+        trace!("finished instantiation step 1");
 
         // instantiation: step 3
         if validation_info.imports.len() != extern_vals.len() {
             return Err(RuntimeError::ExternValsLenMismatch);
         }
+        trace!("finished instantiation step 3");
 
         // instantiation: step 4
         let imports_as_extern_types = validation_info.imports.iter().map(|import| {
@@ -142,14 +144,17 @@ impl<'b, T: Config> Store<'b, T> {
             // instantiation: step 4a
             // check that extern_val is valid in this Store, which should be guaranteed by the caller through a safety constraint in the future.
             // TODO document this instantiation step properly
+            trace!("finished instantiation step 4a");
 
             // instantiation: step 4b
             let extern_type = extern_val.extern_type(self);
+            trace!("finished instantiation step 4b");
 
             // instantiation: step 4c
             if !extern_type.is_subtype_of(&import_as_extern_type) {
                 return Err(RuntimeError::InvalidImportType);
             }
+            trace!("finished instantiation step 4c");
         }
 
         // instantiation: step 5
@@ -176,6 +181,7 @@ impl<'b, T: Config> Store<'b, T> {
             sidetable: validation_info.sidetable.clone(),
         };
         let module_addr = self.modules.insert(module_inst);
+        trace!("finished instantiation step 5");
 
         let imported_functions = extern_vals.iter().funcs();
         let local_func_addrs = validation_info
@@ -189,6 +195,7 @@ impl<'b, T: Config> Store<'b, T> {
                 // `ValidationInfo`.
                 unsafe { self.alloc_func((*ty_idx, (*span, *stp)), module_addr) }
             });
+        trace!("instantiation: allocated local functions");
 
         let func_addrs = validation_info
             .functions
@@ -201,6 +208,7 @@ impl<'b, T: Config> Store<'b, T> {
                 `validation_info.func_blocks_stps`",
             )
             .into_inner();
+        trace!("instantiation: collected functions");
 
         // SAFETY: The module with this module address was just inserted into
         // this `AddrVec`
@@ -224,6 +232,7 @@ impl<'b, T: Config> Store<'b, T> {
                 const_expr_result.transpose().unwrap_validated()
             })
             .collect::<Result<Vec<Value>, _>>()?;
+        trace!("instantiation: finished running global init exprs");
 
         // instantiation: this roughly matches step 9,10 and performs allocation
         // step 6,12 already
@@ -272,6 +281,7 @@ impl<'b, T: Config> Store<'b, T> {
             let elem = unsafe { self.alloc_elem(elem.ty(), refs) };
             Ok::<_, RuntimeError>(elem)
         })?;
+        trace!("instantiation: finished allocating elements");
 
         // instantiation: step 11 - module allocation (except function allocation - which was made in step 5)
         // https://webassembly.github.io/spec/core/exec/modules.html#alloc-module
@@ -293,12 +303,14 @@ impl<'b, T: Config> Store<'b, T> {
                 unsafe { self.alloc_table(*table_type, Ref::Null(table_type.et)) }
             })
             .collect();
+        trace!("instantiation: finished allocating tables");
         // allocation: step 4, 10
         let mem_addrs_local: Vec<MemAddr> = module
             .memories
             .iter_local_definitions()
             .map(|mem_type| self.alloc_mem(*mem_type))
             .collect();
+        trace!("instantiation: finished allocating memories");
         // allocation: step 5, 11
         let global_addrs_local: Vec<GlobalAddr> = module
             .globals
@@ -311,6 +323,7 @@ impl<'b, T: Config> Store<'b, T> {
                 unsafe { self.alloc_global(global.ty, val) }
             })
             .collect();
+        trace!("instantiation: finished allocating globals");
         // allocation: skip step 6, 12 as it was done in instantiation step 9, 10
 
         // allocation: step 7, 13
@@ -318,6 +331,7 @@ impl<'b, T: Config> Store<'b, T> {
             .data
             .map::<DataAddr, Infallible>(|data_segment| Ok(self.alloc_data(&data_segment.init)))
             .expect("infallible error type to never be constructed");
+        trace!("instantiation: finished allocating datas");
 
         // allocation: skip step 14 as it was done in instantiation step 5
 
@@ -333,6 +347,7 @@ impl<'b, T: Config> Store<'b, T> {
                 definitions and performing one-to-one mapping on each one.",
             )
             .into_inner();
+        trace!("instantiation: finished collecting tables");
 
         // allocation: step 16
         let mem_addrs = validation_info
@@ -346,6 +361,7 @@ impl<'b, T: Config> Store<'b, T> {
             definitions and performing one-to-one mapping on each one.",
             )
             .into_inner();
+        trace!("instantiation: finished collecting memories");
 
         // allocation step 17
         let global_addrs = validation_info
@@ -359,6 +375,7 @@ impl<'b, T: Config> Store<'b, T> {
             definitions and performing one-to-one mapping on each one.",
             )
             .into_inner();
+        trace!("instantiation: finished collecting globals");
 
         // allocation: step 18,19
         let export_insts: BTreeMap<String, ExternVal> = module
@@ -407,6 +424,7 @@ impl<'b, T: Config> Store<'b, T> {
                 (export.name.to_owned(), value)
             })
             .collect();
+        trace!("instantiation: finished collecting exports");
 
         // allocation: step 20,21 initialize module (except functions to instantiation step 5, allocation step 14)
 
@@ -421,6 +439,7 @@ impl<'b, T: Config> Store<'b, T> {
         module_inst.exports = export_insts;
 
         // allocation: end
+        trace!("instantiation: finished module allocation");
 
         // instantiation step 11 end: module_inst properly allocated after this point.
 
@@ -540,6 +559,7 @@ impl<'b, T: Config> Store<'b, T> {
                 ElemMode::Passive => (),
             }
         }
+        trace!("instantiation: finished table initialization");
 
         // instantiation: step 16
         // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
@@ -613,6 +633,7 @@ impl<'b, T: Config> Store<'b, T> {
                 crate::core::reader::types::data::DataMode::Passive => (),
             }
         }
+        trace!("instantiation: finished memory initialization");
 
         // instantiation: step 17
         let maybe_remaining_fuel = if let Some(func_idx) = validation_info.start {
@@ -655,6 +676,9 @@ impl<'b, T: Config> Store<'b, T> {
         } else {
             maybe_fuel
         };
+        trace!("instantiation: finished running start function");
+
+        trace!("instantiation: finished ");
 
         Ok(InstantiationOutcome {
             module_addr,
