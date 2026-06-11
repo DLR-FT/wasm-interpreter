@@ -1,4 +1,3 @@
-use alloc::vec::Vec;
 use core::iter;
 
 use crate::{
@@ -6,41 +5,62 @@ use crate::{
     DecodingError, ValType,
 };
 
-pub fn decode_locals(wasm: &mut WasmDecoder) -> Result<Vec<ValType>, DecodingError> {
-    let locals: Vec<(usize, ValType)> = wasm
+pub fn decode_locals<'a, 'wasm>(
+    wasm: &'a mut WasmDecoder<'wasm>,
+) -> Result<impl ExactSizeIterator<Item = ValType> + use<'a, 'wasm>, DecodingError> {
+    // First pass to decode all locals and check if their total number exceeds 2^32-1
+    let mut total_number_of_locals = 0_u32;
+    let mut wasm_cloned = wasm.clone();
+    wasm_cloned
         .decode_vec_map(|wasm| {
-            let n = wasm.decode_var_u32()?.into_usize();
-            let valtype = ValType::decode(wasm)?;
+            let n = wasm.decode_var_u32()?;
+            let _valtype = ValType::decode(wasm)?;
+
+            total_number_of_locals = total_number_of_locals
+                .checked_add(n)
+                .ok_or(DecodingError::TooManyLocals)?;
+
+            Ok(())
+        })?
+        .collect::<Result<(), DecodingError>>()?;
+
+    // Second pass to flatten locals
+    let locals = wasm
+        .decode_vec_map::<(u32, ValType), _, DecodingError>(|wasm| {
+            let n = wasm.decode_var_u32().unwrap();
+            let valtype = ValType::decode(wasm).unwrap();
 
             Ok((n, valtype))
         })
-        .and_then(Iterator::collect)?;
+        .unwrap()
+        .map(Result::unwrap)
+        .flat_map(|res| iter::repeat_n(res.1, res.0.into_usize()));
 
-    // these checks are related to the official test suite binary.wast file, the first 2 assert_malformed's starting at line 350
-    // we check to not have more than 2^32-1 locals, and if that number is okay, we then get to instantiate them all
-    // this is because the flat_map and collect take an insane amount of time
-    // in total, these 2 tests take more than 240s
-    let mut total_no_of_locals: u64 = 0;
-    for local in &locals {
-        let temp = local.0 as u64;
-        if temp > u32::MAX.into() {
-            return Err(DecodingError::TooManyLocals(total_no_of_locals));
-        };
-        total_no_of_locals = match total_no_of_locals.checked_add(temp) {
-            None => return Err(DecodingError::TooManyLocals(total_no_of_locals)),
-            Some(n) => n,
-        }
+    Ok(WithExactSize {
+        i: locals,
+        len: total_number_of_locals.into_usize(),
+    })
+}
+
+struct WithExactSize<I> {
+    i: I,
+    len: usize,
+}
+
+impl<T, I: Iterator<Item = T>> Iterator for WithExactSize<I> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.i.next()
     }
 
-    if total_no_of_locals > u32::MAX.into() {
-        return Err(DecodingError::TooManyLocals(total_no_of_locals));
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.len, Some(self.len))
     }
+}
 
-    // Flatten local types for easier representation where n > 1
-    let locals = locals
-        .into_iter()
-        .flat_map(|entry| iter::repeat_n(entry.1, entry.0))
-        .collect::<Vec<ValType>>();
-
-    Ok(locals)
+impl<T, I: Iterator<Item = T>> ExactSizeIterator for WithExactSize<I> {
+    fn len(&self) -> usize {
+        self.len
+    }
 }
