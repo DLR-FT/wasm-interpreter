@@ -5,8 +5,6 @@
 //! Note: If any of these methods return `Err`, they may have consumed some bytes from the [WasmDecoder] object and thus consequent calls may result in unexpected behaviour.
 //! This is due to the fact that these methods read elemental types which cannot be split.
 
-use alloc::vec::Vec;
-
 use crate::{
     core::{decoding::decoder::WasmDecoder, utils::ToUsizeExt},
     DecodingError,
@@ -366,36 +364,42 @@ impl<'wasm> WasmDecoder<'wasm> {
         core::str::from_utf8(utf8_str).map_err(DecodingError::MalformedUtf8)
     }
 
-    // TODO remove, see note on read_vec for more info
-    pub fn decode_vec_enumerated<T, F, E>(&mut self, mut read_element: F) -> Result<Vec<T>, E>
+    /// A version of [`WasmDecoder::decode_vec_map`] that enumerates all elements.
+    pub fn decode_vec_enumerate_map<'a, 'f, T, F, E>(
+        &'a mut self,
+        mut read_element: F,
+    ) -> Result<
+        impl ExactSizeIterator<Item = Result<T, E>> + use<'a, 'wasm, 'f, F, T, E>,
+        DecodingError,
+    >
     where
         T: 'wasm,
-        F: FnMut(&mut WasmDecoder<'wasm>, u32) -> Result<T, E>,
-        E: From<DecodingError>,
-    {
-        let mut idx = 0;
-        self.decode_vec(|wasm| {
-            let ret = read_element(wasm, idx);
-            idx = idx
-                .checked_add(1)
-                .expect("the length of vectors to be encoded as a u32");
-            ret
-        })
-    }
-
-    /// Note: If `Err`, the [WasmDecoder] object is no longer guaranteed to be in a valid state
-    // TODO make this return `impl ExactSizeIterator<Item = T>` to prevent allocation. This will be
-    // usedful if we want to decode some information on-demand in the future.
-    pub fn decode_vec<T, F, E>(&mut self, mut read_element: F) -> Result<Vec<T>, E>
-    where
-        T: 'wasm,
-        F: FnMut(&mut WasmDecoder<'wasm>) -> Result<T, E>,
+        F: FnMut(&mut WasmDecoder<'wasm>, u32) -> Result<T, E> + 'f,
         E: From<DecodingError>,
     {
         let len = self.decode_var_u32()?;
-        core::iter::repeat_with(|| read_element(self))
-            .take(len.into_usize())
-            .collect()
+        let i = (0..len).map(move |n| read_element(self, n));
+
+        Ok(i)
+    }
+
+    /// Decodes a vector and maps every element with the given closure. An iterator with a maximum
+    /// fixed size of [`u32::MAX`] is returned.
+    pub fn decode_vec_map<'a, 'f, T, F, E>(
+        &'a mut self,
+        mut read_element: F,
+    ) -> Result<
+        impl ExactSizeIterator<Item = Result<T, E>> + use<'a, 'wasm, 'f, F, T, E>,
+        DecodingError,
+    >
+    where
+        T: 'wasm,
+        F: FnMut(&mut WasmDecoder<'wasm>) -> Result<T, E> + 'f,
+        E: From<DecodingError>,
+    {
+        let len = self.decode_var_u32()?;
+        let i = (0..len).map(move |_| read_element(self));
+        Ok(i)
     }
 }
 

@@ -44,7 +44,12 @@ pub unsafe fn select(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 define_instruction!(super::select_t, select_t_mod, fuel_check = flat(SELECT_T));
 #[inline(always)]
 pub unsafe fn select_t(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let _type_vec = state.wasm.decode_vec(ValType::decode).unwrap_validated();
+    // skip past type vec
+    state
+        .wasm
+        .decode_vec_map(ValType::decode)
+        .unwrap_validated()
+        .for_each(|_| {});
     // SAFETY: Validation guarantees that there is a value on the stack.
     let test_val: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
