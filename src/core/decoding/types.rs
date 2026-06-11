@@ -7,6 +7,8 @@
 //! [^validation]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
 //! [^binary-format]: [WebAssembly Specification 2.0 - 5.3. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A6).
 
+use alloc::vec::Vec;
+
 use crate::{
     core::{
         decoding::decoder::WasmDecoder,
@@ -101,7 +103,9 @@ impl ResultType {
     /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.5. Result Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-resulttype).
     /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
     pub fn decode(wasm: &mut WasmDecoder) -> Result<Self, DecodingError> {
-        let valtypes = wasm.decode_vec(ValType::decode)?;
+        let valtypes = wasm
+            .decode_vec_map(ValType::decode)?
+            .collect::<Result<Vec<_>, DecodingError>>()?;
 
         Ok(ResultType { valtypes })
     }

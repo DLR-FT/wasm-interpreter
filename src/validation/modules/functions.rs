@@ -56,7 +56,7 @@ pub unsafe fn decode_and_validate_code_section<T2: ValidationConfig>(
     sidetable: &mut Sidetable,
     user_data: &mut T2,
 ) -> Result<Vec<(Span, usize)>, ValidationError> {
-    let code_block_spans_stps = wasm.decode_vec_enumerated(|wasm, idx| {
+    let code_block_spans_stps = wasm.decode_vec_enumerate_map(|wasm, idx| {
         // We need to offset the index by the number of functions that were
         // imported. Imported functions always live at the start of the index
         // space.
@@ -110,5 +110,5 @@ pub unsafe fn decode_and_validate_code_section<T2: ValidationConfig>(
         Ok((func_block, stp))
     })?;
 
-    Ok(code_block_spans_stps)
+    code_block_spans_stps.collect()
 }
