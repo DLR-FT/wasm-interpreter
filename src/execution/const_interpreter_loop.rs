@@ -99,6 +99,7 @@ pub(crate) unsafe fn run_const_span<T: Config>(
 
     wasm.move_start_to(*span).unwrap_validated();
 
+    trace!("allocating const span stack...");
     let mut stack = Stack::new::<T>(
         Vec::new(),
         &FuncType {
@@ -111,6 +112,7 @@ pub(crate) unsafe fn run_const_span<T: Config>(
         },
         &[],
     )?;
+    trace!("finished allocating const span stack. running const span...");
 
     // SAFETY: The current caller makes the same safety guarantees.
     unsafe { run_const(&mut wasm, &mut stack, module, store)? };
