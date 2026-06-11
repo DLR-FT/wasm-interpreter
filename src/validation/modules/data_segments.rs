@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use crate::{
     core::{
         decoding::decoder::WasmDecoder,
@@ -14,7 +16,7 @@ use crate::{
         instructions::constant_expressions::decode_and_validate_constant_expression,
         validation_stack::ValidationStack,
     },
-    MemType, ValidationError,
+    DecodingError, MemType, ValidationError,
 };
 
 impl DataSegment {
@@ -45,7 +47,9 @@ impl DataSegment {
 
                 valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
 
-                let byte_vec = wasm.decode_vec(|el| el.decode_u8())?;
+                let byte_vec = wasm
+                    .decode_vec_map(WasmDecoder::decode_u8)?
+                    .collect::<Result<Vec<u8>, DecodingError>>()?;
 
                 // WARN: we currently don't take into consideration how we act when we are dealing with globals here
                 DataSegment {
@@ -60,9 +64,13 @@ impl DataSegment {
                 // passive
                 // A passive data segment's contents can be copied into a memory using the `memory.init` instruction
                 trace!("Data section: passive");
+                let byte_vec = wasm
+                    .decode_vec_map(WasmDecoder::decode_u8)?
+                    .collect::<Result<Vec<u8>, DecodingError>>()?;
+
                 DataSegment {
                     mode: DataMode::Passive,
-                    init: wasm.decode_vec(|el| el.decode_u8())?,
+                    init: byte_vec,
                 }
             }
             2 => {
@@ -81,7 +89,9 @@ impl DataSegment {
 
                 valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
 
-                let byte_vec = wasm.decode_vec(|el| el.decode_u8())?;
+                let byte_vec = wasm
+                    .decode_vec_map(WasmDecoder::decode_u8)?
+                    .collect::<Result<Vec<u8>, DecodingError>>()?;
 
                 DataSegment {
                     mode: DataMode::Active(DataModeActive {

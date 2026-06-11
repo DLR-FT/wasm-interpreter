@@ -32,192 +32,190 @@ impl ElemType {
         validation_context_refs: &mut BTreeSet<FuncIdx>,
         c_tables: &IdxVec<TableIdx, TableType>,
         imported_global_types: &[GlobalType],
-    ) -> Result<Vec<Self>, ValidationError> {
-        wasm.decode_vec(|wasm| {
-            let prop = wasm.decode_var_u32()?;
+    ) -> Result<Self, ValidationError> {
+        let prop = wasm.decode_var_u32()?;
 
-            let elem = match prop {
-                0 => {
-                    // binary format is: 0:u32 e:expr y*:vec(funcidx)
-                    // should parse to spec struct {type funcref, init ((ref.func y) end)*, mode active {table 0, offset e}}
-                    // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Active{0, e}} here
-                    let e = decode_and_validate_active_segment_offset_expr(
-                        wasm,
-                        imported_global_types,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let init = decode_and_validate_shortened_initializer_list(
-                        wasm,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let mode = ElemMode::Active(ActiveElem {
-                        table_idx: TableIdx::validate(0, c_tables)?,
-                        init_expr: e,
-                    });
-                    ElemType { init, mode }
-                }
-                1 => {
-                    // binary format is: 1:u32 et:elemkind y*:vec(funcidx)
-                    // should parse to spec struct {type et, init ((ref.func y) end)*, mode passive}
-                    // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Passive} here
-                    let _et = ElemKind::decode(wasm)?;
-                    let init = decode_and_validate_shortened_initializer_list(
-                        wasm,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let mode = ElemMode::Passive;
-                    ElemType { init, mode }
-                }
-                2 => {
-                    // binary format is: 2:u32 x:tableidx e:expr et:elemkind y*:vec(funcidx)
-                    // should parse to spec struct {type et, init ((ref.func y) end)*, mode active {table x, offset e}}
-                    // which reflects to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Active{x, e}} here
-                    let x = TableIdx::decode_and_validate(wasm, c_tables)?;
-                    let e = decode_and_validate_active_segment_offset_expr(
-                        wasm,
-                        imported_global_types,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let _et = ElemKind::decode(wasm)?;
-                    let init = decode_and_validate_shortened_initializer_list(
-                        wasm,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let mode = ElemMode::Active(ActiveElem {
-                        table_idx: x,
-                        init_expr: e,
-                    });
-                    ElemType { init, mode }
-                }
-                3 => {
-                    // binary format is: 3:u32 et:elemkind y*:vec(funcidx)
-                    // should parse to spec struct {type et, init ((ref.func y) end)*, mode declarative}
-                    // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Declarative} here
-                    let _et = ElemKind::decode(wasm)?;
-                    let init = decode_and_validate_shortened_initializer_list(
-                        wasm,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let mode = ElemMode::Declarative;
-                    ElemType { init, mode }
-                }
-                4 => {
-                    // binary format is: 4:u32 e:expr el*:vec(expr)
-                    // should parse to spec struct {type funcref, init el*, mode active { table 0, offset e}}
-                    // which is equivalent to ElemType{init: ElemItems::Exprs(funcref, el*), mode: ElemMode::Active{0, e}}
-                    let e = decode_and_validate_active_segment_offset_expr(
-                        wasm,
-                        imported_global_types,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let init = decode_and_validate_generic_initializer_list(
-                        wasm,
-                        RefType::FuncRef,
-                        imported_global_types,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let mode = ElemMode::Active(ActiveElem {
-                        table_idx: TableIdx::validate(0, c_tables)?,
-                        init_expr: e,
-                    });
-                    ElemType { init, mode }
-                }
-                5 => {
-                    // binary format is 5:u32 et: reftype el*:vec(expr)
-                    // should parse to spec struct {type et, init el*, mode passive}
-                    // which is equivalent to ElemType{init: ElemItems::Exprs(et, el*), mode: ElemMode::Passive} here
-                    let et = RefType::decode(wasm)?;
-                    let init = decode_and_validate_generic_initializer_list(
-                        wasm,
-                        et,
-                        imported_global_types,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let mode = ElemMode::Passive;
-                    ElemType { init, mode }
-                }
-                6 => {
-                    // binary format is 6:u32 x:table_idx e:expr et:reftype el*:vec(expr)
-                    // should parse to spec struct {type et, init el*, mode passive}
-                    // which is equivalent to ElemType{init: Exprs(et, el*), mode: ElemMode::Active{table x, offset e}} here
-                    let x = TableIdx::decode_and_validate(wasm, c_tables)?;
-                    let e = decode_and_validate_active_segment_offset_expr(
-                        wasm,
-                        imported_global_types,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let et = RefType::decode(wasm)?;
-                    let init = decode_and_validate_generic_initializer_list(
-                        wasm,
-                        et,
-                        imported_global_types,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let mode = ElemMode::Active(ActiveElem {
-                        table_idx: x,
-                        init_expr: e,
-                    });
-                    ElemType { init, mode }
-                }
-                7 => {
-                    // binary format is 7:u32 et:reftype el*:vec(expr)
-                    // should parse to spec struct {type et, init el*, mode declarative}
-                    // which is equivalent to ElemType{init: Exprs(et, el*), mode: ElemMode::Declarative} here
-                    let et = RefType::decode(wasm)?;
-                    let init = decode_and_validate_generic_initializer_list(
-                        wasm,
-                        et,
-                        imported_global_types,
-                        c_funcs,
-                        validation_context_refs,
-                    )?;
-                    let mode = ElemMode::Declarative;
-                    ElemType { init, mode }
-                }
-                invalid_mode @ 8.. => {
-                    return Err(ValidationError::InvalidElementMode(invalid_mode));
-                }
-            };
-
-            // assume the element segment is well formed in terms of abstract syntax from now on.
-            // start validating element segment of form {type t, init e*, mode elemmode}: https://webassembly.github.io/spec/core/valid/modules.html#element-segments
-            let t = elem.ty();
-            // 1. Each e_i must be valid with type t and be const: this is already checked during the parse of initializer expressions above.
-            // 2. elemmode must be valid with type t
-            // -- start validating elemmode for type t:
-            match elem.mode {
-                ElemMode::Active(ActiveElem {
-                    table_idx: x,
-                    init_expr: _expr,
-                }) => {
-                    // start validating elemmode of form active {table x, offset expr}
-                    // 1-2. C.tables[x] must be defined with type: limits t
-                    // SAFETY: The `ActiveElem` that is being deconstructed was
-                    // created and also validated in this function.
-                    let table_type = unsafe { c_tables.get(x) };
-                    if table_type.et != t {
-                        return Err(ValidationError::ActiveElementSegmentTypeMismatch);
-                    }
-                    // 3-4. _expr must be valid with type I32 and be const: already checked during the parse of initializer expressions above.
-                    // Then elemmode is valid with type t.
-                }
-                ElemMode::Declarative | ElemMode::Passive => (), // these are valid for any type t.
+        let elem = match prop {
+            0 => {
+                // binary format is: 0:u32 e:expr y*:vec(funcidx)
+                // should parse to spec struct {type funcref, init ((ref.func y) end)*, mode active {table 0, offset e}}
+                // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Active{0, e}} here
+                let e = decode_and_validate_active_segment_offset_expr(
+                    wasm,
+                    imported_global_types,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let init = decode_and_validate_shortened_initializer_list(
+                    wasm,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let mode = ElemMode::Active(ActiveElem {
+                    table_idx: TableIdx::validate(0, c_tables)?,
+                    init_expr: e,
+                });
+                ElemType { init, mode }
             }
-            // -- Then elemmmode is valid with type t.
-            // Then the element segment is valid with type t.
-            Ok(elem)
-        })
+            1 => {
+                // binary format is: 1:u32 et:elemkind y*:vec(funcidx)
+                // should parse to spec struct {type et, init ((ref.func y) end)*, mode passive}
+                // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Passive} here
+                let _et = ElemKind::decode(wasm)?;
+                let init = decode_and_validate_shortened_initializer_list(
+                    wasm,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let mode = ElemMode::Passive;
+                ElemType { init, mode }
+            }
+            2 => {
+                // binary format is: 2:u32 x:tableidx e:expr et:elemkind y*:vec(funcidx)
+                // should parse to spec struct {type et, init ((ref.func y) end)*, mode active {table x, offset e}}
+                // which reflects to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Active{x, e}} here
+                let x = TableIdx::decode_and_validate(wasm, c_tables)?;
+                let e = decode_and_validate_active_segment_offset_expr(
+                    wasm,
+                    imported_global_types,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let _et = ElemKind::decode(wasm)?;
+                let init = decode_and_validate_shortened_initializer_list(
+                    wasm,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let mode = ElemMode::Active(ActiveElem {
+                    table_idx: x,
+                    init_expr: e,
+                });
+                ElemType { init, mode }
+            }
+            3 => {
+                // binary format is: 3:u32 et:elemkind y*:vec(funcidx)
+                // should parse to spec struct {type et, init ((ref.func y) end)*, mode declarative}
+                // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Declarative} here
+                let _et = ElemKind::decode(wasm)?;
+                let init = decode_and_validate_shortened_initializer_list(
+                    wasm,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let mode = ElemMode::Declarative;
+                ElemType { init, mode }
+            }
+            4 => {
+                // binary format is: 4:u32 e:expr el*:vec(expr)
+                // should parse to spec struct {type funcref, init el*, mode active { table 0, offset e}}
+                // which is equivalent to ElemType{init: ElemItems::Exprs(funcref, el*), mode: ElemMode::Active{0, e}}
+                let e = decode_and_validate_active_segment_offset_expr(
+                    wasm,
+                    imported_global_types,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let init = decode_and_validate_generic_initializer_list(
+                    wasm,
+                    RefType::FuncRef,
+                    imported_global_types,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let mode = ElemMode::Active(ActiveElem {
+                    table_idx: TableIdx::validate(0, c_tables)?,
+                    init_expr: e,
+                });
+                ElemType { init, mode }
+            }
+            5 => {
+                // binary format is 5:u32 et: reftype el*:vec(expr)
+                // should parse to spec struct {type et, init el*, mode passive}
+                // which is equivalent to ElemType{init: ElemItems::Exprs(et, el*), mode: ElemMode::Passive} here
+                let et = RefType::decode(wasm)?;
+                let init = decode_and_validate_generic_initializer_list(
+                    wasm,
+                    et,
+                    imported_global_types,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let mode = ElemMode::Passive;
+                ElemType { init, mode }
+            }
+            6 => {
+                // binary format is 6:u32 x:table_idx e:expr et:reftype el*:vec(expr)
+                // should parse to spec struct {type et, init el*, mode passive}
+                // which is equivalent to ElemType{init: Exprs(et, el*), mode: ElemMode::Active{table x, offset e}} here
+                let x = TableIdx::decode_and_validate(wasm, c_tables)?;
+                let e = decode_and_validate_active_segment_offset_expr(
+                    wasm,
+                    imported_global_types,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let et = RefType::decode(wasm)?;
+                let init = decode_and_validate_generic_initializer_list(
+                    wasm,
+                    et,
+                    imported_global_types,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let mode = ElemMode::Active(ActiveElem {
+                    table_idx: x,
+                    init_expr: e,
+                });
+                ElemType { init, mode }
+            }
+            7 => {
+                // binary format is 7:u32 et:reftype el*:vec(expr)
+                // should parse to spec struct {type et, init el*, mode declarative}
+                // which is equivalent to ElemType{init: Exprs(et, el*), mode: ElemMode::Declarative} here
+                let et = RefType::decode(wasm)?;
+                let init = decode_and_validate_generic_initializer_list(
+                    wasm,
+                    et,
+                    imported_global_types,
+                    c_funcs,
+                    validation_context_refs,
+                )?;
+                let mode = ElemMode::Declarative;
+                ElemType { init, mode }
+            }
+            invalid_mode @ 8.. => {
+                return Err(ValidationError::InvalidElementMode(invalid_mode));
+            }
+        };
+
+        // assume the element segment is well formed in terms of abstract syntax from now on.
+        // start validating element segment of form {type t, init e*, mode elemmode}: https://webassembly.github.io/spec/core/valid/modules.html#element-segments
+        let t = elem.ty();
+        // 1. Each e_i must be valid with type t and be const: this is already checked during the parse of initializer expressions above.
+        // 2. elemmode must be valid with type t
+        // -- start validating elemmode for type t:
+        match elem.mode {
+            ElemMode::Active(ActiveElem {
+                table_idx: x,
+                init_expr: _expr,
+            }) => {
+                // start validating elemmode of form active {table x, offset expr}
+                // 1-2. C.tables[x] must be defined with type: limits t
+                // SAFETY: The `ActiveElem` that is being deconstructed was
+                // created and also validated in this function.
+                let table_type = unsafe { c_tables.get(x) };
+                if table_type.et != t {
+                    return Err(ValidationError::ActiveElementSegmentTypeMismatch);
+                }
+                // 3-4. _expr must be valid with type I32 and be const: already checked during the parse of initializer expressions above.
+                // Then elemmode is valid with type t.
+            }
+            ElemMode::Declarative | ElemMode::Passive => (), // these are valid for any type t.
+        }
+        // -- Then elemmmode is valid with type t.
+        // Then the element segment is valid with type t.
+        Ok(elem)
     }
 }
 
@@ -262,12 +260,13 @@ fn decode_and_validate_shortened_initializer_list(
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
-    wasm.decode_vec(|w| {
+    let elements = wasm.decode_vec_map(|w| {
         let func_idx = FuncIdx::decode_and_validate(w, c_funcs)?;
         validation_context_refs.insert(func_idx);
-        Ok(func_idx)
-    })
-    .map(ElemItems::RefFuncs)
+        Ok::<_, ValidationError>(func_idx)
+    })?;
+    let function_refs = elements.collect::<Result<Vec<FuncIdx>, ValidationError>>()?;
+    Ok(ElemItems::RefFuncs(function_refs))
 }
 
 /// Parse and validate the initializer list of an element segment for the supplied type `expected_type`.
@@ -285,7 +284,7 @@ fn decode_and_validate_generic_initializer_list(
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
-    wasm.decode_vec(|w| {
+    let v_elements = wasm.decode_vec_map(|w| {
         let mut valid_stack = ValidationStack::new();
         let (span, seen_func_refs) = decode_and_validate_constant_expression(
             w,
@@ -295,7 +294,8 @@ fn decode_and_validate_generic_initializer_list(
         )?;
         validation_context_refs.extend(seen_func_refs);
         valid_stack.assert_val_types(&[ValType::RefType(expected_type)], true)?;
-        Ok(span)
-    })
-    .map(|v| ElemItems::Exprs(expected_type, v))
+        Ok::<_, ValidationError>(span)
+    })?;
+    let v = v_elements.collect::<Result<Vec<Span>, ValidationError>>()?;
+    Ok(ElemItems::Exprs(expected_type, v))
 }

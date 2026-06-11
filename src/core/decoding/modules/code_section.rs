@@ -7,12 +7,14 @@ use crate::{
 };
 
 pub fn decode_locals(wasm: &mut WasmDecoder) -> Result<Vec<ValType>, DecodingError> {
-    let locals = wasm.decode_vec(|wasm| {
-        let n = wasm.decode_var_u32()?.into_usize();
-        let valtype = ValType::decode(wasm)?;
+    let locals: Vec<(usize, ValType)> = wasm
+        .decode_vec_map(|wasm| {
+            let n = wasm.decode_var_u32()?.into_usize();
+            let valtype = ValType::decode(wasm)?;
 
-        Ok((n, valtype))
-    })?;
+            Ok((n, valtype))
+        })
+        .and_then(Iterator::collect)?;
 
     // these checks are related to the official test suite binary.wast file, the first 2 assert_malformed's starting at line 350
     // we check to not have more than 2^32-1 locals, and if that number is okay, we then get to instantiate them all

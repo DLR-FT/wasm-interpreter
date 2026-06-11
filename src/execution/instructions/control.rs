@@ -1,5 +1,7 @@
 use core::ops::ControlFlow;
 
+use alloc::vec::Vec;
+
 use crate::{
     core::{
         decoding::modules::indices::decode_label_idx_unchecked,
@@ -232,11 +234,13 @@ define_instruction_fn! {
          ..
      }| {
         let label_vec = wasm
-            .decode_vec::<_, _, DecodingError>(|wasm| {
+            .decode_vec_map::<_, _, DecodingError>(|wasm| {
                 // SAFETY: Validation guarantees that there is a
                 // valid vec of label indices.
                 Ok(unsafe { decode_label_idx_unchecked(wasm) })
-            }).unwrap();
+            })
+            .unwrap()
+            .collect::<Result<Vec<_>, DecodingError>>().unwrap();
 
         // SAFETY: Validation guarantees there to be another label index
         // for the default case.
