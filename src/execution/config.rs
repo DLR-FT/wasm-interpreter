@@ -6,7 +6,7 @@
 // It must always be checked that there is no additional performance penalty for the default config!
 pub trait Config {
     /// Maximum number of values in the value stack
-    const MAX_VALUE_STACK_SIZE: usize = 0xf0000; // 64 Kibi-Values
+    const MAX_VALUE_STACK_SIZE: usize = 0x10000; // 64 Kibi-Values
 
     /// Maximum number of cascading function invocations
     const MAX_CALL_STACK_SIZE: usize = 0x1000; // 4 Kibi-Functions
