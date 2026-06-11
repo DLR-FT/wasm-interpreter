@@ -5,8 +5,6 @@
 
 use core::ops::ControlFlow;
 
-use alloc::vec::Vec;
-
 use crate::{
     core::{
         decoding::modules::indices::decode_label_idx_unchecked,
@@ -198,7 +196,7 @@ pub unsafe fn br_if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>,
 define_instruction!(super::br_table, br_table_mod, fuel_check = flat(BR_TABLE));
 #[inline(always)]
 pub unsafe fn br_table(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let label_vec = state
+    let label_vec_len = state
         .wasm
         .decode_vec_map::<_, _, DecodingError>(|wasm| {
             // SAFETY: Validation guarantees that there is a
@@ -206,8 +204,7 @@ pub unsafe fn br_table(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
             Ok(unsafe { decode_label_idx_unchecked(wasm) })
         })
         .unwrap()
-        .collect::<Result<Vec<_>, DecodingError>>()
-        .unwrap();
+        .count();
 
     // SAFETY: Validation guarantees there to be another label index
     // for the default case.
@@ -219,8 +216,8 @@ pub unsafe fn br_table(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .unwrap_validated();
     let case_val = case_val_i32.cast_unsigned().into_usize();
 
-    if case_val >= label_vec.len() {
-        state.resumable.stp += label_vec.len();
+    if case_val >= label_vec_len {
+        state.resumable.stp += label_vec_len;
     } else {
         state.resumable.stp += case_val;
     }
