@@ -231,12 +231,12 @@ define_instruction_fn! {
          current_sidetable,
          ..
      }| {
-        let label_vec = wasm
-            .decode_vec(|wasm| {
-                // SAFETY: Validation guarantees that there is a
-                // valid vec of label indices.
+        let label_vec_len = wasm
+            .decode_vec_map(|wasm| {
+                // SAFETY: Validation guarantees that there is a valid vec of label indices.
                 unsafe { decode_label_idx_unchecked(wasm) }
-            });
+            })
+            .count();
 
         // SAFETY: Validation guarantees there to be another label index
         // for the default case.
@@ -246,8 +246,8 @@ define_instruction_fn! {
         let case_val_i32: i32 = unsafe { resumable.stack.pop_value().as_i32() };
         let case_val = case_val_i32.cast_unsigned().into_usize();
 
-        if case_val >= label_vec.len() {
-            resumable.stp += label_vec.len();
+        if case_val >= label_vec_len {
+            resumable.stp += label_vec_len;
         } else {
             resumable.stp += case_val;
         }

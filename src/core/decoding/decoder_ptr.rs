@@ -378,6 +378,19 @@ impl WasmDecoderPtr {
             .take(len.into_usize())
             .collect()
     }
+
+    /// Decodes a vector and maps every element with the given closure. An iterator with a maximum
+    /// fixed size of [`u32::MAX`] is returned.
+    pub fn decode_vec_map<'a, 'f, T, F>(
+        &'a mut self,
+        mut read_element: F,
+    ) -> impl Iterator<Item = T> + use<'a, 'f, F, T>
+    where
+        F: FnMut(&mut WasmDecoderPtr) -> T + 'f,
+    {
+        let len = self.decode_var_u32();
+        (0..len).map(move |_| read_element(self))
+    }
 }
 
 use crate::core::structure::modules::indices::{
