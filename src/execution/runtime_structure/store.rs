@@ -1177,7 +1177,7 @@ impl<'b, T: Config> Store<'b, T> {
         wasm_decoder.move_start_to(span).unwrap_validated();
 
         let (locals, bytes_read) = wasm_decoder
-            .measure_num_read_bytes(decode_locals)
+            .measure_num_read_bytes(|wasm| decode_locals(wasm).map(Iterator::collect))
             .unwrap_validated();
 
         let code_expr = wasm_decoder

@@ -44,7 +44,7 @@ pub enum DecodingError {
     /// Therefore, 33-bit signed integers may never be negative.
     I33IsNegative,
     /// A function specifies too many locals, i.e. more than 2^32 - 1
-    TooManyLocals(u64),
+    TooManyLocals,
     /// A section's contents were successfully decoded, but either too many or not enough bytes of
     /// the section's bytecode were consumed.
     SectionSizeMismatch,
@@ -75,7 +75,7 @@ impl fmt::Display for DecodingError {
             DecodingError::MalformedVariableLengthInteger => write!(f, "Reading a variable-length integer overflowed"),
             DecodingError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
             DecodingError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
-            DecodingError::TooManyLocals(n) => write!(f,"There are {n} locals and this exceeds the maximum allowed number of 2^32-1"),
+            DecodingError::TooManyLocals => write!(f,"A function specifies too many locals, i.e. more than of 2^32-1"),
             DecodingError::SectionSizeMismatch => f.write_str("A section's contents were successfully decoded, but either too many or not enough bytes of the section's bytecode were consumed."),
             DecodingError::SectionOutOfOrder(ty) => write!(f, "A section of type `{ty:?}` is defined out of order"),
         }
