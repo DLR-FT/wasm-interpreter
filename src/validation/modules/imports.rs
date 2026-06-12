@@ -1,9 +1,12 @@
 use crate::{
     core::{
         decoding::decoder::WasmDecoder,
-        structure::modules::{
-            imports::{Import, ImportDesc},
-            indices::{IdxVec, TypeIdx},
+        structure::{
+            modules::{
+                imports::{Import, ImportDesc},
+                indices::{IdxVec, TypeIdx},
+            },
+            types::ExternTypeRef,
         },
     },
     DecodingError, ExternType, FuncType, GlobalType, MemType, Module, TableType, ValidationError,
@@ -50,7 +53,19 @@ impl ImportDesc {
     ///
     /// The caller must ensure that `self` comes from the same
     /// [`Module`] that is passed as an argument here.
-    pub unsafe fn extern_type(&self, module: &Module) -> ExternType {
+    pub unsafe fn extern_type_owned(&self, module: &Module) -> ExternType {
+        // SAFETY: The caller makes the same safety guarantees as required for extern_type_ref.
+        unsafe { self.extern_type(module) }.to_owned()
+    }
+
+    /// returns the external type of `self` according to typing relation,
+    /// taking `validation_info` as validation context C
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that `self` comes from the same
+    /// [`Module`] that is passed as an argument here.
+    pub unsafe fn extern_type<'module>(&self, module: &'module Module) -> ExternTypeRef<'module> {
         match self {
             ImportDesc::Func(type_idx) => {
                 // unlike ExportDescs, these directly refer to the types section
@@ -61,12 +76,11 @@ impl ImportDesc {
                 // `Module`. Because all type indices contained by a `Module` must always be valid,
                 // this is safe.
                 let func_type = unsafe { module.types.get(*type_idx) };
-                // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
-                ExternType::Func(func_type.clone())
+                ExternTypeRef::Func(func_type)
             }
-            ImportDesc::Table(ty) => ExternType::Table(*ty),
-            ImportDesc::Mem(ty) => ExternType::Mem(*ty),
-            ImportDesc::Global(ty) => ExternType::Global(*ty),
+            ImportDesc::Table(ty) => ExternTypeRef::Table(*ty),
+            ImportDesc::Mem(ty) => ExternTypeRef::Mem(*ty),
+            ImportDesc::Global(ty) => ExternTypeRef::Global(*ty),
         }
     }
 }

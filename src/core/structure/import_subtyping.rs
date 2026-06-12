@@ -1,4 +1,4 @@
-use crate::{ExternType, Limits};
+use crate::{core::structure::types::ExternTypeRef, ExternType, Limits};
 
 //https://webassembly.github.io/spec/core/valid/types.html#import-subtyping
 pub trait ImportSubTypeRelation {
@@ -23,16 +23,23 @@ impl ImportSubTypeRelation for Limits {
 impl ImportSubTypeRelation for ExternType {
     // https://webassembly.github.io/spec/core/valid/types.html#match-limits
     fn is_subtype_of(&self, other: &Self) -> bool {
+        self.as_ref().is_subtype_of(&other.as_ref())
+    }
+}
+
+impl ImportSubTypeRelation for ExternTypeRef<'_> {
+    // https://webassembly.github.io/spec/core/valid/types.html#match-limits
+    fn is_subtype_of(&self, other: &Self) -> bool {
         match self {
-            ExternType::Table(self_table_type) => match other {
-                ExternType::Table(other_table_type) => {
+            ExternTypeRef::Table(self_table_type) => match other {
+                ExternTypeRef::Table(other_table_type) => {
                     self_table_type.lim.is_subtype_of(&other_table_type.lim)
                         && self_table_type.et == other_table_type.et
                 }
                 _ => false,
             },
-            ExternType::Mem(self_mem_type) => match other {
-                ExternType::Mem(other_mem_type) => {
+            ExternTypeRef::Mem(self_mem_type) => match other {
+                ExternTypeRef::Mem(other_mem_type) => {
                     self_mem_type.limits.is_subtype_of(&other_mem_type.limits)
                 }
                 _ => false,
