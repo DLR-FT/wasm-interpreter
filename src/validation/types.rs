@@ -2,8 +2,6 @@
 //!
 //! TODO write description for this module
 
-use alloc::vec::Vec;
-
 use crate::{
     core::{
         decoding::decoder::WasmDecoder,
@@ -13,8 +11,7 @@ use crate::{
         },
     },
     execution::assert_validated::UnwrapValidatedExt,
-    DecodingError, FuncType, Limits, MemType, RefType, ResultType, TableType, ValType,
-    ValidationError,
+    DecodingError, FuncType, Limits, MemType, RefType, TableType, ValType, ValidationError,
 };
 
 impl BlockType {
@@ -56,22 +53,8 @@ impl BlockType {
         func_types: &IdxVec<TypeIdx, FuncType>,
     ) -> Result<FuncType, ValidationError> {
         match self {
-            BlockType::Empty => Ok(FuncType {
-                params: ResultType {
-                    valtypes: Vec::new(),
-                },
-                returns: ResultType {
-                    valtypes: Vec::new(),
-                },
-            }),
-            BlockType::Returns(val_type) => Ok(FuncType {
-                params: ResultType {
-                    valtypes: Vec::new(),
-                },
-                returns: ResultType {
-                    valtypes: [*val_type].into(),
-                },
-            }),
+            BlockType::Empty => Ok(FuncType::new_empty()),
+            BlockType::Returns(val_type) => Ok(FuncType::new_returning(*val_type)),
             BlockType::Type(type_idx) => {
                 // SAFETY: The caller ensures that this `IdxVec` is the same one
                 // used to validate the `TypeIdx` in `self`.

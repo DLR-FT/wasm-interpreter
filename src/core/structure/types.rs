@@ -16,7 +16,7 @@
 //! [^valid-types]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
 //! [^structure-instructions]: [WebAssembly Specification 2.0 - 2.4. Instructions](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#instructions%E2%91%A0).
 
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
 use core::fmt;
 
 use crate::core::structure::modules::indices::TypeIdx;
@@ -59,7 +59,7 @@ pub enum ValType {
 /// A result type
 ///
 /// See: [WebAssembly Specification 2.0 - 2.3.5. Result Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-resulttype).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ResultType {
     pub valtypes: Vec<ValType>,
 }
@@ -71,6 +71,28 @@ pub struct ResultType {
 pub struct FuncType {
     pub params: ResultType,
     pub returns: ResultType,
+}
+
+impl FuncType {
+    pub fn new_empty() -> Self {
+        Self {
+            params: ResultType::default(),
+            returns: ResultType::default(),
+        }
+    }
+
+    pub fn new_returning(single_return_value: ValType) -> Self {
+        Self {
+            params: ResultType::default(),
+            returns: ResultType {
+                valtypes: vec![single_return_value],
+            },
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.params.valtypes.is_empty() && self.returns.valtypes.is_empty()
+    }
 }
 
 /// A block type
