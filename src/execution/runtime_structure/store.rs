@@ -215,6 +215,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         // instantiation: this roughly matches step 6,7,8
         // validation guarantees these will evaluate without errors.
+        let mut maybe_reusable_stack = None;
         let local_globals_init_vals: Vec<Value> = module
             .globals
             .iter_local_definitions()
@@ -224,8 +225,15 @@ impl<'b, T: Config> Store<'b, T> {
                 //    this global is valid.
                 // 2. The module with this module address was just inserted into
                 //    this store's `AddrVec`.
-                let const_expr_result =
-                    unsafe { run_const_span(module.wasm, &global.init_expr, module_addr, self) };
+                let const_expr_result = unsafe {
+                    run_const_span(
+                        module.wasm,
+                        &global.init_expr,
+                        module_addr,
+                        self,
+                        &mut maybe_reusable_stack,
+                    )
+                };
                 const_expr_result.transpose().unwrap_validated()
             })
             .collect::<Result<Vec<Value>, _>>()?;
@@ -261,8 +269,15 @@ impl<'b, T: Config> Store<'b, T> {
                         //    for elements, including this one, are valid.
                         // 2. The module with this module address was just inserted into
                         //    this store's `AddrVec`.
-                        let const_expr_result =
-                            unsafe { run_const_span(module.wasm, expr, module_addr, self) };
+                        let const_expr_result = unsafe {
+                            run_const_span(
+                                module.wasm,
+                                expr,
+                                module_addr,
+                                self,
+                                &mut maybe_reusable_stack,
+                            )
+                        };
                         const_expr_result
                             .map(|res| res.unwrap_validated().try_into().unwrap_validated())
                     })
@@ -462,8 +477,15 @@ impl<'b, T: Config> Store<'b, T> {
                     // from an element contained in the same module the
                     // Wasm bytecode is from. Therefore, the constant expression
                     // in that span must be validated already.
-                    let const_expr_result =
-                        unsafe { run_const_span(module.wasm, einstr_i, module_addr, self)? };
+                    let const_expr_result = unsafe {
+                        run_const_span(
+                            module.wasm,
+                            einstr_i,
+                            module_addr,
+                            self,
+                            &mut maybe_reusable_stack,
+                        )?
+                    };
                     let d: i32 = const_expr_result
                         .unwrap_validated() // there is a return value
                         .try_into()
@@ -569,8 +591,15 @@ impl<'b, T: Config> Store<'b, T> {
                     // from a data segment contained in the same module
                     // the Wasm bytecode is from. Therefore, the constant
                     // expression in that span must be validated already.
-                    let const_expr_result =
-                        unsafe { run_const_span(module.wasm, dinstr_i, module_addr, self)? };
+                    let const_expr_result = unsafe {
+                        run_const_span(
+                            module.wasm,
+                            dinstr_i,
+                            module_addr,
+                            self,
+                            &mut maybe_reusable_stack,
+                        )?
+                    };
                     let d: u32 = const_expr_result
                         .unwrap_validated() // there is a return value
                         .try_into()

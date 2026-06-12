@@ -38,32 +38,64 @@ impl Stack {
             frames: FixedCapacityVec::with_capacity(T::MAX_CALL_STACK_SIZE),
         };
 
-        stack.values.push_from_slice(&params_to_base_call_frame)?;
+        stack.initialize_bottom_most_frame(
+            params_to_base_call_frame,
+            base_call_frame_func_ty,
+            base_call_frame_remaining_locals,
+        )?;
+
+        Ok(stack)
+    }
+
+    /// Clears the stack and re-initializes it with a new base ball frame
+    pub fn clear_and_reinitialize(
+        &mut self,
+        params_to_base_call_frame: Vec<Value>,
+        base_call_frame_func_ty: &FuncType,
+        base_call_frame_remaining_locals: &[ValType],
+    ) -> Result<(), RuntimeError> {
+        self.values.clear();
+        self.frames.clear();
+
+        self.initialize_bottom_most_frame(
+            params_to_base_call_frame,
+            base_call_frame_func_ty,
+            base_call_frame_remaining_locals,
+        )
+    }
+
+    fn initialize_bottom_most_frame(
+        &mut self,
+        params_to_base_call_frame: Vec<Value>,
+        base_call_frame_func_ty: &FuncType,
+        base_call_frame_remaining_locals: &[ValType],
+    ) -> Result<(), RuntimeError> {
+        self.values.push_from_slice(&params_to_base_call_frame)?;
 
         debug_assert!(
-            stack.values.len() >= base_call_frame_func_ty.params.valtypes.len(),
+            self.values.len() >= base_call_frame_func_ty.params.valtypes.len(),
             "when pushing a new call frame, at least as many values need to be on the stack as required by the new call frames's function"
         );
 
         // the topmost `param_count` values are transferred into/consumed by this new call frame
         let param_count = base_call_frame_func_ty.params.valtypes.len();
-        let call_frame_base_idx = stack.values.len() - param_count;
+        let call_frame_base_idx = self.values.len() - param_count;
 
         // verify that enough space is on the stack to push the remaining locals
-        if base_call_frame_remaining_locals.len() + stack.values.len() >= stack.values.capacity() {
+        if base_call_frame_remaining_locals.len() + self.values.len() >= self.values.capacity() {
             return Err(RuntimeError::StackExhaustion);
         }
 
         // after the params, put the additional locals
         for local in base_call_frame_remaining_locals {
             // SAFETY: the previous if checks that sufficient space is one the stack
-            unsafe { stack.push_value_unchecked(Value::default_from_ty(*local)) };
+            unsafe { self.push_value_unchecked(Value::default_from_ty(*local)) };
         }
 
         // now that the locals are all populated, the actual stack section of this call frame begins
-        let value_stack_base_idx = stack.values.len();
+        let value_stack_base_idx = self.values.len();
 
-        stack.frames.push(CallFrame {
+        self.frames.push(CallFrame {
             return_func_addr: MaybeUninit::uninit(),
             return_addr: MaybeUninit::uninit(),
             value_stack_base_idx,
@@ -72,7 +104,7 @@ impl Stack {
             return_stp: MaybeUninit::uninit(),
         })?;
 
-        Ok(stack)
+        Ok(())
     }
 
     pub fn into_values(mut self) -> Vec<Value> {

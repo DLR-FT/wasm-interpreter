@@ -92,15 +92,26 @@ pub(crate) unsafe fn run_const_span<T: Config>(
     span: &Span,
     module: ModuleAddr,
     store: &Store<T>,
+    maybe_reusable_stack: &mut Option<Stack>,
 ) -> Result<Option<Value>, RuntimeError> {
     let mut wasm = WasmDecoder::new(wasm);
 
     wasm.move_start_to(*span).unwrap_validated();
 
-    let mut stack = Stack::new::<T>(Vec::new(), &FuncType::new_empty(), &[])?;
+    // If there is a stack to use, clear and reinitialize it. Otherwise create a new stack.
+    let stack = match maybe_reusable_stack {
+        Some(existing_stack) => {
+            existing_stack.clear_and_reinitialize(Vec::new(), &FuncType::new_empty(), &[])?;
+            existing_stack
+        }
+        None => {
+            let new_stack = Stack::new::<T>(Vec::new(), &FuncType::new_empty(), &[])?;
+            maybe_reusable_stack.insert(new_stack)
+        }
+    };
 
     // SAFETY: The current caller makes the same safety guarantees.
-    unsafe { run_const(&mut wasm, &mut stack, module, store)? };
+    unsafe { run_const(&mut wasm, stack, module, store)? };
 
     Ok(stack.peek_value())
 }
