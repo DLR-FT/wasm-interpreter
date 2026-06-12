@@ -3,7 +3,7 @@ use core::iter;
 
 use crate::{
     core::{
-        structure::types::{FuncType, NumType, RefType, ResultType, ValType},
+        structure::types::{FuncType, NumType, RefType, ValType},
         utils::ToUsizeExt,
     },
     ValidationError,
@@ -23,14 +23,7 @@ impl ValidationStack {
             stack: Vec::new(),
             ctrl_stack: vec![CtrlStackEntry {
                 label_info: LabelInfo::Untyped,
-                block_ty: FuncType {
-                    params: ResultType {
-                        valtypes: Vec::new(),
-                    },
-                    returns: ResultType {
-                        valtypes: Vec::new(),
-                    },
-                },
+                block_ty: FuncType::new_empty(),
                 height: 0,
                 unreachable: false,
             }],
@@ -467,19 +460,12 @@ pub enum LabelInfo {
 mod tests {
     use crate::{NumType, RefType, ValType};
 
-    use super::{CtrlStackEntry, FuncType, LabelInfo, ResultType, ValidationStack, Vec};
+    use super::{CtrlStackEntry, FuncType, LabelInfo, ValidationStack};
 
     fn push_dummy_untyped_label(validation_stack: &mut ValidationStack) {
         validation_stack.ctrl_stack.push(CtrlStackEntry {
             label_info: LabelInfo::Untyped,
-            block_ty: FuncType {
-                params: ResultType {
-                    valtypes: Vec::new(),
-                },
-                returns: ResultType {
-                    valtypes: Vec::new(),
-                },
-            },
+            block_ty: FuncType::new_empty(),
             height: validation_stack.len(),
             unreachable: false,
         })

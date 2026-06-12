@@ -23,7 +23,7 @@ use crate::{
                     IdxVecOverflowError, MemIdx, TableIdx, TypeIdx,
                 },
             },
-            types::{ExternType, FuncType, GlobalType, MemType, ResultType, TableType},
+            types::{ExternType, FuncType, GlobalType, MemType, TableType},
         },
         utils::ToUsizeExt,
     },
@@ -257,16 +257,7 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
         // current function. Therefore, this has to be the same one used to
         // create and validate this `TypeIdx`.
         let func_type = unsafe { types.get(*type_idx) };
-        if func_type
-            != &(FuncType {
-                params: ResultType {
-                    valtypes: Vec::new(),
-                },
-                returns: ResultType {
-                    valtypes: Vec::new(),
-                },
-            })
-        {
+        if !func_type.is_empty() {
             Err(ValidationError::InvalidStartFunctionSignature)
         } else {
             Ok(func_idx)

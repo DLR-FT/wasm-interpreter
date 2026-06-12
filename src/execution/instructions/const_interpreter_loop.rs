@@ -5,7 +5,7 @@ use crate::{
         decoding::decoder::{span::Span, WasmDecoder},
         structure::{
             modules::indices::{FuncIdx, GlobalIdx},
-            types::{FuncType, ResultType},
+            types::FuncType,
         },
     },
     execution::{assert_validated::UnwrapValidatedExt, runtime_structure::value_stack::Stack},
@@ -97,18 +97,7 @@ pub(crate) unsafe fn run_const_span<T: Config>(
 
     wasm.move_start_to(*span).unwrap_validated();
 
-    let mut stack = Stack::new::<T>(
-        Vec::new(),
-        &FuncType {
-            params: ResultType {
-                valtypes: Vec::new(),
-            },
-            returns: ResultType {
-                valtypes: Vec::new(),
-            },
-        },
-        &[],
-    )?;
+    let mut stack = Stack::new::<T>(Vec::new(), &FuncType::new_empty(), &[])?;
 
     // SAFETY: The current caller makes the same safety guarantees.
     unsafe { run_const(&mut wasm, &mut stack, module, store)? };
