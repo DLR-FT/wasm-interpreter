@@ -111,13 +111,10 @@ pub fn decode_and_validate_constant_expression(
             return Err(ValidationError::ExprMissingEnd);
         };
 
-        #[cfg(not(debug_assertions))]
-        trace!("Read constant instruction byte {first_instr_byte:#X?} ({first_instr_byte})");
-
-        #[cfg(debug_assertions)]
         trace!(
-            "Validation - Executing instruction {}",
-            instruction_byte_to_str(first_instr_byte)
+            "Validating const instruction {} at pc={}",
+            instruction_byte_to_str(first_instr_byte),
+            wasm.pc
         );
 
         use crate::core::structure::instructions::*;
@@ -177,6 +174,13 @@ pub fn decode_and_validate_constant_expression(
                 let Ok(second_instr) = wasm.decode_var_u32() else {
                     return Err(ValidationError::ExprMissingEnd);
                 };
+
+                trace!(
+                    "Validating const FD instruction {} at pc={}",
+                    fd_extension_instruction_to_str(second_instr),
+                    wasm.pc
+                );
+
                 match second_instr {
                     V128_CONST => {
                         for _ in 0..16 {
