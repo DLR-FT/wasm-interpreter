@@ -163,6 +163,20 @@ pub struct GlobalType {
 
 /// An external type
 ///
+/// This type exists because cloning [`FuncType`]s is expensive and often unnecessary. Use
+/// [`ExternType`] if cloning is wanted.
+///
+/// See: [WebAssembly Specification 2.0 - 2.3.11. External Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-externtype).
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum ExternTypeRef<'a> {
+    Func(&'a FuncType),
+    Table(TableType),
+    Mem(MemType),
+    Global(GlobalType),
+}
+
+/// An owned external type
+///
 /// See: [WebAssembly Specification 2.0 - 2.3.11. External Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-externtype).
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ExternType {
@@ -170,6 +184,28 @@ pub enum ExternType {
     Table(TableType),
     Mem(MemType),
     Global(GlobalType),
+}
+
+impl ExternType {
+    pub fn as_ref(&self) -> ExternTypeRef<'_> {
+        match self {
+            ExternType::Func(func_type) => ExternTypeRef::Func(func_type),
+            ExternType::Table(table_type) => ExternTypeRef::Table(*table_type),
+            ExternType::Mem(mem_type) => ExternTypeRef::Mem(*mem_type),
+            ExternType::Global(global_type) => ExternTypeRef::Global(*global_type),
+        }
+    }
+}
+
+impl ExternTypeRef<'_> {
+    pub fn to_owned(self) -> ExternType {
+        match self {
+            ExternTypeRef::Func(func_type) => ExternType::Func(func_type.clone()),
+            ExternTypeRef::Table(table_type) => ExternType::Table(table_type),
+            ExternTypeRef::Mem(mem_type) => ExternType::Mem(mem_type),
+            ExternTypeRef::Global(global_type) => ExternType::Global(global_type),
+        }
+    }
 }
 
 /// A memarg

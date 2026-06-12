@@ -1,4 +1,6 @@
-use crate::{Config, ExternType, FuncAddr, GlobalAddr, MemAddr, Store, TableAddr};
+use crate::{
+    core::structure::types::ExternTypeRef, Config, FuncAddr, GlobalAddr, MemAddr, Store, TableAddr,
+};
 
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#external-values>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -16,32 +18,35 @@ impl ExternVal {
     /// # Safety
     /// The caller has to guarantee that `self` came from the same [`Store`] which
     /// is passed now as a reference.
-    pub fn extern_type<T: Config>(&self, store: &Store<T>) -> ExternType {
+    // TODO make this fn unsafe
+    pub(crate) fn extern_type<'store, T: Config>(
+        &self,
+        store: &'store Store<T>,
+    ) -> ExternTypeRef<'store> {
         match self {
-            // TODO: fix ugly clone in function types
             ExternVal::Func(func_addr) => {
                 // SAFETY: The caller ensures that self including the function
                 // address in self is valid in the given store.
                 let function = unsafe { store.inner.functions.get(*func_addr) };
-                ExternType::Func(function.ty().clone())
+                ExternTypeRef::Func(function.ty())
             }
             ExternVal::Table(table_addr) => {
                 // SAFETY: The caller ensures that self including the table
                 // address in self is valid in the given store.
                 let table = unsafe { store.inner.tables.get(*table_addr) };
-                ExternType::Table(table.ty)
+                ExternTypeRef::Table(table.ty)
             }
             ExternVal::Mem(mem_addr) => {
                 // SAFETY: The caller ensures that self including the memory
                 // address in self is valid in the given store.
                 let memory = unsafe { store.inner.memories.get(*mem_addr) };
-                ExternType::Mem(memory.ty)
+                ExternTypeRef::Mem(memory.ty)
             }
             ExternVal::Global(global_addr) => {
                 // SAFETY: The caller ensures that self including the global
                 // address in self is valid in the given store.
                 let global = unsafe { store.inner.globals.get(*global_addr) };
-                ExternType::Global(global.ty)
+                ExternTypeRef::Global(global.ty)
             }
         }
     }
