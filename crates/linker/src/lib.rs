@@ -107,7 +107,7 @@ impl Linker {
             // SAFETY: The module and thus also its exported extern values come
             // from the same store used now. Therefore, the extern values must
             // be valid in this store.
-            unsafe { self.define(module_name.clone(), export.0, export.1)? };
+            unsafe { self.define(module_name.clone(), export.0.to_owned(), export.1)? };
         }
 
         Ok(())
