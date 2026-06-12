@@ -1,4 +1,4 @@
-use alloc::{string::String, vec::Vec};
+use alloc::vec::Vec;
 use dlr_wasm_interpreter::{
     Config, FuncAddr, FuncType, GlobalAddr, GlobalType, HostResumable, Hostcode, MemAddr, MemType,
     Module, ModuleAddr, RuntimeError, TableAddr, TableType, WasmResumable,
@@ -535,7 +535,7 @@ impl<'b, T: Config> Store<'b, T> {
     pub fn instance_exports(
         &self,
         module_addr: Stored<ModuleAddr>,
-    ) -> Vec<(String, StoredExternVal)> {
+    ) -> impl ExactSizeIterator<Item = (&'b str, StoredExternVal)> + '_ {
         // 1. try unwrap
         let module_addr = module_addr.try_unwrap_into_bare(self.id);
         // 2. call
@@ -544,13 +544,10 @@ impl<'b, T: Config> Store<'b, T> {
         let exports = unsafe { self.inner.instance_exports(module_addr) };
         // 3. rewrap
         // 4. return
-        exports
-            .into_iter()
-            .map(|(name, externval)| {
-                // SAFETY: The `ExternVal`s just came from the current store.
-                let stored_externval = unsafe { StoredExternVal::from_bare(externval, self.id) };
-                (name, stored_externval)
-            })
-            .collect()
+        exports.map(|(name, externval)| {
+            // SAFETY: The `ExternVal`s just came from the current store.
+            let stored_externval = unsafe { StoredExternVal::from_bare(externval, self.id) };
+            (name, stored_externval)
+        })
     }
 }

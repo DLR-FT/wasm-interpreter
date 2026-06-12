@@ -1,4 +1,4 @@
-use alloc::{collections::btree_map::BTreeMap, string::String};
+use alloc::boxed::Box;
 
 use crate::{
     core::{
@@ -7,7 +7,8 @@ use crate::{
             DataIdx, ElemIdx, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx,
         },
     },
-    DataAddr, ElemAddr, ExternVal, FuncAddr, FuncType, GlobalAddr, MemAddr, TableAddr,
+    execution::runtime_structure::export_instances::ExportInst,
+    DataAddr, ElemAddr, FuncAddr, FuncType, GlobalAddr, MemAddr, TableAddr,
 };
 
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>/
@@ -25,11 +26,7 @@ pub struct ModuleInst<'b> {
     pub global_addrs: IdxVec<GlobalIdx, GlobalAddr>,
     pub elem_addrs: IdxVec<ElemIdx, ElemAddr>,
     pub data_addrs: IdxVec<DataIdx, DataAddr>,
-    ///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
-    /// matches the list of ExportInst structs in the spec, however the spec never uses the name attribute
-    /// except during linking, which is up to the embedder to implement.
-    /// therefore this is a map data structure instead.
-    pub exports: BTreeMap<String, ExternVal>,
+    pub exports: Box<[ExportInst<'b>]>,
 
     // TODO the bytecode is not in the spec, but required for re-parsing
     pub wasm_bytecode: &'b [u8],
