@@ -48,18 +48,14 @@ impl BlockType {
     /// used to validate `self` through [`BlockType::decode_and_validate`].
     // TODO maybe make this function return a `Cow<'a, FuncType>`. This could
     // prevent one allocation per call.
-    pub unsafe fn as_func_type(
-        &self,
-        func_types: &IdxVec<TypeIdx, FuncType>,
-    ) -> Result<FuncType, ValidationError> {
+    pub unsafe fn as_func_type(&self, func_types: &IdxVec<TypeIdx, FuncType>) -> FuncType {
         match self {
-            BlockType::Empty => Ok(FuncType::new_empty()),
-            BlockType::Returns(val_type) => Ok(FuncType::new_returning(*val_type)),
+            BlockType::Empty => FuncType::new_empty(),
+            BlockType::Returns(val_type) => FuncType::new_returning(*val_type),
             BlockType::Type(type_idx) => {
                 // SAFETY: The caller ensures that this `IdxVec` is the same one
                 // used to validate the `TypeIdx` in `self`.
-                let func_type = unsafe { func_types.get(*type_idx) };
-                Ok(func_type.clone())
+                unsafe { func_types.get(*type_idx) }.clone()
             }
         }
     }
