@@ -136,7 +136,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     let block_ty = BlockType::decode_and_validate(wasm, fn_types)?;
                     // SAFETY: The block type was just validated using the same
                     // `IdxVec<TypeIdx, FuncType>`.
-                    unsafe { block_ty.as_func_type(fn_types) }?
+                    unsafe { block_ty.as_func_type(fn_types) }
                 };
                 let label_info = LabelInfo::Block {
                     stps_to_backpatch: Vec::new(),
@@ -151,7 +151,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     let block_ty = BlockType::decode_and_validate(wasm, fn_types)?;
                     // SAFETY: The block type was just validated using the same
                     // `IdxVec<TypeIdx, FuncType>`.
-                    unsafe { block_ty.as_func_type(fn_types) }?
+                    unsafe { block_ty.as_func_type(fn_types) }
                 };
                 let label_info = LabelInfo::Loop {
                     ip: wasm.pc,
@@ -167,7 +167,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     let block_ty = BlockType::decode_and_validate(wasm, fn_types)?;
                     // SAFETY: The block type was just validated using the same
                     // `IdxVec<TypeIdx, FuncType>`.
-                    unsafe { block_ty.as_func_type(fn_types) }?
+                    unsafe { block_ty.as_func_type(fn_types) }
                 };
 
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
