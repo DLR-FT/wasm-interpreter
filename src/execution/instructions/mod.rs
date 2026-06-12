@@ -141,10 +141,10 @@ pub(super) unsafe fn run<T: Config>(
 
         let first_instr_byte = wasm.decode_u8().unwrap_validated();
 
-        #[cfg(debug_assertions)]
         trace!(
-            "Executing instruction {}",
-            crate::instructions::instruction_byte_to_str(first_instr_byte)
+            "Executing instruction {} at pc={}",
+            crate::core::structure::instructions::instruction_byte_to_str(first_instr_byte),
+            wasm.pc
         );
 
         let instruction_fn = T::DISPATCH_TABLE
@@ -533,6 +533,12 @@ define_instruction_fn! {fc_extensions, fuel_check = omit, |args: Args| {
     // should we call instruction hook here as well? multibyte instruction
     let second_instr = args.wasm.decode_var_u32().unwrap_validated();
 
+    trace!(
+        "Executing FC instruction {} at pc={}",
+        crate::core::structure::instructions::fc_extension_instruction_to_str(second_instr),
+        args.wasm.pc
+    );
+
     let instruction_fn = T::FC_DISPATCH_TABLE
         .get(second_instr.into_usize())
         .expect("the instruction to be valid because the code is validated");
@@ -557,6 +563,12 @@ define_instruction_fn! {fc_extensions, fuel_check = omit, |args: Args| {
 define_instruction_fn! {fd_extensions, fuel_check = omit, |args: Args| {
     // Should we call instruction hook here as well? Multibyte instruction
     let second_instr = args.wasm.decode_var_u32().unwrap_validated();
+
+    trace!(
+        "Executing FD instruction {} at pc={}",
+        crate::core::structure::instructions::fd_extension_instruction_to_str(second_instr),
+        args.wasm.pc
+    );
 
     let instruction_fn = T::FD_DISPATCH_TABLE
         .get(second_instr.into_usize())

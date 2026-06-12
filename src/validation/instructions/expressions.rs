@@ -120,8 +120,10 @@ pub unsafe fn decode_and_validate_expr(
             return Err(ValidationError::ExprMissingEnd);
         };
 
-        #[cfg(feature = "log")]
-        crate::core::utils::print_beautiful_instruction_name_1_byte(first_instr_byte, wasm.pc);
+        trace!(
+            "Validating instruction {first_instr_byte:#x} at pc={}",
+            wasm.pc
+        );
 
         use crate::core::structure::instructions::*;
         match first_instr_byte {
@@ -1010,12 +1012,9 @@ pub unsafe fn decode_and_validate_expr(
                     return Err(ValidationError::ExprMissingEnd);
                 };
 
-                #[cfg(feature = "log")]
-                crate::core::utils::print_beautiful_fc_extension(second_instr, wasm.pc);
-
-                #[cfg(feature = "log")]
                 trace!(
-                    "Read instruction byte {second_instr} at wasm_binary[{}]",
+                    "Validating FC instruction {} at pc={}",
+                    fc_extension_instruction_to_str(second_instr),
                     wasm.pc
                 );
 
@@ -1240,8 +1239,11 @@ pub unsafe fn decode_and_validate_expr(
                     return Err(ValidationError::ExprMissingEnd);
                 };
 
-                #[cfg(feature = "log")]
-                crate::core::utils::print_beautiful_fd_extension(second_instr, wasm.pc);
+                trace!(
+                    "Validating FD instruction {} at pc={}",
+                    fd_extension_instruction_to_str(second_instr),
+                    wasm.pc
+                );
 
                 use crate::core::structure::instructions::fd_extensions::*;
 

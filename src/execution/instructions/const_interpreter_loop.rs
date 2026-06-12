@@ -35,8 +35,11 @@ pub(crate) unsafe fn run_const<'wasm, T: Config>(
     loop {
         let first_instr_byte = wasm.decode_u8().unwrap_validated();
 
-        #[cfg(feature = "log")]
-        crate::core::utils::print_beautiful_instruction_name_1_byte(first_instr_byte, wasm.pc);
+        trace!(
+            "Executing const instruction {} at pc={}",
+            instruction_byte_to_str(first_instr_byte),
+            wasm.pc
+        );
 
         let instruction_fn = match first_instr_byte {
             END => end::<T>,
@@ -253,8 +256,14 @@ define_instruction!(
     instructions::FD_EXTENSIONS,
     |Args { wasm, stack, .. }| {
         use crate::core::structure::instructions::fd_extensions::*;
+        let second_instruction_part = wasm.decode_var_u32().unwrap_validated();
 
-        match wasm.decode_var_u32().unwrap_validated() {
+        trace!(
+            "Executing const FD instruction {second_instruction_part} at pc={}",
+            wasm.pc
+        );
+
+        match second_instruction_part {
             V128_CONST => {
                 let mut data = [0; 16];
                 for byte_ref in &mut data {
