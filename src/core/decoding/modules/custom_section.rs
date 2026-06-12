@@ -1,6 +1,6 @@
 use crate::{
     core::decoding::decoder::{span::Span, WasmDecoder},
-    DecodingError, ValidationError,
+    DecodingError,
 };
 
 #[derive(Debug, Clone)]
@@ -10,11 +10,10 @@ pub struct CustomSection<'wasm> {
 }
 
 impl<'wasm> CustomSection<'wasm> {
-    // TODO this should return a Result<_, DecodingError>
     pub(crate) fn decode(
         wasm: &mut WasmDecoder<'wasm>,
         section_contents: Span,
-    ) -> Result<CustomSection<'wasm>, ValidationError> {
+    ) -> Result<CustomSection<'wasm>, DecodingError> {
         // customsec ::= section_0(custom)
         // custom ::= name byte*
         // name ::= b*:vec(byte) => name (if utf8(name) = b*)
