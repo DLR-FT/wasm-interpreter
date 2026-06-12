@@ -403,7 +403,7 @@ impl<'wasm> Module<'wasm> {
         self.imports.iter().map(|import| {
             // SAFETY: This is sound because the argument is `self` and the
             // import desc also comes from `self`.
-            let extern_type = unsafe { import.desc.extern_type(self) };
+            let extern_type = unsafe { import.desc.extern_type_owned(self) };
             (import.module_name, import.name, extern_type)
         })
     }
