@@ -74,13 +74,16 @@ pub unsafe fn decode_and_validate_code_section<T2: ValidationConfig>(
         let func_block = wasm.make_span(func_size.into_usize())?;
         let previous_pc = wasm.pc;
 
-        // Note: The specification does not consider the case in which the number of parameters +
-        // the number of locals exceeds 2^32-1.
         let locals: Vec<ValType> = {
             let params = func_ty.params.valtypes.iter().cloned();
             let declared_locals = decode_locals(wasm)?;
             params.chain(declared_locals).collect()
         };
+        // Note: The specification does not consider the case in which the number of parameters +
+        // the number of locals exceeds 2^32-1. Because this is very likely an error, we can check for it.
+        if locals.len() > u32::MAX.into_usize() {
+            return Err(ValidationError::TooManyParamsAndLocals);
+        }
 
         let mut stack = ValidationStack::new_for_func(func_ty);
         let stp = sidetable.len();

@@ -119,6 +119,10 @@ pub enum ValidationError {
     LimitsNotWithinRange(u32),
     /// A mutable global was referenced in some global.get instruction in a constant expression.
     MutGlobalInConstGlobalGet,
+    /// A function specifies a number of parameters and locals which exceed 2^32-1 when added
+    /// together. This is not defined as a validation error by the specification, but very likely to
+    /// be incorrect, as this makes some locals un-addressable.
+    TooManyParamsAndLocals,
 }
 
 impl core::error::Error for ValidationError {}
@@ -176,6 +180,7 @@ impl Display for ValidationError {
             ValidationError::LimitsMinLargerThanMax { min, max } => write!(f, "Limits are invalid because min={min} is larger than max={max}"),
             ValidationError::LimitsNotWithinRange(range) => write!(f, "The min or max field of a limits type is not within the expected range of {range}"),
             ValidationError::MutGlobalInConstGlobalGet => f.write_str("A mutable global was referenced in some global.get instruction in a constant expression"),
+            ValidationError::TooManyParamsAndLocals => f.write_str("A function specifies a number of parameters and locals which exceed 2^32-1 when added together. This is not defined as a validation error by the specification, but very likely to be incorrect, as this makes some locals un-addressable."),
         }
     }
 }
