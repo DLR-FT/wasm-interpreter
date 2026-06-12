@@ -1,4 +1,4 @@
-use alloc::{borrow::ToOwned, collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
+use alloc::{boxed::Box, vec, vec::Vec};
 use core::convert::Infallible;
 
 use crate::{
@@ -27,6 +27,7 @@ use crate::{
         runtime_structure::{
             data_instances::DataInst,
             element_instances::ElemInst,
+            export_instances::ExportInst,
             external_values::ExternFilterable,
             function_instances::{FuncInst, HostFuncInst, WasmFuncInst},
             global_instances::GlobalInst,
@@ -176,7 +177,7 @@ impl<'b, T: Config> Store<'b, T> {
                 ),
             elem_addrs: IdxVec::default(),
             data_addrs: IdxVec::default(),
-            exports: BTreeMap::new(),
+            exports: Box::default(),
             wasm_bytecode: module.wasm,
             sidetable: module.sidetable.clone(),
         };
@@ -363,13 +364,13 @@ impl<'b, T: Config> Store<'b, T> {
             .into_inner();
 
         // allocation: step 18,19
-        let export_insts: BTreeMap<String, ExternVal> = module
+        // SAFETY: The module with this module address was just inserted
+        // into this `AddrVec`
+        let module_inst = unsafe { self.modules.get(module_addr) };
+        let export_insts = module
             .exports
             .iter()
             .map(|export| {
-                // SAFETY: The module with this module address was just inserted
-                // into this `AddrVec`
-                let module_inst = unsafe { self.modules.get(module_addr) };
                 let value = match export.desc {
                     ExportDesc::Func(func_idx) => {
                         // SAFETY: Both the function index and the functions
@@ -406,7 +407,11 @@ impl<'b, T: Config> Store<'b, T> {
                         ExternVal::Global(*global_addr)
                     }
                 };
-                (export.name.to_owned(), value)
+
+                ExportInst {
+                    name: export.name,
+                    value,
+                }
             })
             .collect();
 
@@ -685,10 +690,12 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. If there exists an `exportinst_i` in `moduleinst.exports` such that name `exportinst_i.name` equals `name`, then:
         //   a. Return the external value `exportinst_i.value`.
         // 3. Else return `error`.
+        // TODO Can we optimize this linear search without using fancy data structures or sorting
+        // during instantiation?
         module_inst
             .exports
-            .get(name)
-            .copied()
+            .iter()
+            .find_map(|export_inst| (export_inst.name == name).then_some(export_inst.value))
             .ok_or(RuntimeError::UnknownExport)
     }
 
@@ -1508,7 +1515,10 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`ModuleAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn instance_exports(&self, module_addr: ModuleAddr) -> Vec<(String, ExternVal)> {
+    pub unsafe fn instance_exports(
+        &self,
+        module_addr: ModuleAddr,
+    ) -> impl ExactSizeIterator<Item = (&'b str, ExternVal)> + '_ {
         // SAFETY: The caller ensures that the given module address is valid in
         // the current store.
         let module = unsafe { self.modules.get(module_addr) };
@@ -1516,8 +1526,7 @@ impl<'b, T: Config> Store<'b, T> {
         module
             .exports
             .iter()
-            .map(|(name, externval)| (name.clone(), *externval))
-            .collect()
+            .map(|export_inst| (export_inst.name, export_inst.value))
     }
 }
 

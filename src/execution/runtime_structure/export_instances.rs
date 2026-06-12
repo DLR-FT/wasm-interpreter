@@ -1,2 +1,7 @@
-// TODO add ExportInst type. Currently we store exports as a BTreeMap<String, ExternVal> in the
-// ModuleInst, but this is not how the spec does it
+use crate::ExternVal;
+
+#[derive(Copy, Clone, Debug)]
+pub struct ExportInst<'wasm> {
+    pub name: &'wasm str,
+    pub value: ExternVal,
+}
