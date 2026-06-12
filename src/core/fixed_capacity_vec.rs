@@ -242,6 +242,22 @@ impl<T> FixedCapacityVec<T> {
         // at this index is guaranteed to be initialized.
         unsafe { element.assume_init_mut() }
     }
+
+    /// Drops all elements in this vector and sets its length to zero. The capacity of this vector
+    /// remains unaltered.
+    pub fn clear(&mut self) {
+        // SAFETY: self.len is always less or equal to the capacity, i.e. the length of
+        // self.elements. Therefore, this must always return a valid slice.
+        let elements_to_drop = unsafe { self.elements.get_unchecked_mut(0..self.len) };
+        for element in elements_to_drop {
+            // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
+            // number of initialized values and elements_to_drop is exactly the slice starting at
+            // index 0 and ending at index `self.len` (exclusively).
+            unsafe { element.assume_init_drop() };
+        }
+
+        self.len = 0;
+    }
 }
 
 impl<T: Clone> FixedCapacityVec<T> {
