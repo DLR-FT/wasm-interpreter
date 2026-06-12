@@ -4,7 +4,10 @@ use alloc::vec::Vec;
 use core::num::NonZeroU64;
 
 use crate::{
-    execution::runtime_structure::{store::Hostcode, value_stack::Stack},
+    execution::{
+        reusable_stack::ReusableStack,
+        runtime_structure::{store::Hostcode, value_stack::Stack},
+    },
     FuncAddr, Value,
 };
 
@@ -35,6 +38,10 @@ impl WasmResumable {
     pub fn fuel_mut(&mut self) -> &mut Option<u64> {
         &mut self.maybe_fuel
     }
+
+    pub fn into_reusable_stack(self) -> ReusableStack {
+        ReusableStack::new(self.stack)
+    }
 }
 
 /// A [`HostCall`] object contains information required for executing a specific
@@ -64,6 +71,12 @@ pub struct HostResumable {
     pub(crate) maybe_fuel: Option<Option<u64>>,
 }
 
+impl HostResumable {
+    pub fn try_into_reusable_stack(self) -> Option<ReusableStack> {
+        self.inner_resumable.map(WasmResumable::into_reusable_stack)
+    }
+}
+
 #[derive(Debug)]
 pub enum Resumable {
     Wasm(WasmResumable),
@@ -91,6 +104,13 @@ impl Resumable {
                 host_call,
                 host_resumable,
             } => Some((host_call, host_resumable)),
+        }
+    }
+
+    pub fn try_into_reusable_stack(self) -> Option<ReusableStack> {
+        match self {
+            Resumable::Wasm(wasm_resumable) => Some(wasm_resumable.into_reusable_stack()),
+            Resumable::Host { host_resumable, .. } => host_resumable.try_into_reusable_stack(),
         }
     }
 }

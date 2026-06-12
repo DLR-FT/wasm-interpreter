@@ -24,6 +24,7 @@ use crate::{
             self, const_interpreter_loop::run_const_span, data_drop, elem_drop, memory_init,
             table_init, InterpreterLoopOutcome,
         },
+        reusable_stack::{take_and_reuse_or_init_stack, ReusableStack},
         runtime_structure::{
             data_instances::DataInst,
             element_instances::ElemInst,
@@ -34,7 +35,6 @@ use crate::{
             memory_instances::{linear_memory::LinearMemory, MemInst},
             module_instances::ModuleInst,
             table_instances::TableInst,
-            value_stack::Stack,
         },
     },
     AddrVec, Config, DataAddr, ElemAddr, ExternVal, FuncAddr, FuncType, GlobalAddr, GlobalType,
@@ -129,6 +129,9 @@ impl<'b, T: Config> Store<'b, T> {
         extern_vals: Vec<ExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<InstantiationOutcome, RuntimeError> {
+        // TODO expose stack reuse system to user
+        let maybe_reusable_stack: &mut Option<ReusableStack> = &mut None;
+
         // instantiation: step 1
         // The module is guaranteed to be valid, because only validation can
         // produce `Module`s.
@@ -215,7 +218,6 @@ impl<'b, T: Config> Store<'b, T> {
 
         // instantiation: this roughly matches step 6,7,8
         // validation guarantees these will evaluate without errors.
-        let mut maybe_reusable_stack = None;
         let local_globals_init_vals: Vec<Value> = module
             .globals
             .iter_local_definitions()
@@ -231,7 +233,7 @@ impl<'b, T: Config> Store<'b, T> {
                         &global.init_expr,
                         module_addr,
                         self,
-                        &mut maybe_reusable_stack,
+                        maybe_reusable_stack,
                     )
                 };
                 const_expr_result.transpose().unwrap_validated()
@@ -275,7 +277,7 @@ impl<'b, T: Config> Store<'b, T> {
                                 expr,
                                 module_addr,
                                 self,
-                                &mut maybe_reusable_stack,
+                                maybe_reusable_stack,
                             )
                         };
                         const_expr_result
@@ -483,7 +485,7 @@ impl<'b, T: Config> Store<'b, T> {
                             einstr_i,
                             module_addr,
                             self,
-                            &mut maybe_reusable_stack,
+                            maybe_reusable_stack,
                         )?
                     };
                     let d: i32 = const_expr_result
@@ -597,7 +599,7 @@ impl<'b, T: Config> Store<'b, T> {
                             dinstr_i,
                             module_addr,
                             self,
-                            &mut maybe_reusable_stack,
+                            maybe_reusable_stack,
                         )?
                     };
                     let d: u32 = const_expr_result
@@ -1322,6 +1324,9 @@ impl<'b, T: Config> Store<'b, T> {
         params: Vec<Value>,
         maybe_fuel: Option<u64>,
     ) -> Result<Resumable, RuntimeError> {
+        // TODO expose stack reuse system to user
+        let maybe_reusable_stack: &mut Option<ReusableStack> = &mut None;
+
         // SAFETY: The caller ensures that this function address is valid in the
         // current store.
         let func_inst = unsafe { self.inner.functions.get(func_addr) };
@@ -1347,7 +1352,8 @@ impl<'b, T: Config> Store<'b, T> {
         let resumable = match func_inst {
             FuncInst::WasmFunc(wasm_func_inst) => {
                 // Prepare a new stack with the locals for the entry function
-                let stack = Stack::new::<T>(
+                let stack = take_and_reuse_or_init_stack::<T>(
+                    maybe_reusable_stack,
                     params,
                     &wasm_func_inst.function_type,
                     &wasm_func_inst.locals,
