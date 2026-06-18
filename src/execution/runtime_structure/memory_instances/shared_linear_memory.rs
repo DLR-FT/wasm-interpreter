@@ -521,7 +521,7 @@ impl SharedLinearMemory {
 
         let lock_guard = self.inner_data.read();
         // Note: The spec defines a `rd` action to have a specific ord, but we can just directly
-        // read from the &usize, as no-one as write access to it anyway.
+        // read from the &usize, as no-one has write access to it anyway.
         lock_guard.len()
     }
 
