@@ -758,7 +758,7 @@ impl SharedLinearMemory {
     }
 
     #[inline(always)]
-    unsafe fn rmw_data_action<const N: usize, T: LittleEndianBytes<N> + Copy>(
+    pub unsafe fn rmw_data_action<const N: usize, T: LittleEndianBytes<N> + Copy>(
         &self,
         properly_aligned_index: usize,
         f: impl FnOnce(T) -> T,

@@ -1,4 +1,4 @@
-use core::ops::ControlFlow;
+use core::{mem, ops::ControlFlow};
 
 use crate::{
     core::{
@@ -7,6 +7,7 @@ use crate::{
             modules::indices::{Idx, MemIdx},
             types::MemArg,
         },
+        utils::ToUsizeExt,
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
@@ -18,7 +19,7 @@ use crate::{
             store::StoreInner,
         },
     },
-    instructions, AddrVec, ModuleAddr, RuntimeError, Value, WasmResumable,
+    instructions, AddrVec, ModuleAddr, RuntimeError, TrapError, Value, WasmResumable,
 };
 
 define_instruction!(
@@ -313,18 +314,236 @@ pub unsafe fn i64_atomic_load32_u(
     Ok(ControlFlow::Continue(()))
 }
 
-pub const I32_ATOMIC_LOAD: u32 = 16;
-pub const I64_ATOMIC_LOAD: u32 = 17;
-pub const I32_ATOMIC_LOAD8_U: u32 = 18;
-pub const I32_ATOMIC_LOAD16_U: u32 = 19;
-pub const I64_ATOMIC_LOAD8_U: u32 = 20;
-pub const I64_ATOMIC_LOAD16_U: u32 = 21;
-pub const I64_ATOMIC_LOAD32_U: u32 = 22;
+define_instruction_fn! {
+    i32_atomic_store8,
+    fuel_check = flat_fe(instructions::fe_extensions::I32_ATOMIC_STORE8),
+    |Args { wasm, store_inner, modules, current_module, resumable, ..}| {
+        let memarg = MemArg::decode(wasm).unwrap_validated();
 
-pub const I32_ATOMIC_STORE: u32 = 23;
-pub const I64_ATOMIC_STORE: u32 = 24;
-pub const I32_ATOMIC_STORE8: u32 = 25;
-pub const I32_ATOMIC_STORE16: u32 = 26;
-pub const I64_ATOMIC_STORE8: u32 = 27;
-pub const I64_ATOMIC_STORE16: u32 = 28;
-pub const I64_ATOMIC_STORE32: u32 = 29;
+        let data_to_store: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+
+        let wrapped_data = data_to_store as u8;
+
+        // SAFETY: The current module address must come from the current
+        // store, because it is the only parameter to this function that
+        // can contain module addresses. All stores guarantee all
+        // addresses in them to be valid within themselves.
+        let module = unsafe { modules.get(*current_module) };
+
+        // SAFETY: Validation guarantees at least one memory to exist.
+        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
+        // SAFETY: This memory address was just read from the current
+        // store. Therefore, it is valid in the current store.
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
+
+        let idx = calculate_mem_address(&memarg, relative_address)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data, Ord::SeqCst)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, wrapped_data)?
+            }
+        }
+
+        Ok(ControlFlow::Continue(()))
+    }
+}
+
+define_instruction_fn! {
+    i32_atomic_store16,
+    fuel_check = flat_fe(instructions::fe_extensions::I32_ATOMIC_STORE16),
+    |Args { wasm, store_inner, modules, current_module, resumable, ..}| {
+        let memarg = MemArg::decode(wasm).unwrap_validated();
+
+        let data_to_store: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+
+        let wrapped_data = data_to_store as u16;
+
+        // SAFETY: The current module address must come from the current
+        // store, because it is the only parameter to this function that
+        // can contain module addresses. All stores guarantee all
+        // addresses in them to be valid within themselves.
+        let module = unsafe { modules.get(*current_module) };
+
+        // SAFETY: Validation guarantees at least one memory to exist.
+        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
+        // SAFETY: This memory address was just read from the current
+        // store. Therefore, it is valid in the current store.
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
+
+        let idx = calculate_mem_address(&memarg, relative_address)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data, Ord::SeqCst)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, wrapped_data)?
+            }
+        }
+
+        Ok(ControlFlow::Continue(()))
+    }
+}
+
+define_instruction_fn! {
+    i64_atomic_store8,
+    fuel_check = flat_fe(instructions::fe_extensions::I64_ATOMIC_STORE8),
+    |Args { wasm, store_inner, modules, current_module, resumable, ..}| {
+        let memarg = MemArg::decode(wasm).unwrap_validated();
+
+        let data_to_store: u64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+
+        let wrapped_data = data_to_store as u8;
+
+        // SAFETY: The current module address must come from the current
+        // store, because it is the only parameter to this function that
+        // can contain module addresses. All stores guarantee all
+        // addresses in them to be valid within themselves.
+        let module = unsafe { modules.get(*current_module) };
+
+        // SAFETY: Validation guarantees at least one memory to exist.
+        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
+        // SAFETY: This memory address was just read from the current
+        // store. Therefore, it is valid in the current store.
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
+
+        let idx = calculate_mem_address(&memarg, relative_address)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data, Ord::SeqCst)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, wrapped_data)?
+            }
+        }
+
+        Ok(ControlFlow::Continue(()))
+    }
+}
+
+define_instruction_fn! {
+    i64_atomic_store16,
+    fuel_check = flat_fe(instructions::fe_extensions::I64_ATOMIC_STORE16),
+    |Args { wasm, store_inner, modules, current_module, resumable, ..}| {
+        let memarg = MemArg::decode(wasm).unwrap_validated();
+
+        let data_to_store: u64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+
+        let wrapped_data = data_to_store as u16;
+
+        // SAFETY: The current module address must come from the current
+        // store, because it is the only parameter to this function that
+        // can contain module addresses. All stores guarantee all
+        // addresses in them to be valid within themselves.
+        let module = unsafe { modules.get(*current_module) };
+
+        // SAFETY: Validation guarantees at least one memory to exist.
+        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
+        // SAFETY: This memory address was just read from the current
+        // store. Therefore, it is valid in the current store.
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
+
+        let idx = calculate_mem_address(&memarg, relative_address)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data, Ord::SeqCst)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, wrapped_data)?
+            }
+        }
+
+        Ok(ControlFlow::Continue(()))
+    }
+}
+
+define_instruction_fn! {
+    i64_atomic_store32,
+    fuel_check = flat_fe(instructions::fe_extensions::I64_ATOMIC_STORE32),
+    |Args { wasm, store_inner, modules, current_module, resumable, ..}| {
+        let memarg = MemArg::decode(wasm).unwrap_validated();
+
+        let data_to_store: u64 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+
+        let wrapped_data = data_to_store as u32;
+
+        // SAFETY: The current module address must come from the current
+        // store, because it is the only parameter to this function that
+        // can contain module addresses. All stores guarantee all
+        // addresses in them to be valid within themselves.
+        let module = unsafe { modules.get(*current_module) };
+
+        // SAFETY: Validation guarantees at least one memory to exist.
+        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
+        // SAFETY: This memory address was just read from the current
+        // store. Therefore, it is valid in the current store.
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
+
+        let idx = calculate_mem_address(&memarg, relative_address)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data, Ord::SeqCst)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, wrapped_data)?
+            }
+        }
+
+        Ok(ControlFlow::Continue(()))
+    }
+}
+
+define_instruction_fn! {
+    i32_atomic_rmw_add,
+    fuel_check = flat_fe(instructions::fe_extensions::I32_ATOMIC_RMW_ADD),
+    |Args { wasm, store_inner, modules, current_module, resumable, ..}| {
+        type T = u32;
+        const N: usize = mem::size_of::<T>() * 8;
+
+        let memarg = MemArg::decode(wasm).unwrap_validated();
+
+        // 3. Assert: Due to validation, two values of type t are on top of the stack.
+        // 4.
+        let c_3: T = resumable.stack.pop_value().try_into().unwrap_validated();
+        // 5.
+        let c_2: T = resumable.stack.pop_value().try_into().unwrap_validated();
+
+        // 6. Assert: Due to validation, a value of value type i32 is on top of the stack.
+        // 7.
+        let i: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+
+        // 8.
+        let ea: usize = calculate_mem_address(&memarg, i)?;
+
+        // 9.
+        if ea % (N/8) != 0 {
+            return Err(TrapError::UnalignedAtomicAccess.into());
+        }
+
+        // SAFETY: The current module address must come from the current store, because it is the
+        // only parameter to this function that can contain module addresses. All stores guarantee
+        // all addresses in them to be valid within themselves.
+        let module = unsafe { modules.get(*current_module) };
+
+        // 11.
+        // 12.
+        // SAFETY: Validation guarantees at least one memory to exist.
+        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
+
+        // 13.
+        // SAFETY: This memory address was just read from the current
+        // store. Therefore, it is valid in the current store.
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
+
+        match mem {
+            MemInst::Unshared(unshared_mem_inst) => {
+                // 14.
+                unshared_mem_inst.mem.store(idx, wrapped_data)?
+            }
+            MemInst::Shared(shared_mem_inst) => {
+                // 15.
+                shared_mem_inst.mem.rmw_data_action(idx, |x| )
+            }
+        }
+
+        todo!();
+
+        Ok(ControlFlow::Continue(()))
+    }
+}
