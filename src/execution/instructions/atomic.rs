@@ -1,11 +1,8 @@
-use core::{
-    convert, fmt,
-    ops::{BitAnd, BitOr, BitXor, ControlFlow},
-};
+use core::{fmt, ops::ControlFlow};
 
 use crate::{
     core::{
-        decoding::reader::WasmDecoder,
+        decoding::decoder::WasmDecoder,
         structure::{
             modules::indices::{Idx, MemIdx},
             types::MemArg,
@@ -16,13 +13,23 @@ use crate::{
         instructions::{calculate_mem_address, define_instruction, InterpreterLoopOutcome, State},
         numerics::representations::LittleEndianBytes,
         runtime_structure::{
-            memory_instances::{shared_linear_memory::Ord, MemInst},
+            memory_instances::{shared_linear_memory::Ordering, MemInst},
             module_instances::ModuleInst,
             store::StoreInner,
         },
     },
-    instructions, AddrVec, ModuleAddr, RuntimeError, TrapError, Value, WasmResumable,
+    AddrVec, ModuleAddr, RuntimeError, TrapError, Value, WasmResumable,
 };
+
+define_instruction!(
+    super::atomic_fence,
+    atomic_fence_mod,
+    fuel_check = flat_fe(ATOMIC_FENCE)
+);
+#[inline(always)]
+pub unsafe fn atomic_fence(_: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    unreachable!("fences not yet implemented")
+}
 
 define_instruction!(
     super::memory_atomic_notify,
@@ -33,7 +40,7 @@ define_instruction!(
 pub unsafe fn memory_atomic_notify(
     _: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    todo!()
+    unreachable!("wait and notify instructions not yet implemented")
 }
 
 define_instruction!(
@@ -45,7 +52,7 @@ define_instruction!(
 pub unsafe fn memory_atomic_wait32(
     _: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    todo!()
+    unreachable!("wait and notify instructions not yet implemented")
 }
 
 define_instruction!(
@@ -57,7 +64,7 @@ define_instruction!(
 pub unsafe fn memory_atomic_wait64(
     _: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    todo!()
+    unreachable!("wait and notify instructions not yet implemented")
 }
 
 #[inline(always)]

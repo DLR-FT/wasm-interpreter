@@ -627,8 +627,8 @@ impl<T: Config> HasFeDispatchTable for T {
         atomic::memory_atomic_notify_mod::wrapper::<T>,
         atomic::memory_atomic_wait32_mod::wrapper::<T>,
         atomic::memory_atomic_wait64_mod::wrapper::<T>,
-        // 3
-        unset_mod::wrapper::<T>,
+        atomic::atomic_fence_mod::wrapper::<T>,
+        // 4
         unset_mod::wrapper::<T>,
         unset_mod::wrapper::<T>,
         unset_mod::wrapper::<T>,

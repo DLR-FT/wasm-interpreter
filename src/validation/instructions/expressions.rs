@@ -1755,15 +1755,401 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                 }
             }
 
+            FE_EXTENSIONS => {
+                let Ok(second_instr) = wasm.read_var_u32() else {
+                    // TODO only do this if EOF
+                    return Err(ValidationError::ExprMissingEnd);
+                };
+
+                use crate::core::reader::types::opcode::fe_extensions::*;
+
+                match second_instr {
+                    MEMORY_ATOMIC_NOTIFY | MEMORY_ATOMIC_WAIT32 | MEMORY_ATOMIC_WAIT64 => {
+                        todo!("atomic wait and notify instructions")
+                    }
+                    ATOMIC_FENCE => todo!("atomic.fence"),
+                    I32_ATOMIC_LOAD => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 2 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 2,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+                    I64_ATOMIC_LOAD => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 3 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 3,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::NumType(NumType::I64));
+                    }
+                    I32_ATOMIC_LOAD8_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 0 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 0,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+                    I32_ATOMIC_LOAD16_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 1 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 1,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+                    I64_ATOMIC_LOAD8_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 0 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 0,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::NumType(NumType::I64));
+                    }
+                    I64_ATOMIC_LOAD16_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 1 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 1,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::NumType(NumType::I64));
+                    }
+                    I64_ATOMIC_LOAD32_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 2 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 2,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::NumType(NumType::I64));
+                    }
+                    I32_ATOMIC_STORE => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 2 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 2,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_STORE => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 3 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 3,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I32_ATOMIC_STORE8 => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 0 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 0,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I32_ATOMIC_STORE16 => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 1 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 1,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_STORE8 => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 0 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 0,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_STORE16 => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 1 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 1,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_STORE32 => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 2 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 2,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I32_ATOMIC_RMW_ADD | I32_ATOMIC_RMW_SUB | I32_ATOMIC_RMW_AND
+                    | I32_ATOMIC_RMW_OR | I32_ATOMIC_RMW_XOR | I32_ATOMIC_RMW_XCHG => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 2 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 2,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_RMW_ADD | I64_ATOMIC_RMW_SUB | I64_ATOMIC_RMW_AND
+                    | I64_ATOMIC_RMW_OR | I64_ATOMIC_RMW_XOR | I64_ATOMIC_RMW_XCHG => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 3 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 3,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I32_ATOMIC_RMW8_ADD_U
+                    | I32_ATOMIC_RMW8_SUB_U
+                    | I32_ATOMIC_RMW8_AND_U
+                    | I32_ATOMIC_RMW8_OR_U
+                    | I32_ATOMIC_RMW8_XOR_U
+                    | I32_ATOMIC_RMW8_XCHG_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 0 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 0,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I32_ATOMIC_RMW16_ADD_U
+                    | I32_ATOMIC_RMW16_SUB_U
+                    | I32_ATOMIC_RMW16_AND_U
+                    | I32_ATOMIC_RMW16_OR_U
+                    | I32_ATOMIC_RMW16_XOR_U
+                    | I32_ATOMIC_RMW16_XCHG_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 1 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 1,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_RMW8_ADD_U
+                    | I64_ATOMIC_RMW8_SUB_U
+                    | I64_ATOMIC_RMW8_AND_U
+                    | I64_ATOMIC_RMW8_OR_U
+                    | I64_ATOMIC_RMW8_XOR_U
+                    | I64_ATOMIC_RMW8_XCHG_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 0 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 0,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_RMW16_ADD_U
+                    | I64_ATOMIC_RMW16_SUB_U
+                    | I64_ATOMIC_RMW16_AND_U
+                    | I64_ATOMIC_RMW16_OR_U
+                    | I64_ATOMIC_RMW16_XOR_U
+                    | I64_ATOMIC_RMW16_XCHG_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 1 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 1,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_RMW32_ADD_U
+                    | I64_ATOMIC_RMW32_SUB_U
+                    | I64_ATOMIC_RMW32_AND_U
+                    | I64_ATOMIC_RMW32_OR_U
+                    | I64_ATOMIC_RMW32_XOR_U
+                    | I64_ATOMIC_RMW32_XCHG_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 2 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 2,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I32_ATOMIC_RMW_CMPXCHG => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 2 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 2,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_RMW_CMPXCHG => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 3 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 3,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I32_ATOMIC_RMW8_CMPXCHG_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 0 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 0,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I32_ATOMIC_RMW16_CMPXCHG_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 1 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 1,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_RMW8_CMPXCHG_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 0 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 0,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_RMW16_CMPXCHG_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 1 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 1,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    I64_ATOMIC_RMW32_CMPXCHG_U => {
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align != 2 {
+                            return Err(ValidationError::ErroneousAtomicAlignment {
+                                actual_alignment: memarg.align,
+                                expected_alignment: 2,
+                            });
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+
+                    4..=15 | 79.. => {
+                        return Err(ValidationError::InvalidMultiByteInstr(
+                            first_instr_byte,
+                            second_instr,
+                        ))
+                    }
+                }
+            }
+
             // Unimplemented or invalid instructions
-            0x06..=0x0A
-            | 0x12..=0x19
-            | 0x1C..=0x1F
-            | 0x25..=0x27
-            | 0xC0..=0xFA
-            | 0xFB
-            | 0xFE
-            | 0xFF => {
+            0x06..=0x0A | 0x12..=0x19 | 0x1C..=0x1F | 0x25..=0x27 | 0xC0..=0xFA | 0xFB | 0xFF => {
                 return Err(ValidationError::InvalidInstr(first_instr_byte));
             }
         }

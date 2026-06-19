@@ -44,6 +44,10 @@ pub enum ValidationError {
         alignment: u32,
         minimum_required_alignment: u32,
     },
+    ErroneousAtomicAlignment {
+        expected_alignment: u32,
+        actual_alignment: u32,
+    },
     /// The validation control stack is empty, even though an entry was expected.
     // TODO Reconsider if we want to expose this error. It should probably never happen and thus also never bubble up to the user.
     ValidationCtrlStackEmpty,
@@ -153,6 +157,7 @@ impl Display for ValidationError {
             ValidationError::ExpectedAnOperand => write!(f, "Expected a value type operand on the stack"),
             ValidationError::MutationOfConstGlobal => write!(f, "An attempt has been made to mutate a const global"),
             ValidationError::ErroneousAlignment {alignment , minimum_required_alignment} => write!(f, "The alignment 2^{alignment} is not less or equal to the required alignment 2^{minimum_required_alignment}"),
+            ValidationError::ErroneousAtomicAlignment { expected_alignment, actual_alignment} => write!(f, "The alignment 2^{actual_alignment} used in an atomic memory instruction is not equal to the required alignment 2^{expected_alignment}"),
             ValidationError::ValidationCtrlStackEmpty => write!(f, "Failed to retrieve last ctrl block because validation ctrl stack is empty"),
             ValidationError::ElseWithoutMatchingIf => write!(f, "Found `else` without a previous matching `if` instruction"),
             ValidationError::IfWithoutMatchingElse => write!(f, "Found `end` without a previous matching `else` to an `if` instruction"),

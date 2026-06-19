@@ -727,6 +727,14 @@ fn init_spectest(
         })
         .expect("memory is unshared and does not overflow");
 
+    let shared_memory = store.mem_alloc(MemType {
+        limits: Limits {
+            min: 1,
+            max: Some(2),
+            shared: true,
+        },
+    });
+
     let table = store.table_alloc(
         TableType {
             lim: Limits {
@@ -783,6 +791,11 @@ fn init_spectest(
         "spectest".to_owned(),
         "memory".to_owned(),
         StoredExternVal::Mem(memory),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "shared_memory".to_owned(),
+        StoredExternVal::Mem(shared_memory),
     )?;
     linker.define(
         "spectest".to_owned(),
