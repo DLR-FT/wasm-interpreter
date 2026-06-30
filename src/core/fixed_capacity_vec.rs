@@ -5,7 +5,7 @@ use alloc::boxed::Box;
 /// The operation would remove more elements than currently present or tries to access an element
 /// when none are present
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct EmptyContainerError;
+pub(crate) struct EmptyContainerError;
 
 /// The operation would add elements past the maximum capacity
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -19,7 +19,7 @@ impl From<FullContainerError> for crate::RuntimeError {
 
 // TODO consider adding a generic ContainerError enum?
 
-pub struct FixedCapacityVec<T> {
+pub(crate) struct FixedCapacityVec<T> {
     /// A contiguous, non-reallocating, heap allocated vector. Behaves like a subset of
     /// [`alloc::vec::Vec`], cleansed of any operation that reallocates. Backed by via boxed
     /// slice containing elements of type `MaybeUninit<T>`. The maximum size (pendant to
@@ -61,7 +61,7 @@ impl<T: Clone> Clone for FixedCapacityVec<T> {
 
 impl<T> FixedCapacityVec<T> {
     /// Construct new [`Self`], holding up to `capacity` elements of type `T`
-    pub fn with_capacity(capacity: usize) -> Self {
+    pub(crate) fn with_capacity(capacity: usize) -> Self {
         Self {
             elements: Box::new_uninit_slice(capacity),
             len: 0,
@@ -70,25 +70,25 @@ impl<T> FixedCapacityVec<T> {
 
     /// Check if the [`Self`] is empty
     #[inline(always)]
-    pub const fn is_empty(&self) -> bool {
+    pub(crate) const fn is_empty(&self) -> bool {
         self.len == 0
     }
 
     /// Check if the [`Self`] is full
     #[inline(always)]
-    pub const fn is_full(&self) -> bool {
+    pub(crate) const fn is_full(&self) -> bool {
         self.len == self.elements.len()
     }
 
     /// Get the [`Self`] is height.
     #[inline(always)]
-    pub const fn len(&self) -> usize {
+    pub(crate) const fn len(&self) -> usize {
         self.len
     }
 
     /// Get the maximum number of elements that fit into [`Self`].
     #[inline(always)]
-    pub const fn capacity(&self) -> usize {
+    pub(crate) const fn capacity(&self) -> usize {
         self.elements.len()
     }
 
@@ -99,7 +99,7 @@ impl<T> FixedCapacityVec<T> {
     /// - Causes UB if [`Self`] is already full.
     /// - Causes UB if [`Self`] has a capacity equal to `usize::MAX`
     #[inline(always)]
-    pub unsafe fn push_unchecked(&mut self, value: T) {
+    pub(crate) unsafe fn push_unchecked(&mut self, value: T) {
         debug_assert!(!self.is_full());
         debug_assert!(self.capacity() < usize::MAX);
 
@@ -111,7 +111,7 @@ impl<T> FixedCapacityVec<T> {
     }
 
     /// Push a value to the end of [`Self`]
-    pub fn push(&mut self, value: T) -> Result<(), FullContainerError> {
+    pub(crate) fn push(&mut self, value: T) -> Result<(), FullContainerError> {
         // check if insertion will overflow `self.len`
         let new_len = self.len.checked_add(1).ok_or(FullContainerError)?;
 
@@ -129,7 +129,7 @@ impl<T> FixedCapacityVec<T> {
     ///
     /// Causes UB if the stack is empty.
     #[inline(always)]
-    pub unsafe fn pop_unchecked(&mut self) -> T {
+    pub(crate) unsafe fn pop_unchecked(&mut self) -> T {
         debug_assert!(!self.is_empty());
 
         // SAFETY: This must never be called when `self` is empty. If the stack is indeed not
@@ -144,7 +144,7 @@ impl<T> FixedCapacityVec<T> {
     }
 
     /// Pop a value from [`Self`]'s top/tail
-    pub fn pop(&mut self) -> Result<T, EmptyContainerError> {
+    pub(crate) fn pop(&mut self) -> Result<T, EmptyContainerError> {
         self.len = self.len.checked_sub(1).ok_or(EmptyContainerError)?;
 
         // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the number
@@ -162,7 +162,7 @@ impl<T> FixedCapacityVec<T> {
     ///
     /// Causes UB if the stack is empty.
     #[inline(always)]
-    pub unsafe fn peek_unchecked(&self) -> &T {
+    pub(crate) unsafe fn peek_unchecked(&self) -> &T {
         debug_assert!(!self.is_empty());
 
         // SAFETY: This must never be called when the `self` is empty. If the stack is indeed not
@@ -176,7 +176,7 @@ impl<T> FixedCapacityVec<T> {
     }
 
     /// Peek at the topmost/last value from [`Self`]
-    pub fn peek(&self) -> Result<&T, EmptyContainerError> {
+    pub(crate) fn peek(&self) -> Result<&T, EmptyContainerError> {
         let idx = self.len.checked_sub(1).ok_or(EmptyContainerError)?;
 
         // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the number
@@ -190,7 +190,7 @@ impl<T> FixedCapacityVec<T> {
 
     /// Get a shared ref to the nth element in [`Self`]
     #[inline(always)]
-    pub fn get(&self, idx: usize) -> Option<&T> {
+    pub(crate) fn get(&self, idx: usize) -> Option<&T> {
         if idx < self.len {
             self.elements.get(idx).map(|e| {
                 // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
@@ -205,7 +205,7 @@ impl<T> FixedCapacityVec<T> {
 
     /// Get a mut ref to the nth element in [`Self`]
     #[inline(always)]
-    pub fn get_mut(&mut self, idx: usize) -> Option<&mut T> {
+    pub(crate) fn get_mut(&mut self, idx: usize) -> Option<&mut T> {
         if idx < self.len {
             self.elements.get_mut(idx).map(|e| {
                 // SAFETY: per the previous if statement, the index points into the range of
@@ -220,7 +220,7 @@ impl<T> FixedCapacityVec<T> {
 
 impl<T: Clone> FixedCapacityVec<T> {
     /// Push from a slice into [`Self`], appending after the last/topmost element
-    pub fn push_from_slice(&mut self, values: &[T]) -> Result<(), FullContainerError> {
+    pub(crate) fn push_from_slice(&mut self, values: &[T]) -> Result<(), FullContainerError> {
         // verify `values` fits into the new self
         if values.len() > (self.elements.len() - self.len) {
             return Err(FullContainerError);
@@ -237,7 +237,7 @@ impl<T: Clone> FixedCapacityVec<T> {
 
     /// Pop `n` elements from [`Self`] into a slice. The topmost/last element of [`Self`] will
     /// become the slice's last element.
-    pub fn pop_into_slice(
+    pub(crate) fn pop_into_slice(
         &mut self,
         n: usize,
     ) -> Result<impl core::ops::Deref<Target = [T]> + '_, EmptyContainerError> {
@@ -261,9 +261,9 @@ impl<T: Clone> FixedCapacityVec<T> {
     }
 }
 
-pub struct SliceDropGuard<'a, T>(&'a mut [MaybeUninit<T>]);
+pub(crate) struct SliceDropGuard<'a, T>(&'a mut [MaybeUninit<T>]);
 
-impl<'a, T> core::ops::Deref for SliceDropGuard<'a, T> {
+impl<T> core::ops::Deref for SliceDropGuard<'_, T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -273,7 +273,7 @@ impl<'a, T> core::ops::Deref for SliceDropGuard<'a, T> {
     }
 }
 
-impl<'a, T> Drop for SliceDropGuard<'a, T> {
+impl<T> Drop for SliceDropGuard<'_, T> {
     fn drop(&mut self) {
         for e in &mut *self.0 {
             // SAFETY: The rest of the module ensures that stack_height never gets bigger than
@@ -294,7 +294,7 @@ impl<T: Copy> FixedCapacityVec<T> {
     /// - after the operation, [`Self`] will contain `remove_count` fewer elements
     /// - `keep_count` topmost elements will be identical before and after the operation
     /// - all elements below the `remove_count + keep_count` topmost stack entry remain
-    pub fn remove_in_between(&mut self, remove_count: usize, keep_count: usize) {
+    pub(crate) fn remove_in_between(&mut self, remove_count: usize, keep_count: usize) {
         // TODO make unchecked version, remove overflowing arithmetic in safe version
         let len = self.len();
         self.elements
@@ -339,5 +339,5 @@ unsafe fn slice_assume_init<T>(slice: &[MaybeUninit<T>]) -> &[T] {
     // `slice` is initialized, and `MaybeUninit` is guaranteed to have the same layout as `T`.
     // The pointer obtained is valid since it refers to memory owned by `slice` which is a
     // reference and thus guaranteed to be valid for reads.
-    unsafe { &*(slice as *const _ as *const [T]) }
+    unsafe { &*(core::ptr::from_ref(slice) as *const [T]) }
 }

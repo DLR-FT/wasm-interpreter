@@ -46,7 +46,7 @@ mod vector;
 mod dispatch_tables;
 
 /// A non-error outcome of execution of the interpreter loop
-pub enum InterpreterLoopOutcome {
+pub(super) enum InterpreterLoopOutcome {
     /// Execution has returned normally, i.e. the end of the bottom-most
     /// function on the stack was reached.
     ExecutionReturned,
@@ -413,7 +413,7 @@ pub(crate) struct Args<'a, 'sidetable, 'wasm, 'other, 'resumable> {
 }
 
 macro_rules! define_instruction_fn {
-    ($name:ident, fuel_check = omit, $contents:expr) => {
+    ($name:ident, fuel_check = omit, $contents:expr_2021) => {
         /// # Safety
         ///
         /// The given [`WasmResumable`](crate::execution::resumable::WasmResumable) and all address
@@ -451,7 +451,7 @@ macro_rules! define_instruction_fn {
         }
     };
 
-    ($name:ident, fuel_check = flat($opcode:expr), $contents:expr) => {
+    ($name:ident, fuel_check = flat($opcode:expr_2021), $contents:expr_2021) => {
         define_instruction_fn! {
             $name,
             fuel_check = omit,
@@ -470,7 +470,7 @@ macro_rules! define_instruction_fn {
         }
     };
 
-    ($name: ident, fuel_check = flat_fc($opcode: expr), $contents:expr) => {
+    ($name: ident, fuel_check = flat_fc($opcode: expr_2021), $contents:expr_2021) => {
         define_instruction_fn! {
             $name,
             fuel_check = omit,
@@ -489,7 +489,7 @@ macro_rules! define_instruction_fn {
         }
     };
 
-    ($name: ident, fuel_check = flat_fd($opcode: expr), $contents:expr) => {
+    ($name: ident, fuel_check = flat_fd($opcode: expr_2021), $contents:expr_2021) => {
         define_instruction_fn! {
             $name,
             fuel_check = omit,

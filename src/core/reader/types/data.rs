@@ -5,19 +5,19 @@ use alloc::{format, vec::Vec};
 use crate::core::{indices::MemIdx, reader::span::Span};
 
 #[derive(Clone)]
-pub struct DataSegment {
+pub(crate) struct DataSegment {
     pub init: Vec<u8>,
     pub mode: DataMode,
 }
 
 #[derive(Clone)]
-pub enum DataMode {
+pub(crate) enum DataMode {
     Passive,
     Active(DataModeActive),
 }
 
 #[derive(Clone)]
-pub struct DataModeActive {
+pub(crate) struct DataModeActive {
     pub memory_idx: MemIdx,
     pub offset: Span,
 }
@@ -75,7 +75,7 @@ impl Debug for DataMode {
     }
 }
 
-pub struct _PassiveData {
+pub(crate) struct _PassiveData {
     pub init: Vec<u8>,
 }
 

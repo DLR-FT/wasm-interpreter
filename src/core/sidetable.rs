@@ -31,7 +31,7 @@ use alloc::vec::Vec;
 
 // A sidetable
 
-pub type Sidetable = Vec<SidetableEntry>;
+pub(crate) type Sidetable = Vec<SidetableEntry>;
 
 /// Entry to translate the current branches implicit target into an explicit offset to the instruction pointer, as well as the side table pointer
 ///
@@ -44,7 +44,7 @@ pub type Sidetable = Vec<SidetableEntry>;
 // TODO hide implementation
 // TODO Remove Clone trait from sidetables
 #[derive(Debug, Clone)]
-pub struct SidetableEntry {
+pub(crate) struct SidetableEntry {
     /// pc: the location the instruction pointer should jump to if the branch is taken
     pub pc: usize,
 

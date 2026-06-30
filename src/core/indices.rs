@@ -162,7 +162,7 @@ impl<I: Idx, T> IdxVec<I, T> {
 
 /// Index space for definitions that consist of imports and locals.
 #[derive(Debug)]
-pub struct ExtendedIdxVec<I: Idx, T> {
+pub(crate) struct ExtendedIdxVec<I: Idx, T> {
     inner: IdxVec<I, T>,
     num_imports: u32,
 }
@@ -191,7 +191,7 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
     ///
     /// If the number of total elements is larger than what can be addressed by
     /// a `u32`, i.e. `u32::MAX` elements, an error is returned instead.
-    pub fn new(imports: Vec<T>, locals: Vec<T>) -> Result<Self, IdxVecOverflowError> {
+    pub(crate) fn new(imports: Vec<T>, locals: Vec<T>) -> Result<Self, IdxVecOverflowError> {
         let num_imports = u32::try_from(imports.len()).map_err(|_| IdxVecOverflowError)?;
 
         let mut combined = imports;
@@ -205,7 +205,7 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
 
     /// Returns the length of the locally-defined definitions part of this index
     /// space
-    pub fn len_local_definitions(&self) -> u32 {
+    pub(crate) fn len_local_definitions(&self) -> u32 {
         self.inner
             .len()
             .checked_sub(self.num_imports)
@@ -217,7 +217,7 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
     ///
     /// Returns `None` if lengths do not match.
     // TODO maybe make this method take iterators instead of vectors
-    pub fn map<R>(
+    pub(crate) fn map<R>(
         &self,
         new_imported_definitions: Vec<R>,
         new_local_definitions: Vec<R>,
@@ -234,7 +234,7 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
         )
     }
 
-    pub fn iter_local_definitions(&self) -> core::slice::Iter<'_, T> {
+    pub(crate) fn iter_local_definitions(&self) -> core::slice::Iter<'_, T> {
         self.inner
             .inner
             .get(self.num_imports.into_usize()..)
@@ -242,11 +242,11 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
             .iter()
     }
 
-    pub fn inner(&self) -> &IdxVec<I, T> {
+    pub(crate) fn inner(&self) -> &IdxVec<I, T> {
         &self.inner
     }
 
-    pub fn into_inner(self) -> IdxVec<I, T> {
+    pub(crate) fn into_inner(self) -> IdxVec<I, T> {
         self.inner
     }
 }
@@ -542,7 +542,7 @@ impl GlobalIdx {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ElemIdx(u32);
+pub(crate) struct ElemIdx(u32);
 
 impl core::fmt::Display for ElemIdx {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -565,7 +565,10 @@ impl ElemIdx {
     ///
     /// On success a new [`ElemIdx`] is returned, otherwise a
     /// [`ValidationError`] is returned.
-    pub fn validate<T>(index: u32, c_elems: &IdxVec<ElemIdx, T>) -> Result<Self, ValidationError> {
+    pub(crate) fn validate<T>(
+        index: u32,
+        c_elems: &IdxVec<ElemIdx, T>,
+    ) -> Result<Self, ValidationError> {
         c_elems
             .validate_index(index)
             .ok_or(ValidationError::InvalidElemIdx(index))
@@ -573,7 +576,7 @@ impl ElemIdx {
 
     /// Reads an element index from Wasm code and validates that it is a valid
     /// index for a given elements vector.
-    pub fn read_and_validate<T>(
+    pub(crate) fn read_and_validate<T>(
         wasm: &mut WasmReader,
         c_elems: &IdxVec<ElemIdx, T>,
     ) -> Result<Self, ValidationError> {
@@ -588,14 +591,14 @@ impl ElemIdx {
     /// The caller must ensure that there is a valid element index in the
     /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
     /// through [`Self::read_and_validate`] or [`Self::validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+    pub(crate) unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
         let index = wasm.read_var_u32().unwrap();
         Self::new(index)
     }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct DataIdx(u32);
+pub(crate) struct DataIdx(u32);
 
 impl core::fmt::Display for DataIdx {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -618,7 +621,7 @@ impl DataIdx {
     ///
     /// On success a new [`DataIdx`] is returned, otherwise a
     /// [`ValidationError`] is returned.
-    pub fn validate(index: u32, data_count: u32) -> Result<Self, ValidationError> {
+    pub(crate) fn validate(index: u32, data_count: u32) -> Result<Self, ValidationError> {
         (index < data_count)
             .then_some(Self(index))
             .ok_or(ValidationError::InvalidDataIdx(index))
@@ -626,7 +629,7 @@ impl DataIdx {
 
     /// Reads a data index from Wasm code and validates that it is a valid
     /// by comparing it to the total number of data segments.
-    pub fn read_and_validate(
+    pub(crate) fn read_and_validate(
         wasm: &mut WasmReader,
         data_count: u32,
     ) -> Result<Self, ValidationError> {
@@ -641,14 +644,14 @@ impl DataIdx {
     /// The caller must ensure that there is a valid data index in the
     /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
     /// through [`Self::read_and_validate`] or [`Self::validate`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+    pub(crate) unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
         let index = wasm.read_var_u32().unwrap();
         Self::new(index)
     }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LocalIdx(u32);
+pub(crate) struct LocalIdx(u32);
 
 impl core::fmt::Display for LocalIdx {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -657,13 +660,13 @@ impl core::fmt::Display for LocalIdx {
 }
 
 impl LocalIdx {
-    pub fn into_inner(self) -> u32 {
+    pub(crate) fn into_inner(self) -> u32 {
         self.0
     }
 
     /// Reads a local index from Wasm code and validates that it is valid for a
     /// given slice of locals.
-    pub fn read_and_validate(
+    pub(crate) fn read_and_validate(
         wasm: &mut WasmReader,
         locals_of_current_function: &[ValType],
     ) -> Result<Self, ValidationError> {
@@ -682,14 +685,14 @@ impl LocalIdx {
     ///
     /// The caller must ensure that there is a valid local index in the
     /// [`WasmReader`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+    pub(crate) unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
         let index = wasm.read_var_u32().unwrap();
         Self(index)
     }
 }
 
 /// Reads a label index from Wasm code without validating it.
-pub fn read_label_idx(wasm: &mut WasmReader) -> Result<u32, DecodingError> {
+pub(crate) fn read_label_idx(wasm: &mut WasmReader) -> Result<u32, DecodingError> {
     wasm.read_var_u32()
 }
 
@@ -699,7 +702,7 @@ pub fn read_label_idx(wasm: &mut WasmReader) -> Result<u32, DecodingError> {
 ///
 /// The caller must ensure that there is a valid label index in the
 /// [`WasmReader`].
-pub unsafe fn read_label_idx_unchecked(wasm: &mut WasmReader) -> u32 {
+pub(crate) unsafe fn read_label_idx_unchecked(wasm: &mut WasmReader) -> u32 {
     // TODO use `unwrap_unchecked` instead
     wasm.read_var_u32().unwrap()
 }

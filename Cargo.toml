@@ -72,3 +72,61 @@ log.workspace = true
 [features]
 default = []
 log = ["log_wrapper/log"]
+
+# Lints as suggested by JA-1020
+[lints.rust]
+missing_docs = "warn"                      # Indicates missing documentation on public functions
+missing_abi = "warn"                       # Explicit ABI documents the assumptions of the code
+unsafe_op_in_unsafe_fn = "warn"            # Satisfies the recommendation in section 4.3.1
+elided_lifetimes_in_paths = "warn"         # Highlights confusing implicit use of types with lifetimes
+explicit_outlives_requirements = "warn"    # Less explicit lifetime bounds improve readability
+macro_use-extern_crate = "warn"            # obscures the source of identifiers
+meta_variable_misuse = "warn"              # More macro quality checks outweigh potential false positives
+non-local-definitions = "warn"             # Highlights outdated and confusing location of definitions
+redundant-lifetimes = "warn"               # Highlights a mistake or unfinished code
+single-use-lifetimes = "warn"              # Simplifies code, improving readability
+trivial-numeric-casts = "warn"             # Simplifies code, improving readability
+unit-bindings = "warn"                     # Simplifies code, improving readability
+unnameable-types = "warn"                  # Highlights inconsistency in public interface
+unreachable-pub = "warn"                   # Highlights inconsistency in public interface
+variant-size-differences = "warn"          # Highlights inefficient data structures
+rust-2018-compatibility = "warn"
+rust-2018-idioms = "warn"
+rust-2021-compatibility = "warn"
+rust-2024-compatibility = "warn"
+unused = { level = "warn", priority = -1 } # this group might overlap
+unused_results = "warn"
+unused-qualifications = "warn"
+unused-lifetimes = "warn"
+unused-import-braces = "warn"
+
+# Lints as suggested by JA-1020
+[lints.clippy]
+cast_lossless = "warn"                  # Indicates a more idiomatic way to replace the cast
+cast_possible_truncation = "warn"
+cast_possible_wrap = "warn"
+cast_ptr_alignment = "warn"
+cast_sign_loss = "warn"                 # Should be checked for and properly handled in safety related projects
+exit = "warn"                           # Calling exit directly is likely wrong in a safety related environment
+infinite_loop = "warn"                  # Indicates improper return type
+iter_over_hash_type = "warn"            # Indicates unpredictable order
+invalid_upcast_comparisons = "warn"     # Likely wrong code
+lossy_float_literal = "warn"            # Indicates rounding error
+missing_errors_doc = "warn"             # Indicates incomplete documentation
+missing_docs_in_private_items = "warn"  # Undocumented internal items are not an option
+panic_in_result_fn = "warn"             # Indicates unexpected behavior
+ptr_cast_constness = "warn"
+ref_as_ptr = "warn"
+transmute_ptr_to_ptr = "warn"           # Safer alternative available
+redundant_type_annotations = "warn"     # Simpler code, highlights special cases
+shadow_unrelated = "warn"               # Unidiomatic and high-risk use of shadowing
+try_err = "warn"                        # Indicates non-idiomatic way to avoid return
+wildcard_enum_match_arm = "warn"        # See section 4.4.21.3, clashes with non-exhaustive
+as_underscore = "warn"
+format_push_string = "warn"             # Avoids extra allocation
+as_ptr_cast_mut = "deny"                # Clear misuse with a better alternative
+let_underscore_must_use = "deny"        # Prevents a shortcut to ignore must-use results
+missing_panics_doc = "deny"             # Indicates missing panic documentation
+undocumented_unsafe_blocks = "deny"     # Indicates missing "unsafe" reasoning
+wildcard_imports = "deny"               # Indicates unconstrained symbol imports
+declare_interior_mutable_const = "deny" # Indicates common mistake

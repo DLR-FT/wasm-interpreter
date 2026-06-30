@@ -1,6 +1,6 @@
 use core::iter::Map;
 
-use alloc::collections::btree_set::{self, BTreeSet};
+use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
 
 use crate::core::error::DecodingError;
@@ -57,7 +57,7 @@ pub struct ValidationInfo<'bytecode> {
 }
 
 fn validate_no_duplicate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationError> {
-    let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
+    let mut found_export_names: BTreeSet<&str> = BTreeSet::new();
     for export in &validation_info.exports {
         if found_export_names.contains(export.name) {
             return Err(ValidationError::DuplicateExportName);

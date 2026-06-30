@@ -255,7 +255,7 @@ define_instruction_fn! {
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u8 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value(Value::I32(data as u32))?;
+        resumable.stack.push_value(Value::I32(u32::from(data)))?;
         trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
@@ -325,7 +325,7 @@ define_instruction_fn! {
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u16 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value(Value::I32(data as u32))?;
+        resumable.stack.push_value(Value::I32(u32::from(data)))?;
         trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
@@ -395,7 +395,7 @@ define_instruction_fn! {
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u8 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value(Value::I64(data as u64))?;
+        resumable.stack.push_value(Value::I64(u64::from(data)))?;
         trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
@@ -465,7 +465,7 @@ define_instruction_fn! {
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u16 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value(Value::I64(data as u64))?;
+        resumable.stack.push_value(Value::I64(u64::from(data)))?;
         trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
@@ -535,7 +535,7 @@ define_instruction_fn! {
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u32 = mem.mem.load(idx)?;
 
-        resumable.stack.push_value(Value::I64(data as u64))?;
+        resumable.stack.push_value(Value::I64(u64::from(data)))?;
         trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
         Ok(ControlFlow::Continue(()))
     }
@@ -577,7 +577,7 @@ define_instruction_fn! {
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
         let half_lanes: [i8; 8] = to_lanes::<1, 16, i8>(data)[..8].try_into().unwrap();
 
-        let extended_lanes = half_lanes.map(|lane| lane as i16);
+        let extended_lanes = half_lanes.map(|lane| i16::from(lane));
 
         resumable
             .stack
@@ -620,7 +620,7 @@ define_instruction_fn! {
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
         let half_lanes: [u8; 8] = to_lanes::<1, 16, u8>(data)[..8].try_into().unwrap();
 
-        let extended_lanes = half_lanes.map(|lane| lane as u16);
+        let extended_lanes = half_lanes.map(|lane| u16::from(lane));
 
         resumable
             .stack
@@ -663,7 +663,7 @@ define_instruction_fn! {
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
         let half_lanes: [i16; 4] = to_lanes::<2, 8, i16>(data)[..4].try_into().unwrap();
 
-        let extended_lanes = half_lanes.map(|lane| lane as i32);
+        let extended_lanes = half_lanes.map(|lane| i32::from(lane));
 
         resumable
             .stack
@@ -706,7 +706,7 @@ define_instruction_fn! {
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
         let half_lanes: [u16; 4] = to_lanes::<2, 8, u16>(data)[..4].try_into().unwrap();
 
-        let extended_lanes = half_lanes.map(|lane| lane as u32);
+        let extended_lanes = half_lanes.map(|lane| u32::from(lane));
 
         resumable
             .stack
@@ -749,7 +749,7 @@ define_instruction_fn! {
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
         let half_lanes: [i32; 2] = to_lanes::<4, 4, i32>(data)[..2].try_into().unwrap();
 
-        let extended_lanes = half_lanes.map(|lane| lane as i64);
+        let extended_lanes = half_lanes.map(|lane| i64::from(lane));
 
         resumable
             .stack
@@ -792,7 +792,7 @@ define_instruction_fn! {
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
         let half_lanes: [u32; 2] = to_lanes::<4, 4, u32>(data)[..2].try_into().unwrap();
 
-        let extended_lanes = half_lanes.map(|lane| lane as u64);
+        let extended_lanes = half_lanes.map(|lane| u64::from(lane));
 
         resumable
             .stack
@@ -974,7 +974,7 @@ define_instruction_fn! {
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let data = memory.mem.load::<4, u32>(idx)? as u128;
+        let data = u128::from(memory.mem.load::<4, u32>(idx)?);
         resumable
             .stack
             .push_value(Value::V128(data.to_le_bytes()))?;
@@ -1010,7 +1010,7 @@ define_instruction_fn! {
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let data = memory.mem.load::<8, u64>(idx)? as u128;
+        let data = u128::from(memory.mem.load::<8, u64>(idx)?);
         resumable
             .stack
             .push_value(Value::V128(data.to_le_bytes()))?;

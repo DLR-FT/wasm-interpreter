@@ -1,8 +1,8 @@
 use crate::core::error::DecodingError;
 use crate::core::reader::span::Span;
 
-pub mod section_header;
-pub mod types;
+pub(crate) mod section_header;
+pub(crate) mod types;
 
 /// A struct for managing and reading WASM bytecode
 ///
@@ -165,7 +165,7 @@ impl<'a> WasmReader<'a> {
     }
 }
 
-pub mod span {
+pub(crate) mod span {
     use core::ops::Index;
 
     use crate::core::reader::WasmReader;

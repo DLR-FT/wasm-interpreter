@@ -50,7 +50,7 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     /// # Safety
     ///
     /// The caller must ensure that the given address is valid in this vector.
-    pub unsafe fn get(&self, addr: A) -> &Inst {
+    pub(crate) unsafe fn get(&self, addr: A) -> &Inst {
         // TODO use unwrap_unchecked instead
         self.inner
             .get(addr.into_inner())
@@ -62,7 +62,7 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     /// # Safety
     ///
     /// The caller must ensure that the given address is valid in this vector.
-    pub unsafe fn get_mut(&mut self, addr: A) -> &mut Inst {
+    pub(crate) unsafe fn get_mut(&mut self, addr: A) -> &mut Inst {
         // TODO use unwrap_unchecked instead
         self.inner
             .get_mut(addr.into_inner())
