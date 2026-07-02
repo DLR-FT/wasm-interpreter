@@ -197,16 +197,16 @@ fn do_sidetable_control_transfer(
 
 #[inline(always)]
 fn calculate_mem_address(memarg: &MemArg, relative_address: u32) -> Result<usize, RuntimeError> {
-    memarg
+    // The spec states that this should be a 33 bit integer, e.g. it is not legal to wrap if the
+    // sum of offset and relative_address exceeds u32::MAX. To emulate this behavior, we use a
+    // checked addition.
+    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+    let effective_address = memarg
         .offset
-        // The spec states that this should be a 33 bit integer, e.g. it is not legal to wrap if the
-        // sum of offset and relative_address exceeds u32::MAX. To emulate this behavior, we use a
-        // checked addition.
-        // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
         .checked_add(relative_address)
-        .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?
-        .try_into()
-        .map_err(|_| TrapError::MemoryOrDataAccessOutOfBounds.into())
+        .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
+
+    Ok(effective_address.into_usize())
 }
 
 //helpers for avoiding code duplication during module instantiation
