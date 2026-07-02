@@ -12,14 +12,14 @@ use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::ValidationError;
 
-pub mod data;
-pub mod element;
-pub mod export;
-pub mod global;
-pub mod import;
-pub mod memarg;
+pub(crate) mod data;
+pub(crate) mod element;
+pub(crate) mod export;
+pub(crate) mod global;
+pub(crate) mod import;
+pub(crate) mod memarg;
 pub mod opcode;
-pub mod values;
+pub(crate) mod values;
 
 /// <https://webassembly.github.io/spec/core/binary/types.html#number-types>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -155,14 +155,14 @@ impl FuncType {
 
 /// <https://webassembly.github.io/spec/core/binary/instructions.html#binary-blocktype>
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BlockType {
+pub(crate) enum BlockType {
     Empty,
     Returns(ValType),
     Type(TypeIdx),
 }
 
 impl BlockType {
-    pub fn read_and_validate(
+    pub(crate) fn read_and_validate(
         wasm: &mut WasmReader,
         c_types: &IdxVec<TypeIdx, FuncType>,
     ) -> Result<Self, ValidationError> {
@@ -184,7 +184,7 @@ impl BlockType {
     ///
     /// The caller must ensure that there is a valid block type to be read in
     /// the given [`WasmReader`].
-    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+    pub(crate) unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
         if wasm.peek_u8().unwrap() as i8 == 0x40 {
             // Empty block type
             let _ = wasm.read_u8().unwrap();
@@ -212,7 +212,7 @@ impl BlockType {
     /// used to validate `self` through [`BlockType::read_and_validate`].
     // TODO maybe make this function return a `Cow<'a, FuncType>`. This could
     // prevent one allocation per call.
-    pub unsafe fn as_func_type(
+    pub(crate) unsafe fn as_func_type(
         &self,
         func_types: &IdxVec<TypeIdx, FuncType>,
     ) -> Result<FuncType, ValidationError> {
@@ -244,7 +244,7 @@ impl BlockType {
 }
 
 //https://webassembly.github.io/spec/core/valid/types.html#import-subtyping
-pub trait ImportSubTypeRelation {
+pub(crate) trait ImportSubTypeRelation {
     // corresponds to "matches" (<=) in the spec
     fn is_subtype_of(&self, other: &Self) -> bool;
 }

@@ -27,7 +27,7 @@ macro_rules! impl_LittleEndianBytes{
 /// Convert from and to the little endian byte representation of a value
 ///
 /// `N` denotes the number of bytes required for the little endian representation
-pub trait LittleEndianBytes<const N: usize> {
+pub(crate) trait LittleEndianBytes<const N: usize> {
     /// Convert from a byte array to Self
     fn from_le_bytes(bytes: [u8; N]) -> Self;
 

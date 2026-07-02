@@ -51,7 +51,7 @@ pub(crate) struct SectionHeader {
 }
 
 impl SectionHeader {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
+    pub(crate) fn read(wasm: &mut WasmReader) -> Result<Self, DecodingError> {
         let ty = SectionTy::read(wasm)?;
         let size: u32 = wasm.read_var_u32()?;
         let contents_span = wasm.make_span(size.into_usize())?;

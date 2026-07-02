@@ -37,7 +37,10 @@ pub(crate) unsafe fn run_const<'wasm, T: Config>(
     module: ModuleAddr,
     store: &Store<'wasm, T>,
 ) -> Result<(), RuntimeError> {
-    use crate::core::reader::types::opcode::*;
+    use crate::core::reader::types::opcode::{
+        END, F32_CONST, F64_CONST, FD_EXTENSIONS, GLOBAL_GET, I32_CONST, I64_CONST, REF_FUNC,
+        REF_NULL,
+    };
     loop {
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
@@ -126,7 +129,7 @@ struct Args<'reader, 'resumable, 'store, 'wasm, T: Config> {
 }
 
 macro_rules! define_instruction {
-    ($name:ident, $opcode:expr, $contents:expr) => {
+    ($name:ident, $opcode:expr_2021, $contents:expr_2021) => {
         /// # Safety
         ///
         /// 1. the constant expression in the reader must be valid
@@ -258,7 +261,7 @@ define_instruction!(
     fd_extensions,
     opcode::FD_EXTENSIONS,
     |Args { wasm, stack, .. }| {
-        use crate::core::reader::types::opcode::fd_extensions::*;
+        use crate::core::reader::types::opcode::fd_extensions::V128_CONST;
 
         match wasm.read_var_u32().unwrap_validated() {
             V128_CONST => {

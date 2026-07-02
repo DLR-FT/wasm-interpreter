@@ -14,7 +14,7 @@ use alloc::vec::Vec;
 use core::fmt::Debug;
 
 #[derive(Clone)]
-pub struct ElemType {
+pub(crate) struct ElemType {
     pub init: ElemItems,
     pub mode: ElemMode,
 }
@@ -32,11 +32,11 @@ impl Debug for ElemType {
 }
 
 impl ElemType {
-    pub fn ty(&self) -> RefType {
+    pub(crate) fn ty(&self) -> RefType {
         self.init.ty()
     }
 
-    pub fn to_ref_type(&self) -> RefType {
+    pub(crate) fn to_ref_type(&self) -> RefType {
         match self.init {
             ElemItems::Exprs(rref, _) => rref,
             ElemItems::RefFuncs(_) => RefType::FuncRef,
@@ -50,7 +50,7 @@ impl ElemType {
     /// This comes in handy later on when we are validating the actual code of
     /// the functions so that we can make sure we are not referencing invalid
     /// functions
-    pub fn read_and_validate(
+    pub(crate) fn read_and_validate(
         wasm: &mut WasmReader,
         c_funcs: &IdxVec<FuncIdx, TypeIdx>,
         validation_context_refs: &mut BTreeSet<FuncIdx>,
@@ -246,13 +246,13 @@ impl ElemType {
 }
 
 #[derive(Debug, Clone)]
-pub enum ElemItems {
+pub(crate) enum ElemItems {
     RefFuncs(Vec<FuncIdx>),
     Exprs(RefType, Vec<Span>),
 }
 
 impl ElemItems {
-    pub fn ty(&self) -> RefType {
+    pub(crate) fn ty(&self) -> RefType {
         match self {
             Self::RefFuncs(_) => RefType::FuncRef,
             // the mapping for shortened lists above is always true, as the binary format
@@ -262,7 +262,7 @@ impl ElemItems {
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         match self {
             Self::RefFuncs(ref_funcs) => ref_funcs.len(),
             Self::Exprs(_, exprs) => exprs.len(),
@@ -271,14 +271,14 @@ impl ElemItems {
 }
 
 #[derive(Debug, Clone)]
-pub enum ElemMode {
+pub(crate) enum ElemMode {
     Passive,
     Active(ActiveElem),
     Declarative,
 }
 
 #[derive(Debug, Clone)]
-pub struct ActiveElem {
+pub(crate) struct ActiveElem {
     pub table_idx: TableIdx,
     pub init_expr: Span,
 }

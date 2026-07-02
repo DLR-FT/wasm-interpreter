@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct ValidationStack {
+pub(crate) struct ValidationStack {
     stack: Vec<ValidationStackEntry>,
     // TODO hide implementation
     pub ctrl_stack: Vec<CtrlStackEntry>,
@@ -20,7 +20,7 @@ pub struct ValidationStack {
 
 impl ValidationStack {
     /// Initialize a new ValidationStack to validate a block of type [] -> []
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             stack: Vec::new(),
             ctrl_stack: vec![CtrlStackEntry {
@@ -54,11 +54,11 @@ impl ValidationStack {
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.stack.len()
     }
 
-    pub fn push_valtype(&mut self, valtype: ValType) {
+    pub(crate) fn push_valtype(&mut self, valtype: ValType) {
         self.stack.push(ValidationStackEntry::Val(valtype));
     }
 
@@ -119,7 +119,7 @@ impl ValidationStack {
     /// # Returns
     ///
     /// - Returns `Ok(())` if `Valtype::RefType(expected_ty)` unifies to the item returned by `pop_valtype` operation and `Err(_)` otherwise.
-    pub fn assert_pop_ref_type(
+    pub(crate) fn assert_pop_ref_type(
         &mut self,
         expected_ty: Option<RefType>,
     ) -> Result<(), ValidationError> {
@@ -144,7 +144,10 @@ impl ValidationStack {
     /// # Returns
     ///
     /// - Returns `Ok(())` if expected_ty unifies to the item returned by `pop_valtype` operation and `Err(_)` otherwise.
-    pub fn assert_pop_val_type(&mut self, expected_ty: ValType) -> Result<(), ValidationError> {
+    pub(crate) fn assert_pop_val_type(
+        &mut self,
+        expected_ty: ValType,
+    ) -> Result<(), ValidationError> {
         match self.pop_valtype()? {
             ValidationStackEntry::Val(ty) => (ty == expected_ty)
                 .then_some(())
@@ -267,7 +270,7 @@ impl ValidationStack {
     /// - `Ok(_)`, the tail of the stack unifies to the `expected_val_types`
     /// - `Err(_)` otherwise
     ///
-    pub fn assert_val_types(
+    pub(crate) fn assert_val_types(
         &mut self,
         expected_val_types: &[ValType],
         unify_to_expected_types: bool,
@@ -289,7 +292,7 @@ impl ValidationStack {
     /// - `Ok(_)`, the tail of the stack unifies to the label signature of the  `label_idx`th outer control block
     /// - `Err(_)` otherwise
     ///
-    pub fn assert_val_types_of_label_jump_types_on_top(
+    pub(crate) fn assert_val_types_of_label_jump_types_on_top(
         &mut self,
         label_idx: u32,
         unify_to_expected_types: bool,
@@ -322,7 +325,7 @@ impl ValidationStack {
     /// - `Ok(_)`, the tail of the stack unifies to the input signature of the  new control block
     /// - `Err(_)` otherwise
     ///
-    pub fn assert_push_ctrl(
+    pub(crate) fn assert_push_ctrl(
         &mut self,
         label_info: LabelInfo,
         block_ty: FuncType,
@@ -347,7 +350,7 @@ impl ValidationStack {
     /// - `Ok(_)`, the tail of the stack unifies to the output signature of the current control block
     /// - `Err(_)` otherwise
     ///
-    pub fn assert_pop_ctrl(
+    pub(crate) fn assert_pop_ctrl(
         &mut self,
         unify_to_expected_types: bool,
     ) -> Result<(LabelInfo, FuncType), ValidationError> {
@@ -374,11 +377,11 @@ impl ValidationStack {
     }
 
     /// Validate the `SELECT` instruction within the current control block. Returns OK(()) on success, Err(_) otherwise.
-    pub fn validate_polymorphic_select(&mut self) -> Result<(), ValidationError> {
+    pub(crate) fn validate_polymorphic_select(&mut self) -> Result<(), ValidationError> {
         //SELECT instruction has the type signature
         //[t t i32] -> [t] where t unifies to a NumType(_) or VecType
 
-        self.assert_pop_val_type(ValType::NumType(crate::NumType::I32))?;
+        self.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
         let first_arg = self.pop_valtype()?;
         let second_arg = self.pop_valtype()?;
@@ -426,7 +429,7 @@ impl ValidationStackEntry {
 
 // TODO hide implementation
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CtrlStackEntry {
+pub(crate) struct CtrlStackEntry {
     pub label_info: LabelInfo,
     pub block_ty: FuncType,
     pub height: usize,
@@ -434,7 +437,7 @@ pub struct CtrlStackEntry {
 }
 
 impl CtrlStackEntry {
-    pub fn label_types(&self) -> &[ValType] {
+    pub(crate) fn label_types(&self) -> &[ValType] {
         if matches!(self.label_info, LabelInfo::Loop { .. }) {
             &self.block_ty.params.valtypes
         } else {
@@ -447,7 +450,7 @@ impl CtrlStackEntry {
 // TODO hide implementation
 // TODO implementation coupled to Sidetable
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum LabelInfo {
+pub(crate) enum LabelInfo {
     Block {
         stps_to_backpatch: Vec<usize>,
     },

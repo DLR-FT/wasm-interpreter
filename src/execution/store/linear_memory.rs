@@ -85,12 +85,12 @@ use crate::{
 /// cargo miri test # thorough
 /// ```
 // TODO if a memmap like operation is available, the linear memory implementation can be optimized brutally. Out-of-bound access can be mapped to userspace handled page-faults, e.g. the MMU takes over that responsibility of catching out of bounds. Grow can happen without copying of data, by mapping new pages consecutively after the current final page of the linear memory.
-pub struct LinearMemory<const PAGE_SIZE: usize = { crate::Limits::MEM_PAGE_SIZE as usize }> {
+pub(crate) struct LinearMemory<const PAGE_SIZE: usize = { crate::Limits::MEM_PAGE_SIZE as usize }> {
     inner_data: RwSpinLock<Vec<AtomicU8>>,
 }
 
 /// Type to express the page count
-pub type PageCountTy = u16;
+pub(crate) type PageCountTy = u16;
 
 impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// Size of a page in the linear memory, measured in bytes
@@ -100,14 +100,14 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     const PAGE_SIZE: usize = PAGE_SIZE;
 
     /// Create a new, empty [`LinearMemory`]
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             inner_data: RwSpinLock::new(Vec::new()),
         }
     }
 
     /// Create a new, empty [`LinearMemory`]
-    pub fn new_with_initial_pages(pages: PageCountTy) -> Self {
+    pub(crate) fn new_with_initial_pages(pages: PageCountTy) -> Self {
         let size_bytes = Self::PAGE_SIZE * usize::from(pages);
         let mut data = Vec::with_capacity(size_bytes);
         data.resize_with(size_bytes, || AtomicU8::new(0));
@@ -118,7 +118,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     }
 
     /// Grow the [`LinearMemory`] by a number of pages
-    pub fn grow(&self, pages_to_add: PageCountTy) {
+    pub(crate) fn grow(&self, pages_to_add: PageCountTy) {
         let mut lock_guard = self.inner_data.write();
         let prior_length_bytes = lock_guard.len();
         let new_length_bytes = prior_length_bytes + Self::PAGE_SIZE * usize::from(pages_to_add);
@@ -126,18 +126,18 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     }
 
     /// Get the number of pages currently allocated to this [`LinearMemory`]
-    pub fn pages(&self) -> PageCountTy {
+    pub(crate) fn pages(&self) -> PageCountTy {
         PageCountTy::try_from(self.inner_data.read().len() / PAGE_SIZE).unwrap()
     }
 
     /// Get the length in bytes currently allocated to this [`LinearMemory`]
     // TODO remove this op
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.inner_data.read().len()
     }
 
     /// At a given index, store a datum in the [`LinearMemory`]
-    pub fn store<const N: usize, T: LittleEndianBytes<N>>(
+    pub(crate) fn store<const N: usize, T: LittleEndianBytes<N>>(
         &self,
         index: usize,
         value: T,
@@ -146,7 +146,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     }
 
     /// At a given index, store a number of bytes `N` in the [`LinearMemory`]
-    pub fn store_bytes<const N: usize>(
+    pub(crate) fn store_bytes<const N: usize>(
         &self,
         index: usize,
         bytes: [u8; N],
@@ -189,7 +189,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     }
 
     /// From a given index, load a datum from the [`LinearMemory`]
-    pub fn load<const N: usize, T: LittleEndianBytes<N>>(
+    pub(crate) fn load<const N: usize, T: LittleEndianBytes<N>>(
         &self,
         index: usize,
     ) -> Result<T, RuntimeError> {
@@ -197,7 +197,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     }
 
     /// From a given index, load a number of bytes `N` from the [`LinearMemory`]
-    pub fn load_bytes<const N: usize>(&self, index: usize) -> Result<[u8; N], RuntimeError> {
+    pub(crate) fn load_bytes<const N: usize>(&self, index: usize) -> Result<[u8; N], RuntimeError> {
         let lock_guard = self.inner_data.read();
 
         /* check source for out of bounds access */
@@ -243,7 +243,12 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// the memset like [`core::ptr::write_bytes`].
     ///
     /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill>
-    pub fn fill(&self, index: usize, data_byte: u8, count: usize) -> Result<(), RuntimeError> {
+    pub(crate) fn fill(
+        &self,
+        index: usize,
+        data_byte: u8,
+        count: usize,
+    ) -> Result<(), RuntimeError> {
         let lock_guard = self.inner_data.read();
 
         /* check destination for out of bounds access */
@@ -292,7 +297,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     ///   starting from `destination_index`
     ///
     /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy>
-    pub fn copy(
+    pub(crate) fn copy(
         &self,
         destination_index: usize,
         source_mem: &Self,
@@ -387,7 +392,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     // subslice for `source_data`? Have all the index error checks in one place.
     //
     // <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x>
-    pub fn init(
+    pub(crate) fn init(
         &self,
         destination_index: usize,
         source_data: &[u8],
@@ -467,14 +472,14 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// This operation exclusively locks the entire linear memory for the
     /// duration of this function call. To acquire the lock, this function may
     /// also block until the lock is available.
-    pub fn access_mut_slice<R>(&self, accessor: impl FnOnce(&mut [u8]) -> R) -> R {
+    pub(crate) fn access_mut_slice<R>(&self, accessor: impl FnOnce(&mut [u8]) -> R) -> R {
         /// Converts an exclusively borrowed slice of atomic `u8`s to a slice of
         /// non-atomic `u8`s
         // TODO when `atomic_from_mut` is stabilized, replace this function with
         // `Atomic::U8::get_mut_slice`
         fn atomic_u8_get_mut_slice(slice: &mut [AtomicU8]) -> &mut [u8] {
             // SAFETY: the mutable reference guarantees unique ownership
-            unsafe { &mut *(slice as *mut [AtomicU8] as *mut [u8]) }
+            unsafe { &mut *(core::ptr::from_mut::<[AtomicU8]>(slice) as *mut [u8]) }
         }
 
         let mut write_lock_guard = self.inner_data.write();

@@ -85,7 +85,7 @@ use super::validation_stack::ValidationStack;
 /// - `ref.null`
 /// - `ref.func`
 /// - `global.get`
-pub fn read_constant_expression(
+pub(crate) fn read_constant_expression(
     wasm: &mut WasmReader,
     stack: &mut ValidationStack,
     // The globals slice should contain ONLY imported globals IF AND ONLY IF we are calling `read_constant_expression` for local globals instantiation
@@ -113,7 +113,10 @@ pub fn read_constant_expression(
             opcode_byte_to_str(first_instr_byte)
         );
 
-        use crate::core::reader::types::opcode::*;
+        use crate::core::reader::types::opcode::{
+            END, F32_CONST, F64_CONST, FD_EXTENSIONS, GLOBAL_GET, I32_CONST, I64_CONST, REF_FUNC,
+            REF_NULL,
+        };
         match first_instr_byte {
             END => {
                 // The code here for checking the global type was moved to where the global is actually validated
@@ -158,10 +161,10 @@ pub fn read_constant_expression(
                 // as we are single pass validating, add it to C.refs set.
                 seen_func_idxs.push(func_idx);
 
-                stack.push_valtype(ValType::RefType(crate::RefType::FuncRef));
+                stack.push_valtype(ValType::RefType(RefType::FuncRef));
             }
             FD_EXTENSIONS => {
-                use crate::core::reader::types::opcode::fd_extensions::*;
+                use crate::core::reader::types::opcode::fd_extensions::V128_CONST;
 
                 let Ok(second_instr) = wasm.read_var_u32() else {
                     return Err(ValidationError::ExprMissingEnd);

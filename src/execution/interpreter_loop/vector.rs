@@ -108,7 +108,7 @@ define_instruction_fn! {
     |Args { resumable, .. }| {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let any_true = data.into_iter().any(|byte| byte > 0);
-        resumable.stack.push_value(Value::I32(any_true as u32))?;
+        resumable.stack.push_value(Value::I32(u32::from(any_true)))?;
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -239,7 +239,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u8; 16] = to_lanes(data);
         let lane = *lanes.get(lane_idx).unwrap_validated();
-        resumable.stack.push_value(Value::I32(lane as u32))?;
+        resumable.stack.push_value(Value::I32(u32::from(lane)))?;
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -267,7 +267,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u16; 8] = to_lanes(data);
         let lane = *lanes.get(lane_idx).unwrap_validated();
-        resumable.stack.push_value(Value::I32(lane as u32))?;
+        resumable.stack.push_value(Value::I32(u32::from(lane)))?;
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -1471,7 +1471,7 @@ define_instruction_fn! {
         let lanes2: [u8; 16] = to_lanes(data2);
         let lanes1: [u8; 16] = to_lanes(data1);
         let result: [u8; 16] =
-            array::from_fn(|i| (lanes1[i] as u16 + lanes2[i] as u16).div_ceil(2) as u8);
+            array::from_fn(|i| (u16::from(lanes1[i]) + u16::from(lanes2[i])).div_ceil(2) as u8);
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1487,7 +1487,7 @@ define_instruction_fn! {
         let lanes2: [u16; 8] = to_lanes(data2);
         let lanes1: [u16; 8] = to_lanes(data1);
         let result: [u16; 8] =
-            array::from_fn(|i| (lanes1[i] as u32 + lanes2[i] as u32).div_ceil(2) as u16);
+            array::from_fn(|i| (u32::from(lanes1[i]) + u32::from(lanes2[i])).div_ceil(2) as u16);
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1503,8 +1503,8 @@ define_instruction_fn! {
         let lanes2: [i16; 8] = to_lanes(data2);
         let lanes1: [i16; 8] = to_lanes(data1);
         let result: [i16; 8] = array::from_fn(|i| {
-            (((lanes1[i] as i64).mul(lanes2[i] as i64) + 2i64.pow(14)) >> 15i64)
-                .clamp(i16::MIN as i64, i16::MAX as i64) as i16
+            ((i64::from(lanes1[i]).mul(i64::from(lanes2[i])) + 2i64.pow(14)) >> 15i64)
+                .clamp(i64::from(i16::MIN), i64::from(i16::MAX)) as i16
         });
         resumable
             .stack
@@ -1522,7 +1522,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u8; 16] = to_lanes(data2);
         let lanes1: [u8; 16] = to_lanes(data1);
-        let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i8).neg());
+        let result: [i8; 16] = array::from_fn(|i| i8::from(lanes1[i] == lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1537,7 +1537,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u16; 8] = to_lanes(data2);
         let lanes1: [u16; 8] = to_lanes(data1);
-        let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i16).neg());
+        let result: [i16; 8] = array::from_fn(|i| i16::from(lanes1[i] == lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1552,7 +1552,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u32; 4] = to_lanes(data2);
         let lanes1: [u32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] == lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1567,7 +1567,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u64; 2] = to_lanes(data2);
         let lanes1: [u64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] == lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1582,7 +1582,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u8; 16] = to_lanes(data2);
         let lanes1: [u8; 16] = to_lanes(data1);
-        let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i8).neg());
+        let result: [i8; 16] = array::from_fn(|i| i8::from(lanes1[i] != lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1597,7 +1597,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u16; 8] = to_lanes(data2);
         let lanes1: [u16; 8] = to_lanes(data1);
-        let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i16).neg());
+        let result: [i16; 8] = array::from_fn(|i| i16::from(lanes1[i] != lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1612,7 +1612,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u32; 4] = to_lanes(data2);
         let lanes1: [u32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] != lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1627,7 +1627,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u64; 2] = to_lanes(data2);
         let lanes1: [u64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] != lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1642,7 +1642,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i8; 16] = to_lanes(data2);
         let lanes1: [i8; 16] = to_lanes(data1);
-        let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i8).neg());
+        let result: [i8; 16] = array::from_fn(|i| i8::from(lanes1[i] < lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1657,7 +1657,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i16; 8] = to_lanes(data2);
         let lanes1: [i16; 8] = to_lanes(data1);
-        let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i16).neg());
+        let result: [i16; 8] = array::from_fn(|i| i16::from(lanes1[i] < lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1672,7 +1672,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i32; 4] = to_lanes(data2);
         let lanes1: [i32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] < lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1687,7 +1687,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i64; 2] = to_lanes(data2);
         let lanes1: [i64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] < lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1702,7 +1702,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u8; 16] = to_lanes(data2);
         let lanes1: [u8; 16] = to_lanes(data1);
-        let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i8).neg());
+        let result: [i8; 16] = array::from_fn(|i| i8::from(lanes1[i] < lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1717,7 +1717,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u16; 8] = to_lanes(data2);
         let lanes1: [u16; 8] = to_lanes(data1);
-        let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i16).neg());
+        let result: [i16; 8] = array::from_fn(|i| i16::from(lanes1[i] < lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1732,7 +1732,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u32; 4] = to_lanes(data2);
         let lanes1: [u32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] < lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1747,7 +1747,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i8; 16] = to_lanes(data2);
         let lanes1: [i8; 16] = to_lanes(data1);
-        let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i8).neg());
+        let result: [i8; 16] = array::from_fn(|i| i8::from(lanes1[i] > lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1762,7 +1762,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i16; 8] = to_lanes(data2);
         let lanes1: [i16; 8] = to_lanes(data1);
-        let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i16).neg());
+        let result: [i16; 8] = array::from_fn(|i| i16::from(lanes1[i] > lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1777,7 +1777,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i32; 4] = to_lanes(data2);
         let lanes1: [i32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] > lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1792,7 +1792,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i64; 2] = to_lanes(data2);
         let lanes1: [i64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] > lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1807,7 +1807,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u8; 16] = to_lanes(data2);
         let lanes1: [u8; 16] = to_lanes(data1);
-        let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i8).neg());
+        let result: [i8; 16] = array::from_fn(|i| i8::from(lanes1[i] > lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1822,7 +1822,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u16; 8] = to_lanes(data2);
         let lanes1: [u16; 8] = to_lanes(data1);
-        let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i16).neg());
+        let result: [i16; 8] = array::from_fn(|i| i16::from(lanes1[i] > lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1837,7 +1837,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u32; 4] = to_lanes(data2);
         let lanes1: [u32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] > lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1852,7 +1852,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i8; 16] = to_lanes(data2);
         let lanes1: [i8; 16] = to_lanes(data1);
-        let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i8).neg());
+        let result: [i8; 16] = array::from_fn(|i| i8::from(lanes1[i] <= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1867,7 +1867,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i16; 8] = to_lanes(data2);
         let lanes1: [i16; 8] = to_lanes(data1);
-        let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i16).neg());
+        let result: [i16; 8] = array::from_fn(|i| i16::from(lanes1[i] <= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1882,7 +1882,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i32; 4] = to_lanes(data2);
         let lanes1: [i32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] <= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1897,7 +1897,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i64; 2] = to_lanes(data2);
         let lanes1: [i64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] <= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1912,7 +1912,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u8; 16] = to_lanes(data2);
         let lanes1: [u8; 16] = to_lanes(data1);
-        let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i8).neg());
+        let result: [i8; 16] = array::from_fn(|i| i8::from(lanes1[i] <= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1927,7 +1927,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u16; 8] = to_lanes(data2);
         let lanes1: [u16; 8] = to_lanes(data1);
-        let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i16).neg());
+        let result: [i16; 8] = array::from_fn(|i| i16::from(lanes1[i] <= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1942,7 +1942,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u32; 4] = to_lanes(data2);
         let lanes1: [u32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] <= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1958,7 +1958,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i8; 16] = to_lanes(data2);
         let lanes1: [i8; 16] = to_lanes(data1);
-        let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i8).neg());
+        let result: [i8; 16] = array::from_fn(|i| i8::from(lanes1[i] >= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1973,7 +1973,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i16; 8] = to_lanes(data2);
         let lanes1: [i16; 8] = to_lanes(data1);
-        let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i16).neg());
+        let result: [i16; 8] = array::from_fn(|i| i16::from(lanes1[i] >= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -1988,7 +1988,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i32; 4] = to_lanes(data2);
         let lanes1: [i32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] >= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2003,7 +2003,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [i64; 2] = to_lanes(data2);
         let lanes1: [i64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] >= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2018,7 +2018,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u8; 16] = to_lanes(data2);
         let lanes1: [u8; 16] = to_lanes(data1);
-        let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i8).neg());
+        let result: [i8; 16] = array::from_fn(|i| i8::from(lanes1[i] >= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2033,7 +2033,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u16; 8] = to_lanes(data2);
         let lanes1: [u16; 8] = to_lanes(data1);
-        let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i16).neg());
+        let result: [i16; 8] = array::from_fn(|i| i16::from(lanes1[i] >= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2048,7 +2048,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [u32; 4] = to_lanes(data2);
         let lanes1: [u32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] >= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2064,7 +2064,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F32; 4] = to_lanes(data2);
         let lanes1: [F32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] == lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2079,7 +2079,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F64; 2] = to_lanes(data2);
         let lanes1: [F64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] == lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2094,7 +2094,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F32; 4] = to_lanes(data2);
         let lanes1: [F32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] != lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2109,7 +2109,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F64; 2] = to_lanes(data2);
         let lanes1: [F64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] != lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2124,7 +2124,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F32; 4] = to_lanes(data2);
         let lanes1: [F32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] < lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2139,7 +2139,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F64; 2] = to_lanes(data2);
         let lanes1: [F64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] < lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2154,7 +2154,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F32; 4] = to_lanes(data2);
         let lanes1: [F32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] > lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2169,7 +2169,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F64; 2] = to_lanes(data2);
         let lanes1: [F64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] > lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2184,7 +2184,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F32; 4] = to_lanes(data2);
         let lanes1: [F32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] <= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2199,7 +2199,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F64; 2] = to_lanes(data2);
         let lanes1: [F64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] <= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2214,7 +2214,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F32; 4] = to_lanes(data2);
         let lanes1: [F32; 4] = to_lanes(data1);
-        let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i32).neg());
+        let result: [i32; 4] = array::from_fn(|i| i32::from(lanes1[i] >= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2229,7 +2229,7 @@ define_instruction_fn! {
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes2: [F64; 2] = to_lanes(data2);
         let lanes1: [F64; 2] = to_lanes(data1);
-        let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i64).neg());
+        let result: [i64; 2] = array::from_fn(|i| i64::from(lanes1[i] >= lanes2[i]).neg());
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2415,7 +2415,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u8; 16] = to_lanes(data);
         let all_true = lanes.into_iter().all(|lane| lane != 0);
-        resumable.stack.push_value(Value::I32(all_true as u32))?;
+        resumable.stack.push_value(Value::I32(u32::from(all_true)))?;
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -2426,7 +2426,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u16; 8] = to_lanes(data);
         let all_true = lanes.into_iter().all(|lane| lane != 0);
-        resumable.stack.push_value(Value::I32(all_true as u32))?;
+        resumable.stack.push_value(Value::I32(u32::from(all_true)))?;
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -2437,7 +2437,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u32; 4] = to_lanes(data);
         let all_true = lanes.into_iter().all(|lane| lane != 0);
-        resumable.stack.push_value(Value::I32(all_true as u32))?;
+        resumable.stack.push_value(Value::I32(u32::from(all_true)))?;
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -2448,7 +2448,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u64; 2] = to_lanes(data);
         let all_true = lanes.into_iter().all(|lane| lane != 0);
-        resumable.stack.push_value(Value::I32(all_true as u32))?;
+        resumable.stack.push_value(Value::I32(u32::from(all_true)))?;
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -2464,7 +2464,7 @@ define_instruction_fn! {
         let bitmask = bits
             .into_iter()
             .enumerate()
-            .fold(0u32, |acc, (i, bit)| acc | ((bit as u32) << i));
+            .fold(0u32, |acc, (i, bit)| acc | (u32::from(bit) << i));
         resumable.stack.push_value(Value::I32(bitmask))?;
         Ok(ControlFlow::Continue(()))
     }
@@ -2479,7 +2479,7 @@ define_instruction_fn! {
         let bitmask = bits
             .into_iter()
             .enumerate()
-            .fold(0u32, |acc, (i, bit)| acc | ((bit as u32) << i));
+            .fold(0u32, |acc, (i, bit)| acc | (u32::from(bit) << i));
         resumable.stack.push_value(Value::I32(bitmask))?;
         Ok(ControlFlow::Continue(()))
     }
@@ -2494,7 +2494,7 @@ define_instruction_fn! {
         let bitmask = bits
             .into_iter()
             .enumerate()
-            .fold(0u32, |acc, (i, bit)| acc | ((bit as u32) << i));
+            .fold(0u32, |acc, (i, bit)| acc | (u32::from(bit) << i));
         resumable.stack.push_value(Value::I32(bitmask))?;
         Ok(ControlFlow::Continue(()))
     }
@@ -2509,7 +2509,7 @@ define_instruction_fn! {
         let bitmask = bits
             .into_iter()
             .enumerate()
-            .fold(0u32, |acc, (i, bit)| acc | ((bit as u32) << i));
+            .fold(0u32, |acc, (i, bit)| acc | (u32::from(bit) << i));
         resumable.stack.push_value(Value::I32(bitmask))?;
         Ok(ControlFlow::Continue(()))
     }
@@ -2527,7 +2527,7 @@ define_instruction_fn! {
         let mut concatenated_narrowed_lanes = lanes1
             .into_iter()
             .chain(lanes2)
-            .map(|lane| lane.clamp(i8::MIN as i16, i8::MAX as i16) as i8);
+            .map(|lane| lane.clamp(i16::from(i8::MIN), i16::from(i8::MAX)) as i8);
         let result: [i8; 16] = array::from_fn(|_| concatenated_narrowed_lanes.next().unwrap());
         resumable
             .stack
@@ -2546,7 +2546,7 @@ define_instruction_fn! {
         let mut concatenated_narrowed_lanes = lanes1
             .into_iter()
             .chain(lanes2)
-            .map(|lane| lane.clamp(u8::MIN as i16, u8::MAX as i16) as u8);
+            .map(|lane| lane.clamp(i16::from(u8::MIN), i16::from(u8::MAX)) as u8);
         let result: [u8; 16] = array::from_fn(|_| concatenated_narrowed_lanes.next().unwrap());
         resumable
             .stack
@@ -2565,7 +2565,7 @@ define_instruction_fn! {
         let mut concatenated_narrowed_lanes = lanes1
             .into_iter()
             .chain(lanes2)
-            .map(|lane| lane.clamp(i16::MIN as i32, i16::MAX as i32) as i16);
+            .map(|lane| lane.clamp(i32::from(i16::MIN), i32::from(i16::MAX)) as i16);
         let result: [i16; 8] = array::from_fn(|_| concatenated_narrowed_lanes.next().unwrap());
         resumable
             .stack
@@ -2584,7 +2584,7 @@ define_instruction_fn! {
         let mut concatenated_narrowed_lanes = lanes1
             .into_iter()
             .chain(lanes2)
-            .map(|lane| lane.clamp(u16::MIN as i32, u16::MAX as i32) as u16);
+            .map(|lane| lane.clamp(i32::from(u16::MIN), i32::from(u16::MAX)) as u16);
         let result: [u16; 8] = array::from_fn(|_| concatenated_narrowed_lanes.next().unwrap());
         resumable
             .stack
@@ -2673,7 +2673,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i8; 16] = to_lanes(data);
         let high_lanes: [i8; 8] = lanes[8..].try_into().unwrap();
-        let result = high_lanes.map(|lane| lane as i16);
+        let result = high_lanes.map(|lane| i16::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2687,7 +2687,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u8; 16] = to_lanes(data);
         let high_lanes: [u8; 8] = lanes[8..].try_into().unwrap();
-        let result = high_lanes.map(|lane| lane as u16);
+        let result = high_lanes.map(|lane| u16::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2701,7 +2701,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i8; 16] = to_lanes(data);
         let low_lanes: [i8; 8] = lanes[..8].try_into().unwrap();
-        let result = low_lanes.map(|lane| lane as i16);
+        let result = low_lanes.map(|lane| i16::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2715,7 +2715,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u8; 16] = to_lanes(data);
         let low_lanes: [u8; 8] = lanes[..8].try_into().unwrap();
-        let result = low_lanes.map(|lane| lane as u16);
+        let result = low_lanes.map(|lane| u16::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2729,7 +2729,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i16; 8] = to_lanes(data);
         let high_lanes: [i16; 4] = lanes[4..].try_into().unwrap();
-        let result = high_lanes.map(|lane| lane as i32);
+        let result = high_lanes.map(|lane| i32::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2743,7 +2743,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u16; 8] = to_lanes(data);
         let high_lanes: [u16; 4] = lanes[4..].try_into().unwrap();
-        let result = high_lanes.map(|lane| lane as u32);
+        let result = high_lanes.map(|lane| u32::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2757,7 +2757,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i16; 8] = to_lanes(data);
         let low_lanes: [i16; 4] = lanes[..4].try_into().unwrap();
-        let result = low_lanes.map(|lane| lane as i32);
+        let result = low_lanes.map(|lane| i32::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2771,7 +2771,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u16; 8] = to_lanes(data);
         let low_lanes: [u16; 4] = lanes[..4].try_into().unwrap();
-        let result = low_lanes.map(|lane| lane as u32);
+        let result = low_lanes.map(|lane| u32::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2785,7 +2785,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i32; 4] = to_lanes(data);
         let high_lanes: [i32; 2] = lanes[2..].try_into().unwrap();
-        let result = high_lanes.map(|lane| lane as i64);
+        let result = high_lanes.map(|lane| i64::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2799,7 +2799,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u32; 4] = to_lanes(data);
         let high_lanes: [u32; 2] = lanes[2..].try_into().unwrap();
-        let result = high_lanes.map(|lane| lane as u64);
+        let result = high_lanes.map(|lane| u64::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2813,7 +2813,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i32; 4] = to_lanes(data);
         let low_lanes: [i32; 2] = lanes[..2].try_into().unwrap();
-        let result = low_lanes.map(|lane| lane as i64);
+        let result = low_lanes.map(|lane| i64::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2827,7 +2827,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u32; 4] = to_lanes(data);
         let low_lanes: [u32; 2] = lanes[..2].try_into().unwrap();
-        let result = low_lanes.map(|lane| lane as u64);
+        let result = low_lanes.map(|lane| u64::from(lane));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2841,7 +2841,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i32; 4] = to_lanes(data);
         let low_lanes: [i32; 2] = lanes[..2].try_into().unwrap();
-        let result = low_lanes.map(|lane| F64(lane as f64));
+        let result = low_lanes.map(|lane| F64(f64::from(lane)));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2855,7 +2855,7 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u32; 4] = to_lanes(data);
         let low_lanes: [u32; 2] = lanes[..2].try_into().unwrap();
-        let result = low_lanes.map(|lane| F64(lane as f64));
+        let result = low_lanes.map(|lane| F64(f64::from(lane)));
         resumable
             .stack
             .push_value(Value::V128(from_lanes(result)))?;
@@ -2947,8 +2947,8 @@ define_instruction_fn! {
         let lanes1: [i16; 8] = to_lanes(data1);
         let lanes2: [i16; 8] = to_lanes(data2);
         let multiplied: [i32; 8] = array::from_fn(|i| {
-            let v1 = lanes1[i] as i32;
-            let v2 = lanes2[i] as i32;
+            let v1 = i32::from(lanes1[i]);
+            let v2 = i32::from(lanes2[i]);
             v1.wrapping_mul(v2)
         });
         let added: [i32; 4] = array::from_fn(|i| {
@@ -2973,8 +2973,8 @@ define_instruction_fn! {
         let high_lanes1: [i8; 8] = lanes1[8..].try_into().unwrap();
         let high_lanes2: [i8; 8] = lanes2[8..].try_into().unwrap();
         let multiplied: [i16; 8] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as i16;
-            let v2 = high_lanes2[i] as i16;
+            let v1 = i16::from(high_lanes1[i]);
+            let v2 = i16::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -2994,8 +2994,8 @@ define_instruction_fn! {
         let high_lanes1: [u8; 8] = lanes1[8..].try_into().unwrap();
         let high_lanes2: [u8; 8] = lanes2[8..].try_into().unwrap();
         let multiplied: [u16; 8] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as u16;
-            let v2 = high_lanes2[i] as u16;
+            let v1 = u16::from(high_lanes1[i]);
+            let v2 = u16::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -3015,8 +3015,8 @@ define_instruction_fn! {
         let high_lanes1: [i8; 8] = lanes1[..8].try_into().unwrap();
         let high_lanes2: [i8; 8] = lanes2[..8].try_into().unwrap();
         let multiplied: [i16; 8] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as i16;
-            let v2 = high_lanes2[i] as i16;
+            let v1 = i16::from(high_lanes1[i]);
+            let v2 = i16::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -3036,8 +3036,8 @@ define_instruction_fn! {
         let high_lanes1: [u8; 8] = lanes1[..8].try_into().unwrap();
         let high_lanes2: [u8; 8] = lanes2[..8].try_into().unwrap();
         let multiplied: [u16; 8] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as u16;
-            let v2 = high_lanes2[i] as u16;
+            let v1 = u16::from(high_lanes1[i]);
+            let v2 = u16::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -3057,8 +3057,8 @@ define_instruction_fn! {
         let high_lanes1: [i16; 4] = lanes1[4..].try_into().unwrap();
         let high_lanes2: [i16; 4] = lanes2[4..].try_into().unwrap();
         let multiplied: [i32; 4] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as i32;
-            let v2 = high_lanes2[i] as i32;
+            let v1 = i32::from(high_lanes1[i]);
+            let v2 = i32::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -3078,8 +3078,8 @@ define_instruction_fn! {
         let high_lanes1: [u16; 4] = lanes1[4..].try_into().unwrap();
         let high_lanes2: [u16; 4] = lanes2[4..].try_into().unwrap();
         let multiplied: [u32; 4] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as u32;
-            let v2 = high_lanes2[i] as u32;
+            let v1 = u32::from(high_lanes1[i]);
+            let v2 = u32::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -3099,8 +3099,8 @@ define_instruction_fn! {
         let high_lanes1: [i16; 4] = lanes1[..4].try_into().unwrap();
         let high_lanes2: [i16; 4] = lanes2[..4].try_into().unwrap();
         let multiplied: [i32; 4] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as i32;
-            let v2 = high_lanes2[i] as i32;
+            let v1 = i32::from(high_lanes1[i]);
+            let v2 = i32::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -3120,8 +3120,8 @@ define_instruction_fn! {
         let high_lanes1: [u16; 4] = lanes1[..4].try_into().unwrap();
         let high_lanes2: [u16; 4] = lanes2[..4].try_into().unwrap();
         let multiplied: [u32; 4] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as u32;
-            let v2 = high_lanes2[i] as u32;
+            let v1 = u32::from(high_lanes1[i]);
+            let v2 = u32::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -3141,8 +3141,8 @@ define_instruction_fn! {
         let high_lanes1: [i32; 2] = lanes1[2..].try_into().unwrap();
         let high_lanes2: [i32; 2] = lanes2[2..].try_into().unwrap();
         let multiplied: [i64; 2] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as i64;
-            let v2 = high_lanes2[i] as i64;
+            let v1 = i64::from(high_lanes1[i]);
+            let v2 = i64::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -3162,8 +3162,8 @@ define_instruction_fn! {
         let high_lanes1: [u32; 2] = lanes1[2..].try_into().unwrap();
         let high_lanes2: [u32; 2] = lanes2[2..].try_into().unwrap();
         let multiplied: [u64; 2] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as u64;
-            let v2 = high_lanes2[i] as u64;
+            let v1 = u64::from(high_lanes1[i]);
+            let v2 = u64::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -3183,8 +3183,8 @@ define_instruction_fn! {
         let high_lanes1: [i32; 2] = lanes1[..2].try_into().unwrap();
         let high_lanes2: [i32; 2] = lanes2[..2].try_into().unwrap();
         let multiplied: [i64; 2] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as i64;
-            let v2 = high_lanes2[i] as i64;
+            let v1 = i64::from(high_lanes1[i]);
+            let v2 = i64::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -3204,8 +3204,8 @@ define_instruction_fn! {
         let high_lanes1: [u32; 2] = lanes1[..2].try_into().unwrap();
         let high_lanes2: [u32; 2] = lanes2[..2].try_into().unwrap();
         let multiplied: [u64; 2] = array::from_fn(|i| {
-            let v1 = high_lanes1[i] as u64;
-            let v2 = high_lanes2[i] as u64;
+            let v1 = u64::from(high_lanes1[i]);
+            let v2 = u64::from(high_lanes2[i]);
             v1.wrapping_mul(v2)
         });
         resumable
@@ -3223,8 +3223,8 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i8; 16] = to_lanes(data);
         let added_pairwise: [i16; 8] = array::from_fn(|i| {
-            let v1 = lanes[2 * i] as i16;
-            let v2 = lanes[2 * i + 1] as i16;
+            let v1 = i16::from(lanes[2 * i]);
+            let v2 = i16::from(lanes[2 * i + 1]);
             v1.wrapping_add(v2)
         });
         resumable
@@ -3240,8 +3240,8 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u8; 16] = to_lanes(data);
         let added_pairwise: [u16; 8] = array::from_fn(|i| {
-            let v1 = lanes[2 * i] as u16;
-            let v2 = lanes[2 * i + 1] as u16;
+            let v1 = u16::from(lanes[2 * i]);
+            let v2 = u16::from(lanes[2 * i + 1]);
             v1.wrapping_add(v2)
         });
         resumable
@@ -3257,8 +3257,8 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i16; 8] = to_lanes(data);
         let added_pairwise: [i32; 4] = array::from_fn(|i| {
-            let v1 = lanes[2 * i] as i32;
-            let v2 = lanes[2 * i + 1] as i32;
+            let v1 = i32::from(lanes[2 * i]);
+            let v2 = i32::from(lanes[2 * i + 1]);
             v1.wrapping_add(v2)
         });
         resumable
@@ -3274,8 +3274,8 @@ define_instruction_fn! {
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u16; 8] = to_lanes(data);
         let added_pairwise: [u32; 4] = array::from_fn(|i| {
-            let v1 = lanes[2 * i] as u32;
-            let v2 = lanes[2 * i + 1] as u32;
+            let v1 = u32::from(lanes[2 * i]);
+            let v2 = u32::from(lanes[2 * i + 1]);
             v1.wrapping_add(v2)
         });
         resumable

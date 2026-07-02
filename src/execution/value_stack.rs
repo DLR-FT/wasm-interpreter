@@ -30,7 +30,7 @@ pub(crate) struct Stack {
 }
 
 impl Stack {
-    pub fn new<T: Config>(
+    pub(crate) fn new<T: Config>(
         params_to_base_call_frame: Vec<Value>,
         base_call_frame_func_ty: &FuncType,
         base_call_frame_remaining_locals: &[ValType],
@@ -86,7 +86,7 @@ impl Stack {
 
     /// Pop a value from the value stack
     #[inline(always)]
-    pub fn pop_value(&mut self) -> Value {
+    pub(crate) fn pop_value(&mut self) -> Value {
         // If there is at least one call frame, we shall not pop values past the current
         // call frame. However, there is one legitimate reason to pop when there is **no** current
         // call frame: after the outermost function returns, to extract the final return values of
@@ -120,12 +120,12 @@ impl Stack {
     }
 
     /// Returns a cloned copy of the top value on the stack, or `None` if the stack is empty
-    pub fn peek_value(&self) -> Option<Value> {
+    pub(crate) fn peek_value(&self) -> Option<Value> {
         self.values.peek().ok().cloned()
     }
 
     /// Push a value to the value stack after veryfing that this will not overflow the stack
-    pub fn push_value(&mut self, value: Value) -> Result<(), RuntimeError> {
+    pub(crate) fn push_value(&mut self, value: Value) -> Result<(), RuntimeError> {
         // check for value stack exhaustion
         if self.values.len() >= self.values.capacity() {
             return Err(RuntimeError::StackExhaustion);
@@ -150,7 +150,7 @@ impl Stack {
     }
 
     /// Returns a shared reference to a specific local by its index in the current call frame.
-    pub fn get_local(&self, idx: LocalIdx) -> &Value {
+    pub(crate) fn get_local(&self, idx: LocalIdx) -> &Value {
         let idx = idx.into_inner().into_usize();
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
         self.values
@@ -159,7 +159,7 @@ impl Stack {
     }
 
     /// Returns a mutable reference to a specific local by its index in the current call frame.
-    pub fn get_local_mut(&mut self, idx: LocalIdx) -> &mut Value {
+    pub(crate) fn get_local_mut(&mut self, idx: LocalIdx) -> &mut Value {
         let idx = idx.into_inner().into_usize();
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
         self.values
@@ -172,7 +172,7 @@ impl Stack {
     /// # Safety
     ///
     /// This will underflow if no active call frame is on the stack.
-    pub fn current_call_frame(&self) -> &CallFrame {
+    pub(crate) fn current_call_frame(&self) -> &CallFrame {
         // SAFETY: must only be called if there is at least one callframe on the stack.
         unsafe { self.frames.peek_unchecked() }
     }
@@ -181,7 +181,7 @@ impl Stack {
     ///
     /// Returns `None` if the base call frame was popped. Its information cannot
     /// be retrieved.
-    pub fn pop_call_frame(&mut self) -> Option<(FuncAddr, usize, usize)> {
+    pub(crate) fn pop_call_frame(&mut self) -> Option<(FuncAddr, usize, usize)> {
         let CallFrame {
             return_func_addr,
             return_addr,
@@ -221,7 +221,7 @@ impl Stack {
     /// Push a call frame to the call stack
     ///
     /// Takes the current [`Self::values`]'s length as [`CallFrame::value_stack_base_idx`].
-    pub fn push_call_frame<C: Config>(
+    pub(crate) fn push_call_frame<C: Config>(
         &mut self,
         return_func_addr: FuncAddr,
         func_ty: &FuncType,
@@ -270,7 +270,7 @@ impl Stack {
     }
 
     /// Returns how many call frames are on the stack, in total.
-    pub fn call_frame_count(&self) -> usize {
+    pub(crate) fn call_frame_count(&self) -> usize {
         self.frames.len()
     }
 
@@ -279,7 +279,7 @@ impl Stack {
     ///
     /// Note that this is providing the values in reverse order compared to popping `n` values
     /// (which would yield the element closest to the **top** of the value stack first).
-    pub fn pop_tail_iter(&mut self, n: usize) -> Vec<Value> {
+    pub(crate) fn pop_tail_iter(&mut self, n: usize) -> Vec<Value> {
         let tail = self.values.pop_into_slice(n).unwrap_validated().to_vec();
         debug_assert_eq!(tail.len(), n);
         tail
@@ -295,7 +295,7 @@ impl Stack {
     /// - after the operation, [`Stack`] will contain `remove_count` fewer elements
     /// - `keep_count` topmost elements will be identical before and after the operation
     /// - all elements below the `remove_count + keep_count` topmost stack entry remain
-    pub fn remove_in_between(&mut self, remove_count: usize, keep_count: usize) {
+    pub(crate) fn remove_in_between(&mut self, remove_count: usize, keep_count: usize) {
         self.values.remove_in_between(remove_count, keep_count);
     }
 }

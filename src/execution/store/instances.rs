@@ -22,13 +22,13 @@ use super::{
 
 #[derive(Debug)]
 // TODO does not match the spec FuncInst
-pub enum FuncInst {
+pub(crate) enum FuncInst {
     WasmFunc(WasmFuncInst),
     HostFunc(HostFuncInst),
 }
 
 #[derive(Debug)]
-pub struct WasmFuncInst {
+pub(crate) struct WasmFuncInst {
     pub function_type: FuncType,
     pub _ty: TypeIdx,
     pub locals: Vec<ValType>,
@@ -42,13 +42,13 @@ pub struct WasmFuncInst {
 }
 
 #[derive(Debug)]
-pub struct HostFuncInst {
+pub(crate) struct HostFuncInst {
     pub function_type: FuncType,
     pub hostcode: Hostcode,
 }
 
 impl FuncInst {
-    pub fn ty(&self) -> &FuncType {
+    pub(crate) fn ty(&self) -> &FuncType {
         match self {
             FuncInst::WasmFunc(wasm_func_inst) => &wasm_func_inst.function_type,
             FuncInst::HostFunc(host_func_inst) => &host_func_inst.function_type,
@@ -58,13 +58,13 @@ impl FuncInst {
 
 #[derive(Clone, Debug)]
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#element-instances>
-pub struct ElemInst {
+pub(crate) struct ElemInst {
     pub _ty: RefType,
     pub references: Vec<Ref>,
 }
 
 impl ElemInst {
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.references.len()
     }
 }
@@ -73,18 +73,18 @@ impl ElemInst {
 //       That is because when we import tables we can give a different size to the imported table
 //        thus having a wrapper over the initial table
 #[derive(Debug)]
-pub struct TableInst {
+pub(crate) struct TableInst {
     pub ty: TableType,
     pub elem: Vec<Ref>,
 }
 
 impl TableInst {
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.elem.len()
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-tables>
-    pub fn grow(&mut self, n: u32, reff: Ref) -> Result<(), RuntimeError> {
+    pub(crate) fn grow(&mut self, n: u32, reff: Ref) -> Result<(), RuntimeError> {
         // TODO refactor error, the spec Table.grow raises Table.{SizeOverflow, SizeLimit, OutOfMemory}
         let len = n
             .checked_add(self.elem.len() as u32)
@@ -108,7 +108,7 @@ impl TableInst {
     }
 }
 
-pub struct MemInst {
+pub(crate) struct MemInst {
     pub ty: MemType,
     pub mem: LinearMemory,
 }
@@ -122,9 +122,9 @@ impl core::fmt::Debug for MemInst {
 
 impl MemInst {
     /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-memories>
-    pub fn grow(&mut self, n: u32) -> Result<(), RuntimeError> {
+    pub(crate) fn grow(&mut self, n: u32) -> Result<(), RuntimeError> {
         // TODO refactor error, the spec Table.grow raises Memory.{SizeOverflow, SizeLimit, OutOfMemory}
-        let len = n + self.mem.pages() as u32;
+        let len = n + u32::from(self.mem.pages());
         if len > Limits::MAX_MEM_PAGES {
             return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
@@ -147,8 +147,8 @@ impl MemInst {
     }
 
     /// Can never be bigger than 65,356 pages
-    pub fn size(&self) -> usize {
-        self.mem.len() / (crate::Limits::MEM_PAGE_SIZE.into_usize())
+    pub(crate) fn size(&self) -> usize {
+        self.mem.len() / (Limits::MEM_PAGE_SIZE.into_usize())
     }
 }
 
@@ -158,13 +158,13 @@ impl MemInst {
 // }
 
 #[derive(Debug)]
-pub struct GlobalInst {
+pub(crate) struct GlobalInst {
     pub ty: GlobalType,
     /// Must be of the same type as specified in `ty`
     pub value: Value,
 }
 
-pub struct DataInst {
+pub(crate) struct DataInst {
     pub data: Vec<u8>,
 }
 
@@ -181,7 +181,7 @@ impl core::fmt::Debug for DataInst {
 /// All indices contained in a module instance must be valid in their associated
 /// index vectors from the same module instance.
 #[derive(Debug)]
-pub struct ModuleInst<'b> {
+pub(crate) struct ModuleInst<'b> {
     pub types: IdxVec<TypeIdx, FuncType>,
     pub func_addrs: IdxVec<FuncIdx, FuncAddr>,
     pub table_addrs: IdxVec<TableIdx, TableAddr>,

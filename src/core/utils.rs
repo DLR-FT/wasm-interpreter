@@ -34,7 +34,7 @@ pub fn print_beautiful_fd_extension(second_byte: u32, pc: usize) {
 }
 
 #[cfg(any(target_pointer_width = "32", target_pointer_width = "64"))]
-pub trait ToUsizeExt {
+pub(crate) trait ToUsizeExt {
     fn into_usize(self) -> usize;
 }
 

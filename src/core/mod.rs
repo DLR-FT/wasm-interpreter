@@ -1,8 +1,8 @@
-pub mod error;
+pub(crate) mod error;
 
-pub mod fixed_capacity_vec;
-pub mod indices;
-pub mod reader;
+pub(crate) mod fixed_capacity_vec;
+pub(crate) mod indices;
+pub(crate) mod reader;
 pub mod rw_spinlock;
-pub mod sidetable;
-pub mod utils;
+pub(crate) mod sidetable;
+pub(crate) mod utils;

@@ -143,7 +143,7 @@ impl F32 {
         self.0 as u64
     }
     pub fn as_f64(&self) -> F64 {
-        F64(self.0 as f64)
+        F64(f64::from(self.0))
     }
     pub fn reinterpret_as_i32(&self) -> i32 {
         self.0.to_bits() as i32
