@@ -6,7 +6,7 @@ wasm-interpreter.overrideAttrs (old: {
 
   postBuild = ''
     pushd crates/benchmark
-    cargo bench
+    cargo bench --bench general_purpose
     popd
   '';
 
