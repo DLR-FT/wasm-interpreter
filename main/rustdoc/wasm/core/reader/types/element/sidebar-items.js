@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ElemItems","ElemMode"],"fn":["parse_elemkind","parse_validate_active_segment_offset_expr","parse_validate_generic_initializer_list","parse_validate_shortened_initializer_list"],"struct":["ActiveElem","ElemType"]};

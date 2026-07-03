@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["assert_validated","config","const_interpreter_loop","error","interpreter_loop","little_endian","resumable","store","value","value_stack"]};
+window.SIDEBAR_ITEMS = {"mod":["assert_validated","config","error","instructions","numerics","resumable","runtime_structure"]};

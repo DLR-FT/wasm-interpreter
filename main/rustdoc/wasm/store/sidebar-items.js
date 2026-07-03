@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ExternVal"],"mod":["addrs"],"struct":["InstantiationOutcome","Store"],"trait":["ExternFilterable"],"type":["Hostcode"]};

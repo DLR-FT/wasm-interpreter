@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["DataIdx","ElemIdx","ExtendedIdxVec","FuncIdx","GlobalIdx","IdxVec","IdxVecOverflowError","LocalIdx","MemIdx","TableIdx","TypeIdx"],"trait":["Idx"]};

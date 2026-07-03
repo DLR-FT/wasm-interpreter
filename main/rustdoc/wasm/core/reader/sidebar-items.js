@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["section_header","span","types"],"struct":["WasmReader"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["SectionTy"],"fn":["decode_section_if_ty_matches"]};

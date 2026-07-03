@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["error","fixed_capacity_vec","indices","reader","rw_spinlock","sidetable","utils"]};
+window.SIDEBAR_ITEMS = {"mod":["decoding","fixed_capacity_vec","rw_spinlock","sidetable","structure","utils"]};

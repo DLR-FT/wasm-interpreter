@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["decode_and_validate_active_segment_offset_expr","decode_and_validate_generic_initializer_list","decode_and_validate_shortened_initializer_list"]};

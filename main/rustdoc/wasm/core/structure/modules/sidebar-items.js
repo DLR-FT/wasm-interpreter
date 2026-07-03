@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["data_segments","element_segments","exports","globals","imports","indices"]};

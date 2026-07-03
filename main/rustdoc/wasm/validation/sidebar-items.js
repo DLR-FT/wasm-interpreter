@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["handle_section","read_all_custom_sections","read_next_header","validate","validate_no_duplicate_exports"],"mod":["code","custom_section","data","globals","read_constant_expression","validation_stack"],"struct":["ValidationInfo"]};
+window.SIDEBAR_ITEMS = {"fn":["decode_and_validate","read_all_custom_sections","validate_no_duplicate_exports"],"mod":["error","instructions","modules","types","validation_stack"],"struct":["Module"]};

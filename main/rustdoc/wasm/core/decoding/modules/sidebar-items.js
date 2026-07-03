@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["code_section","custom_section","element_section","indices","sections"]};

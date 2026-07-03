@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["FuncInst"],"struct":["HostFuncInst","WasmFuncInst"]};

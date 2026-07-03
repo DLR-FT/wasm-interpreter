@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["validate_data_section"]};

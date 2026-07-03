@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["FuncInst"],"struct":["DataInst","ElemInst","GlobalInst","HostFuncInst","MemInst","ModuleInst","TableInst","WasmFuncInst"]};
