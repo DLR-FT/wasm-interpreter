@@ -1,11 +1,12 @@
 // map of the project for the stable_uri forwarder
 const projectMap = {
- "2s663nnhvydmnjlbfngbkhbj6ax8xzrh-requirements/requirements.html": [
+ "v5i0kajzybbp7yavgc62kaqsn8vahxhb-requirements/requirements.html": [
   {"UID":"REQ-1"},
   {"UID":"REQ-3"},
   {"UID":"REQ-5"},
   {"UID":"REQ-12"},
   {"UID":"REQ-14"},
+  {"UID":"REQ-18"},
   {"UID":"REQ-2"},
   {"UID":"REQ-4"},
   {"UID":"REQ-6"},

@@ -153,11 +153,20 @@
                         },
                         {
                             "_TOC": "1.6",
+                            "_NODE_TYPE": "REQUIREMENT",
+                            "UID": "REQ-18",
+                            "TITLE": "Standard Compliance",
+                            "STATEMENT": "The interpreter shall be compliant with version 2.0, 16 June 2025, of the core WebAssembly standard (https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/).\n",
+                            "RATIONALE": "Correct execution of web assembly code requires that the interpreter adheres to the standard.\n",
+                            "COMMENT": "The chosen version is the most recent Candidate Recommendation Draft, which is considered the current standard as per https://webassembly.org/news/2025-03-20-wasm-2.0/.\n"
+                        },
+                        {
+                            "_TOC": "1.7",
                             "_NODE_TYPE": "SECTION",
                             "TITLE": "Low-Level Functional Requirements",
                             "NODES": [
                                 {
-                                    "_TOC": "1.6.1",
+                                    "_TOC": "1.7.1",
                                     "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-2",
                                     "TITLE": "Stackless",
@@ -171,7 +180,7 @@
                                     ]
                                 },
                                 {
-                                    "_TOC": "1.6.2",
+                                    "_TOC": "1.7.2",
                                     "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-4",
                                     "TITLE": "no_std",
@@ -186,7 +195,7 @@
                                     ]
                                 },
                                 {
-                                    "_TOC": "1.6.3",
+                                    "_TOC": "1.7.3",
                                     "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-6",
                                     "TITLE": "Fuel",
@@ -200,7 +209,7 @@
                                     ]
                                 },
                                 {
-                                    "_TOC": "1.6.4",
+                                    "_TOC": "1.7.4",
                                     "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-13",
                                     "TITLE": "De-/Serializable",
@@ -214,7 +223,7 @@
                                     ]
                                 },
                                 {
-                                    "_TOC": "1.6.5",
+                                    "_TOC": "1.7.5",
                                     "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-15",
                                     "TITLE": "Allow log dependency",
@@ -228,7 +237,7 @@
                                     ]
                                 },
                                 {
-                                    "_TOC": "1.6.6",
+                                    "_TOC": "1.7.6",
                                     "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-16",
                                     "TITLE": "Allow libm dependency",
@@ -242,7 +251,7 @@
                                     ]
                                 },
                                 {
-                                    "_TOC": "1.6.7",
+                                    "_TOC": "1.7.7",
                                     "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-17",
                                     "TITLE": "Minimum Supported Rust Version (MSRV)",
