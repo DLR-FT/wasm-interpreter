@@ -4,4 +4,5 @@
 /requirements/export
 /target
 result
+result-*
 testsuite_results.json
