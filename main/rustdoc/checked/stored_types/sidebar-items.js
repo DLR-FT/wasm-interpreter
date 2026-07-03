@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["StoredExternVal","StoredResumable","StoredRunState"],"struct":["Stored","StoredHostCall","StoredInstantiationOutcome"]};

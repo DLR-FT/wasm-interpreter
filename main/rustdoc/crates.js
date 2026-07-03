@@ -1,2 +1,2 @@
-window.ALL_CRATES = ["libm","log_wrapper","wasm"];
-//{"start":21,"fragment_lengths":[6,14,7]}
+window.ALL_CRATES = ["anstream","anstyle","anstyle_parse","anstyle_query","anyhow","checked","clap","clap_builder","clap_derive","clap_lex","colorchoice","compare_testsuite_rs","either","heck","interop","is_terminal_polyfill","itertools","itoa","libm","linker","log","log_wrapper","memchr","proc_macro2","quote","registry","serde","serde_core","serde_derive","serde_json","strsim","syn","unicode_ident","utf8parse","wasm","zmij"];
+//{"start":21,"fragment_lengths":[10,10,16,16,9,10,7,15,14,11,14,23,9,7,10,23,12,7,7,9,6,14,9,14,8,11,8,13,15,13,9,6,16,12,7,7]}

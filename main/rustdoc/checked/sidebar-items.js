@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["StoredExternVal","StoredRef","StoredResumable","StoredRunState","StoredValue"],"mod":["interop","linker","store","stored_types","value"],"struct":["Linker","Store","StoreId","Stored","StoredHostCall","StoredInstantiationOutcome","StoredRefFunc"],"trait":["AbstractStored","StoredInteropValue","StoredInteropValueList"]};

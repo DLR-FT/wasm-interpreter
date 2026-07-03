@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["StoredRefFunc"],"trait":["StoredInteropValue","StoredInteropValueList"]};

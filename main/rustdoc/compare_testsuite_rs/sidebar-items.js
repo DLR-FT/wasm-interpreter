@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["main","sanitize_path","write_details_summary"],"mod":["ci_reports","deltas","summary"],"struct":["Args","TestsuiteReport"]};

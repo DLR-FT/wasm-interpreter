@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["FileDeltaType","FileDeltaTypeIcon"],"fn":["generate","generate_file_delta_assert","generate_file_delta_type","percentage","to_str_or_placeholder"],"struct":["FileDelta","FileDeltas","NowDifferentErrorAssert","NowFailingAssert","NowPassingAssert"]};
