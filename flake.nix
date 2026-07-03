@@ -27,8 +27,25 @@
       treefmt-nix,
       ...
     }@inputs:
+    let
+      inherit (nixpkgs) lib;
+    in
     {
       overlays.default = import ./overlay.nix;
+
+      # for CI
+      ciJobs = {
+        checks = lib.attrsets.recurseIntoAttrs (self.checks or { });
+        homeConfigurations = lib.attrsets.recurseIntoAttrs (
+          lib.attrsets.mapAttrs (name: value: value.activationPackage) (self.homeConfigurations or { })
+        );
+        nixosConfigurations = lib.attrsets.recurseIntoAttrs (
+          lib.attrsets.mapAttrs (name: value: value.config.system.build.toplevel) (
+            self.nixosConfigurations or { }
+          )
+        );
+        packages = lib.attrsets.recurseIntoAttrs (self.packages or { });
+      };
     }
     //
       utils.lib.eachSystem
