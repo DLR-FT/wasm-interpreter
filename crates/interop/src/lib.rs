@@ -9,11 +9,6 @@
 //! conversions but instead for tuples/lists containing multiple values.
 
 #![no_std]
-#![deny(
-    clippy::missing_safety_doc,
-    clippy::undocumented_unsafe_blocks,
-    unsafe_op_in_unsafe_fn
-)]
 
 extern crate alloc;
 

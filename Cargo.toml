@@ -72,3 +72,24 @@ log.workspace = true
 [features]
 default = []
 log = ["log_wrapper/log"]
+
+
+[lints.rust]
+missing_docs = "allow"          # TODO change this to warn
+unsafe_op_in_unsafe_fn = "deny"
+
+[lints.clippy]
+missing_safety_doc = "warn"
+undocumented_unsafe_blocks = "warn"
+
+[lints.rustdoc]
+broken_intra_doc_links = "deny"
+private_intra_doc_links = "deny"
+missing_crate_level_docs = "deny"
+private_doc_tests = "deny"
+invalid_codeblock_attributes = "deny"
+invalid_html_tags = "deny"
+invalid_rust_codeblocks = "deny"
+bare_urls = "deny"
+unescaped_backticks = "deny"
+redundant_explicit_links = "deny"
