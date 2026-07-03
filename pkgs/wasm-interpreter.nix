@@ -59,13 +59,16 @@ rustPlatform.buildRustPackage rec {
 
   # we want a full documentation, if at all
   postBuild = lib.strings.optionalString doDoc ''
-    cargo doc --document-private-items
+    cargo doc --workspace --all-features --document-private-items --locked --offline --frozen
     mkdir -- "$out"
 
     shopt -s globstar
     mv -- target/**/doc "$out/"
     shopt -u globstar
   '';
+  env = lib.attrsets.optionalAttrs doDoc {
+    RUSTFLAGS = "-Dwarnings";
+  };
 
   # nextest can emit JUnit test reports
   inherit useNextest;
