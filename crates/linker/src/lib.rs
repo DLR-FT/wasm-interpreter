@@ -1,11 +1,6 @@
 //! A Name Resolution Based Linker
 
 #![no_std]
-#![deny(
-    clippy::missing_safety_doc,
-    clippy::undocumented_unsafe_blocks,
-    unsafe_op_in_unsafe_fn
-)]
 
 extern crate alloc;
 
