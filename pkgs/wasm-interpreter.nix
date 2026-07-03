@@ -6,7 +6,7 @@
 }:
 
 let
-  cargoToml = builtins.fromTOML (builtins.readFile ../Cargo.toml);
+  cargoToml = fromTOML (builtins.readFile ../Cargo.toml);
 in
 rustPlatform.buildRustPackage rec {
   pname = cargoToml.package.name;
@@ -35,7 +35,6 @@ rustPlatform.buildRustPackage rec {
       filter = (
         path: type:
         let
-          inherit (builtins) baseNameOf toString;
           inherit (lib.lists) any;
           inherit (lib.strings) hasSuffix removePrefix;
           inherit (lib.trivial) id;
