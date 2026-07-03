@@ -247,6 +247,61 @@ where
     }
 }
 
+pub trait StoreTypedInvocationExt<T: Config> {
+    /// Allocates a new function with a statically known type signature with some host code.
+    ///
+    /// This function is simply syntactic sugar for calling
+    /// [`Store::func_alloc`] with statically know types.
+    fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        hostcode: Hostcode,
+    ) -> FuncAddr;
+
+    /// Invokes a function without support for fuel or host functions but with a
+    /// statically known type signature.
+    ///
+    /// # Safety
+    ///
+    /// The caller has to guarantee that the given [`FuncAddr`] and any
+    /// [`FuncAddr`] or [`ExternAddr`] values contained in the parameter values
+    /// came from the current [`Store`] object.
+    unsafe fn invoke_simple_typed<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        function: FuncAddr,
+        params: Params,
+    ) -> Result<Returns, RuntimeError>;
+}
+
+impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
+    fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        hostcode: Hostcode,
+    ) -> FuncAddr {
+        let func_type = FuncType {
+            params: ResultType {
+                valtypes: Vec::from(Params::TYS),
+            },
+            returns: ResultType {
+                valtypes: Vec::from(Returns::TYS),
+            },
+        };
+        self.func_alloc(func_type, hostcode)
+    }
+
+    unsafe fn invoke_simple_typed<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        function: FuncAddr,
+        params: Params,
+    ) -> Result<Returns, RuntimeError> {
+        let params = params.into_values();
+        // SAFETY: The caller ensures that the function address and any
+        // addresses in the parameters are valid in the current store.
+        let returns = unsafe { self.invoke_simple(function, params) }?;
+        Returns::try_from_values(returns.into_iter())
+            .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use alloc::vec::Vec;
@@ -521,60 +576,5 @@ mod tests {
             InteropValueList::try_from_values(wasm_values3.clone().into_iter()),
             err::<(u32, u32)>()
         );
-    }
-}
-
-pub trait StoreTypedInvocationExt<T: Config> {
-    /// Allocates a new function with a statically known type signature with some host code.
-    ///
-    /// This function is simply syntactic sugar for calling
-    /// [`Store::func_alloc`] with statically know types.
-    fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
-        &mut self,
-        hostcode: Hostcode,
-    ) -> FuncAddr;
-
-    /// Invokes a function without support for fuel or host functions but with a
-    /// statically known type signature.
-    ///
-    /// # Safety
-    ///
-    /// The caller has to guarantee that the given [`FuncAddr`] and any
-    /// [`FuncAddr`] or [`ExternAddr`] values contained in the parameter values
-    /// came from the current [`Store`] object.
-    unsafe fn invoke_simple_typed<Params: InteropValueList, Returns: InteropValueList>(
-        &mut self,
-        function: FuncAddr,
-        params: Params,
-    ) -> Result<Returns, RuntimeError>;
-}
-
-impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
-    fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
-        &mut self,
-        hostcode: Hostcode,
-    ) -> FuncAddr {
-        let func_type = FuncType {
-            params: ResultType {
-                valtypes: Vec::from(Params::TYS),
-            },
-            returns: ResultType {
-                valtypes: Vec::from(Returns::TYS),
-            },
-        };
-        self.func_alloc(func_type, hostcode)
-    }
-
-    unsafe fn invoke_simple_typed<Params: InteropValueList, Returns: InteropValueList>(
-        &mut self,
-        function: FuncAddr,
-        params: Params,
-    ) -> Result<Returns, RuntimeError> {
-        let params = params.into_values();
-        // SAFETY: The caller ensures that the function address and any
-        // addresses in the parameters are valid in the current store.
-        let returns = unsafe { self.invoke_simple(function, params) }?;
-        Returns::try_from_values(returns.into_iter())
-            .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
     }
 }
