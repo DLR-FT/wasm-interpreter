@@ -1,3 +1,4 @@
+#![doc = include_str!( "../README.md")]
 #![no_std]
 #![deny(
     clippy::missing_safety_doc,

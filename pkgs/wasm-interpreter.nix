@@ -25,7 +25,7 @@ rustPlatform.buildRustPackage rec {
         "wast"
       ];
       # Files to explicitly include
-      include = [ ];
+      include = [ "README.md" ];
       # Files to explicitly exclude
       exclude = [
         "flake.lock"
