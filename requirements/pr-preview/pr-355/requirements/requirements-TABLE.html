@@ -27,6 +27,8 @@
 
 
   
+  <script src="../_static/stimulus_umd.min.js"></script>
+  <script src="../_static/stimulus_application.js"></script>
   
   <script src="../_static/app_core.js"></script>
   <script src="../_static/dropdown_menu.js"></script>
@@ -35,7 +37,8 @@
   <script src="../_static/project_tree_preserve_scroll.js"></script>
   <script src="../_static/toc_highlighting.js"></script>
   <script src="../_static/pan_with_space.js"></script>
-  <script src="../_static/table_view.js"></script><script id="MathJax-script" async src="../_static/mathjax/tex-mml-chtml.js"></script><script src="../_static/mermaid/mermaid.min.js"></script>
+  <script src="../_static/table_view.js"></script>
+  <script src="../_static/controllers/modal_controller.js"></script><script id="MathJax-script" async src="../_static/mathjax/tex-mml-chtml.js"></script><script src="../_static/mermaid/mermaid.min.js"></script>
     <script type="module">
       mermaid.initialize({ startOnLoad: true });
     </script>
@@ -172,7 +175,7 @@
       js-collapsible_list="list"
       class="toc"
       id="toc"
-      data-controller="draggable_list"><li data-nodeid="0302f61d429a4475a879140d68f3f4af">
+      data-controller="draggable_list"><li data-nodeid="6c237b4070b54436914436feea7b3773">
         <a
           href="#1-Functional-Requirements"
           anchor="1-Functional-Requirements"
@@ -181,7 +184,7 @@
           <span class="section-number">
             1
           </span>Functional Requirements
-            </a><ul><li data-nodeid="42fd896979e5455297d03416c9bbbf69">
+            </a><ul><li data-nodeid="dd05582c92454974a10cbe01029e7c32">
         <a
           href="#REQ-1"
           anchor="REQ-1"
@@ -190,7 +193,7 @@
           <span class="section-number">
             1.1
           </span>Resumable
-            </a></li><li data-nodeid="8572a41fbf404a5ba79d52ffaf821be0">
+            </a></li><li data-nodeid="178d9a4816e74e938a31c1184561c00f">
         <a
           href="#REQ-3"
           anchor="REQ-3"
@@ -199,7 +202,7 @@
           <span class="section-number">
             1.2
           </span>Baremetal
-            </a></li><li data-nodeid="984fd1d27bb047ed9bd3f9f10f0cdf06">
+            </a></li><li data-nodeid="4e8ebf50058f4cd5a2bbf3a9ddd099b0">
         <a
           href="#REQ-5"
           anchor="REQ-5"
@@ -208,7 +211,7 @@
           <span class="section-number">
             1.3
           </span>Bounded execution
-            </a></li><li data-nodeid="d20945b8ddad4cc99b3484611fa9bada">
+            </a></li><li data-nodeid="5f5ec36688924932888d8730814bf358">
         <a
           href="#REQ-12"
           anchor="REQ-12"
@@ -217,7 +220,7 @@
           <span class="section-number">
             1.4
           </span>Migrateable
-            </a></li><li data-nodeid="da78b3c8723c4c3fb4ea4f8793f4910e">
+            </a></li><li data-nodeid="0a0f7e6e4259482e8ca792371eb9b426">
         <a
           href="#REQ-14"
           anchor="REQ-14"
@@ -226,7 +229,7 @@
           <span class="section-number">
             1.5
           </span>No Dependencies
-            </a></li><li data-nodeid="bb993ffdfc31488fa2cd997f24b144cd">
+            </a></li><li data-nodeid="35991ea1274840c7b6ea3691d6e67c68">
         <a
           href="#REQ-18"
           anchor="REQ-18"
@@ -235,7 +238,7 @@
           <span class="section-number">
             1.6
           </span>Standard Compliance
-            </a></li><li data-nodeid="5286e6d842604cd7b446a2209364750c">
+            </a></li><li data-nodeid="22128ec4778b4640bf0ed4f4f9a50067">
         <a
           href="#1.7-Low-Level-Functional-Requirements"
           anchor="1.7-Low-Level-Functional-Requirements"
@@ -244,7 +247,7 @@
           <span class="section-number">
             1.7
           </span>Low-Level Functional Requirements
-            </a><ul><li data-nodeid="63f6c43fd422400d8f97bcd2d1a40d50">
+            </a><ul><li data-nodeid="18bc9fa879e442b4a0fb9cdcb70c8670">
         <a
           href="#REQ-2"
           anchor="REQ-2"
@@ -253,7 +256,7 @@
           <span class="section-number">
             1.7.1
           </span>Stackless
-            </a></li><li data-nodeid="941ab842fc664ac288b3d9a7a7b68864">
+            </a></li><li data-nodeid="2d07ac6109b943589f3ccaf99dcc71a1">
         <a
           href="#REQ-4"
           anchor="REQ-4"
@@ -262,7 +265,7 @@
           <span class="section-number">
             1.7.2
           </span>no_std
-            </a></li><li data-nodeid="e329c09590e64b1db94d544c72467b36">
+            </a></li><li data-nodeid="b969851b497b43ab955f023b85076958">
         <a
           href="#REQ-6"
           anchor="REQ-6"
@@ -271,7 +274,7 @@
           <span class="section-number">
             1.7.3
           </span>Fuel
-            </a></li><li data-nodeid="beeb7e92960940efbc11105ecb6ff587">
+            </a></li><li data-nodeid="4e972f1e95cf4e28bb49c0f41f2701a4">
         <a
           href="#REQ-13"
           anchor="REQ-13"
@@ -280,7 +283,7 @@
           <span class="section-number">
             1.7.4
           </span>De-/Serializable
-            </a></li><li data-nodeid="d9015df116e44e40ab215bd20c27115d">
+            </a></li><li data-nodeid="4569e38c46e2445bbc847587dbd01ea1">
         <a
           href="#REQ-15"
           anchor="REQ-15"
@@ -289,7 +292,7 @@
           <span class="section-number">
             1.7.5
           </span>Allow log dependency
-            </a></li><li data-nodeid="876c768845e84dba819ded6f50e854fb">
+            </a></li><li data-nodeid="e2aea51441e34767983e8e2a92a68a53">
         <a
           href="#REQ-16"
           anchor="REQ-16"
@@ -298,7 +301,7 @@
           <span class="section-number">
             1.7.6
           </span>Allow libm dependency
-            </a></li><li data-nodeid="64ccf9ad233a41808bf47c21cd4b701a">
+            </a></li><li data-nodeid="d341253b6c5642e39d361f92bd8de74b">
         <a
           href="#REQ-17"
           anchor="REQ-17"
@@ -309,7 +312,7 @@
           </span>Minimum Supported Rust Version (MSRV)
             </a></li></ul>
             </li></ul>
-            </li><li data-nodeid="25757c30e6d7406198c4b7d126c6018e">
+            </li><li data-nodeid="d48241c9ff18426189088badbaa34bfa">
         <a
           href="#2-Observability-Requirements"
           anchor="2-Observability-Requirements"
@@ -318,7 +321,7 @@
           <span class="section-number">
             2
           </span>Observability Requirements
-            </a><ul><li data-nodeid="55b4dae595be46c0ba8f7e769efdbd1b">
+            </a><ul><li data-nodeid="193337c901634fc5b4419e184504268f">
         <a
           href="#REQ-7"
           anchor="REQ-7"
@@ -327,7 +330,7 @@
           <span class="section-number">
             2.1
           </span>Instrumentation
-            </a></li><li data-nodeid="899c9f8333654c2fb9a0d6e0288f5041">
+            </a></li><li data-nodeid="2daba4205e9147498aecaaaf1a9edcd0">
         <a
           href="#2.2-Low-Level-Observability-Requirements"
           anchor="2.2-Low-Level-Observability-Requirements"
@@ -336,7 +339,7 @@
           <span class="section-number">
             2.2
           </span>Low-Level Observability Requirements
-            </a><ul><li data-nodeid="a1d40c0db1124646b3bad64a4c75c22b">
+            </a><ul><li data-nodeid="21c516809b334267bfcdb8512f1f0b66">
         <a
           href="#REQ-8"
           anchor="REQ-8"
@@ -345,7 +348,7 @@
           <span class="section-number">
             2.2.1
           </span>Statement Coverage
-            </a></li><li data-nodeid="42d8870845144e30aeff2018855be24c">
+            </a></li><li data-nodeid="e96cb250433e46efa56eca34143187e0">
         <a
           href="#REQ-9"
           anchor="REQ-9"
@@ -354,7 +357,7 @@
           <span class="section-number">
             2.2.2
           </span>Decision Coverage
-            </a></li><li data-nodeid="4441b69d67fc483d9b02b8fb3fa8e77a">
+            </a></li><li data-nodeid="a2f24f22dbf5456f801c0b04ad284932">
         <a
           href="#REQ-10"
           anchor="REQ-10"
@@ -363,7 +366,7 @@
           <span class="section-number">
             2.2.3
           </span>Modified Condition/Decision Coverage
-            </a></li><li data-nodeid="1294d648ec474f6aad9a493df365606b">
+            </a></li><li data-nodeid="b8f1f63acf0a4e13bb5809ee1dd4e58c">
         <a
           href="#REQ-11"
           anchor="REQ-11"
@@ -510,27 +513,13 @@
     
   <div class="header__placeholder" data-testid="header-placeholder" id="header-placeholder"></div>
 
-  </div>
-    </header>
-
-    <main class="layout_main">
-      
-  <div class="main" js-pan_with_space="true">
-    
-
-<div class="tags"></div>
-      <div class="content">
-        <sdoc-node>
-        
-<h1 data-testid="document-title">
-  WASM Interpreter for Safety - Requirements
-  <span style="position: absolute; left: 0;" id="None-WASM-Interpreter-for-Safety-Requirements" data-uid="None-WASM-Interpreter-for-Safety-Requirements" data-anchor="None-WASM-Interpreter-for-Safety-Requirements"></span>
-</h1>
-        
-        </sdoc-node>
-
-        <div class="table-toolbar" data-testid="table-toolbar">
-  <div class="table-toolbar__columns">
+  <div class="table-toolbar" data-testid="table-toolbar">
+  <div class="table-toolbar__dock">
+  <div class="table-toolbar__sort-reset" hidden>
+    <button class="table-toolbar__btn action_button"
+            data-testid="table-toolbar-sort-reset">
+            <span class="table-toolbar__btn-text">Reset sort</span></button>
+  </div><div class="table-toolbar__columns">
     <button class="table-toolbar__btn action_button"
             aria-haspopup="true"
             aria-expanded="false"
@@ -546,15 +535,16 @@
 >
   <polyline class="collapsed" points="12 6 8 10 4 6"></polyline>
   <line class="expanded" x1="4" y1="8" x2="12" y2="8"></line>
-</svg><span class="table-toolbar__btn-text">Columns</span></button>
-    <div class="table-toolbar__panel dropdown_menu"
+</svg><span class="table-toolbar__btn-text">Columns<span class="table-toolbar__btn-info"></span></span>
+    </button>
+    <div class="table-toolbar__dropdown dropdown_menu"
           hidden
           aria-hidden="true"
           role="dialog"
           aria-label="Column visibility"
           data-testid="table-toolbar-columns-panel">
-      <div class="table-toolbar__panel-header">
-        <span class="table-toolbar__panel-title">Visible:</span>
+      <div class="table-toolbar__dropdown-header">
+        <span class="table-toolbar__dropdown-title">Visible:</span>
         <button class="table-toolbar__reset compact action_button"
                 data-testid="table-toolbar-columns-reset">Show all</button>
       </div>
@@ -576,46 +566,519 @@
 >
   <polyline class="collapsed" points="12 6 8 10 4 6"></polyline>
   <line class="expanded" x1="4" y1="8" x2="12" y2="8"></line>
-</svg><span class="table-toolbar__btn-text">Nodes</span></button>
-    <div class="table-toolbar__panel dropdown_menu"
+</svg><span class="table-toolbar__btn-text">Nodes<span class="table-toolbar__btn-info"></span></span>
+    </button>
+    <div class="table-toolbar__dropdown dropdown_menu"
           hidden
           aria-hidden="true"
           role="dialog"
           aria-label="Row visibility"
           data-testid="table-toolbar-rows-panel">
-      <div class="table-toolbar__panel-header">
-        <span class="table-toolbar__panel-title">Visible:</span>
+      <div class="table-toolbar__dropdown-header">
+        <span class="table-toolbar__dropdown-title">Visible:</span>
         <button class="table-toolbar__reset compact action_button"
                 data-testid="table-toolbar-rows-reset">Show all</button>
       </div>
       <ul class="table-toolbar__list" data-testid="table-toolbar-rows-list"></ul>
     </div>
     </div>
+    <div class="table-toolbar__tips">
+      <button class="table-toolbar__btn action_button"
+              data-testid="table-toolbar-tips-btn">
+              <span class="table-toolbar__btn-text">?</span></button>
+    </div>
+  </div>
 </div>
+<template id="template-icon-checkbox">
+  
+    <label class="icon-checkbox">
+      <input type="checkbox"><svg
+  class="svg_icon"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="svg_icon__opened">
+    <path d="M 8,4 C 5,4 2,7 2,8 2,9 5,12 8,12 11,12 14,9 14,8 14,7 11,4 8,4 Z" />
+    <path d="M 8,4 V 2"/>
+    <path d="M 13,4 12,5"/>
+    <path d="M 3,4 4,5"/>
+    <circle cy="8" cx="8" r="1" />
+  </g>
+  <g class="svg_icon__closed">
+    <path d="m 2,6 c 0,1 3,4 6,4 3,0 6,-3 6,-4" />
+    <path d="M 8,12 V 10" />
+    <path d="M 13,10 12,9" />
+    <path d="M 3,10 4,9" />
+  </g>
+</svg><span></span>
+    </label>
+  
+</template><template id="table-tips-modal-template"><turbo-frame data-controller="modal_controller">
+  <sdoc-backdrop>
+    <sdoc-modal>
+      <sdoc-modal-container data-testid="table-tips-content">
+        <h3>TABLE screen tips</h3>
+        <p><b>Filter view</b></p>
+        <ul>
+          <li>Use the <strong>Columns</strong> panel to show or hide individual fields in the table.</li>
+          <li>Use the <strong>Nodes</strong> panel to filter which node types are displayed in the table.</li>
+        </ul>
+        <p><b>Edit mode</b></p>
+        <ul>
+          <li>Enable <b>Edit mode</b> to edit document content directly in the table.</li>
+          <li>Click a field to edit it. Save with <code>Ctrl/Cmd+Enter</code> or by <i>leaving the field</i>. Press <code>Escape</code> to cancel without changes.</li>
+          <li>Use <b>Add</b> separators between rows to create new nodes.</li>
+          <li>Use the <b>Delete</b> action in the <code>Type</code> column to remove nodes.</li>
+          <li><b>Add Node</b> is unavailable while sorting or row filtering is active.</li>
+        </ul>
+        <p><b>Pan the page</b></p>
+        <ul>
+          <li>Hold <code>Space</code> and drag to move around the table.</li>
+          <li>While editing a text field, <code>Space</code> inserts a space character instead of activating pan mode.</li>
+        </ul>
 
-        <table class="content-view-table">
-          <thead>
+      </sdoc-modal-container><button
+    stimulus-modal-cancel-button
+    type="button"
+    class="action_button"
+    data-action-type="cancel"
+    data-testid="form-cancel-action"
+  >Close</button></sdoc-modal>
+  </sdoc-backdrop>
+</turbo-frame></template>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelector('[data-testid="table-toolbar-tips-btn"]').addEventListener('click', function() {
+    var template = document.getElementById('table-tips-modal-template');
+    document.getElementById('modal').innerHTML = template.innerHTML;
+  });
+});
+</script></div>
+    </header>
+
+    <main class="layout_main">
+      
+  
+  <div class="main"
+       js-pan_with_space="true"
+       js-table_view_edit
+  >
+    
+
+<div class="tags"></div>
+      <div class="content" js-toc_highlighting-content_root>
+        <div id="table-add-node-feedback" hidden></div>
+
+        
+        
+        
+        
+        
+
+
+<sdoc-node>
+  <h1 data-testid="document-title"><div
+     data-testid="document-title-field"
+     data-field-name="TITLE"
+>
+  <div id="doc-field-6f4574dd1fb34733aa4da14258e0fdce-TITLE" wrapper-field-type="contenteditable"><sdoc-autogen>WASM Interpreter for Safety - Requirements</sdoc-autogen></div>
+</div><span style="position: absolute; left: 0;" id="None-WASM-Interpreter-for-Safety-Requirements" data-uid="None-WASM-Interpreter-for-Safety-Requirements" data-anchor="None-WASM-Interpreter-for-Safety-Requirements"></span>
+  </h1>
+
+  
+
+  <sdoc-meta>
+    <sdoc-meta-label
+  data-testid="document-config-uid-label">UID:</sdoc-meta-label>
+<sdoc-meta-field
+  data-testid="document-config-uid-field"
+  data-field-name="UID"
+>
+  <div
+    id="doc-field-6f4574dd1fb34733aa4da14258e0fdce-UID"
+  ></div>
+</sdoc-meta-field><sdoc-meta-label
+  data-testid="document-config-version-label">VERSION:</sdoc-meta-label>
+<sdoc-meta-field
+  data-testid="document-config-version-field"
+  data-field-name="VERSION"
+>
+  <div
+    id="doc-field-6f4574dd1fb34733aa4da14258e0fdce-VERSION"
+  ></div>
+</sdoc-meta-field><sdoc-meta-label
+  data-testid="document-config-classification-label">CLASSIFICATION:</sdoc-meta-label>
+<sdoc-meta-field
+  data-testid="document-config-classification-field"
+  data-field-name="CLASSIFICATION"
+>
+  <div
+    id="doc-field-6f4574dd1fb34733aa4da14258e0fdce-CLASSIFICATION"
+  ></div>
+</sdoc-meta-field><sdoc-meta-label
+  data-testid="document-config-prefix-label">PREFIX:</sdoc-meta-label>
+<sdoc-meta-field
+  data-testid="document-config-prefix-field"
+  data-field-name="PREFIX"
+>
+  <div
+    id="doc-field-6f4574dd1fb34733aa4da14258e0fdce-PREFIX"
+  ></div>
+</sdoc-meta-field></sdoc-meta>
+
+</sdoc-node>
+
+        
+        
+        
+        <table class="content-view-table" js-table_view_edit-table>
+
+          
+          <thead class="content-view-table_sticky-header">
             <tr>
-              <th class="content-view-th">Type</th>
-              <th class="content-view-th">Level</th><th class="content-view-th">UID</th><th class="content-view-th">PREFIX</th><th class="content-view-th">STATUS</th><th class="content-view-th">TAGS</th><th class="content-view-th">REFS</th>
-              <th class="content-view-th">Title</th>
-              <th class="content-view-th">Statement</th>
-              <th class="content-view-th">Rationale</th>
-              <th class="content-view-th">Comment</th></tr>
+              <th class="content-view-th" data-testid="col-header-Type">
+                <div class="content-view-th__content">
+                  <span class="content-view-th__label">Type</span>
+                  <button class="content-view-th__sort-btn" aria-label="Sort by Type"><svg
+  class="svg_icon icon_sort"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="sort-none">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+  <g class="sort-desc">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <line x1="8" y1="5" x2="8" y2="13"></line>
+  </g>
+  <g class="sort-asc">
+    <line x1="8" y1="11" x2="8" y2="3"></line>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+</svg></button>
+                </div>
+              </th>
+              <th class="content-view-th" data-testid="col-header-Level">
+                <div class="content-view-th__content">
+                  <span class="content-view-th__label">Level</span>
+                  <button class="content-view-th__sort-btn" aria-label="Sort by Level"><svg
+  class="svg_icon icon_sort"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="sort-none">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+  <g class="sort-desc">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <line x1="8" y1="5" x2="8" y2="13"></line>
+  </g>
+  <g class="sort-asc">
+    <line x1="8" y1="11" x2="8" y2="3"></line>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+</svg></button>
+                </div>
+              </th><th class="content-view-th" data-testid="col-header-UID">
+                  <div class="content-view-th__content">
+                    <span class="content-view-th__label">UID</span>
+                    <button class="content-view-th__sort-btn" aria-label="Sort by UID"><svg
+  class="svg_icon icon_sort"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="sort-none">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+  <g class="sort-desc">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <line x1="8" y1="5" x2="8" y2="13"></line>
+  </g>
+  <g class="sort-asc">
+    <line x1="8" y1="11" x2="8" y2="3"></line>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+</svg></button>
+                  </div>
+                </th><th class="content-view-th" data-testid="col-header-PREFIX">
+                  <div class="content-view-th__content">
+                    <span class="content-view-th__label">PREFIX</span>
+                    <button class="content-view-th__sort-btn" aria-label="Sort by PREFIX"><svg
+  class="svg_icon icon_sort"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="sort-none">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+  <g class="sort-desc">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <line x1="8" y1="5" x2="8" y2="13"></line>
+  </g>
+  <g class="sort-asc">
+    <line x1="8" y1="11" x2="8" y2="3"></line>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+</svg></button>
+                  </div>
+                </th><th class="content-view-th" data-testid="col-header-STATUS">
+                  <div class="content-view-th__content">
+                    <span class="content-view-th__label">STATUS</span>
+                    <button class="content-view-th__sort-btn" aria-label="Sort by STATUS"><svg
+  class="svg_icon icon_sort"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="sort-none">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+  <g class="sort-desc">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <line x1="8" y1="5" x2="8" y2="13"></line>
+  </g>
+  <g class="sort-asc">
+    <line x1="8" y1="11" x2="8" y2="3"></line>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+</svg></button>
+                  </div>
+                </th><th class="content-view-th" data-testid="col-header-TAGS">
+                  <div class="content-view-th__content">
+                    <span class="content-view-th__label">TAGS</span>
+                    <button class="content-view-th__sort-btn" aria-label="Sort by TAGS"><svg
+  class="svg_icon icon_sort"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="sort-none">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+  <g class="sort-desc">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <line x1="8" y1="5" x2="8" y2="13"></line>
+  </g>
+  <g class="sort-asc">
+    <line x1="8" y1="11" x2="8" y2="3"></line>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+</svg></button>
+                  </div>
+                </th><th class="content-view-th" data-testid="col-header-REFS">
+                  <div class="content-view-th__content">
+                    <span class="content-view-th__label">REFS</span>
+                    <button class="content-view-th__sort-btn" aria-label="Sort by REFS"><svg
+  class="svg_icon icon_sort"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="sort-none">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+  <g class="sort-desc">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <line x1="8" y1="5" x2="8" y2="13"></line>
+  </g>
+  <g class="sort-asc">
+    <line x1="8" y1="11" x2="8" y2="3"></line>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+</svg></button>
+                  </div>
+                </th><th class="content-view-th" data-testid="col-header-Title">
+                  <div class="content-view-th__content">
+                    <span class="content-view-th__label">Title</span>
+                    <button class="content-view-th__sort-btn" aria-label="Sort by Title"><svg
+  class="svg_icon icon_sort"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="sort-none">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+  <g class="sort-desc">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <line x1="8" y1="5" x2="8" y2="13"></line>
+  </g>
+  <g class="sort-asc">
+    <line x1="8" y1="11" x2="8" y2="3"></line>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+</svg></button>
+                  </div>
+                </th><th class="content-view-th" data-testid="col-header-Statement">
+                  <div class="content-view-th__content">
+                    <span class="content-view-th__label">Statement</span>
+                    <button class="content-view-th__sort-btn" aria-label="Sort by Statement"><svg
+  class="svg_icon icon_sort"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="sort-none">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+  <g class="sort-desc">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <line x1="8" y1="5" x2="8" y2="13"></line>
+  </g>
+  <g class="sort-asc">
+    <line x1="8" y1="11" x2="8" y2="3"></line>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+</svg></button>
+                  </div>
+                </th><th class="content-view-th" data-testid="col-header-Rationale">
+                  <div class="content-view-th__content">
+                    <span class="content-view-th__label">Rationale</span>
+                    <button class="content-view-th__sort-btn" aria-label="Sort by Rationale"><svg
+  class="svg_icon icon_sort"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="sort-none">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+  <g class="sort-desc">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <line x1="8" y1="5" x2="8" y2="13"></line>
+  </g>
+  <g class="sort-asc">
+    <line x1="8" y1="11" x2="8" y2="3"></line>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+</svg></button>
+                  </div>
+                </th><th class="content-view-th" data-testid="col-header-Comment">
+                  <div class="content-view-th__content">
+                    <span class="content-view-th__label">Comment</span>
+                    <button class="content-view-th__sort-btn" aria-label="Sort by Comment"><svg
+  class="svg_icon icon_sort"
+  viewBox="0 0 16 16"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <g class="sort-none">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+  <g class="sort-desc">
+    <polyline points="5 10 8 13 11 10"></polyline>
+    <line x1="8" y1="5" x2="8" y2="13"></line>
+  </g>
+  <g class="sort-asc">
+    <line x1="8" y1="11" x2="8" y2="3"></line>
+    <polyline points="5 6 8 3 11 6"></polyline>
+  </g>
+</svg></button>
+                  </div>
+                </th></tr>
           </thead>
-              <tr data-row-type="SECTION">
-                <td class="content-view-td content-view-td-type">
-                  SECTION
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1
-                </td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+
+          
+          <tbody id="table-content-body" data-testid="table-content-body">
+
+  
+  
+  
+    <tr data-row-type="SECTION" data-node-mid="6c237b4070b54436914436feea7b3773"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>SECTION</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-6c237b4070b54436914436feea7b3773-LEVEL" class="content-view-td content-view-td-level">
+    1
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-6c237b4070b54436914436feea7b3773-UID" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="PREFIX"
+>
+  <div id="cell-6c237b4070b54436914436feea7b3773-PREFIX" wrapper-field-type="contenteditable">
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="STATUS">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="TAGS">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-6c237b4070b54436914436feea7b3773-RELATIONS" wrapper-field-type="contenteditable">
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-6c237b4070b54436914436feea7b3773-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="1-Functional-Requirements"
   data-anchor="1-Functional-Requirements"
   node-role="requirement"
@@ -623,33 +1086,85 @@
   
 >
   </sdoc-anchor>
-                    <div class="requirement__title">Functional Requirements</div></td>
-                <td class="content-view-td content-view-td-content"></td>
-                <td class="content-view-td content-view-td-content"></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.1
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-1</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Children:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-2">
-                              <span class="requirement__child-uid">REQ-2</span>
-                            Stackless
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+<sdoc-autogen>Functional Requirements</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="STATEMENT">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="RATIONALE">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="COMMENT">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="dd05582c92454974a10cbe01029e7c32"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-dd05582c92454974a10cbe01029e7c32-LEVEL" class="content-view-td content-view-td-level">
+    1.1
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-dd05582c92454974a10cbe01029e7c32-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-1</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-dd05582c92454974a10cbe01029e7c32-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-dd05582c92454974a10cbe01029e7c32-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-dd05582c92454974a10cbe01029e7c32-RELATIONS" wrapper-field-type="contenteditable">
+  Children:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-2"
+        >
+            <span class="requirement__child-uid">REQ-2</span>
+          Stackless
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-dd05582c92454974a10cbe01029e7c32-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-1"
   data-anchor="REQ-1"
   node-role="requirement"
@@ -721,40 +1236,95 @@
   <span class="anchor_button_text">REQ-1</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Resumable</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Resumable</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-dd05582c92454974a10cbe01029e7c32-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter shall be resumable</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-dd05582c92454974a10cbe01029e7c32-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>Operation with fuel or other implementations of bounded run-time requires that the interpreter can be halted.
 Conversely, later on the interpreter may be resumed, as if it was not halted in the first place.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.2
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-3</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Children:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-4">
-                              <span class="requirement__child-uid">REQ-4</span>
-                            no_std
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-dd05582c92454974a10cbe01029e7c32-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="178d9a4816e74e938a31c1184561c00f"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-178d9a4816e74e938a31c1184561c00f-LEVEL" class="content-view-td content-view-td-level">
+    1.2
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-178d9a4816e74e938a31c1184561c00f-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-3</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-178d9a4816e74e938a31c1184561c00f-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-178d9a4816e74e938a31c1184561c00f-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-178d9a4816e74e938a31c1184561c00f-RELATIONS" wrapper-field-type="contenteditable">
+  Children:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-4"
+        >
+            <span class="requirement__child-uid">REQ-4</span>
+          no_std
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-178d9a4816e74e938a31c1184561c00f-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-3"
   data-anchor="REQ-3"
   node-role="requirement"
@@ -826,39 +1396,94 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-3</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Baremetal</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Baremetal</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-178d9a4816e74e938a31c1184561c00f-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter shall be executable on bare-metal environments</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-178d9a4816e74e938a31c1184561c00f-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>No reliance on any specific functionality from the provided execution environment is acceptable, as the interpreter shall be ready for embedding to any environment that Rust can compile for.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.3
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-5</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Children:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-6">
-                              <span class="requirement__child-uid">REQ-6</span>
-                            Fuel
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-178d9a4816e74e938a31c1184561c00f-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="4e8ebf50058f4cd5a2bbf3a9ddd099b0"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-4e8ebf50058f4cd5a2bbf3a9ddd099b0-LEVEL" class="content-view-td content-view-td-level">
+    1.3
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-4e8ebf50058f4cd5a2bbf3a9ddd099b0-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-5</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-4e8ebf50058f4cd5a2bbf3a9ddd099b0-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-4e8ebf50058f4cd5a2bbf3a9ddd099b0-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-4e8ebf50058f4cd5a2bbf3a9ddd099b0-RELATIONS" wrapper-field-type="contenteditable">
+  Children:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-6"
+        >
+            <span class="requirement__child-uid">REQ-6</span>
+          Fuel
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-4e8ebf50058f4cd5a2bbf3a9ddd099b0-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-5"
   data-anchor="REQ-5"
   node-role="requirement"
@@ -930,42 +1555,97 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-5</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Bounded execution</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Bounded execution</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-4e8ebf50058f4cd5a2bbf3a9ddd099b0-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter shall yield back control flow eventually</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-4e8ebf50058f4cd5a2bbf3a9ddd099b0-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>A user shall be able to call the interpreter with a bound, expecting a result in a finite amount of time or bytecode operations. Even if the bytecode itself does never finish execution (i.e. due to a infinite loop), the interpreter shall yield eventually, by pausing the bytecode execution.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-4e8ebf50058f4cd5a2bbf3a9ddd099b0-COMMENT" wrapper-field-type="comments"><sdoc-autogen><div class="document">
 <p>It is not acceptable to constraint the interpreter to only those bytecode instances for which the halting-problem is solvable.</p>
 </div>
-</sdoc-autogen></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.4
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-12</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Children:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-13">
-                              <span class="requirement__child-uid">REQ-13</span>
-                            De-/Serializable
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="5f5ec36688924932888d8730814bf358"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-5f5ec36688924932888d8730814bf358-LEVEL" class="content-view-td content-view-td-level">
+    1.4
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-5f5ec36688924932888d8730814bf358-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-12</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-5f5ec36688924932888d8730814bf358-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-5f5ec36688924932888d8730814bf358-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-5f5ec36688924932888d8730814bf358-RELATIONS" wrapper-field-type="contenteditable">
+  Children:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-13"
+        >
+            <span class="requirement__child-uid">REQ-13</span>
+          De-/Serializable
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-5f5ec36688924932888d8730814bf358-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-12"
   data-anchor="REQ-12"
   node-role="requirement"
@@ -1037,46 +1717,102 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-12</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Migrateable</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Migrateable</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-5f5ec36688924932888d8730814bf358-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter state shall be able to halt on one computer and continue execution on another</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-5f5ec36688924932888d8730814bf358-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>This enables various workflows in deployments of multiple computers. For load-balancing or redundancy purposes, running applications can be migrated to other computers without disruption.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.5
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-14</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Children:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-15">
-                              <span class="requirement__child-uid">REQ-15</span>
-                            Allow log dependency
-                          </a>
-                        </li>
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-16">
-                              <span class="requirement__child-uid">REQ-16</span>
-                            Allow libm dependency
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-5f5ec36688924932888d8730814bf358-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="0a0f7e6e4259482e8ca792371eb9b426"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-0a0f7e6e4259482e8ca792371eb9b426-LEVEL" class="content-view-td content-view-td-level">
+    1.5
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-0a0f7e6e4259482e8ca792371eb9b426-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-14</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-0a0f7e6e4259482e8ca792371eb9b426-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-0a0f7e6e4259482e8ca792371eb9b426-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-0a0f7e6e4259482e8ca792371eb9b426-RELATIONS" wrapper-field-type="contenteditable">
+  Children:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-15"
+        >
+            <span class="requirement__child-uid">REQ-15</span>
+          Allow log dependency
+        </a>
+      </li>
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-16"
+        >
+            <span class="requirement__child-uid">REQ-16</span>
+          Allow libm dependency
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-0a0f7e6e4259482e8ca792371eb9b426-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-14"
   data-anchor="REQ-14"
   node-role="requirement"
@@ -1148,16 +1884,28 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-14</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">No Dependencies</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>No Dependencies</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-0a0f7e6e4259482e8ca792371eb9b426-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>No dependencies but those explicitly allowed by a requirement shall be used</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-0a0f7e6e4259482e8ca792371eb9b426-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>Dependencies have to forego the full V&amp;V process as well, which quickly adds enormous work.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-0a0f7e6e4259482e8ca792371eb9b426-COMMENT" wrapper-field-type="comments"><sdoc-autogen><div class="document">
 <p>This requirement constraints the usage and introduction of normal dependencies, but not Dev Dependencies <a class="footnote-reference" href="#footnote-1" id="footnote-reference-1">[1]</a> and not Build Dependencies <a class="footnote-reference" href="#footnote-2" id="footnote-reference-2">[2]</a> .</p>
 <table class="docutils footnote" frame="void" id="footnote-1" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
@@ -1178,20 +1926,62 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
 </sdoc-autogen><sdoc-autogen><div class="document">
 <p>All requirements that allow a dependency must specify the exact version of the dependency (at least major, minor and patch release)</p>
 </div>
-</sdoc-autogen></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.6
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-18</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="35991ea1274840c7b6ea3691d6e67c68"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-35991ea1274840c7b6ea3691d6e67c68-LEVEL" class="content-view-td content-view-td-level">
+    1.6
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-35991ea1274840c7b6ea3691d6e67c68-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-18</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-35991ea1274840c7b6ea3691d6e67c68-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-35991ea1274840c7b6ea3691d6e67c68-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-35991ea1274840c7b6ea3691d6e67c68-RELATIONS" wrapper-field-type="contenteditable">
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-35991ea1274840c7b6ea3691d6e67c68-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-18"
   data-anchor="REQ-18"
   node-role="requirement"
@@ -1263,32 +2053,85 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-18</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Standard Compliance</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Standard Compliance</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-35991ea1274840c7b6ea3691d6e67c68-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter shall be compliant with version 2.0, 16 June 2025, of the core WebAssembly standard (<a class="reference external" href="https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/">https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/</a>).</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-35991ea1274840c7b6ea3691d6e67c68-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>Correct execution of web assembly code requires that the interpreter adheres to the standard.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-35991ea1274840c7b6ea3691d6e67c68-COMMENT" wrapper-field-type="comments"><sdoc-autogen><div class="document">
 <p>The chosen version is the most recent Candidate Recommendation Draft, which is considered the current standard as per <a class="reference external" href="https://webassembly.org/news/2025-03-20-wasm-2.0/">https://webassembly.org/news/2025-03-20-wasm-2.0/</a>.</p>
 </div>
-</sdoc-autogen></td></tr>
-              <tr data-row-type="SECTION">
-                <td class="content-view-td content-view-td-type">
-                  SECTION
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.7
-                </td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="SECTION" data-node-mid="22128ec4778b4640bf0ed4f4f9a50067"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>SECTION</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-22128ec4778b4640bf0ed4f4f9a50067-LEVEL" class="content-view-td content-view-td-level">
+    1.7
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-22128ec4778b4640bf0ed4f4f9a50067-UID" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="PREFIX"
+>
+  <div id="cell-22128ec4778b4640bf0ed4f4f9a50067-PREFIX" wrapper-field-type="contenteditable">
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="STATUS">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="TAGS">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-22128ec4778b4640bf0ed4f4f9a50067-RELATIONS" wrapper-field-type="contenteditable">
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-22128ec4778b4640bf0ed4f4f9a50067-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="1.7-Low-Level-Functional-Requirements"
   data-anchor="1.7-Low-Level-Functional-Requirements"
   node-role="requirement"
@@ -1296,33 +2139,85 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   
 >
   </sdoc-anchor>
-                    <div class="requirement__title">Low-Level Functional Requirements</div></td>
-                <td class="content-view-td content-view-td-content"></td>
-                <td class="content-view-td content-view-td-content"></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.7.1
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-2</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Parents:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-1">
-                              <span class="requirement__parent-uid">REQ-1</span>
-                            Resumable
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+<sdoc-autogen>Low-Level Functional Requirements</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="STATEMENT">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="RATIONALE">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="COMMENT">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="18bc9fa879e442b4a0fb9cdcb70c8670"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-18bc9fa879e442b4a0fb9cdcb70c8670-LEVEL" class="content-view-td content-view-td-level">
+    1.7.1
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-18bc9fa879e442b4a0fb9cdcb70c8670-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-2</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-18bc9fa879e442b4a0fb9cdcb70c8670-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-18bc9fa879e442b4a0fb9cdcb70c8670-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-18bc9fa879e442b4a0fb9cdcb70c8670-RELATIONS" wrapper-field-type="contenteditable">
+  Parents:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-1"
+        >
+            <span class="requirement__parent-uid">REQ-1</span>
+          Resumable
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-18bc9fa879e442b4a0fb9cdcb70c8670-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-2"
   data-anchor="REQ-2"
   node-role="requirement"
@@ -1394,40 +2289,95 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-2</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Stackless</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Stackless</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-18bc9fa879e442b4a0fb9cdcb70c8670-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter shall be stackless</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-18bc9fa879e442b4a0fb9cdcb70c8670-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>A stackless interpreter is one that does not use function calls in the host environment to implement function calls inside the interpreter. Instead, the stack of the interpreted bytecode is stored in a traditional data structure (such as a Vec&lt;u8&gt;). Interpretation can be interrupted between any two virtual instructions of the bytecode, and crucially so resumed from there.</p>
 <p>Further information: <a class="reference external" href="https://kyju.org/blog/piccolo-a-stackless-lua-interpreter/#a-stackless-interpreter-design">https://kyju.org/blog/piccolo-a-stackless-lua-interpreter/#a-stackless-interpreter-design</a></p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.7.2
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-4</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Parents:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-3">
-                              <span class="requirement__parent-uid">REQ-3</span>
-                            Baremetal
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-18bc9fa879e442b4a0fb9cdcb70c8670-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="2d07ac6109b943589f3ccaf99dcc71a1"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-2d07ac6109b943589f3ccaf99dcc71a1-LEVEL" class="content-view-td content-view-td-level">
+    1.7.2
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-2d07ac6109b943589f3ccaf99dcc71a1-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-4</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-2d07ac6109b943589f3ccaf99dcc71a1-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-2d07ac6109b943589f3ccaf99dcc71a1-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-2d07ac6109b943589f3ccaf99dcc71a1-RELATIONS" wrapper-field-type="contenteditable">
+  Parents:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-3"
+        >
+            <span class="requirement__parent-uid">REQ-3</span>
+          Baremetal
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-2d07ac6109b943589f3ccaf99dcc71a1-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-4"
   data-anchor="REQ-4"
   node-role="requirement"
@@ -1499,42 +2449,97 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-4</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">no_std</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>no_std</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-2d07ac6109b943589f3ccaf99dcc71a1-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter shall be implemented in no_std Rust</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-2d07ac6109b943589f3ccaf99dcc71a1-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>Only relying on the functionality that is provided by no_std enables execution on bare environments where operating system is available.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-2d07ac6109b943589f3ccaf99dcc71a1-COMMENT" wrapper-field-type="comments"><sdoc-autogen><div class="document">
 <p>Reliance on alloc is allowable, as an allocator can be implemented without further reliance on the execution environment.</p>
 </div>
-</sdoc-autogen></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.7.3
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-6</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Parents:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-5">
-                              <span class="requirement__parent-uid">REQ-5</span>
-                            Bounded execution
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="b969851b497b43ab955f023b85076958"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-b969851b497b43ab955f023b85076958-LEVEL" class="content-view-td content-view-td-level">
+    1.7.3
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-b969851b497b43ab955f023b85076958-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-6</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-b969851b497b43ab955f023b85076958-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-b969851b497b43ab955f023b85076958-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-b969851b497b43ab955f023b85076958-RELATIONS" wrapper-field-type="contenteditable">
+  Parents:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-5"
+        >
+            <span class="requirement__parent-uid">REQ-5</span>
+          Bounded execution
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-b969851b497b43ab955f023b85076958-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-6"
   data-anchor="REQ-6"
   node-role="requirement"
@@ -1606,40 +2611,95 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-6</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Fuel</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Fuel</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-b969851b497b43ab955f023b85076958-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter shall support fuel bounded execution</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-b969851b497b43ab955f023b85076958-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>Fuel is a mechanism to limit the amount of bytecode operations conducted when calling the interpreter. Each bytecode instruction is associated with a specific amount of fuel consumed when executing it. The interpreter is provided a finite amount of fuel, that is deplete during execution, until the amount of fuel is insufficient to conduct further bytecode operations. At this point, the interpreter yields back the control flow. Later on, the execution may be resumed.</p>
 <p>Further information: <a class="reference external" href="https://docs.rs/wasmtime/latest/wasmtime/struct.Config.html#method.consume_fuel">https://docs.rs/wasmtime/latest/wasmtime/struct.Config.html#method.consume_fuel</a></p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.7.4
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-13</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Parents:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-12">
-                              <span class="requirement__parent-uid">REQ-12</span>
-                            Migrateable
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-b969851b497b43ab955f023b85076958-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="4e972f1e95cf4e28bb49c0f41f2701a4"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-4e972f1e95cf4e28bb49c0f41f2701a4-LEVEL" class="content-view-td content-view-td-level">
+    1.7.4
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-4e972f1e95cf4e28bb49c0f41f2701a4-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-13</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-4e972f1e95cf4e28bb49c0f41f2701a4-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-4e972f1e95cf4e28bb49c0f41f2701a4-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-4e972f1e95cf4e28bb49c0f41f2701a4-RELATIONS" wrapper-field-type="contenteditable">
+  Parents:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-12"
+        >
+            <span class="requirement__parent-uid">REQ-12</span>
+          Migrateable
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-4e972f1e95cf4e28bb49c0f41f2701a4-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-13"
   data-anchor="REQ-13"
   node-role="requirement"
@@ -1711,39 +2771,94 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-13</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">De-/Serializable</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>De-/Serializable</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-4e972f1e95cf4e28bb49c0f41f2701a4-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter state shall be de-/serializable</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-4e972f1e95cf4e28bb49c0f41f2701a4-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>If the interpreter state can be serialized to and deserialized from a canonical representation, migration to other computers as well as check-point/lock-step like execution become simple to implement.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.7.5
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-15</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Parents:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-14">
-                              <span class="requirement__parent-uid">REQ-14</span>
-                            No Dependencies
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-4e972f1e95cf4e28bb49c0f41f2701a4-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="4569e38c46e2445bbc847587dbd01ea1"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-4569e38c46e2445bbc847587dbd01ea1-LEVEL" class="content-view-td content-view-td-level">
+    1.7.5
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-4569e38c46e2445bbc847587dbd01ea1-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-15</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-4569e38c46e2445bbc847587dbd01ea1-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-4569e38c46e2445bbc847587dbd01ea1-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-4569e38c46e2445bbc847587dbd01ea1-RELATIONS" wrapper-field-type="contenteditable">
+  Parents:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-14"
+        >
+            <span class="requirement__parent-uid">REQ-14</span>
+          No Dependencies
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-4569e38c46e2445bbc847587dbd01ea1-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-15"
   data-anchor="REQ-15"
   node-role="requirement"
@@ -1815,39 +2930,94 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-15</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Allow log dependency</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Allow log dependency</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-4569e38c46e2445bbc847587dbd01ea1-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter shall have an optional dependency on the <tt class="docutils literal">log</tt> version <tt class="docutils literal">0.4.22</tt> or later.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-4569e38c46e2445bbc847587dbd01ea1-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>Logging is an essential tool to make a system observable, and aid in debugging. Bespoke crate is widely used in the Rust ecosystem and can be attached to any (or no) logging backend. Using conditional compilation, all of the <tt class="docutils literal">log</tt> crate's footprint in the WASM interpreter (foremost the <tt class="docutils literal">debug</tt>, <tt class="docutils literal">error</tt>, <tt class="docutils literal">info</tt>, <tt class="docutils literal">trace</tt> and <tt class="docutils literal">warn</tt> macro) can be expanded to empty statements to avoid <strong>any</strong> run-time impact when opting out of the dependency on <tt class="docutils literal">log</tt>.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.7.6
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-16</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Parents:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-14">
-                              <span class="requirement__parent-uid">REQ-14</span>
-                            No Dependencies
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-4569e38c46e2445bbc847587dbd01ea1-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="e2aea51441e34767983e8e2a92a68a53"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-e2aea51441e34767983e8e2a92a68a53-LEVEL" class="content-view-td content-view-td-level">
+    1.7.6
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-e2aea51441e34767983e8e2a92a68a53-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-16</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-e2aea51441e34767983e8e2a92a68a53-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-e2aea51441e34767983e8e2a92a68a53-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-e2aea51441e34767983e8e2a92a68a53-RELATIONS" wrapper-field-type="contenteditable">
+  Parents:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-14"
+        >
+            <span class="requirement__parent-uid">REQ-14</span>
+          No Dependencies
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-e2aea51441e34767983e8e2a92a68a53-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-16"
   data-anchor="REQ-16"
   node-role="requirement"
@@ -1919,12 +3089,20 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-16</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Allow libm dependency</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Allow libm dependency</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-e2aea51441e34767983e8e2a92a68a53-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter may depend on the <tt class="docutils literal">libm</tt> crate version <tt class="docutils literal">0.2.8</tt></p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-e2aea51441e34767983e8e2a92a68a53-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>Rust does not expose all floating point operations in a bare-metal (as in <tt class="docutils literal">no_std</tt>) target, as to not introduce any dependency on the C standard library's <tt class="docutils literal">libm</tt> (respective PR: <a class="reference external" href="https://github.com/rust-lang/rust/pull/27823">https://github.com/rust-lang/rust/pull/27823</a>). However, we identified at least the following operations to be required for WASM interpretation while unavailable in <tt class="docutils literal">no_std</tt>:</p>
 <ul class="simple">
 <li><tt class="docutils literal">abs</tt></li>
@@ -1937,21 +3115,67 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
 </ul>
 <p>In order use these operations, having the <tt class="docutils literal">libm</tt> crate as dependencies of the WASM interpreter is an acceptable trade-off.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  1.7.7
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-17</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-e2aea51441e34767983e8e2a92a68a53-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="d341253b6c5642e39d361f92bd8de74b"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-d341253b6c5642e39d361f92bd8de74b-LEVEL" class="content-view-td content-view-td-level">
+    1.7.7
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-d341253b6c5642e39d361f92bd8de74b-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-17</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-d341253b6c5642e39d361f92bd8de74b-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-d341253b6c5642e39d361f92bd8de74b-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-d341253b6c5642e39d361f92bd8de74b-RELATIONS" wrapper-field-type="contenteditable">
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-d341253b6c5642e39d361f92bd8de74b-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-17"
   data-anchor="REQ-17"
   node-role="requirement"
@@ -2023,29 +3247,82 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-17</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Minimum Supported Rust Version (MSRV)</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Minimum Supported Rust Version (MSRV)</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-d341253b6c5642e39d361f92bd8de74b-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter shall compile on Rust <tt class="docutils literal">1.87.0</tt> and later versions</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-d341253b6c5642e39d361f92bd8de74b-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>An MSRV should be clearly stated to specify which toolchain is acceptable.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="SECTION">
-                <td class="content-view-td content-view-td-type">
-                  SECTION
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  2
-                </td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-d341253b6c5642e39d361f92bd8de74b-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="SECTION" data-node-mid="d48241c9ff18426189088badbaa34bfa"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>SECTION</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-d48241c9ff18426189088badbaa34bfa-LEVEL" class="content-view-td content-view-td-level">
+    2
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-d48241c9ff18426189088badbaa34bfa-UID" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="PREFIX"
+>
+  <div id="cell-d48241c9ff18426189088badbaa34bfa-PREFIX" wrapper-field-type="contenteditable">
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="STATUS">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="TAGS">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-d48241c9ff18426189088badbaa34bfa-RELATIONS" wrapper-field-type="contenteditable">
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-d48241c9ff18426189088badbaa34bfa-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="2-Observability-Requirements"
   data-anchor="2-Observability-Requirements"
   node-role="requirement"
@@ -2053,47 +3330,101 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   
 >
   </sdoc-anchor>
-                    <div class="requirement__title">Observability Requirements</div></td>
-                <td class="content-view-td content-view-td-content"></td>
-                <td class="content-view-td content-view-td-content"></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  2.1
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-7</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Children:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-8">
-                              <span class="requirement__child-uid">REQ-8</span>
-                            Statement Coverage
-                          </a>
-                        </li>
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-9">
-                              <span class="requirement__child-uid">REQ-9</span>
-                            Decision Coverage
-                          </a>
-                        </li>
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-10">
-                              <span class="requirement__child-uid">REQ-10</span>
-                            Modified Condition/Decision Coverage
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+<sdoc-autogen>Observability Requirements</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="STATEMENT">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="RATIONALE">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="COMMENT">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="193337c901634fc5b4419e184504268f"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-193337c901634fc5b4419e184504268f-LEVEL" class="content-view-td content-view-td-level">
+    2.1
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-193337c901634fc5b4419e184504268f-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-7</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-193337c901634fc5b4419e184504268f-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-193337c901634fc5b4419e184504268f-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-193337c901634fc5b4419e184504268f-RELATIONS" wrapper-field-type="contenteditable">
+  Children:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-8"
+        >
+            <span class="requirement__child-uid">REQ-8</span>
+          Statement Coverage
+        </a>
+      </li>
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-9"
+        >
+            <span class="requirement__child-uid">REQ-9</span>
+          Decision Coverage
+        </a>
+      </li>
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-10"
+        >
+            <span class="requirement__child-uid">REQ-10</span>
+          Modified Condition/Decision Coverage
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-193337c901634fc5b4419e184504268f-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-7"
   data-anchor="REQ-7"
   node-role="requirement"
@@ -2165,29 +3496,82 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-7</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Instrumentation</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Instrumentation</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-193337c901634fc5b4419e184504268f-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter shall implement means for instrumentation</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-193337c901634fc5b4419e184504268f-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>Instrumentation is needed to generate evidence for certification. Instrumentation eases debugging. Instrumentation enables elaborate run-time monitoring.</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="SECTION">
-                <td class="content-view-td content-view-td-type">
-                  SECTION
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  2.2
-                </td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-193337c901634fc5b4419e184504268f-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="SECTION" data-node-mid="2daba4205e9147498aecaaaf1a9edcd0"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>SECTION</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-2daba4205e9147498aecaaaf1a9edcd0-LEVEL" class="content-view-td content-view-td-level">
+    2.2
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-2daba4205e9147498aecaaaf1a9edcd0-UID" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="PREFIX"
+>
+  <div id="cell-2daba4205e9147498aecaaaf1a9edcd0-PREFIX" wrapper-field-type="contenteditable">
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="STATUS">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="TAGS">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-2daba4205e9147498aecaaaf1a9edcd0-RELATIONS" wrapper-field-type="contenteditable">
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-2daba4205e9147498aecaaaf1a9edcd0-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="2.2-Low-Level-Observability-Requirements"
   data-anchor="2.2-Low-Level-Observability-Requirements"
   node-role="requirement"
@@ -2195,40 +3579,93 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   
 >
   </sdoc-anchor>
-                    <div class="requirement__title">Low-Level Observability Requirements</div></td>
-                <td class="content-view-td content-view-td-content"></td>
-                <td class="content-view-td content-view-td-content"></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  2.2.1
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-8</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Parents:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-7">
-                              <span class="requirement__parent-uid">REQ-7</span>
-                            Instrumentation
-                          </a>
-                        </li>
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-11">
-                              <span class="requirement__parent-uid">REQ-11</span>
-                            Certification Evidence
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+<sdoc-autogen>Low-Level Observability Requirements</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="STATEMENT">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="RATIONALE">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+          <td class="content-view-td content-view-td-content content-view-td--dimmed"
+              data-field-name="COMMENT">
+            <div class="content-view-td--dimmed_tips"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="21c516809b334267bfcdb8512f1f0b66"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-21c516809b334267bfcdb8512f1f0b66-LEVEL" class="content-view-td content-view-td-level">
+    2.2.1
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-21c516809b334267bfcdb8512f1f0b66-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-8</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-21c516809b334267bfcdb8512f1f0b66-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-21c516809b334267bfcdb8512f1f0b66-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-21c516809b334267bfcdb8512f1f0b66-RELATIONS" wrapper-field-type="contenteditable">
+  Parents:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-7"
+        >
+            <span class="requirement__parent-uid">REQ-7</span>
+          Instrumentation
+        </a>
+      </li>
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-11"
+        >
+            <span class="requirement__parent-uid">REQ-11</span>
+          Certification Evidence
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-21c516809b334267bfcdb8512f1f0b66-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-8"
   data-anchor="REQ-8"
   node-role="requirement"
@@ -2300,46 +3737,102 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-8</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Statement Coverage</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Statement Coverage</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-21c516809b334267bfcdb8512f1f0b66-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The instrumentation shall enable the measurement of statement coverage</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-21c516809b334267bfcdb8512f1f0b66-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>Statement coverage is required by DO-178C starting at DAL-C (6.4.4.c)</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  2.2.2
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-9</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Parents:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-7">
-                              <span class="requirement__parent-uid">REQ-7</span>
-                            Instrumentation
-                          </a>
-                        </li>
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-11">
-                              <span class="requirement__parent-uid">REQ-11</span>
-                            Certification Evidence
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-21c516809b334267bfcdb8512f1f0b66-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="e96cb250433e46efa56eca34143187e0"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-e96cb250433e46efa56eca34143187e0-LEVEL" class="content-view-td content-view-td-level">
+    2.2.2
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-e96cb250433e46efa56eca34143187e0-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-9</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-e96cb250433e46efa56eca34143187e0-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-e96cb250433e46efa56eca34143187e0-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-e96cb250433e46efa56eca34143187e0-RELATIONS" wrapper-field-type="contenteditable">
+  Parents:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-7"
+        >
+            <span class="requirement__parent-uid">REQ-7</span>
+          Instrumentation
+        </a>
+      </li>
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-11"
+        >
+            <span class="requirement__parent-uid">REQ-11</span>
+          Certification Evidence
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-e96cb250433e46efa56eca34143187e0-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-9"
   data-anchor="REQ-9"
   node-role="requirement"
@@ -2411,46 +3904,102 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-9</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Decision Coverage</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Decision Coverage</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-e96cb250433e46efa56eca34143187e0-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The instrumentation shall enable the measurement of decision coverage</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-e96cb250433e46efa56eca34143187e0-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>Decision coverage is required by DO-178C starting at DAL-B (6.4.4.c)</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  2.2.3
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-10</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Parents:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-7">
-                              <span class="requirement__parent-uid">REQ-7</span>
-                            Instrumentation
-                          </a>
-                        </li>
-                        <li>
-                          <a class="requirement__link-parent"
-                            href="#REQ-11">
-                              <span class="requirement__parent-uid">REQ-11</span>
-                            Certification Evidence
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-e96cb250433e46efa56eca34143187e0-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="a2f24f22dbf5456f801c0b04ad284932"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-a2f24f22dbf5456f801c0b04ad284932-LEVEL" class="content-view-td content-view-td-level">
+    2.2.3
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-a2f24f22dbf5456f801c0b04ad284932-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-10</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-a2f24f22dbf5456f801c0b04ad284932-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-a2f24f22dbf5456f801c0b04ad284932-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-a2f24f22dbf5456f801c0b04ad284932-RELATIONS" wrapper-field-type="contenteditable">
+  Parents:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-7"
+        >
+            <span class="requirement__parent-uid">REQ-7</span>
+          Instrumentation
+        </a>
+      </li>
+      <li>
+        <a class="requirement__link-parent"
+           href="#REQ-11"
+        >
+            <span class="requirement__parent-uid">REQ-11</span>
+          Certification Evidence
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-a2f24f22dbf5456f801c0b04ad284932-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-10"
   data-anchor="REQ-10"
   node-role="requirement"
@@ -2522,53 +4071,110 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-10</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Modified Condition/Decision Coverage</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Modified Condition/Decision Coverage</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-a2f24f22dbf5456f801c0b04ad284932-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The instrumentation shall enable the measurement of modified condition/decision coverage</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-a2f24f22dbf5456f801c0b04ad284932-RATIONALE" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>Modified condition/decision coverage is required by DO-178C starting at DAL-A (6.4.4.c)</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
-              <tr data-row-type="REQUIREMENT">
-                <td class="content-view-td content-view-td-type">
-                  REQUIREMENT
-                </td>
-                <td class="content-view-td content-view-td-meta">
-                  2.2.4
-                </td>
-                  <td class="content-view-td content-view-td-meta">REQ-11</td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td>
-                  <td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta content-view-td-related">
-                    Children:
-                    <ul class="requirement__link">
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-8">
-                              <span class="requirement__child-uid">REQ-8</span>
-                            Statement Coverage
-                          </a>
-                        </li>
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-9">
-                              <span class="requirement__child-uid">REQ-9</span>
-                            Decision Coverage
-                          </a>
-                        </li>
-                        <li>
-                          <a class="requirement__link-child"
-                            href="#REQ-10">
-                              <span class="requirement__child-uid">REQ-10</span>
-                            Modified Condition/Decision Coverage
-                          </a>
-                        </li>
-                    </ul>
-                </td>
-                <td class="content-view-td content-view-td-title"><sdoc-anchor
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-a2f24f22dbf5456f801c0b04ad284932-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+
+  
+  
+  
+    <tr data-row-type="REQUIREMENT" data-node-mid="b8f1f63acf0a4e13bb5809ee1dd4e58c"><td class="content-view-td content-view-td-type">
+  <div class="content-view-td-type__content">
+    <span>REQUIREMENT</span>
+    <div class="content-view-td-type__actions">
+      
+    </div>
+  </div>
+</td>
+  <td id="cell-b8f1f63acf0a4e13bb5809ee1dd4e58c-LEVEL" class="content-view-td content-view-td-level">
+    2.2.4
+  </td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="UID"
+>
+  <div id="cell-b8f1f63acf0a4e13bb5809ee1dd4e58c-UID" wrapper-field-type="contenteditable"><sdoc-autogen>REQ-11</sdoc-autogen>
+  </div>
+</td>
+
+<td class="content-view-td content-view-td-meta content-view-td--dimmed"
+    data-field-name="PREFIX">
+  <div class="content-view-td--dimmed_tips"></div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="STATUS"
+>
+  <div id="cell-b8f1f63acf0a4e13bb5809ee1dd4e58c-STATUS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+<td class="content-view-td content-view-td-meta"
+    data-field-name="TAGS"
+>
+  <div id="cell-b8f1f63acf0a4e13bb5809ee1dd4e58c-TAGS" wrapper-field-type="contenteditable">
+  </div>
+</td>
+          <td class="content-view-td content-view-td-meta content-view-td-related"
+              data-field-name="RELATIONS"
+          >
+            <div id="cell-b8f1f63acf0a4e13bb5809ee1dd4e58c-RELATIONS" wrapper-field-type="contenteditable">
+  Children:
+  <ul class="requirement__link">
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-8"
+        >
+            <span class="requirement__child-uid">REQ-8</span>
+          Statement Coverage
+        </a>
+      </li>
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-9"
+        >
+            <span class="requirement__child-uid">REQ-9</span>
+          Decision Coverage
+        </a>
+      </li>
+      <li>
+        <a class="requirement__link-child"
+           href="#REQ-10"
+        >
+            <span class="requirement__child-uid">REQ-10</span>
+          Modified Condition/Decision Coverage
+        </a>
+      </li>
+  </ul>
+            </div>
+          </td>
+          <td class="content-view-td content-view-td-title"
+              data-field-name="TITLE"
+          >
+            <div id="cell-b8f1f63acf0a4e13bb5809ee1dd4e58c-TITLE" wrapper-field-type="contenteditable"><sdoc-anchor
   id="REQ-11"
   data-anchor="REQ-11"
   node-role="requirement"
@@ -2640,13 +4246,33 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <span class="anchor_button_text">REQ-11</span>
 </div>
     </div></sdoc-anchor>
-                    <div class="requirement__title">Certification Evidence</div></td>
-                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<sdoc-autogen>Certification Evidence</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="STATEMENT"
+          >
+            <div id="cell-b8f1f63acf0a4e13bb5809ee1dd4e58c-STATEMENT" wrapper-field-type="contenteditable"><sdoc-autogen><div class="document">
 <p>The interpreter shall support the generation of certification evidence</p>
 </div>
-</sdoc-autogen></td>
-                <td class="content-view-td content-view-td-content"></td>
-                <td class="content-view-td content-view-td-content"></td></tr>
+</sdoc-autogen></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="RATIONALE"
+          >
+            <div id="cell-b8f1f63acf0a4e13bb5809ee1dd4e58c-RATIONALE" wrapper-field-type="contenteditable"></div>
+          </td>
+          <td class="content-view-td content-view-td-content"
+              data-field-name="COMMENT"
+          >
+            <div id="cell-b8f1f63acf0a4e13bb5809ee1dd4e58c-COMMENT" wrapper-field-type="comments"></div>
+          </td>
+
+    </tr>
+
+  
+  
+  
+</tbody>
         </table>
       </div>
       
@@ -2665,13 +4291,13 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
         >StrictDoc</a>
         <a
           class="strictdoc__version"
-          href="https://github.com/strictdoc-project/strictdoc/releases/tag/0.24.0"
+          href="https://github.com/strictdoc-project/strictdoc/releases/tag/0.25.1"
           target="_blank"
         >
           <svg height="16" viewBox="0 0 16 16" version="1.1" width="16" >
             <path fill-rule="evenodd" d="M2.5 7.775V2.75a.25.25 0 01.25-.25h5.025a.25.25 0 01.177.073l6.25 6.25a.25.25 0 010 .354l-5.025 5.025a.25.25 0 01-.354 0l-6.25-6.25a.25.25 0 01-.073-.177zm-1.5 0V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 010 2.474l-5.026 5.026a1.75 1.75 0 01-2.474 0l-6.25-6.25A1.75 1.75 0 011 7.775zM6 5a1 1 0 100 2 1 1 0 000-2z"/>
           </svg>
-          0.24.0
+          0.25.1
         </a>
       </div>
     </footer>
