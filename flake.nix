@@ -96,7 +96,16 @@
           in
           {
             # packages from `pkgs/`, injected into the `pkgs` via our `overlay.nix`
-            packages = pkgs.wasm-interpreter-pkgs;
+            packages = pkgs.wasm-interpreter-pkgs // {
+              # build the wasm-interpreter with the current rust toolchain, as opposed to the
+              # default nixpkgs rustc + cargo
+              wasm-interpreter-current-rust = pkgs.wasm-interpreter.override {
+                rustPlatform = pkgs.makeRustPlatform {
+                  cargo = rust-toolchain-nixpkgs-current;
+                  rustc = rust-toolchain-nixpkgs-current;
+                };
+              };
+            };
 
             # a devshell with all the necessary bells and whistles
             devShells.default = (
@@ -326,6 +335,22 @@
                 doDoc = false;
                 useNextest = false;
               };
+
+              # check that the Minimum Supported Rust Version (MSRV) we promise does actually compile
+              wasm-interpreter-clippy = (
+                self.packages.${system}.wasm-interpreter-current-rust.overrideAttrs (old: {
+                  name = self.packages.${system}.wasm-interpreter.name + "-clippy-report.txt";
+                  phases = [
+                    "unpackPhase"
+                    "patchPhase"
+                    "configurePhase"
+                  ];
+                  env.RUSTFLAGS = "-Dwarnings";
+                  postConfigure = ''
+                    cargo clippy --workspace --frozen --locked --offline --all-targets --all-features |& tee "$out"
+                  '';
+                })
+              );
 
               # check that the requirements can be parsed
               requirements = pkgs.runCommand "check-requirement" { nativeBuildInputs = [ pkgs.strictdoc ]; } ''
