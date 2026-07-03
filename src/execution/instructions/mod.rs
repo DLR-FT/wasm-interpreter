@@ -308,7 +308,7 @@ pub(super) unsafe fn elem_drop(
 ///
 /// 1. The module address `current_module` must be valid in `store_modules` for some module instance `module_inst`.
 /// 2. The memory index `mem_idx` must be valid in `module_inst` for some memory address `mem_addr`.
-/// 3. `mem_addr` must be valid in `store_memories` for some memory instance `mem.
+/// 3. `mem_addr` must be valid in `store_memories` for some memory instance `mem`.
 /// 4. The data index `data_idx` must be valid in `module_inst` for some data address `data_addr`.
 /// 5. `data_addr` must be valid in `store_data`.
 #[inline(always)]
