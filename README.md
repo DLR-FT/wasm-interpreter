@@ -37,18 +37,18 @@ Multi-memory proposal, GC proposal
 
 ## Resources
 
-- `A fast in-place interpreter` by Ben L. Titzer: https://arxiv.org/abs/2205.01183
-- WebAssembly spec: https://webassembly.github.io/spec/core/index.html
-- WebAssembly Opcode Table: https://pengowray.github.io/wasm-ops/
-- Compiler/Interpreter Know-How Gist Compilation: https://gist.github.com/o11c/6b08643335388bbab0228db763f99219
-- Mozilla Developer Network WebAssembly Homepage: https://developer.mozilla.org/en-US/docs/WebAssembly
+- `A fast in-place interpreter` by Ben L. Titzer: <https://arxiv.org/abs/2205.01183>
+- WebAssembly spec: <https://webassembly.github.io/spec/core/index.html>
+- WebAssembly Opcode Table: <https://pengowray.github.io/wasm-ops/>
+- Compiler/Interpreter Know-How Gist Compilation: <https://gist.github.com/o11c/6b08643335388bbab0228db763f99219>
+- Mozilla Developer Network WebAssembly Homepage: <https://developer.mozilla.org/en-US/docs/WebAssembly>
 
 ## License
 
 Licensed under either of
 
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-- MIT License ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT License ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
 
@@ -58,5 +58,5 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 ## Copyright
 
-Copyright © 2024-2025 Deutsches Zentrum für Luft- und Raumfahrt e.V. (DLR)
+Copyright © 2024-2026 Deutsches Zentrum für Luft- und Raumfahrt e.V. (DLR)
 Copyright © 2024-2025 OxidOS Automotive SRL
