@@ -35,10 +35,6 @@ Put all your references and footnotes here, for example:
 
 <!-- Please tick off what you did -->
 
-- Always
-  - [ ] Ran `cargo clippy --workspace`
-  - [ ] Ran `cargo doc --document-private-items --workspace`
-
 - Using Nix
   - [ ] Ran `nix fmt`
   - [ ] Ran `nix flake check '.?submodules=1'`
@@ -47,3 +43,5 @@ Put all your references and footnotes here, for example:
   - [ ] Ran `cargo test`
   - [ ] Ran `cargo check`
   - [ ] Ran `cargo build`
+  - [ ] Ran `cargo clippy --workspace`
+  - [ ] Ran `cargo doc --document-private-items --workspace`
