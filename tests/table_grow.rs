@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use checked::Store;
+use checked::{Store, StoredRef};
 use interop::RefExtern;
-use wasm::{decode_and_validate, ExternAddr, RuntimeError, TrapError};
+use wasm::{decode_and_validate, ExternAddr, Limits, RefType, RuntimeError, TableType, TrapError};
 
 #[test_log::test]
 fn table_grow_test() {
@@ -439,4 +439,37 @@ fn table_grow_type_errors() {
         assert!(result.is_err());
         assert!(result.err().unwrap().to_string().contains(expected_error));
     }
+}
+
+#[test_log::test]
+fn try_grow_past_limit() {
+    let mut store = Store::new(());
+
+    const RANDOM_EXTERN_REF: StoredRef = StoredRef::Extern(ExternAddr(123));
+
+    let table = store
+        .table_alloc(
+            TableType {
+                et: RefType::ExternRef,
+                lim: Limits {
+                    min: 1,
+                    max: Some(3),
+                },
+            },
+            RANDOM_EXTERN_REF,
+        )
+        .unwrap();
+
+    assert_eq!(store.table_grow(table, 1, RANDOM_EXTERN_REF), Ok(()));
+
+    assert_eq!(store.table_grow(table, 1, RANDOM_EXTERN_REF), Ok(()));
+    assert_eq!(
+        store.table_grow(table, 1, RANDOM_EXTERN_REF),
+        Err(RuntimeError::TableGrowExceededLimit)
+    );
+
+    assert_eq!(
+        store.table_grow(table, u32::MAX, RANDOM_EXTERN_REF),
+        Err(RuntimeError::TableGrowOverflowed)
+    );
 }
