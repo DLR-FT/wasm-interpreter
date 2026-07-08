@@ -20,7 +20,7 @@ use crate::{
         utils::ToUsizeExt,
     },
     validation::{
-        instructions::expressions::decode_and_validate_expr, validation_config::ValidationConfig,
+        config::ValidationConfig, instructions::expressions::decode_and_validate_expr,
         validation_stack::ValidationStack,
     },
     ValidationError,

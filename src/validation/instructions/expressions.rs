@@ -18,7 +18,7 @@ use crate::{
         utils::ToUsizeExt,
     },
     validation::{
-        validation_config::ValidationConfig,
+        config::ValidationConfig,
         validation_stack::{LabelInfo, ValidationStack},
     },
     RefType, ValidationError,

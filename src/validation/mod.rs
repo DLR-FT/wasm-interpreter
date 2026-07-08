@@ -27,9 +27,7 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    validation::{
-        modules::functions::decode_and_validate_code_section, validation_config::ValidationConfig,
-    },
+    validation::{config::ValidationConfig, modules::functions::decode_and_validate_code_section},
     CustomSection, DecodingError, ValidationError,
 };
 
@@ -39,8 +37,7 @@ pub mod modules;
 pub mod types;
 pub mod validation_stack;
 
-#[path = "config.rs"]
-pub mod validation_config;
+pub mod config;
 
 /// Information collected from validating a module.
 ///
