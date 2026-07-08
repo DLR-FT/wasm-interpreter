@@ -233,6 +233,24 @@ impl<'b, T: Config> Store<'b, T> {
         unsafe { self.inner.table_size(table_addr) }
     }
 
+    /// This is a safe variant of [`Store::table_grow`](wasm::Store::table_grow).
+    pub fn table_grow(
+        &mut self,
+        table_addr: Stored<TableAddr>,
+        n: u32,
+        r#ref: StoredRef,
+    ) -> Result<(), RuntimeError> {
+        // 1. try unwrap
+        let table_addr = table_addr.try_unwrap_into_bare(self.id);
+        let r#ref = r#ref.try_unwrap_into_bare(self.id);
+        // 2. call
+        unsafe { self.inner.table_grow(table_addr, n, r#ref) }?;
+        // 3. rewrap
+        // result is the unit type
+        // 4. return
+        Ok(())
+    }
+
     /// This is a variant of [`Store::mem_alloc`](wasm::Store::mem_alloc) that
     /// returns a stored object.
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
