@@ -26,9 +26,7 @@ pub use crate::{
             values::{ExternAddr, Ref, Value, ValueTypeMismatchError, F32, F64},
         },
     },
-    validation::{
-        decode_and_validate, error::ValidationError, validation_config::ValidationConfig, Module,
-    },
+    validation::{config::ValidationConfig, decode_and_validate, error::ValidationError, Module},
 };
 
 pub(crate) mod core;
