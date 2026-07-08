@@ -1,7 +1,7 @@
 use alloc::{string::String, vec::Vec};
 use wasm::{
     Config, FuncAddr, FuncType, GlobalAddr, GlobalType, HostResumable, Hostcode, MemAddr, MemType,
-    Module, ModuleAddr, RuntimeError, TableAddr, TableType, ValidationConfig, WasmResumable,
+    Module, ModuleAddr, RuntimeError, TableAddr, TableType, WasmResumable,
 };
 
 use crate::{
@@ -52,9 +52,9 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// This is a safe variant of
     /// [`Store::module_instantiate`](wasm::Store::module_instantiate).
-    pub fn module_instantiate<T2: ValidationConfig>(
+    pub fn module_instantiate(
         &mut self,
-        validation_info: &Module<'b, T2>,
+        validation_info: &Module<'b>,
         extern_vals: Vec<StoredExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<StoredInstantiationOutcome, RuntimeError> {

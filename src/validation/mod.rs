@@ -48,7 +48,7 @@ pub mod validation_config;
 /// [`Store`](crate::Store) thorugh
 /// [`Store::module_instantiate`](crate::Store::module_instantiate)
 #[derive(Clone, Debug)]
-pub struct Module<'bytecode, T: ValidationConfig> {
+pub struct Module<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import<'bytecode>>,
@@ -67,12 +67,9 @@ pub struct Module<'bytecode, T: ValidationConfig> {
     pub(crate) start: Option<FuncIdx>,
     pub(crate) custom_sections: Vec<CustomSection<'bytecode>>,
     // pub(crate) exports_length: Exported,
-    pub user_data: T,
 }
 
-fn validate_no_duplicate_exports<T: ValidationConfig>(
-    validation_info: &Module<T>,
-) -> Result<(), ValidationError> {
+fn validate_no_duplicate_exports(validation_info: &Module) -> Result<(), ValidationError> {
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
     for export in &validation_info.exports {
         if found_export_names.contains(export.name) {
@@ -83,10 +80,10 @@ fn validate_no_duplicate_exports<T: ValidationConfig>(
     Ok(())
 }
 
-pub fn decode_and_validate<T: ValidationConfig>(
-    wasm: &[u8],
-    mut user_data: T,
-) -> Result<Module<'_, T>, ValidationError> {
+pub fn decode_and_validate<'wasm, T: ValidationConfig>(
+    wasm: &'wasm [u8],
+    user_data: &mut T,
+) -> Result<Module<'wasm>, ValidationError> {
     let mut wasm = WasmDecoder::new(wasm);
 
     // represents C.refs in https://webassembly.github.io/spec/core/valid/conventions.html#context
@@ -313,7 +310,7 @@ pub fn decode_and_validate<T: ValidationConfig>(
                 &elements,
                 &validation_context_refs,
                 &mut sidetable,
-                &mut user_data,
+                user_data,
             )
         }
     })?
@@ -366,7 +363,6 @@ pub fn decode_and_validate<T: ValidationConfig>(
         start,
         elements,
         custom_sections,
-        user_data,
     };
     validate_no_duplicate_exports(&validation_info)?;
 
@@ -388,7 +384,7 @@ fn read_all_custom_sections<'wasm>(
     Ok(())
 }
 
-impl<'wasm, T: ValidationConfig> Module<'wasm, T> {
+impl<'wasm> Module<'wasm> {
     /// Returns the imports of this module as an iterator. Each import consist
     /// of a module name, a name and an extern type.
     ///

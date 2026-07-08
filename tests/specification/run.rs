@@ -68,7 +68,7 @@ fn validate_instantiate<'a, 'b: 'a>(
     last_instantiated_module: &mut Option<Stored<ModuleAddr>>,
 ) -> Result<Stored<ModuleAddr>, WastError> {
     let validation_info =
-        catch_unwind_and_suppress_panic_handler(|| decode_and_validate(bytes, ()))
+        catch_unwind_and_suppress_panic_handler(|| decode_and_validate(bytes, &mut ()))
             .map_err(WastError::Panic)??;
 
     let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {

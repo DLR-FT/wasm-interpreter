@@ -35,7 +35,7 @@ fn main() -> ExitCode {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = match decode_and_validate(&wasm_bytes, ()) {
+    let validation_info = match decode_and_validate(&wasm_bytes, &mut ()) {
         Ok(table) => table,
         Err(err) => {
             error!("Validation failed: {err:?} [{err}]");

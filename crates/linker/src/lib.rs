@@ -11,10 +11,7 @@ use alloc::{
     vec::Vec,
 };
 
-use wasm::{
-    Config, ExternVal, InstantiationOutcome, Module, ModuleAddr, RuntimeError, Store,
-    ValidationConfig,
-};
+use wasm::{Config, ExternVal, InstantiationOutcome, Module, ModuleAddr, RuntimeError, Store};
 
 /// A linker used to link a module's imports against extern values previously
 /// defined in this [`Linker`] context.
@@ -133,10 +130,7 @@ impl Linker {
     /// Therefore, using the returned list of extern values may still fail when
     /// trying to instantiate a module with it.
     // TODO find a better name for this method? Maybe something like `link`?
-    pub fn instantiate_pre<T: ValidationConfig>(
-        &self,
-        validation_info: &Module<T>,
-    ) -> Option<Vec<ExternVal>> {
+    pub fn instantiate_pre(&self, validation_info: &Module) -> Option<Vec<ExternVal>> {
         validation_info
             .imports()
             .map(|(module_name, name, _desc)| self.get(module_name.to_owned(), name.to_owned()))
@@ -151,10 +145,10 @@ impl Linker {
     ///
     /// It must be guaranteed that this [`Linker`] is only ever used with one
     /// specific [`Store`].
-    pub unsafe fn module_instantiate<'b, T: Config, T2: ValidationConfig>(
+    pub unsafe fn module_instantiate<'b, T: Config>(
         &self,
         store: &mut Store<'b, T>,
-        validation_info: &Module<'b, T2>,
+        validation_info: &Module<'b>,
         maybe_fuel: Option<u64>,
     ) -> Option<Result<InstantiationOutcome, RuntimeError>> {
         self.instantiate_pre(validation_info).map(|instantiate_pre|
