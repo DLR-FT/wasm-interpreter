@@ -241,14 +241,14 @@ impl<T: Clone> FixedCapacityVec<T> {
         n: usize,
     ) -> Result<impl core::ops::Deref<Target = [T]> + '_, EmptyContainerError> {
         // verify at least `n` elements are still one the stack
-        if n > self.elements.len() {
+        if n > self.len() {
             return Err(EmptyContainerError);
         }
 
         let old_len = self.len();
 
         // SAFETY: the previous if statement ensure that `n` is smaller than or equal to
-        // `self.elements.len()`, hence this subtraction is guaranteed to not underflow
+        // `self.len()`, hence this subtraction is guaranteed to not underflow
         self.len = unsafe { self.len.unchecked_sub(n) };
 
         // SAFETY: the prior if statement checks that `stack_height - n` wont underflow. And the
