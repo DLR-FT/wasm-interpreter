@@ -221,7 +221,7 @@ impl<T: Clone> FixedCapacityVec<T> {
     /// Push from a slice into [`Self`], appending after the last/topmost element
     pub fn push_from_slice(&mut self, values: &[T]) -> Result<(), FullContainerError> {
         // verify `values` fits into the new self
-        if values.len() > (self.elements.len() - self.len) {
+        if values.len() > (self.capacity() - self.len) {
             return Err(FullContainerError);
         }
 
