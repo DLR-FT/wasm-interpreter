@@ -340,3 +340,18 @@ unsafe fn slice_assume_init<T>(slice: &[MaybeUninit<T>]) -> &[T] {
     // reference and thus guaranteed to be valid for reads.
     unsafe { &*(slice as *const _ as *const [T]) }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn pop_into_slice_rejects_more_than_len() {
+        let mut vec = FixedCapacityVec::<u32>::with_capacity(4);
+        vec.push_from_slice(&[1, 2]).unwrap();
+
+        // requesting more elements than present must fail, even while within capacity
+        assert!(vec.pop_into_slice(3).is_err());
+        assert_eq!(vec.len(), 2);
+    }
+}
