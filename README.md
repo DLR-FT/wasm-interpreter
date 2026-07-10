@@ -54,7 +54,7 @@ Multi-memory proposal, GC proposal
   volume={},
   number={},
   pages={1-10},
-  url={https://elib.dlr.de/201323/}
+  url={https://elib.dlr.de/201323/},
   keywords={Couplings;Virtual machine monitors;Full stack;Aerospace electronics;Webassembly;Software;Hardware;Virtual machines;Certification;Application programming interfaces;Avionics;Wasm;ARINC 653;Software},
   doi={10.1109/DASC58513.2023.10311207}
 }
