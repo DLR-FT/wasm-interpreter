@@ -43,6 +43,36 @@ Multi-memory proposal, GC proposal
 - Compiler/Interpreter Know-How Gist Compilation: <https://gist.github.com/o11c/6b08643335388bbab0228db763f99219>
 - Mozilla Developer Network WebAssembly Homepage: <https://developer.mozilla.org/en-US/docs/WebAssembly>
 
+## Cite us!
+
+```bibtex
+@INPROCEEDINGS{zaeske_wasm_2023,
+  author={Zaeske, Wanja and Friedrich, Sven and Schubert, Tim and Durak, Umut},
+  booktitle={2023 IEEE/AIAA 42nd Digital Avionics Systems Conference (DASC)},
+  title={WebAssembly in Avionics: Decoupling Software from Hardware},
+  year={2023},
+  volume={},
+  number={},
+  pages={1-10},
+  url={https://elib.dlr.de/201323/}
+  keywords={Couplings;Virtual machine monitors;Full stack;Aerospace electronics;Webassembly;Software;Hardware;Virtual machines;Certification;Application programming interfaces;Avionics;Wasm;ARINC 653;Software},
+  doi={10.1109/DASC58513.2023.10311207}
+}
+
+@INPROCEEDINGS{zaeske_wasm_2025,
+  author={Zaeske, Wanja and Önem, A. Cem and Hartung, Florian and Durak, Umut},
+  booktitle={2025 AIAA DATC/IEEE 44th Digital Avionics Systems Conference (DASC)},
+  title={On the Design of a WebAssembly Interpreter for Safety Critical Avionics Applications},
+  year={2025},
+  volume={},
+  number={},
+  pages={1-10},
+  url={https://elib.dlr.de/219593/},
+  keywords={Codes;Instruction sets;Aerospace electronics;Webassembly;Software;Hardware;Safety;Space exploration;Certification;Standards;Avionics;Wasm;ED-12C/DO-178C;ED-217/DO-332},
+  doi={10.1109/DASC66011.2025.11257180}
+}
+```
+
 ## License
 
 Licensed under either of
