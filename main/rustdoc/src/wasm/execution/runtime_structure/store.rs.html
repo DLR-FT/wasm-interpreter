@@ -980,7 +980,7 @@
 <a href=#980 id=980 data-nosnippet>980</a>
 <a href=#981 id=981 data-nosnippet>981</a>        <span class="comment">// 2. If `i` is larger than or equal to the length of `mi.data`, then return `error`.
 <a href=#982 id=982 data-nosnippet>982</a>        // 3. Else, return the byte `mi.data[i]`.
-<a href=#983 id=983 data-nosnippet>983</a>        </span>mi.mem.load(i)
+<a href=#983 id=983 data-nosnippet>983</a>        </span>mi.mem.load(i).map_err(Into::into)
 <a href=#984 id=984 data-nosnippet>984</a>    }
 <a href=#985 id=985 data-nosnippet>985</a>
 <a href=#986 id=986 data-nosnippet>986</a>    <span class="doccomment">/// Writes a byte into some memory by its memory address and an index into the memory
@@ -992,7 +992,7 @@
 <a href=#992 id=992 data-nosnippet>992</a>    /// The caller has to guarantee that the given [`MemAddr`] came from the
 <a href=#993 id=993 data-nosnippet>993</a>    /// current [`Store`] object.
 <a href=#994 id=994 data-nosnippet>994</a>    </span><span class="kw">pub unsafe fn </span>mem_write(
-<a href=#995 id=995 data-nosnippet>995</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#995 id=995 data-nosnippet>995</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
 <a href=#996 id=996 data-nosnippet>996</a>        mem_addr: MemAddr,
 <a href=#997 id=997 data-nosnippet>997</a>        i: u32,
 <a href=#998 id=998 data-nosnippet>998</a>        byte: u8,
@@ -1003,9 +1003,9 @@
 <a href=#1003 id=1003 data-nosnippet>1003</a>        <span class="comment">// 1. Let `mi` be the memory instance `store.mems[memaddr]`.
 <a href=#1004 id=1004 data-nosnippet>1004</a>        // SAFETY: The caller ensures that the given memory address is valid in
 <a href=#1005 id=1005 data-nosnippet>1005</a>        // the current store.
-<a href=#1006 id=1006 data-nosnippet>1006</a>        </span><span class="kw">let </span>mi = <span class="kw">unsafe </span>{ <span class="self">self</span>.inner.memories.get(mem_addr) };
+<a href=#1006 id=1006 data-nosnippet>1006</a>        </span><span class="kw">let </span>mi = <span class="kw">unsafe </span>{ <span class="self">self</span>.inner.memories.get_mut(mem_addr) };
 <a href=#1007 id=1007 data-nosnippet>1007</a>
-<a href=#1008 id=1008 data-nosnippet>1008</a>        mi.mem.store(i, byte)
+<a href=#1008 id=1008 data-nosnippet>1008</a>        mi.mem.store(i, byte).map_err(Into::into)
 <a href=#1009 id=1009 data-nosnippet>1009</a>    }
 <a href=#1010 id=1010 data-nosnippet>1010</a>
 <a href=#1011 id=1011 data-nosnippet>1011</a>    <span class="doccomment">/// Gets the size of some memory by its memory address in pages.
@@ -1491,52 +1491,47 @@
 <a href=#1491 id=1491 data-nosnippet>1491</a>        }
 <a href=#1492 id=1492 data-nosnippet>1492</a>    }
 <a href=#1493 id=1493 data-nosnippet>1493</a>
-<a href=#1494 id=1494 data-nosnippet>1494</a>    <span class="doccomment">/// Allows a given closure to temporarily access the entire memory as a
-<a href=#1495 id=1495 data-nosnippet>1495</a>    /// `&amp;mut [u8]`.
-<a href=#1496 id=1496 data-nosnippet>1496</a>    ///
-<a href=#1497 id=1497 data-nosnippet>1497</a>    /// # Safety
-<a href=#1498 id=1498 data-nosnippet>1498</a>    ///
-<a href=#1499 id=1499 data-nosnippet>1499</a>    /// The caller has to guarantee that the given [`MemAddr`] came from the
-<a href=#1500 id=1500 data-nosnippet>1500</a>    /// current [`Store`] object.
-<a href=#1501 id=1501 data-nosnippet>1501</a>    </span><span class="kw">pub unsafe fn </span>mem_access_mut_slice&lt;R&gt;(
-<a href=#1502 id=1502 data-nosnippet>1502</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#1503 id=1503 data-nosnippet>1503</a>        memory: MemAddr,
-<a href=#1504 id=1504 data-nosnippet>1504</a>        accessor: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>[u8]) -&gt; R,
-<a href=#1505 id=1505 data-nosnippet>1505</a>    ) -&gt; R {
-<a href=#1506 id=1506 data-nosnippet>1506</a>        <span class="comment">// SAFETY: The caller ensures that the given memory address is valid in
-<a href=#1507 id=1507 data-nosnippet>1507</a>        // the current store.
-<a href=#1508 id=1508 data-nosnippet>1508</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ <span class="self">self</span>.inner.memories.get(memory) };
-<a href=#1509 id=1509 data-nosnippet>1509</a>        memory.mem.access_mut_slice(accessor)
-<a href=#1510 id=1510 data-nosnippet>1510</a>    }
-<a href=#1511 id=1511 data-nosnippet>1511</a>
-<a href=#1512 id=1512 data-nosnippet>1512</a>    <span class="doccomment">/// Returns all exports of a module instance by its module address.
+<a href=#1494 id=1494 data-nosnippet>1494</a>    <span class="doccomment">/// Returns the inner data of a specific memory instance as a byte slice.
+<a href=#1495 id=1495 data-nosnippet>1495</a>    ///
+<a href=#1496 id=1496 data-nosnippet>1496</a>    /// # Safety
+<a href=#1497 id=1497 data-nosnippet>1497</a>    ///
+<a href=#1498 id=1498 data-nosnippet>1498</a>    /// The caller has to guarantee that the given [`MemAddr`] came from the current [`Store`]
+<a href=#1499 id=1499 data-nosnippet>1499</a>    /// object.
+<a href=#1500 id=1500 data-nosnippet>1500</a>    </span><span class="kw">pub unsafe fn </span>mem_data_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, memory: MemAddr) -&gt; <span class="kw-2">&amp;mut </span>[u8] {
+<a href=#1501 id=1501 data-nosnippet>1501</a>        <span class="comment">// SAFETY: The caller ensures that the given memory address is valid in
+<a href=#1502 id=1502 data-nosnippet>1502</a>        // the current store.
+<a href=#1503 id=1503 data-nosnippet>1503</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ <span class="self">self</span>.inner.memories.get_mut(memory) };
+<a href=#1504 id=1504 data-nosnippet>1504</a>        memory.mem.data_mut()
+<a href=#1505 id=1505 data-nosnippet>1505</a>    }
+<a href=#1506 id=1506 data-nosnippet>1506</a>
+<a href=#1507 id=1507 data-nosnippet>1507</a>    <span class="doccomment">/// Returns all exports of a module instance by its module address.
+<a href=#1508 id=1508 data-nosnippet>1508</a>    ///
+<a href=#1509 id=1509 data-nosnippet>1509</a>    /// To get a single import by its known name, use
+<a href=#1510 id=1510 data-nosnippet>1510</a>    /// [`Store::instance_export`].
+<a href=#1511 id=1511 data-nosnippet>1511</a>    ///
+<a href=#1512 id=1512 data-nosnippet>1512</a>    /// # Safety
 <a href=#1513 id=1513 data-nosnippet>1513</a>    ///
-<a href=#1514 id=1514 data-nosnippet>1514</a>    /// To get a single import by its known name, use
-<a href=#1515 id=1515 data-nosnippet>1515</a>    /// [`Store::instance_export`].
-<a href=#1516 id=1516 data-nosnippet>1516</a>    ///
-<a href=#1517 id=1517 data-nosnippet>1517</a>    /// # Safety
-<a href=#1518 id=1518 data-nosnippet>1518</a>    ///
-<a href=#1519 id=1519 data-nosnippet>1519</a>    /// The caller has to guarantee that the given [`ModuleAddr`] came from the
-<a href=#1520 id=1520 data-nosnippet>1520</a>    /// current [`Store`] object.
-<a href=#1521 id=1521 data-nosnippet>1521</a>    </span><span class="kw">pub unsafe fn </span>instance_exports(<span class="kw-2">&amp;</span><span class="self">self</span>, module_addr: ModuleAddr) -&gt; Vec&lt;(String, ExternVal)&gt; {
-<a href=#1522 id=1522 data-nosnippet>1522</a>        <span class="comment">// SAFETY: The caller ensures that the given module address is valid in
-<a href=#1523 id=1523 data-nosnippet>1523</a>        // the current store.
-<a href=#1524 id=1524 data-nosnippet>1524</a>        </span><span class="kw">let </span>module = <span class="kw">unsafe </span>{ <span class="self">self</span>.modules.get(module_addr) };
-<a href=#1525 id=1525 data-nosnippet>1525</a>
-<a href=#1526 id=1526 data-nosnippet>1526</a>        module
-<a href=#1527 id=1527 data-nosnippet>1527</a>            .exports
-<a href=#1528 id=1528 data-nosnippet>1528</a>            .iter()
-<a href=#1529 id=1529 data-nosnippet>1529</a>            .map(|(name, externval)| (name.clone(), <span class="kw-2">*</span>externval))
-<a href=#1530 id=1530 data-nosnippet>1530</a>            .collect()
-<a href=#1531 id=1531 data-nosnippet>1531</a>    }
-<a href=#1532 id=1532 data-nosnippet>1532</a>}
-<a href=#1533 id=1533 data-nosnippet>1533</a>
-<a href=#1534 id=1534 data-nosnippet>1534</a><span class="doccomment">/// Represents a successful, possibly fueled instantiation of a module.
-<a href=#1535 id=1535 data-nosnippet>1535</a></span><span class="kw">pub struct </span>InstantiationOutcome {
-<a href=#1536 id=1536 data-nosnippet>1536</a>    <span class="doccomment">/// contains the store address of the module that has successfully instantiated.
-<a href=#1537 id=1537 data-nosnippet>1537</a>    </span><span class="kw">pub </span>module_addr: ModuleAddr,
-<a href=#1538 id=1538 data-nosnippet>1538</a>    <span class="doccomment">/// contains `Some(remaining_fuel)` if instantiation was fuel-metered and `None` otherwise.
-<a href=#1539 id=1539 data-nosnippet>1539</a>    </span><span class="kw">pub </span>maybe_remaining_fuel: <span class="prelude-ty">Option</span>&lt;u64&gt;,
-<a href=#1540 id=1540 data-nosnippet>1540</a>}
-<a href=#1541 id=1541 data-nosnippet>1541</a>
-<a href=#1542 id=1542 data-nosnippet>1542</a><span class="kw">pub type </span>Hostcode = usize;</code></pre></div></section></main></body></html>
+<a href=#1514 id=1514 data-nosnippet>1514</a>    /// The caller has to guarantee that the given [`ModuleAddr`] came from the
+<a href=#1515 id=1515 data-nosnippet>1515</a>    /// current [`Store`] object.
+<a href=#1516 id=1516 data-nosnippet>1516</a>    </span><span class="kw">pub unsafe fn </span>instance_exports(<span class="kw-2">&amp;</span><span class="self">self</span>, module_addr: ModuleAddr) -&gt; Vec&lt;(String, ExternVal)&gt; {
+<a href=#1517 id=1517 data-nosnippet>1517</a>        <span class="comment">// SAFETY: The caller ensures that the given module address is valid in
+<a href=#1518 id=1518 data-nosnippet>1518</a>        // the current store.
+<a href=#1519 id=1519 data-nosnippet>1519</a>        </span><span class="kw">let </span>module = <span class="kw">unsafe </span>{ <span class="self">self</span>.modules.get(module_addr) };
+<a href=#1520 id=1520 data-nosnippet>1520</a>
+<a href=#1521 id=1521 data-nosnippet>1521</a>        module
+<a href=#1522 id=1522 data-nosnippet>1522</a>            .exports
+<a href=#1523 id=1523 data-nosnippet>1523</a>            .iter()
+<a href=#1524 id=1524 data-nosnippet>1524</a>            .map(|(name, externval)| (name.clone(), <span class="kw-2">*</span>externval))
+<a href=#1525 id=1525 data-nosnippet>1525</a>            .collect()
+<a href=#1526 id=1526 data-nosnippet>1526</a>    }
+<a href=#1527 id=1527 data-nosnippet>1527</a>}
+<a href=#1528 id=1528 data-nosnippet>1528</a>
+<a href=#1529 id=1529 data-nosnippet>1529</a><span class="doccomment">/// Represents a successful, possibly fueled instantiation of a module.
+<a href=#1530 id=1530 data-nosnippet>1530</a></span><span class="kw">pub struct </span>InstantiationOutcome {
+<a href=#1531 id=1531 data-nosnippet>1531</a>    <span class="doccomment">/// contains the store address of the module that has successfully instantiated.
+<a href=#1532 id=1532 data-nosnippet>1532</a>    </span><span class="kw">pub </span>module_addr: ModuleAddr,
+<a href=#1533 id=1533 data-nosnippet>1533</a>    <span class="doccomment">/// contains `Some(remaining_fuel)` if instantiation was fuel-metered and `None` otherwise.
+<a href=#1534 id=1534 data-nosnippet>1534</a>    </span><span class="kw">pub </span>maybe_remaining_fuel: <span class="prelude-ty">Option</span>&lt;u64&gt;,
+<a href=#1535 id=1535 data-nosnippet>1535</a>}
+<a href=#1536 id=1536 data-nosnippet>1536</a>
+<a href=#1537 id=1537 data-nosnippet>1537</a><span class="kw">pub type </span>Hostcode = usize;</code></pre></div></section></main></body></html>

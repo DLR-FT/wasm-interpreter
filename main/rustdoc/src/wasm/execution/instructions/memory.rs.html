@@ -79,7 +79,7 @@
 <a href=#79 id=79 data-nosnippet>79</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#80 id=80 data-nosnippet>80</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#81 id=81 data-nosnippet>81</a>        // store. Therefore, it is valid in the current store.
-<a href=#82 id=82 data-nosnippet>82</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#82 id=82 data-nosnippet>82</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#83 id=83 data-nosnippet>83</a>
 <a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#85 id=85 data-nosnippet>85</a>        <span class="kw">let </span>data = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -114,7 +114,7 @@
 <a href=#114 id=114 data-nosnippet>114</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#115 id=115 data-nosnippet>115</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#116 id=116 data-nosnippet>116</a>        // store. Therefore, it is valid in the current store.
-<a href=#117 id=117 data-nosnippet>117</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#117 id=117 data-nosnippet>117</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#118 id=118 data-nosnippet>118</a>
 <a href=#119 id=119 data-nosnippet>119</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#120 id=120 data-nosnippet>120</a>        <span class="kw">let </span>data = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -149,7 +149,7 @@
 <a href=#149 id=149 data-nosnippet>149</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#150 id=150 data-nosnippet>150</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#151 id=151 data-nosnippet>151</a>        // store. Therefore, it is valid in the current store.
-<a href=#152 id=152 data-nosnippet>152</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#152 id=152 data-nosnippet>152</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#153 id=153 data-nosnippet>153</a>
 <a href=#154 id=154 data-nosnippet>154</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#155 id=155 data-nosnippet>155</a>        <span class="kw">let </span>data = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -184,7 +184,7 @@
 <a href=#184 id=184 data-nosnippet>184</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#185 id=185 data-nosnippet>185</a>        // current store. Therefore, it is valid in the current
 <a href=#186 id=186 data-nosnippet>186</a>        // store.
-<a href=#187 id=187 data-nosnippet>187</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#187 id=187 data-nosnippet>187</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#188 id=188 data-nosnippet>188</a>
 <a href=#189 id=189 data-nosnippet>189</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#190 id=190 data-nosnippet>190</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
@@ -220,7 +220,7 @@
 <a href=#220 id=220 data-nosnippet>220</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#221 id=221 data-nosnippet>221</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#222 id=222 data-nosnippet>222</a>        // store. Therefore, it is valid in the current store.
-<a href=#223 id=223 data-nosnippet>223</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#223 id=223 data-nosnippet>223</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#224 id=224 data-nosnippet>224</a>
 <a href=#225 id=225 data-nosnippet>225</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">let </span>data: i8 = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -255,7 +255,7 @@
 <a href=#255 id=255 data-nosnippet>255</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#256 id=256 data-nosnippet>256</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#257 id=257 data-nosnippet>257</a>        // store. Therefore, it is valid in the current store.
-<a href=#258 id=258 data-nosnippet>258</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#258 id=258 data-nosnippet>258</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#259 id=259 data-nosnippet>259</a>
 <a href=#260 id=260 data-nosnippet>260</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#261 id=261 data-nosnippet>261</a>        <span class="kw">let </span>data: u8 = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -290,7 +290,7 @@
 <a href=#290 id=290 data-nosnippet>290</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#291 id=291 data-nosnippet>291</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#292 id=292 data-nosnippet>292</a>        // store. Therefore, it is valid in the current store.
-<a href=#293 id=293 data-nosnippet>293</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#293 id=293 data-nosnippet>293</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#294 id=294 data-nosnippet>294</a>
 <a href=#295 id=295 data-nosnippet>295</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#296 id=296 data-nosnippet>296</a>        <span class="kw">let </span>data: i16 = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -325,7 +325,7 @@
 <a href=#325 id=325 data-nosnippet>325</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#326 id=326 data-nosnippet>326</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#327 id=327 data-nosnippet>327</a>        // store. Therefore, it is valid in the current store.
-<a href=#328 id=328 data-nosnippet>328</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#328 id=328 data-nosnippet>328</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#329 id=329 data-nosnippet>329</a>
 <a href=#330 id=330 data-nosnippet>330</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#331 id=331 data-nosnippet>331</a>        <span class="kw">let </span>data: u16 = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -360,7 +360,7 @@
 <a href=#360 id=360 data-nosnippet>360</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#361 id=361 data-nosnippet>361</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#362 id=362 data-nosnippet>362</a>        // store. Therefore, it is valid in the current store.
-<a href=#363 id=363 data-nosnippet>363</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#363 id=363 data-nosnippet>363</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#364 id=364 data-nosnippet>364</a>
 <a href=#365 id=365 data-nosnippet>365</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#366 id=366 data-nosnippet>366</a>        <span class="kw">let </span>data: i8 = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -395,7 +395,7 @@
 <a href=#395 id=395 data-nosnippet>395</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#396 id=396 data-nosnippet>396</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#397 id=397 data-nosnippet>397</a>        // store. Therefore, it is valid in the current store.
-<a href=#398 id=398 data-nosnippet>398</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#398 id=398 data-nosnippet>398</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#399 id=399 data-nosnippet>399</a>
 <a href=#400 id=400 data-nosnippet>400</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#401 id=401 data-nosnippet>401</a>        <span class="kw">let </span>data: u8 = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -430,7 +430,7 @@
 <a href=#430 id=430 data-nosnippet>430</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#431 id=431 data-nosnippet>431</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#432 id=432 data-nosnippet>432</a>        // store. Therefore, it is valid in the current store.
-<a href=#433 id=433 data-nosnippet>433</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#433 id=433 data-nosnippet>433</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#434 id=434 data-nosnippet>434</a>
 <a href=#435 id=435 data-nosnippet>435</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#436 id=436 data-nosnippet>436</a>        <span class="kw">let </span>data: i16 = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -465,7 +465,7 @@
 <a href=#465 id=465 data-nosnippet>465</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#466 id=466 data-nosnippet>466</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#467 id=467 data-nosnippet>467</a>        // store. Therefore, it is valid in the current store.
-<a href=#468 id=468 data-nosnippet>468</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#468 id=468 data-nosnippet>468</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#469 id=469 data-nosnippet>469</a>
 <a href=#470 id=470 data-nosnippet>470</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#471 id=471 data-nosnippet>471</a>        <span class="kw">let </span>data: u16 = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -500,7 +500,7 @@
 <a href=#500 id=500 data-nosnippet>500</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#501 id=501 data-nosnippet>501</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#502 id=502 data-nosnippet>502</a>        // store. Therefore, it is valid in the current store.
-<a href=#503 id=503 data-nosnippet>503</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#503 id=503 data-nosnippet>503</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#504 id=504 data-nosnippet>504</a>
 <a href=#505 id=505 data-nosnippet>505</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#506 id=506 data-nosnippet>506</a>        <span class="kw">let </span>data: i32 = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -535,7 +535,7 @@
 <a href=#535 id=535 data-nosnippet>535</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#536 id=536 data-nosnippet>536</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#537 id=537 data-nosnippet>537</a>        // store. Therefore, it is valid in the current store.
-<a href=#538 id=538 data-nosnippet>538</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#538 id=538 data-nosnippet>538</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#539 id=539 data-nosnippet>539</a>
 <a href=#540 id=540 data-nosnippet>540</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#541 id=541 data-nosnippet>541</a>        <span class="kw">let </span>data: u32 = mem.mem.load(idx)<span class="question-mark">?</span>;
@@ -571,7 +571,7 @@
 <a href=#571 id=571 data-nosnippet>571</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#572 id=572 data-nosnippet>572</a>        // current store. Therefore, it is valid in the current
 <a href=#573 id=573 data-nosnippet>573</a>        // store.
-<a href=#574 id=574 data-nosnippet>574</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#574 id=574 data-nosnippet>574</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#575 id=575 data-nosnippet>575</a>
 <a href=#576 id=576 data-nosnippet>576</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#577 id=577 data-nosnippet>577</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
@@ -614,7 +614,7 @@
 <a href=#614 id=614 data-nosnippet>614</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#615 id=615 data-nosnippet>615</a>        // current store. Therefore, it is valid in the current
 <a href=#616 id=616 data-nosnippet>616</a>        // store.
-<a href=#617 id=617 data-nosnippet>617</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#617 id=617 data-nosnippet>617</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#618 id=618 data-nosnippet>618</a>
 <a href=#619 id=619 data-nosnippet>619</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#620 id=620 data-nosnippet>620</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
@@ -657,7 +657,7 @@
 <a href=#657 id=657 data-nosnippet>657</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#658 id=658 data-nosnippet>658</a>        // current store. Therefore, it is valid in the current
 <a href=#659 id=659 data-nosnippet>659</a>        // store.
-<a href=#660 id=660 data-nosnippet>660</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#660 id=660 data-nosnippet>660</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#661 id=661 data-nosnippet>661</a>
 <a href=#662 id=662 data-nosnippet>662</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#663 id=663 data-nosnippet>663</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
@@ -700,7 +700,7 @@
 <a href=#700 id=700 data-nosnippet>700</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#701 id=701 data-nosnippet>701</a>        // current store. Therefore, it is valid in the current
 <a href=#702 id=702 data-nosnippet>702</a>        // store.
-<a href=#703 id=703 data-nosnippet>703</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#703 id=703 data-nosnippet>703</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#704 id=704 data-nosnippet>704</a>
 <a href=#705 id=705 data-nosnippet>705</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#706 id=706 data-nosnippet>706</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
@@ -743,7 +743,7 @@
 <a href=#743 id=743 data-nosnippet>743</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#744 id=744 data-nosnippet>744</a>        // current store. Therefore, it is valid in the current
 <a href=#745 id=745 data-nosnippet>745</a>        // store.
-<a href=#746 id=746 data-nosnippet>746</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#746 id=746 data-nosnippet>746</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#747 id=747 data-nosnippet>747</a>
 <a href=#748 id=748 data-nosnippet>748</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#749 id=749 data-nosnippet>749</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
@@ -786,7 +786,7 @@
 <a href=#786 id=786 data-nosnippet>786</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#787 id=787 data-nosnippet>787</a>        // current store. Therefore, it is valid in the current
 <a href=#788 id=788 data-nosnippet>788</a>        // store.
-<a href=#789 id=789 data-nosnippet>789</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#789 id=789 data-nosnippet>789</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#790 id=790 data-nosnippet>790</a>
 <a href=#791 id=791 data-nosnippet>791</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#792 id=792 data-nosnippet>792</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
@@ -831,7 +831,7 @@
 <a href=#831 id=831 data-nosnippet>831</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#832 id=832 data-nosnippet>832</a>        // current store. Therefore, it is valid in the current
 <a href=#833 id=833 data-nosnippet>833</a>        // store.
-<a href=#834 id=834 data-nosnippet>834</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#834 id=834 data-nosnippet>834</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#835 id=835 data-nosnippet>835</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#836 id=836 data-nosnippet>836</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#837 id=837 data-nosnippet>837</a>
@@ -866,7 +866,7 @@
 <a href=#866 id=866 data-nosnippet>866</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#867 id=867 data-nosnippet>867</a>        // current store. Therefore, it is valid in the current
 <a href=#868 id=868 data-nosnippet>868</a>        // store.
-<a href=#869 id=869 data-nosnippet>869</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#869 id=869 data-nosnippet>869</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#870 id=870 data-nosnippet>870</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#871 id=871 data-nosnippet>871</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#872 id=872 data-nosnippet>872</a>
@@ -901,7 +901,7 @@
 <a href=#901 id=901 data-nosnippet>901</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#902 id=902 data-nosnippet>902</a>        // current store. Therefore, it is valid in the current
 <a href=#903 id=903 data-nosnippet>903</a>        // store.
-<a href=#904 id=904 data-nosnippet>904</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#904 id=904 data-nosnippet>904</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#905 id=905 data-nosnippet>905</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#906 id=906 data-nosnippet>906</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#907 id=907 data-nosnippet>907</a>
@@ -936,7 +936,7 @@
 <a href=#936 id=936 data-nosnippet>936</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#937 id=937 data-nosnippet>937</a>        // current store. Therefore, it is valid in the current
 <a href=#938 id=938 data-nosnippet>938</a>        // store.
-<a href=#939 id=939 data-nosnippet>939</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#939 id=939 data-nosnippet>939</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#940 id=940 data-nosnippet>940</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#941 id=941 data-nosnippet>941</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#942 id=942 data-nosnippet>942</a>
@@ -974,7 +974,7 @@
 <a href=#974 id=974 data-nosnippet>974</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#975 id=975 data-nosnippet>975</a>        // current store. Therefore, it is valid in the current
 <a href=#976 id=976 data-nosnippet>976</a>        // store.
-<a href=#977 id=977 data-nosnippet>977</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#977 id=977 data-nosnippet>977</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#978 id=978 data-nosnippet>978</a>
 <a href=#979 id=979 data-nosnippet>979</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#980 id=980 data-nosnippet>980</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
@@ -1010,7 +1010,7 @@
 <a href=#1010 id=1010 data-nosnippet>1010</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#1011 id=1011 data-nosnippet>1011</a>        // current store. Therefore, it is valid in the current
 <a href=#1012 id=1012 data-nosnippet>1012</a>        // store.
-<a href=#1013 id=1013 data-nosnippet>1013</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1013 id=1013 data-nosnippet>1013</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1014 id=1014 data-nosnippet>1014</a>
 <a href=#1015 id=1015 data-nosnippet>1015</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#1016 id=1016 data-nosnippet>1016</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
@@ -1050,7 +1050,7 @@
 <a href=#1050 id=1050 data-nosnippet>1050</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#1051 id=1051 data-nosnippet>1051</a>        // current store. Therefore, it is valid in the current
 <a href=#1052 id=1052 data-nosnippet>1052</a>        // store.
-<a href=#1053 id=1053 data-nosnippet>1053</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1053 id=1053 data-nosnippet>1053</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1054 id=1054 data-nosnippet>1054</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1055 id=1055 data-nosnippet>1055</a>        <span class="kw">let </span>lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
 <a href=#1056 id=1056 data-nosnippet>1056</a>        <span class="kw">let </span><span class="kw-2">mut </span>lanes: [u8; <span class="number">16</span>] = to_lanes(data);
@@ -1086,7 +1086,7 @@
 <a href=#1086 id=1086 data-nosnippet>1086</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#1087 id=1087 data-nosnippet>1087</a>        // current store. Therefore, it is valid in the current
 <a href=#1088 id=1088 data-nosnippet>1088</a>        // store.
-<a href=#1089 id=1089 data-nosnippet>1089</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1089 id=1089 data-nosnippet>1089</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1090 id=1090 data-nosnippet>1090</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1091 id=1091 data-nosnippet>1091</a>        <span class="kw">let </span>lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
 <a href=#1092 id=1092 data-nosnippet>1092</a>        <span class="kw">let </span><span class="kw-2">mut </span>lanes: [u16; <span class="number">8</span>] = to_lanes(data);
@@ -1121,7 +1121,7 @@
 <a href=#1121 id=1121 data-nosnippet>1121</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#1122 id=1122 data-nosnippet>1122</a>        // current store. Therefore, it is valid in the current
 <a href=#1123 id=1123 data-nosnippet>1123</a>        // store.
-<a href=#1124 id=1124 data-nosnippet>1124</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1124 id=1124 data-nosnippet>1124</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1125 id=1125 data-nosnippet>1125</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1126 id=1126 data-nosnippet>1126</a>        <span class="kw">let </span>lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
 <a href=#1127 id=1127 data-nosnippet>1127</a>        <span class="kw">let </span><span class="kw-2">mut </span>lanes: [u32; <span class="number">4</span>] = to_lanes(data);
@@ -1156,7 +1156,7 @@
 <a href=#1156 id=1156 data-nosnippet>1156</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#1157 id=1157 data-nosnippet>1157</a>        // current store. Therefore, it is valid in the current
 <a href=#1158 id=1158 data-nosnippet>1158</a>        // store.
-<a href=#1159 id=1159 data-nosnippet>1159</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1159 id=1159 data-nosnippet>1159</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1160 id=1160 data-nosnippet>1160</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1161 id=1161 data-nosnippet>1161</a>        <span class="kw">let </span>lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
 <a href=#1162 id=1162 data-nosnippet>1162</a>        <span class="kw">let </span><span class="kw-2">mut </span>lanes: [u64; <span class="number">2</span>] = to_lanes(data);
@@ -1193,7 +1193,7 @@
 <a href=#1193 id=1193 data-nosnippet>1193</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#1194 id=1194 data-nosnippet>1194</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#1195 id=1195 data-nosnippet>1195</a>        // store. Therefore, it is valid in the current store.
-<a href=#1196 id=1196 data-nosnippet>1196</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1196 id=1196 data-nosnippet>1196</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1197 id=1197 data-nosnippet>1197</a>
 <a href=#1198 id=1198 data-nosnippet>1198</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1199 id=1199 data-nosnippet>1199</a>        mem.mem.store(idx, data_to_store)<span class="question-mark">?</span>;
@@ -1229,7 +1229,7 @@
 <a href=#1229 id=1229 data-nosnippet>1229</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#1230 id=1230 data-nosnippet>1230</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#1231 id=1231 data-nosnippet>1231</a>        // store. Therefore, it is valid in the current store.
-<a href=#1232 id=1232 data-nosnippet>1232</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1232 id=1232 data-nosnippet>1232</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1233 id=1233 data-nosnippet>1233</a>
 <a href=#1234 id=1234 data-nosnippet>1234</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1235 id=1235 data-nosnippet>1235</a>        mem.mem.store(idx, data_to_store)<span class="question-mark">?</span>;
@@ -1265,7 +1265,7 @@
 <a href=#1265 id=1265 data-nosnippet>1265</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#1266 id=1266 data-nosnippet>1266</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#1267 id=1267 data-nosnippet>1267</a>        // store. Therefore, it is valid in the current store.
-<a href=#1268 id=1268 data-nosnippet>1268</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1268 id=1268 data-nosnippet>1268</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1269 id=1269 data-nosnippet>1269</a>
 <a href=#1270 id=1270 data-nosnippet>1270</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1271 id=1271 data-nosnippet>1271</a>        mem.mem.store(idx, data_to_store)<span class="question-mark">?</span>;
@@ -1301,7 +1301,7 @@
 <a href=#1301 id=1301 data-nosnippet>1301</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#1302 id=1302 data-nosnippet>1302</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#1303 id=1303 data-nosnippet>1303</a>        // store. Therefore, it is valid in the current store.
-<a href=#1304 id=1304 data-nosnippet>1304</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1304 id=1304 data-nosnippet>1304</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1305 id=1305 data-nosnippet>1305</a>
 <a href=#1306 id=1306 data-nosnippet>1306</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1307 id=1307 data-nosnippet>1307</a>        mem.mem.store(idx, data_to_store)<span class="question-mark">?</span>;
@@ -1335,7 +1335,7 @@
 <a href=#1335 id=1335 data-nosnippet>1335</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#1336 id=1336 data-nosnippet>1336</a>        // current store. Therefore, it is valid in the current
 <a href=#1337 id=1337 data-nosnippet>1337</a>        // store.
-<a href=#1338 id=1338 data-nosnippet>1338</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1338 id=1338 data-nosnippet>1338</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1339 id=1339 data-nosnippet>1339</a>
 <a href=#1340 id=1340 data-nosnippet>1340</a>        <span class="kw">let </span>data: [u8; <span class="number">16</span>] = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#1341 id=1341 data-nosnippet>1341</a>        <span class="kw">let </span>relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -1375,7 +1375,7 @@
 <a href=#1375 id=1375 data-nosnippet>1375</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#1376 id=1376 data-nosnippet>1376</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#1377 id=1377 data-nosnippet>1377</a>        // store. Therefore, it is valid in the current store.
-<a href=#1378 id=1378 data-nosnippet>1378</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1378 id=1378 data-nosnippet>1378</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1379 id=1379 data-nosnippet>1379</a>
 <a href=#1380 id=1380 data-nosnippet>1380</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1381 id=1381 data-nosnippet>1381</a>        mem.mem.store(idx, wrapped_data)<span class="question-mark">?</span>;
@@ -1413,7 +1413,7 @@
 <a href=#1413 id=1413 data-nosnippet>1413</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#1414 id=1414 data-nosnippet>1414</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#1415 id=1415 data-nosnippet>1415</a>        // store. Therefore, it is valid in the current store.
-<a href=#1416 id=1416 data-nosnippet>1416</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1416 id=1416 data-nosnippet>1416</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1417 id=1417 data-nosnippet>1417</a>
 <a href=#1418 id=1418 data-nosnippet>1418</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1419 id=1419 data-nosnippet>1419</a>        mem.mem.store(idx, wrapped_data)<span class="question-mark">?</span>;
@@ -1451,7 +1451,7 @@
 <a href=#1451 id=1451 data-nosnippet>1451</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#1452 id=1452 data-nosnippet>1452</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#1453 id=1453 data-nosnippet>1453</a>        // store. Therefore, it is valid in the current store.
-<a href=#1454 id=1454 data-nosnippet>1454</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1454 id=1454 data-nosnippet>1454</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1455 id=1455 data-nosnippet>1455</a>
 <a href=#1456 id=1456 data-nosnippet>1456</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1457 id=1457 data-nosnippet>1457</a>        mem.mem.store(idx, wrapped_data)<span class="question-mark">?</span>;
@@ -1489,7 +1489,7 @@
 <a href=#1489 id=1489 data-nosnippet>1489</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#1490 id=1490 data-nosnippet>1490</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#1491 id=1491 data-nosnippet>1491</a>        // store. Therefore, it is valid in the current store.
-<a href=#1492 id=1492 data-nosnippet>1492</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1492 id=1492 data-nosnippet>1492</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1493 id=1493 data-nosnippet>1493</a>
 <a href=#1494 id=1494 data-nosnippet>1494</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1495 id=1495 data-nosnippet>1495</a>        mem.mem.store(idx, wrapped_data)<span class="question-mark">?</span>;
@@ -1527,7 +1527,7 @@
 <a href=#1527 id=1527 data-nosnippet>1527</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#1528 id=1528 data-nosnippet>1528</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#1529 id=1529 data-nosnippet>1529</a>        // store. Therefore, it is valid in the current store.
-<a href=#1530 id=1530 data-nosnippet>1530</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1530 id=1530 data-nosnippet>1530</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1531 id=1531 data-nosnippet>1531</a>
 <a href=#1532 id=1532 data-nosnippet>1532</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1533 id=1533 data-nosnippet>1533</a>        mem.mem.store(idx, wrapped_data)<span class="question-mark">?</span>;
@@ -1564,7 +1564,7 @@
 <a href=#1564 id=1564 data-nosnippet>1564</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#1565 id=1565 data-nosnippet>1565</a>        // current store. Therefore, it is valid in the current
 <a href=#1566 id=1566 data-nosnippet>1566</a>        // store.
-<a href=#1567 id=1567 data-nosnippet>1567</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1567 id=1567 data-nosnippet>1567</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1568 id=1568 data-nosnippet>1568</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1569 id=1569 data-nosnippet>1569</a>        <span class="kw">let </span>lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
 <a href=#1570 id=1570 data-nosnippet>1570</a>
@@ -1600,7 +1600,7 @@
 <a href=#1600 id=1600 data-nosnippet>1600</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#1601 id=1601 data-nosnippet>1601</a>        // current store. Therefore, it is valid in the current
 <a href=#1602 id=1602 data-nosnippet>1602</a>        // store.
-<a href=#1603 id=1603 data-nosnippet>1603</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1603 id=1603 data-nosnippet>1603</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1604 id=1604 data-nosnippet>1604</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1605 id=1605 data-nosnippet>1605</a>        <span class="kw">let </span>lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
 <a href=#1606 id=1606 data-nosnippet>1606</a>
@@ -1636,7 +1636,7 @@
 <a href=#1636 id=1636 data-nosnippet>1636</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#1637 id=1637 data-nosnippet>1637</a>        // current store. Therefore, it is valid in the current
 <a href=#1638 id=1638 data-nosnippet>1638</a>        // store.
-<a href=#1639 id=1639 data-nosnippet>1639</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1639 id=1639 data-nosnippet>1639</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1640 id=1640 data-nosnippet>1640</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1641 id=1641 data-nosnippet>1641</a>        <span class="kw">let </span>lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
 <a href=#1642 id=1642 data-nosnippet>1642</a>
@@ -1672,7 +1672,7 @@
 <a href=#1672 id=1672 data-nosnippet>1672</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#1673 id=1673 data-nosnippet>1673</a>        // current store. Therefore, it is valid in the current
 <a href=#1674 id=1674 data-nosnippet>1674</a>        // store.
-<a href=#1675 id=1675 data-nosnippet>1675</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1675 id=1675 data-nosnippet>1675</a>        </span><span class="kw">let </span>memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1676 id=1676 data-nosnippet>1676</a>        <span class="kw">let </span>idx = calculate_mem_address(<span class="kw-2">&amp;</span>memarg, relative_address)<span class="question-mark">?</span>;
 <a href=#1677 id=1677 data-nosnippet>1677</a>        <span class="kw">let </span>lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
 <a href=#1678 id=1678 data-nosnippet>1678</a>
@@ -1708,7 +1708,7 @@
 <a href=#1708 id=1708 data-nosnippet>1708</a>        </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
 <a href=#1709 id=1709 data-nosnippet>1709</a>        <span class="comment">// SAFETY: This memory address was just read from the current
 <a href=#1710 id=1710 data-nosnippet>1710</a>        // store. Therefore, it is valid in the current store.
-<a href=#1711 id=1711 data-nosnippet>1711</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1711 id=1711 data-nosnippet>1711</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1712 id=1712 data-nosnippet>1712</a>        <span class="kw">let </span>size = mem.size() <span class="kw">as </span>u32;
 <a href=#1713 id=1713 data-nosnippet>1713</a>        resumable.stack.push_value(Value::I32(size))<span class="question-mark">?</span>;
 <a href=#1714 id=1714 data-nosnippet>1714</a>        <span class="macro">trace!</span>(<span class="string">"Instruction: memory.size [] -&gt; [{}]"</span>, size);
@@ -1812,7 +1812,7 @@
 <a href=#1812 id=1812 data-nosnippet>1812</a>        <span class="comment">// SAFETY: This memory address was just read from the
 <a href=#1813 id=1813 data-nosnippet>1813</a>        // current store. Therefore, it is valid in the current
 <a href=#1814 id=1814 data-nosnippet>1814</a>        // store.
-<a href=#1815 id=1815 data-nosnippet>1815</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get(mem_addr) };
+<a href=#1815 id=1815 data-nosnippet>1815</a>        </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(mem_addr) };
 <a href=#1816 id=1816 data-nosnippet>1816</a>
 <a href=#1817 id=1817 data-nosnippet>1817</a>        <span class="kw">let </span>n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
 <a href=#1818 id=1818 data-nosnippet>1818</a>        <span class="comment">// decrement fuel, but push n back if it fails
@@ -1901,133 +1901,127 @@
 <a href=#1901 id=1901 data-nosnippet>1901</a>            }
 <a href=#1902 id=1902 data-nosnippet>1902</a>        }
 <a href=#1903 id=1903 data-nosnippet>1903</a>
-<a href=#1904 id=1904 data-nosnippet>1904</a>        <span class="kw">let </span>s: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-<a href=#1905 id=1905 data-nosnippet>1905</a>        <span class="kw">let </span>d: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+<a href=#1904 id=1904 data-nosnippet>1904</a>        <span class="macro">assert_eq!</span>(src_addr, dst_addr, <span class="string">"the multiple memories proposal is not yet supported"</span>);
+<a href=#1905 id=1905 data-nosnippet>1905</a>        <span class="kw">let </span>src_dst_addr = src_addr;
 <a href=#1906 id=1906 data-nosnippet>1906</a>
-<a href=#1907 id=1907 data-nosnippet>1907</a>        <span class="comment">// SAFETY: This source memory address was just read from
-<a href=#1908 id=1908 data-nosnippet>1908</a>        // the current store. Therefore, it must also be valid
-<a href=#1909 id=1909 data-nosnippet>1909</a>        // in the current store.
-<a href=#1910 id=1910 data-nosnippet>1910</a>        </span><span class="kw">let </span>src_mem = <span class="kw">unsafe </span>{ store_inner.memories.get(src_addr) };
-<a href=#1911 id=1911 data-nosnippet>1911</a>        <span class="comment">// SAFETY: This destination memory address was just read
-<a href=#1912 id=1912 data-nosnippet>1912</a>        // from the current store. Therefore, it must also be
-<a href=#1913 id=1913 data-nosnippet>1913</a>        // valid in the current store.
-<a href=#1914 id=1914 data-nosnippet>1914</a>        </span><span class="kw">let </span>dest_mem = <span class="kw">unsafe </span>{ store_inner.memories.get(dst_addr) };
+<a href=#1907 id=1907 data-nosnippet>1907</a>        <span class="kw">let </span>s: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+<a href=#1908 id=1908 data-nosnippet>1908</a>        <span class="kw">let </span>d: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+<a href=#1909 id=1909 data-nosnippet>1909</a>
+<a href=#1910 id=1910 data-nosnippet>1910</a>        <span class="comment">// SAFETY: The source and destination addresses (which must be the same as of now!) were
+<a href=#1911 id=1911 data-nosnippet>1911</a>        // just read from the current store. Therefore, it must also be valid in the current store.
+<a href=#1912 id=1912 data-nosnippet>1912</a>        </span><span class="kw">let </span>src_dst_memory = <span class="kw">unsafe </span>{ store_inner.memories.get_mut(src_dst_addr) };
+<a href=#1913 id=1913 data-nosnippet>1913</a>
+<a href=#1914 id=1914 data-nosnippet>1914</a>        src_dst_memory.mem.copy_within(d.cast_unsigned().into_usize(), s.cast_unsigned().into_usize(), n.into_usize())<span class="question-mark">?</span>;
 <a href=#1915 id=1915 data-nosnippet>1915</a>
-<a href=#1916 id=1916 data-nosnippet>1916</a>        dest_mem.mem.copy(
-<a href=#1917 id=1917 data-nosnippet>1917</a>            d.cast_unsigned().into_usize(),
-<a href=#1918 id=1918 data-nosnippet>1918</a>            <span class="kw-2">&amp;</span>src_mem.mem,
-<a href=#1919 id=1919 data-nosnippet>1919</a>            s.cast_unsigned().into_usize(),
-<a href=#1920 id=1920 data-nosnippet>1920</a>            n.into_usize(),
-<a href=#1921 id=1921 data-nosnippet>1921</a>        )<span class="question-mark">?</span>;
-<a href=#1922 id=1922 data-nosnippet>1922</a>        <span class="macro">trace!</span>(<span class="string">"Instruction: memory.copy"</span>);
-<a href=#1923 id=1923 data-nosnippet>1923</a>        <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
-<a href=#1924 id=1924 data-nosnippet>1924</a>    }
-<a href=#1925 id=1925 data-nosnippet>1925</a>}
-<a href=#1926 id=1926 data-nosnippet>1926</a>
-<a href=#1927 id=1927 data-nosnippet>1927</a><span class="comment">// memory.init
-<a href=#1928 id=1928 data-nosnippet>1928</a>// See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
-<a href=#1929 id=1929 data-nosnippet>1929</a>// Copy a region from a data segment into memory
-<a href=#1930 id=1930 data-nosnippet>1930</a></span><span class="macro">define_instruction_fn!</span> {
-<a href=#1931 id=1931 data-nosnippet>1931</a>    memory_init_fn,
-<a href=#1932 id=1932 data-nosnippet>1932</a>    fuel_check = omit,
-<a href=#1933 id=1933 data-nosnippet>1933</a>    |Args {
-<a href=#1934 id=1934 data-nosnippet>1934</a>         wasm,
-<a href=#1935 id=1935 data-nosnippet>1935</a>         resumable,
-<a href=#1936 id=1936 data-nosnippet>1936</a>         modules,
-<a href=#1937 id=1937 data-nosnippet>1937</a>         current_module,
-<a href=#1938 id=1938 data-nosnippet>1938</a>         store_inner,
-<a href=#1939 id=1939 data-nosnippet>1939</a>         ..
-<a href=#1940 id=1940 data-nosnippet>1940</a>     }| {
-<a href=#1941 id=1941 data-nosnippet>1941</a>        <span class="comment">//  mappings:
-<a href=#1942 id=1942 data-nosnippet>1942</a>        //      n =&gt; number of bytes to copy
-<a href=#1943 id=1943 data-nosnippet>1943</a>        //      s =            }&gt; starting pointer in the data segment
-<a href=#1944 id=1944 data-nosnippet>1944</a>        //      d =&gt; destination address to copy to
-<a href=#1945 id=1945 data-nosnippet>1945</a>        // SAFETY: Validation guarantees there to be a valid
-<a href=#1946 id=1946 data-nosnippet>1946</a>        // data index next.
-<a href=#1947 id=1947 data-nosnippet>1947</a>        </span><span class="kw">let </span>data_idx = <span class="kw">unsafe </span>{ DataIdx::decode_unchecked(wasm) };
-<a href=#1948 id=1948 data-nosnippet>1948</a>
-<a href=#1949 id=1949 data-nosnippet>1949</a>        <span class="comment">// Note: This zero byte is reserved for the multiple memories
-<a href=#1950 id=1950 data-nosnippet>1950</a>        // proposal.
-<a href=#1951 id=1951 data-nosnippet>1951</a>        </span><span class="kw">let </span>_zero = wasm.decode_u8().unwrap_validated();
-<a href=#1952 id=1952 data-nosnippet>1952</a>
-<a href=#1953 id=1953 data-nosnippet>1953</a>        <span class="kw">let </span>n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-<a href=#1954 id=1954 data-nosnippet>1954</a>        <span class="comment">// decrement fuel, but push n back if it fails
-<a href=#1955 id=1955 data-nosnippet>1955</a>        </span><span class="kw">let </span>cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_INIT)
-<a href=#1956 id=1956 data-nosnippet>1956</a>            + u64::from(n)
-<a href=#1957 id=1957 data-nosnippet>1957</a>                * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_INIT);
-<a href=#1958 id=1958 data-nosnippet>1958</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(fuel) = <span class="kw-2">&amp;mut </span>resumable.maybe_fuel {
-<a href=#1959 id=1959 data-nosnippet>1959</a>            <span class="kw">if </span><span class="kw-2">*</span>fuel &gt;= cost {
-<a href=#1960 id=1960 data-nosnippet>1960</a>                <span class="kw-2">*</span>fuel -= cost;
-<a href=#1961 id=1961 data-nosnippet>1961</a>            } <span class="kw">else </span>{
-<a href=#1962 id=1962 data-nosnippet>1962</a>                resumable.stack.push_value(Value::I32(n)).unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
-<a href=#1963 id=1963 data-nosnippet>1963</a>                </span><span class="kw">return </span><span class="prelude-val">Ok</span>(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
-<a href=#1964 id=1964 data-nosnippet>1964</a>                    required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel).expect(
-<a href=#1965 id=1965 data-nosnippet>1965</a>                        <span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>,
-<a href=#1966 id=1966 data-nosnippet>1966</a>                    ),
-<a href=#1967 id=1967 data-nosnippet>1967</a>                }));
-<a href=#1968 id=1968 data-nosnippet>1968</a>            }
-<a href=#1969 id=1969 data-nosnippet>1969</a>        }
-<a href=#1970 id=1970 data-nosnippet>1970</a>
-<a href=#1971 id=1971 data-nosnippet>1971</a>        <span class="kw">let </span>s: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-<a href=#1972 id=1972 data-nosnippet>1972</a>        <span class="kw">let </span>d: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-<a href=#1973 id=1973 data-nosnippet>1973</a>
-<a href=#1974 id=1974 data-nosnippet>1974</a>        <span class="comment">// SAFETY: All requirements are met:
-<a href=#1975 id=1975 data-nosnippet>1975</a>        // 1. The current module address must come from the
-<a href=#1976 id=1976 data-nosnippet>1976</a>        //    current store, because it is the only parameter to
-<a href=#1977 id=1977 data-nosnippet>1977</a>        //    this function that can contain module addresses. All
-<a href=#1978 id=1978 data-nosnippet>1978</a>        //    stores guarantee all addresses in them to be valid
-<a href=#1979 id=1979 data-nosnippet>1979</a>        //    within themselves.
-<a href=#1980 id=1980 data-nosnippet>1980</a>        // 2. Validation guarantees at least one memory to exist.
-<a href=#1981 id=1981 data-nosnippet>1981</a>        // 3./5. The memory and data addresses are valid for a
-<a href=#1982 id=1982 data-nosnippet>1982</a>        //       similar reason that the module address is valid:
-<a href=#1983 id=1983 data-nosnippet>1983</a>        //       they are stored in the current module instance,
-<a href=#1984 id=1984 data-nosnippet>1984</a>        //       which is also part of the current store.
-<a href=#1985 id=1985 data-nosnippet>1985</a>        // 4. Validation gurantees this data index to be valid
-<a href=#1986 id=1986 data-nosnippet>1986</a>        //    for the current module instance.
-<a href=#1987 id=1987 data-nosnippet>1987</a>        </span><span class="kw">unsafe </span>{
-<a href=#1988 id=1988 data-nosnippet>1988</a>            memory_init(
-<a href=#1989 id=1989 data-nosnippet>1989</a>                modules,
-<a href=#1990 id=1990 data-nosnippet>1990</a>                <span class="kw-2">&amp;mut </span>store_inner.memories,
-<a href=#1991 id=1991 data-nosnippet>1991</a>                <span class="kw-2">&amp;</span>store_inner.data,
-<a href=#1992 id=1992 data-nosnippet>1992</a>                <span class="kw-2">*</span>current_module,
-<a href=#1993 id=1993 data-nosnippet>1993</a>                data_idx,
-<a href=#1994 id=1994 data-nosnippet>1994</a>                MemIdx::new(<span class="number">0</span>),
-<a href=#1995 id=1995 data-nosnippet>1995</a>                n,
-<a href=#1996 id=1996 data-nosnippet>1996</a>                s,
-<a href=#1997 id=1997 data-nosnippet>1997</a>                d,
-<a href=#1998 id=1998 data-nosnippet>1998</a>            )<span class="question-mark">?
-<a href=#1999 id=1999 data-nosnippet>1999</a>        </span>};
-<a href=#2000 id=2000 data-nosnippet>2000</a>        <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
-<a href=#2001 id=2001 data-nosnippet>2001</a>    }
-<a href=#2002 id=2002 data-nosnippet>2002</a>}
-<a href=#2003 id=2003 data-nosnippet>2003</a>
-<a href=#2004 id=2004 data-nosnippet>2004</a><span class="comment">// data.drop
-<a href=#2005 id=2005 data-nosnippet>2005</a></span><span class="macro">define_instruction_fn!</span> {
-<a href=#2006 id=2006 data-nosnippet>2006</a>    data_drop_fn,
-<a href=#2007 id=2007 data-nosnippet>2007</a>    fuel_check = flat_fc(instructions::fc_extensions::DATA_DROP),
-<a href=#2008 id=2008 data-nosnippet>2008</a>    |Args {
-<a href=#2009 id=2009 data-nosnippet>2009</a>         wasm,
-<a href=#2010 id=2010 data-nosnippet>2010</a>         modules,
-<a href=#2011 id=2011 data-nosnippet>2011</a>         current_module,
-<a href=#2012 id=2012 data-nosnippet>2012</a>         store_inner,
-<a href=#2013 id=2013 data-nosnippet>2013</a>         ..
-<a href=#2014 id=2014 data-nosnippet>2014</a>     }| {
-<a href=#2015 id=2015 data-nosnippet>2015</a>        <span class="comment">// SAFETY: Validation guarantees there to be a valid
-<a href=#2016 id=2016 data-nosnippet>2016</a>        // data index next.
-<a href=#2017 id=2017 data-nosnippet>2017</a>        </span><span class="kw">let </span>data_idx = <span class="kw">unsafe </span>{ DataIdx::decode_unchecked(wasm) };
-<a href=#2018 id=2018 data-nosnippet>2018</a>        <span class="comment">// SAFETY: All requirements are met:
-<a href=#2019 id=2019 data-nosnippet>2019</a>        // 1. The current module address must come from the
-<a href=#2020 id=2020 data-nosnippet>2020</a>        //    current store, because it is the only parameter to
-<a href=#2021 id=2021 data-nosnippet>2021</a>        //    this function that can contain module addresses. All
-<a href=#2022 id=2022 data-nosnippet>2022</a>        //    stores guarantee all addresses in them to be valid
-<a href=#2023 id=2023 data-nosnippet>2023</a>        //    within themselves.
-<a href=#2024 id=2024 data-nosnippet>2024</a>        // 2. Validation guarantees the data index to be valid
-<a href=#2025 id=2025 data-nosnippet>2025</a>        //    for the current module instance.
-<a href=#2026 id=2026 data-nosnippet>2026</a>        // 3. The data address is valid for a similar reason that
-<a href=#2027 id=2027 data-nosnippet>2027</a>        //    the module address is valid: it is stored in the
-<a href=#2028 id=2028 data-nosnippet>2028</a>        //    current module instance, which is also part of the
-<a href=#2029 id=2029 data-nosnippet>2029</a>        //    current store.
-<a href=#2030 id=2030 data-nosnippet>2030</a>        </span><span class="kw">unsafe </span>{ data_drop(modules, <span class="kw-2">&amp;mut </span>store_inner.data, <span class="kw-2">*</span>current_module, data_idx) };
-<a href=#2031 id=2031 data-nosnippet>2031</a>        <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
-<a href=#2032 id=2032 data-nosnippet>2032</a>    }
-<a href=#2033 id=2033 data-nosnippet>2033</a>}</code></pre></div></section></main></body></html>
+<a href=#1916 id=1916 data-nosnippet>1916</a>        <span class="macro">trace!</span>(<span class="string">"Instruction: memory.copy"</span>);
+<a href=#1917 id=1917 data-nosnippet>1917</a>        <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
+<a href=#1918 id=1918 data-nosnippet>1918</a>    }
+<a href=#1919 id=1919 data-nosnippet>1919</a>}
+<a href=#1920 id=1920 data-nosnippet>1920</a>
+<a href=#1921 id=1921 data-nosnippet>1921</a><span class="comment">// memory.init
+<a href=#1922 id=1922 data-nosnippet>1922</a>// See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
+<a href=#1923 id=1923 data-nosnippet>1923</a>// Copy a region from a data segment into memory
+<a href=#1924 id=1924 data-nosnippet>1924</a></span><span class="macro">define_instruction_fn!</span> {
+<a href=#1925 id=1925 data-nosnippet>1925</a>    memory_init_fn,
+<a href=#1926 id=1926 data-nosnippet>1926</a>    fuel_check = omit,
+<a href=#1927 id=1927 data-nosnippet>1927</a>    |Args {
+<a href=#1928 id=1928 data-nosnippet>1928</a>         wasm,
+<a href=#1929 id=1929 data-nosnippet>1929</a>         resumable,
+<a href=#1930 id=1930 data-nosnippet>1930</a>         modules,
+<a href=#1931 id=1931 data-nosnippet>1931</a>         current_module,
+<a href=#1932 id=1932 data-nosnippet>1932</a>         store_inner,
+<a href=#1933 id=1933 data-nosnippet>1933</a>         ..
+<a href=#1934 id=1934 data-nosnippet>1934</a>     }| {
+<a href=#1935 id=1935 data-nosnippet>1935</a>        <span class="comment">//  mappings:
+<a href=#1936 id=1936 data-nosnippet>1936</a>        //      n =&gt; number of bytes to copy
+<a href=#1937 id=1937 data-nosnippet>1937</a>        //      s =            }&gt; starting pointer in the data segment
+<a href=#1938 id=1938 data-nosnippet>1938</a>        //      d =&gt; destination address to copy to
+<a href=#1939 id=1939 data-nosnippet>1939</a>        // SAFETY: Validation guarantees there to be a valid
+<a href=#1940 id=1940 data-nosnippet>1940</a>        // data index next.
+<a href=#1941 id=1941 data-nosnippet>1941</a>        </span><span class="kw">let </span>data_idx = <span class="kw">unsafe </span>{ DataIdx::decode_unchecked(wasm) };
+<a href=#1942 id=1942 data-nosnippet>1942</a>
+<a href=#1943 id=1943 data-nosnippet>1943</a>        <span class="comment">// Note: This zero byte is reserved for the multiple memories
+<a href=#1944 id=1944 data-nosnippet>1944</a>        // proposal.
+<a href=#1945 id=1945 data-nosnippet>1945</a>        </span><span class="kw">let </span>_zero = wasm.decode_u8().unwrap_validated();
+<a href=#1946 id=1946 data-nosnippet>1946</a>
+<a href=#1947 id=1947 data-nosnippet>1947</a>        <span class="kw">let </span>n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+<a href=#1948 id=1948 data-nosnippet>1948</a>        <span class="comment">// decrement fuel, but push n back if it fails
+<a href=#1949 id=1949 data-nosnippet>1949</a>        </span><span class="kw">let </span>cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_INIT)
+<a href=#1950 id=1950 data-nosnippet>1950</a>            + u64::from(n)
+<a href=#1951 id=1951 data-nosnippet>1951</a>                * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_INIT);
+<a href=#1952 id=1952 data-nosnippet>1952</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(fuel) = <span class="kw-2">&amp;mut </span>resumable.maybe_fuel {
+<a href=#1953 id=1953 data-nosnippet>1953</a>            <span class="kw">if </span><span class="kw-2">*</span>fuel &gt;= cost {
+<a href=#1954 id=1954 data-nosnippet>1954</a>                <span class="kw-2">*</span>fuel -= cost;
+<a href=#1955 id=1955 data-nosnippet>1955</a>            } <span class="kw">else </span>{
+<a href=#1956 id=1956 data-nosnippet>1956</a>                resumable.stack.push_value(Value::I32(n)).unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
+<a href=#1957 id=1957 data-nosnippet>1957</a>                </span><span class="kw">return </span><span class="prelude-val">Ok</span>(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
+<a href=#1958 id=1958 data-nosnippet>1958</a>                    required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel).expect(
+<a href=#1959 id=1959 data-nosnippet>1959</a>                        <span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>,
+<a href=#1960 id=1960 data-nosnippet>1960</a>                    ),
+<a href=#1961 id=1961 data-nosnippet>1961</a>                }));
+<a href=#1962 id=1962 data-nosnippet>1962</a>            }
+<a href=#1963 id=1963 data-nosnippet>1963</a>        }
+<a href=#1964 id=1964 data-nosnippet>1964</a>
+<a href=#1965 id=1965 data-nosnippet>1965</a>        <span class="kw">let </span>s: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+<a href=#1966 id=1966 data-nosnippet>1966</a>        <span class="kw">let </span>d: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+<a href=#1967 id=1967 data-nosnippet>1967</a>
+<a href=#1968 id=1968 data-nosnippet>1968</a>        <span class="comment">// SAFETY: All requirements are met:
+<a href=#1969 id=1969 data-nosnippet>1969</a>        // 1. The current module address must come from the
+<a href=#1970 id=1970 data-nosnippet>1970</a>        //    current store, because it is the only parameter to
+<a href=#1971 id=1971 data-nosnippet>1971</a>        //    this function that can contain module addresses. All
+<a href=#1972 id=1972 data-nosnippet>1972</a>        //    stores guarantee all addresses in them to be valid
+<a href=#1973 id=1973 data-nosnippet>1973</a>        //    within themselves.
+<a href=#1974 id=1974 data-nosnippet>1974</a>        // 2. Validation guarantees at least one memory to exist.
+<a href=#1975 id=1975 data-nosnippet>1975</a>        // 3./5. The memory and data addresses are valid for a
+<a href=#1976 id=1976 data-nosnippet>1976</a>        //       similar reason that the module address is valid:
+<a href=#1977 id=1977 data-nosnippet>1977</a>        //       they are stored in the current module instance,
+<a href=#1978 id=1978 data-nosnippet>1978</a>        //       which is also part of the current store.
+<a href=#1979 id=1979 data-nosnippet>1979</a>        // 4. Validation gurantees this data index to be valid
+<a href=#1980 id=1980 data-nosnippet>1980</a>        //    for the current module instance.
+<a href=#1981 id=1981 data-nosnippet>1981</a>        </span><span class="kw">unsafe </span>{
+<a href=#1982 id=1982 data-nosnippet>1982</a>            memory_init(
+<a href=#1983 id=1983 data-nosnippet>1983</a>                modules,
+<a href=#1984 id=1984 data-nosnippet>1984</a>                <span class="kw-2">&amp;mut </span>store_inner.memories,
+<a href=#1985 id=1985 data-nosnippet>1985</a>                <span class="kw-2">&amp;</span>store_inner.data,
+<a href=#1986 id=1986 data-nosnippet>1986</a>                <span class="kw-2">*</span>current_module,
+<a href=#1987 id=1987 data-nosnippet>1987</a>                data_idx,
+<a href=#1988 id=1988 data-nosnippet>1988</a>                MemIdx::new(<span class="number">0</span>),
+<a href=#1989 id=1989 data-nosnippet>1989</a>                n,
+<a href=#1990 id=1990 data-nosnippet>1990</a>                s,
+<a href=#1991 id=1991 data-nosnippet>1991</a>                d,
+<a href=#1992 id=1992 data-nosnippet>1992</a>            )<span class="question-mark">?
+<a href=#1993 id=1993 data-nosnippet>1993</a>        </span>};
+<a href=#1994 id=1994 data-nosnippet>1994</a>        <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
+<a href=#1995 id=1995 data-nosnippet>1995</a>    }
+<a href=#1996 id=1996 data-nosnippet>1996</a>}
+<a href=#1997 id=1997 data-nosnippet>1997</a>
+<a href=#1998 id=1998 data-nosnippet>1998</a><span class="comment">// data.drop
+<a href=#1999 id=1999 data-nosnippet>1999</a></span><span class="macro">define_instruction_fn!</span> {
+<a href=#2000 id=2000 data-nosnippet>2000</a>    data_drop_fn,
+<a href=#2001 id=2001 data-nosnippet>2001</a>    fuel_check = flat_fc(instructions::fc_extensions::DATA_DROP),
+<a href=#2002 id=2002 data-nosnippet>2002</a>    |Args {
+<a href=#2003 id=2003 data-nosnippet>2003</a>         wasm,
+<a href=#2004 id=2004 data-nosnippet>2004</a>         modules,
+<a href=#2005 id=2005 data-nosnippet>2005</a>         current_module,
+<a href=#2006 id=2006 data-nosnippet>2006</a>         store_inner,
+<a href=#2007 id=2007 data-nosnippet>2007</a>         ..
+<a href=#2008 id=2008 data-nosnippet>2008</a>     }| {
+<a href=#2009 id=2009 data-nosnippet>2009</a>        <span class="comment">// SAFETY: Validation guarantees there to be a valid
+<a href=#2010 id=2010 data-nosnippet>2010</a>        // data index next.
+<a href=#2011 id=2011 data-nosnippet>2011</a>        </span><span class="kw">let </span>data_idx = <span class="kw">unsafe </span>{ DataIdx::decode_unchecked(wasm) };
+<a href=#2012 id=2012 data-nosnippet>2012</a>        <span class="comment">// SAFETY: All requirements are met:
+<a href=#2013 id=2013 data-nosnippet>2013</a>        // 1. The current module address must come from the
+<a href=#2014 id=2014 data-nosnippet>2014</a>        //    current store, because it is the only parameter to
+<a href=#2015 id=2015 data-nosnippet>2015</a>        //    this function that can contain module addresses. All
+<a href=#2016 id=2016 data-nosnippet>2016</a>        //    stores guarantee all addresses in them to be valid
+<a href=#2017 id=2017 data-nosnippet>2017</a>        //    within themselves.
+<a href=#2018 id=2018 data-nosnippet>2018</a>        // 2. Validation guarantees the data index to be valid
+<a href=#2019 id=2019 data-nosnippet>2019</a>        //    for the current module instance.
+<a href=#2020 id=2020 data-nosnippet>2020</a>        // 3. The data address is valid for a similar reason that
+<a href=#2021 id=2021 data-nosnippet>2021</a>        //    the module address is valid: it is stored in the
+<a href=#2022 id=2022 data-nosnippet>2022</a>        //    current module instance, which is also part of the
+<a href=#2023 id=2023 data-nosnippet>2023</a>        //    current store.
+<a href=#2024 id=2024 data-nosnippet>2024</a>        </span><span class="kw">unsafe </span>{ data_drop(modules, <span class="kw-2">&amp;mut </span>store_inner.data, <span class="kw-2">*</span>current_module, data_idx) };
+<a href=#2025 id=2025 data-nosnippet>2025</a>        <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
+<a href=#2026 id=2026 data-nosnippet>2026</a>    }
+<a href=#2027 id=2027 data-nosnippet>2027</a>}</code></pre></div></section></main></body></html>

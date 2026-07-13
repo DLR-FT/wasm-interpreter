@@ -197,16 +197,16 @@
 <a href=#197 id=197 data-nosnippet>197</a>
 <a href=#198 id=198 data-nosnippet>198</a><span class="attr">#[inline(always)]
 <a href=#199 id=199 data-nosnippet>199</a></span><span class="kw">fn </span>calculate_mem_address(memarg: <span class="kw-2">&amp;</span>MemArg, relative_address: u32) -&gt; <span class="prelude-ty">Result</span>&lt;usize, RuntimeError&gt; {
-<a href=#200 id=200 data-nosnippet>200</a>    memarg
-<a href=#201 id=201 data-nosnippet>201</a>        .offset
-<a href=#202 id=202 data-nosnippet>202</a>        <span class="comment">// The spec states that this should be a 33 bit integer, e.g. it is not legal to wrap if the
-<a href=#203 id=203 data-nosnippet>203</a>        // sum of offset and relative_address exceeds u32::MAX. To emulate this behavior, we use a
-<a href=#204 id=204 data-nosnippet>204</a>        // checked addition.
-<a href=#205 id=205 data-nosnippet>205</a>        // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-<a href=#206 id=206 data-nosnippet>206</a>        </span>.checked_add(relative_address)
-<a href=#207 id=207 data-nosnippet>207</a>        .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)<span class="question-mark">?
-<a href=#208 id=208 data-nosnippet>208</a>        </span>.try_into()
-<a href=#209 id=209 data-nosnippet>209</a>        .map_err(|<span class="kw">_</span>| TrapError::MemoryOrDataAccessOutOfBounds.into())
+<a href=#200 id=200 data-nosnippet>200</a>    <span class="comment">// The spec states that this should be a 33 bit integer, e.g. it is not legal to wrap if the
+<a href=#201 id=201 data-nosnippet>201</a>    // sum of offset and relative_address exceeds u32::MAX. To emulate this behavior, we use a
+<a href=#202 id=202 data-nosnippet>202</a>    // checked addition.
+<a href=#203 id=203 data-nosnippet>203</a>    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+<a href=#204 id=204 data-nosnippet>204</a>    </span><span class="kw">let </span>effective_address = memarg
+<a href=#205 id=205 data-nosnippet>205</a>        .offset
+<a href=#206 id=206 data-nosnippet>206</a>        .checked_add(relative_address)
+<a href=#207 id=207 data-nosnippet>207</a>        .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)<span class="question-mark">?</span>;
+<a href=#208 id=208 data-nosnippet>208</a>
+<a href=#209 id=209 data-nosnippet>209</a>    <span class="prelude-val">Ok</span>(effective_address.into_usize())
 <a href=#210 id=210 data-nosnippet>210</a>}
 <a href=#211 id=211 data-nosnippet>211</a>
 <a href=#212 id=212 data-nosnippet>212</a><span class="comment">//helpers for avoiding code duplication during module instantiation
@@ -336,7 +336,7 @@
 <a href=#336 id=336 data-nosnippet>336</a>    </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.mem_addrs.get(mem_idx) };
 <a href=#337 id=337 data-nosnippet>337</a>    <span class="comment">// SAFETY: The caller ensures that this memory address is valid in this
 <a href=#338 id=338 data-nosnippet>338</a>    // address vector (3).
-<a href=#339 id=339 data-nosnippet>339</a>    </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_memories.get(mem_addr) };
+<a href=#339 id=339 data-nosnippet>339</a>    </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_memories.get_mut(mem_addr) };
 <a href=#340 id=340 data-nosnippet>340</a>    <span class="comment">// SAFETY: The caller ensures that `data_idx` is valid for this specific
 <a href=#341 id=341 data-nosnippet>341</a>    // `IdxVec` (4).
 <a href=#342 id=342 data-nosnippet>342</a>    </span><span class="kw">let </span>data_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.data_addrs.get(data_idx) };
