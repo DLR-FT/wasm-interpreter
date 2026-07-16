@@ -37,6 +37,15 @@ _For information on other features, visit our [requirements page](https://dlr-ft
 
 - GC proposal
 
+## Getting Started
+
+We provide various [examples](examples) for how to use this interpreter. It is recommended to start
+with [`examples/function_invocation.rs`](examples/function_invocation.rs). The crate's top-level
+documentation may provide general guidance as well.
+
+Furthermore, the utility crates `checked`, `interop`, `linker` and `registry` exist. However, these
+lack documentation in comparison to the core crate.
+
 ## Our Works
 
 Click to show more information:
