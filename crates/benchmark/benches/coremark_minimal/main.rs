@@ -23,17 +23,20 @@ pub fn run() -> f32 {
         0, // Use arbitrary host code, as there is only one host function
     );
 
+    // SAFETY: This function address was just returned from a function allocation in the same store.
     let module = unsafe {
         store.module_instantiate(&module, vec![ExternVal::Func(env_clock_ms_function)], None)
     }
     .unwrap()
     .module_addr;
 
+    // SAFETY: This module address was just returned from module instantiation in the same store.
     let run_function = unsafe { store.instance_export(module, "run") }
         .unwrap()
         .as_func()
         .unwrap();
 
+    // SAFETY: This function address was just returned from the same store.
     let mut run_state = unsafe { store.invoke(run_function, Vec::new(), None) }.unwrap();
     loop {
         match run_state {
@@ -44,10 +47,14 @@ pub fn run() -> f32 {
                 return score.0;
             }
             RunState::Resumable { resumable, .. } => {
+                // SAFETY: This resumable was just returned by a function invocation in the same
+                // store.
                 run_state = unsafe { store.resume_wasm(resumable) }.unwrap();
             }
             RunState::HostCalled { resumable, .. } => {
                 let clock_ms = clock_ms();
+                // SAFETY: This resumable was just returned by a function invocation in the same
+                // store. Also no address values are passed as host call return values.
                 run_state =
                     unsafe { store.finish_host_call(resumable, vec![Value::I64(clock_ms)]) }
                         .unwrap();
