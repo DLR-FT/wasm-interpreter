@@ -3,6 +3,7 @@
 <p align="center">
   <a href="https://dlr-ft.github.io/wasm-interpreter/main/">Website</a> &nbsp;&bull;&nbsp;
   <a href="#features">Features</a> &nbsp;&bull;&nbsp;
+  <a href="#our-works">Our Works</a> &nbsp;&bull;&nbsp;
   <a href="#resources">Resources</a>
 </p>
 <p align="center">
@@ -12,13 +13,13 @@
   <a href="#license"><img src="https://img.shields.io/badge/license-MIT%20or%20Apache%202.0-blue" alt="license" /></a>
 </p>
 
-A minimal in-place interpreter for [WebAssembly](https://webassembly.org/) bytecode (almost without) dependencies while being `no_std`.
+A minimal in-place interpreter for [WebAssembly 2.0](https://webassembly.org/) bytecode (almost without) dependencies while being `no_std`.
 
 ## Features
 
 - **In-place interpretation**: No intermediate representation, directly interprets WebAssembly bytecode. This allows for fast start-up times.
 - **`no_std` support**: The interpreter requires only Rust's `core` and `alloc` libraries allowing its use in various environments, such as bare-metal systems.
-- **Minimal dependencies**: The interpreter requires only two dependencies: `log`, `libm`.
+- **Minimal dependencies**: The interpreter requires only one dependency: `libm`. `log` is also supported but disabled by default.
 - **Compliance with specification**: The interpreter passes all tests from the [official WebAssembly testsuite](https://github.com/WebAssembly/testsuite), except for the unfinished proposal tests. See [`GlobalConfig` in `tests/specification/mod.rs`](tests/specification/mod.rs) for the default spec-test filter regex.
 - **Returning host functions**: The host system can provide functions for Wasm code to call. Contrary to other Wasm runtimes, host functions are not owned by the interpreter. Instead control flow is returned back to the user, when Wasm code calls a host function.
 - **Fuel & resumable execution**: A fuel mechanism is used to halt execution once fuel runs out. Then fuel can be refilled and execution resumed.
@@ -29,21 +30,21 @@ _For information on other features, visit our [requirements page](https://dlr-ft
 
 - **C bindings**: The interpreter can be used from C code.
 - **Migratability**: Wasm instances can be transferred between systems during their execution.
-- **Threading**: There are multiple threading proposals, but we have not yet chosen a specific one. Some options are [shared-everything-threads](https://github.com/WebAssembly/shared-everything-threads), [threads](https://github.com/WebAssembly/threads), [wasi-threads](https://github.com/WebAssembly/wasi-threads).
+- **Threading**: Support for the [Threads Proposal](https://github.com/WebAssembly/threads) is work-in-progress. The [Shared-Everything Threads Proposal](https://github.com/WebAssembly/shared-everything-threads) is also of interest.
+- **Flexible Allocation API**: Custom Allocators should be configurable. There is still some uncertainty, especially regarding the use of the Rust Allocator API.
 
 ### Not planned
 
-Multi-memory proposal, GC proposal
+- GC proposal
 
-## Resources
+## Our Works
 
-- `A fast in-place interpreter` by Ben L. Titzer: <https://arxiv.org/abs/2205.01183>
-- WebAssembly spec: <https://webassembly.github.io/spec/core/index.html>
-- WebAssembly Opcode Table: <https://pengowray.github.io/wasm-ops/>
-- Compiler/Interpreter Know-How Gist Compilation: <https://gist.github.com/o11c/6b08643335388bbab0228db763f99219>
-- Mozilla Developer Network WebAssembly Homepage: <https://developer.mozilla.org/en-US/docs/WebAssembly>
+Click to show more information:
 
-## Cite us!
+<details>
+<summary>WebAssembly in Avionics: Decoupling Software from Hardware</summary>
+
+Link (Open Access): <https://elib.dlr.de/201323/>
 
 ```bibtex
 @INPROCEEDINGS{zaeske_wasm_2023,
@@ -58,7 +59,16 @@ Multi-memory proposal, GC proposal
   keywords={Couplings;Virtual machine monitors;Full stack;Aerospace electronics;Webassembly;Software;Hardware;Virtual machines;Certification;Application programming interfaces;Avionics;Wasm;ARINC 653;Software},
   doi={10.1109/DASC58513.2023.10311207}
 }
+```
 
+</details>
+
+<details>
+<summary>On the Design of a WebAssembly Interpreter for Safety Critical Avionics Applications</summary>
+
+Link (Open Access): <https://elib.dlr.de/219593>
+
+```bibtex
 @INPROCEEDINGS{zaeske_wasm_2025,
   author={Zaeske, Wanja and Önem, A. Cem and Hartung, Florian and Durak, Umut},
   booktitle={2025 AIAA DATC/IEEE 44th Digital Avionics Systems Conference (DASC)},
@@ -72,6 +82,14 @@ Multi-memory proposal, GC proposal
   doi={10.1109/DASC66011.2025.11257180}
 }
 ```
+
+</details>
+
+## Resources
+
+- [A fast in-place interpreter](https://dl.acm.org/doi/10.1145/3563311) by Ben L. Titzer
+- WebAssembly: [Website](https://webassembly.org/), [Spec 2.0 on W3C](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/), [Spec 2.0 as PDF](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf),
+- [Mozilla Developer Network - WebAssembly Homepage](https://developer.mozilla.org/en-US/docs/WebAssembly)
 
 ## License
 
