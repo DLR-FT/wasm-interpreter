@@ -20,7 +20,7 @@ pub struct GlobalConfig {
     pub allow_test_pattern: Regex,
 
     /// A regex that acts as a blocklist filter for tests.
-    /// By default all `simd_*`, `proposals` and `start` tests are blocked.
+    /// By default all `proposals`, `start` tests and the names test are blocked.
     /// To not block anything use: `^$`
     #[envconfig(default = r"^(proposals|names\.wast|start\.wast)$")]
     pub block_test_pattern: Regex,
