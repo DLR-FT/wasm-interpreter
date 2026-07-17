@@ -62,8 +62,6 @@
 #![no_std]
 
 extern crate alloc;
-#[macro_use]
-extern crate log_wrapper;
 
 pub use crate::{
     core::{

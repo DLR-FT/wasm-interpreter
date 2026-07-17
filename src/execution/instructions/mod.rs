@@ -31,7 +31,7 @@ use crate::{
             value_stack::Stack,
         },
     },
-    unreachable_validated, AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr,
+    trace, unreachable_validated, AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr,
     RuntimeError, Store, TableAddr, TrapError, Value, WasmResumable,
 };
 

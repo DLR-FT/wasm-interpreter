@@ -6,7 +6,6 @@ members = [
   "crates/compare-testsuite-rs",
   "crates/interop",
   "crates/linker",
-  "crates/log_wrapper",
   "crates/registry",
 ]
 resolver = "2"
@@ -49,6 +48,9 @@ path = "src/lib.rs"
 libm.workspace = true
 log_wrapper.path = "crates/log_wrapper"
 
+# libm = "=0.2.8"
+# log = { version = "0.4.22", optional = true }
+
 [dev-dependencies]
 checked = { workspace = true, features = ["linker", "interop"] }
 interop.workspace = true
@@ -71,8 +73,6 @@ log.workspace = true
 
 [features]
 default = []
-log = ["log_wrapper/log"]
-
 
 [lints.rust]
 missing_docs = "allow"          # TODO change this to warn

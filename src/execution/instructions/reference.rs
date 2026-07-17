@@ -6,7 +6,7 @@ use crate::{
         assert_validated::UnwrapValidatedExt,
         instructions::{define_instruction_fn, Args},
     },
-    Ref, RefType, Value,
+    trace, Ref, RefType, Value,
 };
 
 define_instruction_fn! {

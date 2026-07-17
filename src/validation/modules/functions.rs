@@ -19,6 +19,7 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
+    trace,
     validation::{
         config::ValidationConfig, instructions::expressions::decode_and_validate_expr,
         validation_stack::ValidationStack,

@@ -9,6 +9,7 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
+    trace,
     validation::validation_stack::ValidationStack,
     NumType, RefType, ValType, ValidationError,
 };
