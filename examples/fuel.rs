@@ -1,9 +1,19 @@
-//! TODO
+//! Function invocation with fuel and progress reporting
 //!
-//! Idea: Instantiate a module with some (heavy) computation, maybe even with regular progress
-//! reporting through the memory, then run that computation in small chunks and report progress to
-//! stdout. Use an instruction hook that sleeps X milliseconds to slow down computation so that the
-//! progress is visible.
+//! In this example we use a Wasm module exporting one memory and a function "fibonacci", which
+//! calculates the N-th fibonacci number. For every calculation step it also writes the remaining
+//! number of iterations into the first byte in memory.
+//!
+//! After the initial setup, this function is called with [`FUEL_PER_CYCLE`] fuel. When the fuel is
+//! used up and execution returns, we read the remaining number of iterations from the memory and
+//! print it to stdout. Then we refill the [`WasmResumable`](wasm::WasmResumable) object with
+//! [`FUEL_PER_CYCLE`] fuel and continue execution. This is repeated until the [`N`]-th fibonacci
+//! number is calculated and returned.
+//!
+//! Additionally, a custom configuration struct [`SlowExecutionConfig`] is defined and passed into
+//! the store upon its creation. This defines an instruction hook, which sleeps a set duration
+//! [`SLEEP_DURATION_PER_INSTRUCTION`] before every instruction.
+
 use std::{error::Error, time::Duration};
 
 use wasm::{Config, FuncAddr, InstantiationOutcome, MemAddr, Module, RunState, Store, Value};
@@ -45,12 +55,12 @@ const WAT_CODE: &str = r#"
 "#;
 
 /// We compute the N-th fibonacci number
-const N: u8 = 10;
+pub const N: u8 = 10;
 /// The amount of fuel we reload the resumable with every time fuel runs out.
-const FUEL_PER_CYCLE: u64 = 5;
+pub const FUEL_PER_CYCLE: u64 = 5;
 /// This is just used to sleep after every instruction so that execution is not instantaneous. It
 /// does not have an effect on the compuatation itself.
-const SLEEP_DURATION_PER_INSTRUCTION: Duration = Duration::from_millis(30);
+pub const SLEEP_DURATION_PER_INSTRUCTION: Duration = Duration::from_millis(30);
 
 fn main() -> Result<(), Box<dyn Error>> {
     let wasm_bytecode: Vec<u8> = wat::parse_str(WAT_CODE)?;
@@ -79,6 +89,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let parameters: Vec<Value> = vec![Value::I32(u32::from(N))];
 
+    // After the initial setup, we can now invoke the fibonacci function. To be able to use fuel we
+    // have to use `Store::invoke` which supports fuel and host functions (in contrast to the
+    // simpler variant `Store::invoke_simple`).
+    //
+    // Its parameters are the same, except that we can now pass fuel into it. Also it returns a
+    // `RunState` which depends on why execution stopped. In our case, execution can either finish
+    // (`RunState::Finished`) or be stopped when fuel is empty (`RunState::Resumable`).
+    //
     // SAFETY: The function address was just returned from the same store. Also, no addresses are
     // passed as parameters.
     let mut run_state = unsafe { store.invoke(fibonacci, parameters, Some(FUEL_PER_CYCLE)) }?;
@@ -99,16 +117,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                 mut resumable,
                 required_fuel,
             } => {
+                // Read the progress from the memory at index 0 as a single byte and print it
+                //
                 // SAFETY: The memory address was just returned from the same store.
                 let current_n_from_memory = unsafe { store.mem_read(memory, 0) }?;
-
                 println!(
                     "Fuel ran out. At least {required_fuel:?} is required for next instruction. Current n stored in memory is {current_n_from_memory}.",
                 );
 
+                // Refill fuel directly through the resumable object
                 let fuel = resumable.fuel_mut().as_mut().expect("fuel is enabled");
                 *fuel += FUEL_PER_CYCLE;
 
+                // Continue execution, save its resulting run state and restart the loop.
+                //
                 // SAFETY: The resumable was just returned from the same store.
                 run_state = unsafe { store.resume_wasm(resumable) }?;
             }
