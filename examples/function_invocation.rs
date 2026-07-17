@@ -1,4 +1,4 @@
-//! An explanation for how to instantiate a simple Wasm module and then invoke an exported function.
+//! Instantiation of a simple Wasm module and invocation of an exported function.
 //!
 //! # A Note on Safety
 //!
