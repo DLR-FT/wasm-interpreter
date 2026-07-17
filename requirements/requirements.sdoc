@@ -162,7 +162,7 @@ RELATIONS:
 UID: REQ-16
 TITLE: Allow libm dependency
 STATEMENT: >>>
-The interpreter may depend on the ``libm`` crate version ``0.2.8``
+The interpreter may depend on the ``libm`` crate version ``0.2.8`` or later.
 <<<
 RATIONALE: >>>
 Rust does not expose all floating point operations in a bare-metal (as in ``no_std``) target, as to not introduce any dependency on the C standard library's ``libm`` (respective PR: https://github.com/rust-lang/rust/pull/27823). However, we identified at least the following operations to be required for WASM interpretation while unavailable in ``no_std``:

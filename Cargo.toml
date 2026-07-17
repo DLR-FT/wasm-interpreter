@@ -46,7 +46,7 @@ name = "wasm"
 path = "src/lib.rs"
 
 [dependencies]
-libm = "=0.2.8"
+libm.workspace = true
 log_wrapper.path = "crates/log_wrapper"
 
 [dev-dependencies]
