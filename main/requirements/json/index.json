@@ -241,7 +241,7 @@
                                     "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-16",
                                     "TITLE": "Allow libm dependency",
-                                    "STATEMENT": "The interpreter may depend on the ``libm`` crate version ``0.2.8``\n",
+                                    "STATEMENT": "The interpreter may depend on the ``libm`` crate version ``0.2.8`` or later.\n",
                                     "RATIONALE": "Rust does not expose all floating point operations in a bare-metal (as in ``no_std``) target, as to not introduce any dependency on the C standard library's ``libm`` (respective PR: https://github.com/rust-lang/rust/pull/27823). However, we identified at least the following operations to be required for WASM interpretation while unavailable in ``no_std``:\n\n- ``abs``\n- ``ceil``\n- ``floor``\n- ``trunc``\n- ``round``\n- ``sqrt``\n- ``copysign``\n\nIn order use these operations, having the ``libm`` crate as dependencies of the WASM interpreter is an acceptable trade-off.\n",
                                     "RELATIONS": [
                                         {
