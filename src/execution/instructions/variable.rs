@@ -9,6 +9,7 @@ use crate::{
         assert_validated::UnwrapValidatedExt,
         instructions::{define_instruction_fn, Args},
     },
+    trace,
 };
 
 define_instruction_fn! {

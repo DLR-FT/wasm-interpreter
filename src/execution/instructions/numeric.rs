@@ -6,7 +6,7 @@ use crate::{
         assert_validated::UnwrapValidatedExt,
         instructions::{define_instruction_fn, Args},
     },
-    TrapError, F32, F64,
+    trace, TrapError, F32, F64,
 };
 
 // t.const

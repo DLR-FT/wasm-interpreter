@@ -9,7 +9,8 @@ use crate::{
         },
     },
     execution::{assert_validated::UnwrapValidatedExt, runtime_structure::value_stack::Stack},
-    unreachable_validated, Config, ModuleAddr, Ref, RefType, RuntimeError, Store, Value, F32, F64,
+    trace, unreachable_validated, Config, ModuleAddr, Ref, RefType, RuntimeError, Store, Value,
+    F32, F64,
 };
 
 // TODO update this documentation
