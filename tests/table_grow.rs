@@ -36,10 +36,10 @@ fn table_grow_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -184,10 +184,10 @@ fn table_grow_outside_i32_range() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -211,10 +211,10 @@ fn table_grow_unlimited() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -242,10 +242,10 @@ fn table_grow_with_max() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -292,10 +292,10 @@ fn table_grow_check_null() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -338,10 +338,10 @@ fn table_grow_with_exported_table_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(target_wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -365,8 +365,8 @@ fn table_grow_with_exported_table_test() {
 //     "#;
 
 //     let wasm_bytes = wat::parse_str(import1_wat).unwrap();
-//     let validation_info = validate(&wasm_bytes, ()).unwrap();
-//     let mut import1_instance = RuntimeInstance::new(&validation_info).expect("import1 instantiation failed");
+//     let module = validate(&wasm_bytes, ()).unwrap();
+//     let mut import1_instance = RuntimeInstance::new(&module).expect("import1 instantiation failed");
 
 //     let grow = import1_store.instance_export(module, "grow").unwrap().as_func().unwrap();
 //     assert_eq!(import1_store.invoke_simple_typed( grow,  ()), Ok( 2));
@@ -385,8 +385,8 @@ fn table_grow_with_exported_table_test() {
 //     "#;
 
 //     let wasm_bytes = wat::parse_str(import2_wat).unwrap();
-//     let validation_info = validate(&wasm_bytes, ()).unwrap();
-//     let mut import2_instance = RuntimeInstance::new(&validation_info).expect("import2 instantiation failed");
+//     let module = validate(&wasm_bytes, ()).unwrap();
+//     let mut import2_instance = RuntimeInstance::new(&module).expect("import2 instantiation failed");
 
 //     let size = import2_store.instance_export(module, "size").unwrap().as_func().unwrap();
 //     assert_eq!(import2_store.invoke_simple_typed( size,  ()), Ok( 3));

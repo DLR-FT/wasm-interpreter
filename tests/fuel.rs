@@ -11,10 +11,10 @@ fn out_of_fuel() {
             (func (export "loop_forever") (loop br 0)
             ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
     let func_addr = store
@@ -70,10 +70,10 @@ fn resumable() {
     )"#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -178,10 +178,10 @@ fn resumable_internal_state() {
     )"#;
     let expected = [0, 1, 11, 111, 1111];
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
     let add_global_0 = store
@@ -226,10 +226,10 @@ fn resumable_drop() {
             (func (export "loop_forever") (loop br 0)
             ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
     let func_addr = store
@@ -271,17 +271,17 @@ static FUELED_INITIALIZATION_WAT: &str = r#"(module
 #[test_log::test]
 fn fueled_initialization() {
     let wasm_bytes = wat::parse_str(FUELED_INITIALIZATION_WAT).unwrap();
-    let validation_info = &decode_and_validate(&wasm_bytes, &mut ()).expect("validation falied");
+    let module = &decode_and_validate(&wasm_bytes, &mut ()).expect("validation falied");
     let mut store = Store::new(());
-    let module = store.module_instantiate(validation_info, Vec::new(), Some(2));
+    let module = store.module_instantiate(module, Vec::new(), Some(2));
     assert!(module.is_ok());
 }
 
 #[test_log::test]
 fn fueled_initialization_fail() {
     let wasm_bytes = wat::parse_str(FUELED_INITIALIZATION_WAT).unwrap();
-    let validation_info = &decode_and_validate(&wasm_bytes, &mut ()).expect("validation falied");
+    let module = &decode_and_validate(&wasm_bytes, &mut ()).expect("validation falied");
     let mut store = Store::new(());
-    let module = store.module_instantiate(validation_info, Vec::new(), Some(0));
+    let module = store.module_instantiate(module, Vec::new(), Some(0));
     assert!(matches!(module, Err(wasm::RuntimeError::OutOfFuel)));
 }

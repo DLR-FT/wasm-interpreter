@@ -53,7 +53,7 @@ macro_rules! bench_wasm {
             let wasm_bytes = $wasm_bytes;
 
             // Our interpreter
-            let our_validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+            let our_module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
             struct UserData;
             impl wasm::Config for UserData {
                 const MAX_VALUE_STACK_SIZE: usize = $value_stack_size;
@@ -62,7 +62,7 @@ macro_rules! bench_wasm {
             let mut store = Store::new(UserData);
             // SAFETY: Only one store is used. Therefore, this must always be
             // the correct one.
-            let module = unsafe { store.module_instantiate(&our_validation_info, Vec::new(), None) }.unwrap().module_addr;
+            let module = unsafe { store.module_instantiate(&our_module, Vec::new(), None) }.unwrap().module_addr;
             // SAFETY: Only one store is used. Therefore, this must always be
             // the correct one.
             let our_fn = unsafe { store.instance_export(module, $entry_function) }

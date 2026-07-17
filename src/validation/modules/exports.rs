@@ -45,14 +45,14 @@ impl ExportDesc {
     }
 
     /// returns the external type of `self` according to typing relation,
-    /// taking `validation_info` as validation context C
+    /// taking `module` as validation context C
     ///
     /// # Safety
     ///
     /// The caller must ensure that `self` comes from the same
     /// [`Module`] that is passed as an argument here.
     #[allow(unused)] // reason = "this function is analogous to ImportDesc::extern_type, however it is not yet clear if it is needed in the future"
-    pub unsafe fn extern_type(&self, validation_info: &Module) -> ExternType {
+    pub unsafe fn extern_type(&self, module: &Module) -> ExternType {
         // TODO clean up logic for checking if an exported definition is an
         // import
         match self {
@@ -61,12 +61,12 @@ impl ExportDesc {
                 // comes from the same `Module` that is passed into the
                 // current function. Therefore, the function index stored in
                 // `self` must be valid in the given `Module`.
-                let type_idx = unsafe { validation_info.functions.inner().get(*func_idx) };
+                let type_idx = unsafe { module.functions.inner().get(*func_idx) };
                 // SAFETY: The type index was just read from the passed
                 // `Module`.  Because the `Module` struct
                 // guarantees that all indices contained in it are valid for all
                 // other `IdxVec` vectors in it, this is sound.
-                let func_type = unsafe { validation_info.types.get(*type_idx) };
+                let func_type = unsafe { module.types.get(*type_idx) };
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }
@@ -75,7 +75,7 @@ impl ExportDesc {
                 // comes from the same `Module` that is passed into the
                 // current function. Therefore, the table index stored in `self`
                 // must be valid in the given `Module`.
-                let table_type = unsafe { validation_info.tables.inner().get(*table_idx) };
+                let table_type = unsafe { module.tables.inner().get(*table_idx) };
 
                 ExternType::Table(*table_type)
             }
@@ -84,7 +84,7 @@ impl ExportDesc {
                 // comes from the same `Module` that is passed into the
                 // current function. Therefore, the memory index stored in
                 // `self` must be valid in the given `Module`.
-                let mem_type = unsafe { validation_info.memories.inner().get(*mem_idx) };
+                let mem_type = unsafe { module.memories.inner().get(*mem_idx) };
 
                 ExternType::Mem(*mem_type)
             }
@@ -93,7 +93,7 @@ impl ExportDesc {
                 // comes from the same `Module` that is passed into the
                 // current function. Therefore, the global index stored in
                 // `self` must be valid in the given `Module`.
-                let global = unsafe { validation_info.globals.inner().get(*global_idx) };
+                let global = unsafe { module.globals.inner().get(*global_idx) };
 
                 ExternType::Global(global.ty)
             }

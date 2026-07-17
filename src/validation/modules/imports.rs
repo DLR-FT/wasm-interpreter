@@ -44,7 +44,7 @@ impl ImportDesc {
     }
 
     /// returns the external type of `self` according to typing relation,
-    /// taking `validation_info` as validation context C
+    /// taking `module` as validation context C
     ///
     /// # Safety
     ///

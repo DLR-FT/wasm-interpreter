@@ -7,10 +7,10 @@ fn empty_module() {
     "#;
     let wasm_bytes = wat::parse_str(EMPTY_MODULE).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
 
-    assert_eq!(validation_info.imports().len(), 0);
-    assert_eq!(validation_info.exports().len(), 0);
+    assert_eq!(module.imports().len(), 0);
+    assert_eq!(module.exports().len(), 0);
 }
 
 #[test_log::test]
@@ -24,9 +24,9 @@ fn imports() {
 
     let wasm_bytes = wat::parse_str(MODULE_WITH_IMPORTS).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
 
-    let imports: Vec<(&str, &str, ExternType)> = validation_info.imports().collect();
+    let imports: Vec<(&str, &str, ExternType)> = module.imports().collect();
 
     assert_eq!(
         &imports,
@@ -54,7 +54,7 @@ fn imports() {
         ]
     );
 
-    assert_eq!(validation_info.exports().len(), 0);
+    assert_eq!(module.exports().len(), 0);
 }
 
 #[test_log::test]
@@ -73,9 +73,9 @@ fn exports() {
 
     let wasm_bytes = wat::parse_str(MODULE_WITH_EXPORTED_DEFINITIONS).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
 
-    let exports: Vec<(&str, ExternType)> = validation_info.exports().collect();
+    let exports: Vec<(&str, ExternType)> = module.exports().collect();
 
     assert_eq!(
         &exports,

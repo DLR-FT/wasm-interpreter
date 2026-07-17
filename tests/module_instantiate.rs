@@ -11,14 +11,12 @@ fn use_incorrect_number_of_extern_vals() {
     "#;
 
     let wasm_bytes = wat::parse_str(MODULE_WITH_IMPORTS).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
 
     let mut store = Store::new(());
 
     assert_eq!(
-        store
-            .module_instantiate(&validation_info, Vec::new(), None)
-            .err(),
+        store.module_instantiate(&module, Vec::new(), None).err(),
         Some(RuntimeError::ExternValsLenMismatch)
     );
 }

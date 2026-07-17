@@ -58,7 +58,7 @@ impl ImportDesc {
 
 impl ImportDesc {
     /// returns the external type of `self` according to typing relation,
-    /// taking `validation_info` as validation context C
+    /// taking `module` as validation context C
     ///
     /// # Safety
     ///
@@ -66,7 +66,7 @@ impl ImportDesc {
     /// [`ValidationInfo`] that is passed as an argument here.
     pub unsafe fn extern_type<T: ValidationConfig>(
         &self,
-        validation_info: &ValidationInfo<T>,
+        module: &ValidationInfo<T>,
     ) -> ExternType {
         match self {
             ImportDesc::Func(type_idx) => {
@@ -78,7 +78,7 @@ impl ImportDesc {
                 // comes from the same `ValidationInfo`. Because all type
                 // indices contained by a `ValidationInfo` must always be valid,
                 // this is safe.
-                let func_type = unsafe { validation_info.types.get(*type_idx) };
+                let func_type = unsafe { module.types.get(*type_idx) };
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }
