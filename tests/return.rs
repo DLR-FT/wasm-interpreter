@@ -22,10 +22,10 @@ fn return_valid() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 

@@ -14,10 +14,10 @@ fn empty() {
     )
     .unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -51,10 +51,10 @@ fn branch() {
     )
     .unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -98,10 +98,10 @@ fn branch2() {
     let wat = String::from(BRANCH23_WAT).replace("{{LABEL}}", "$outer_block");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -119,10 +119,10 @@ fn branch3() {
     let wat = String::from(BRANCH23_WAT).replace("{{LABEL}}", "$outer_outer_block");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -153,10 +153,10 @@ fn param_and_result() {
     )
     .unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -202,10 +202,10 @@ fn return_out_of_block() {
     let wat = String::from(RETURN_OUT_OF_BLOCK).replace("{{RETURN}}", "return");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -223,10 +223,10 @@ fn br_return_out_of_block() {
     let wat = String::from(RETURN_OUT_OF_BLOCK).replace("{{RETURN}}", "br 1");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -243,10 +243,10 @@ fn return_out_of_block2() {
     let wat = String::from(RETURN_OUT_OF_BLOCK2).replace("{{RETURN}}", "return");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -264,10 +264,10 @@ fn br_return_out_of_block2() {
     let wat = String::from(RETURN_OUT_OF_BLOCK2).replace("{{RETURN}}", "br 1");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -303,10 +303,10 @@ fn branch_if() {
     )
     .unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -373,10 +373,10 @@ fn recursive_fibonacci() {
     )
     .unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -426,10 +426,10 @@ fn switch_case() {
     )
     .unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 

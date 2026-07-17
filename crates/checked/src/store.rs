@@ -54,7 +54,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`Store::module_instantiate`](wasm::Store::module_instantiate).
     pub fn module_instantiate(
         &mut self,
-        validation_info: &Module<'b>,
+        module: &Module<'b>,
         extern_vals: Vec<StoredExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<StoredInstantiationOutcome, RuntimeError> {
@@ -65,7 +65,7 @@ impl<'b, T: Config> Store<'b, T> {
         // current store through their store ids.
         let instantiation_outcome = unsafe {
             self.inner
-                .module_instantiate(validation_info, extern_vals, maybe_fuel)
+                .module_instantiate(module, extern_vals, maybe_fuel)
         }?;
         // 3. rewrap
         // SAFETY: The `InstantiationOutcome` just came from the current store.

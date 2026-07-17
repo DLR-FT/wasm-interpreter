@@ -17,11 +17,11 @@ pub fn f64_const() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -52,11 +52,11 @@ pub fn f64_eq() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -94,10 +94,10 @@ pub fn f64_ne() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -141,10 +141,10 @@ pub fn f64_lt() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -188,10 +188,10 @@ pub fn f64_gt() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -235,10 +235,10 @@ pub fn f64_le() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -282,10 +282,10 @@ pub fn f64_ge() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -328,10 +328,10 @@ pub fn f64_abs() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -400,10 +400,10 @@ pub fn f64_neg() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -472,10 +472,10 @@ pub fn f64_ceil() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -512,10 +512,10 @@ pub fn f64_floor() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -552,10 +552,10 @@ pub fn f64_trunc() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -592,10 +592,10 @@ pub fn f64_nearest() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -637,10 +637,10 @@ pub fn f64_sqrt() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -678,10 +678,10 @@ pub fn f64_add() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -725,10 +725,10 @@ pub fn f64_sub() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -772,10 +772,10 @@ pub fn f64_mul() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -819,10 +819,10 @@ pub fn f64_div() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -868,10 +868,10 @@ pub fn f64_min() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -951,10 +951,10 @@ pub fn f64_max() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -1035,10 +1035,10 @@ pub fn f64_copysign() {
     "#;
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 

@@ -33,10 +33,10 @@ fn memory_init_test_1() {
     (i32.load8_u (local.get 0))))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -83,10 +83,10 @@ fn memory_init_test_2() {
     (i32.load8_u (local.get 0))))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -133,10 +133,10 @@ fn memory_init_test_3() {
     (i32.load8_u (local.get 0))))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -191,10 +191,10 @@ fn memory_init_test_4() {
     (i32.load8_u (local.get 0))))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -264,10 +264,10 @@ fn memory_init_test_7() {
     (data.drop 0)))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -290,10 +290,10 @@ fn memory_init_test_8() {
     (memory.init 0 (i32.const 1234) (i32.const 1) (i32.const 1))))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -318,10 +318,10 @@ fn memory_init_test_9() {
      (memory.init 0 (i32.const 1234) (i32.const 1) (i32.const 1))))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -375,10 +375,10 @@ fn memory_init_test_12() {
     (memory.init 0 (i32.const 1) (i32.const 0) (i32.const 1))))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -400,10 +400,10 @@ fn memory_init_test_13() {
       (memory.init 0 (i32.const 1234) (i32.const 0) (i32.const 5))))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 

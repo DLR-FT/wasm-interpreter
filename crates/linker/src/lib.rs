@@ -130,8 +130,8 @@ impl Linker {
     /// Therefore, using the returned list of extern values may still fail when
     /// trying to instantiate a module with it.
     // TODO find a better name for this method? Maybe something like `link`?
-    pub fn instantiate_pre(&self, validation_info: &Module) -> Option<Vec<ExternVal>> {
-        validation_info
+    pub fn instantiate_pre(&self, module: &Module) -> Option<Vec<ExternVal>> {
+        module
             .imports()
             .map(|(module_name, name, _desc)| self.get(module_name.to_owned(), name.to_owned()))
             .collect()
@@ -148,17 +148,17 @@ impl Linker {
     pub unsafe fn module_instantiate<'b, T: Config>(
         &self,
         store: &mut Store<'b, T>,
-        validation_info: &Module<'b>,
+        module: &Module<'b>,
         maybe_fuel: Option<u64>,
     ) -> Option<Result<InstantiationOutcome, RuntimeError>> {
-        self.instantiate_pre(validation_info).map(|instantiate_pre|
+        self.instantiate_pre(module).map(|instantiate_pre|
             // SAFETY: Because all extern values in a single linker can only come
             // from one specific store, the current store must be the same store
             // used to define all previous extern values. Therefore, the extern
             // values in `instantiate_pre` must be from the same store that is
             // passed now. Thus, using them as imports for module instantiation is
             // sound.
-            unsafe { store.module_instantiate(validation_info, instantiate_pre, maybe_fuel) })
+            unsafe { store.module_instantiate(module, instantiate_pre, maybe_fuel) })
     }
 }
 

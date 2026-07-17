@@ -66,9 +66,9 @@ pub struct Module<'bytecode> {
     // pub(crate) exports_length: Exported,
 }
 
-fn validate_no_duplicate_exports(validation_info: &Module) -> Result<(), ValidationError> {
+fn validate_no_duplicate_exports(module: &Module) -> Result<(), ValidationError> {
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
-    for export in &validation_info.exports {
+    for export in &module.exports {
         if found_export_names.contains(export.name) {
             return Err(ValidationError::DuplicateExportName);
         }
@@ -345,7 +345,7 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
     }
 
     debug!("Validation was successful");
-    let validation_info = Module {
+    let module = Module {
         wasm: wasm.into_inner(),
         types,
         imports,
@@ -361,9 +361,9 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
         elements,
         custom_sections,
     };
-    validate_no_duplicate_exports(&validation_info)?;
+    validate_no_duplicate_exports(&module)?;
 
-    Ok(validation_info)
+    Ok(module)
 }
 
 /// Reads the next sections as long as they are custom sections and pushes them

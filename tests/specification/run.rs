@@ -67,12 +67,11 @@ fn validate_instantiate<'a, 'b: 'a>(
     linker: &mut Linker,
     last_instantiated_module: &mut Option<Stored<ModuleAddr>>,
 ) -> Result<Stored<ModuleAddr>, WastError> {
-    let validation_info =
-        catch_unwind_and_suppress_panic_handler(|| decode_and_validate(bytes, &mut ()))
-            .map_err(WastError::Panic)??;
+    let module = catch_unwind_and_suppress_panic_handler(|| decode_and_validate(bytes, &mut ()))
+        .map_err(WastError::Panic)??;
 
     let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-        linker.module_instantiate(store, &validation_info, None)
+        linker.module_instantiate(store, &module, None)
     }))
     .map_err(WastError::Panic)?
     .ok_or_else(|| WastError::FailedToLink)??

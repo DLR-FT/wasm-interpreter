@@ -54,10 +54,10 @@ const FIBONACCI_WITH_LOOP_AND_BR_IF: &str = r#"
 fn fibonacci_with_loop_and_br_if() {
     let wasm_bytes = wat::parse_str(FIBONACCI_WITH_LOOP_AND_BR_IF).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 

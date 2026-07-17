@@ -24,10 +24,10 @@ const REM_U_WAT: &str = r#"
 pub fn i64_remainder_signed_simple() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -80,10 +80,10 @@ pub fn i64_remainder_signed_simple() {
 pub fn i64_remainder_signed_panic_dividend_0() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -106,10 +106,10 @@ pub fn i64_remainder_signed_panic_dividend_0() {
 pub fn i64_remainder_unsigned_simple() {
     let wat = String::from(REM_U_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -183,10 +183,10 @@ pub fn i64_remainder_unsigned_simple() {
 pub fn i64_remainder_unsigned_panic_dividend_0() {
     let wat = String::from(REM_U_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -209,10 +209,10 @@ pub fn i64_remainder_unsigned_panic_dividend_0() {
 pub fn i32_remainder_signed_simple() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -240,10 +240,10 @@ pub fn i32_remainder_signed_simple() {
 pub fn remainder_signed_panic_dividend_0() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -267,10 +267,10 @@ pub fn i32_remainder_unsigned_simple() {
     let wat = String::from(REM_U_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -319,10 +319,10 @@ pub fn i32_remainder_unsigned_panic_dividend_0() {
     let wat = String::from(REM_U_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
