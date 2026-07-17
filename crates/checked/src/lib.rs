@@ -1,23 +1,21 @@
-//! A safe API wrapper for [`Store`](wasm::Store) and other utility crates that
-//! can be enabled through the features:
+//! A safe API wrapper for [`Store`](dlr_wasm_interpreter::Store) and other utility crates that can
+//! be enabled through the features:
 //!
 //! - `linker`
 //! - `interop`
 //!
-//! All extension methods defined in this module use special _stored_ objects.
-//! These objects are essentially normal objects like
-//! [`FuncAddr`](wasm::FuncAddr), [`RunState`](wasm::RunState)
-//! or [`Value`](wasm::Value). However, they also contain an additional field of
-//! type [`StoreId`] as a tag to know to which [`Store`](wasm::Store) they
-//! belong to.
+//! All extension methods defined in this module use special _stored_ objects.  These objects are
+//! essentially normal objects like [`FuncAddr`](dlr_wasm_interpreter::FuncAddr),
+//! [`RunState`](dlr_wasm_interpreter::RunState) or [`Value`](dlr_wasm_interpreter::Value). However,
+//! they also contain an additional field of type [`StoreId`] as a tag to know to which
+//! [`Store`](dlr_wasm_interpreter::Store) they belong to.
 //!
-//! While this is easy for address types like
-//! [`FuncAddr`](wasm::FuncAddr) or [`MemAddr`](wasm::MemAddr),
-//! some types are enums and their variants are visible to the user. For
-//! example, consider the [`Value`](wasm::Value) enum, where users have full
-//! access to all of its variants. To be able to attach a tag only to the
-//! [`Value::Ref`](wasm::Value::Ref) variant of this enum, the entire enum has
-//! to be re-defined. The result is a completely new type [`StoredValue`].
+//! While this is easy for address types like [`FuncAddr`](dlr_wasm_interpreter::FuncAddr) or
+//! [`MemAddr`](dlr_wasm_interpreter::MemAddr), some types are enums and their variants are visible
+//! to the user. For example, consider the [`Value`](dlr_wasm_interpreter::Value) enum, where users
+//! have full access to all of its variants. To be able to attach a tag only to the
+//! [`Value::Ref`](dlr_wasm_interpreter::Value::Ref) variant of this enum, the entire enum has to be
+//! re-defined. The result is a completely new type [`StoredValue`].
 
 #![no_std]
 
@@ -98,9 +96,8 @@ impl<T: AbstractStored> AbstractStored for Vec<T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that all bare values in the given vector
-    /// come from a single [`wasm::Store`] with the given
-    /// [`StoreId`].
+    /// The caller has to guarantee that all bare values in the given vector come from a single
+    /// [`dlr_wasm_interpreter::Store`] with the given [`StoreId`].
     unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
         bare_value
             .into_iter()

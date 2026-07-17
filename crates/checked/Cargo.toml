@@ -1,14 +1,14 @@
 [package]
-name = "checked"
+name = "dlr-wasm-interpreter-checked"
 version = "0.2.0"
 edition = "2021"
-rust-version = "1.87.0" # Keep this in sync with the requirements!
+rust-version = "1.87.0"               # Keep this in sync with the requirements!
 
 [dependencies]
-wasm-interpreter.workspace = true
-interop = { workspace = true, optional = true }
-linker = { workspace = true, optional = true }
+dlr-wasm-interpreter.workspace = true
+dlr-wasm-interpreter-interop = { workspace = true, optional = true }
+dlr-wasm-interpreter-linker = { workspace = true, optional = true }
 
 [features]
-# linker
-# interop
+interop = ["dlr-wasm-interpreter-interop"]
+linker = ["dlr-wasm-interpreter-linker"]

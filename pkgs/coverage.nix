@@ -1,6 +1,6 @@
-{ wasm-interpreter, cargo-llvm-cov }:
+{ dlr-wasm-interpreter, cargo-llvm-cov }:
 
-wasm-interpreter.overrideAttrs (old: {
+dlr-wasm-interpreter.overrideAttrs (old: {
   pname = old.pname + "-coverage";
 
   nativeCheckInputs = [ cargo-llvm-cov ];

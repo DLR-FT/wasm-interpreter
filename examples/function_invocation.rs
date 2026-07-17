@@ -11,7 +11,9 @@
 
 use std::error::Error;
 
-use wasm::{ExternVal, FuncAddr, InstantiationOutcome, Module, Store, Value};
+use dlr_wasm_interpreter::{
+    decode_and_validate, ExternVal, FuncAddr, InstantiationOutcome, Module, Store, Value,
+};
 
 /// The Wasm module is defined in the WebAssembly Text Format (WAT). We convert it to the Wasm
 /// bytecode format at runtime using the [`wat`] crate. You can also do this conversion at
@@ -33,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Decoding and validation is always done in one step. It produces a module we can use later.
     // User data is used for configuration of the validation process. You can ignore it for now.
-    let module: Module = wasm::decode_and_validate(&wasm_bytecode, &mut ())?;
+    let module: Module = decode_and_validate(&wasm_bytecode, &mut ())?;
 
     // A store contains all of the objects needed during execution. It can also be configured via
     // some user data.

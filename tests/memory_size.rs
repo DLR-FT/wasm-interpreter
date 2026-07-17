@@ -15,8 +15,8 @@ use log::info;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use checked::Store;
-use wasm::decode_and_validate;
+use dlr_wasm_interpreter::{decode_and_validate, ValidationError};
+use dlr_wasm_interpreter_checked::Store;
 
 #[test_log::test]
 fn memory_size_1() {
@@ -196,10 +196,7 @@ fn memory_size_5() {
         }
     }
     let module = decode_and_validate(&wasm_bytes, &mut ());
-    assert_eq!(
-        module.err(),
-        Some(wasm::ValidationError::EndInvalidValueStack)
-    );
+    assert_eq!(module.err(), Some(ValidationError::EndInvalidValueStack));
 }
 
 #[test_log::test]
@@ -224,8 +221,5 @@ fn memory_size_6() {
         }
     }
     let module = decode_and_validate(&wasm_bytes, &mut ());
-    assert_eq!(
-        module.err(),
-        Some(wasm::ValidationError::EndInvalidValueStack)
-    );
+    assert_eq!(module.err(), Some(ValidationError::EndInvalidValueStack));
 }

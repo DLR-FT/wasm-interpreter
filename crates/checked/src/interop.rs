@@ -1,13 +1,13 @@
 use alloc::{fmt::Debug, vec, vec::Vec};
-use interop::RefExtern;
-use wasm::{
+use dlr_wasm_interpreter::{
     Config, FuncAddr, FuncType, Hostcode, NumType, RefType, ResultType, RuntimeError, ValType,
     ValueTypeMismatchError, F32, F64,
 };
+use dlr_wasm_interpreter_interop::RefExtern;
 
 use crate::{stored_types::Stored, Store, StoredRef, StoredValue};
 
-/// A stored variant of [`InteropValue`](interop::InteropValue)
+/// A stored variant of [`InteropValue`](dlr_wasm_interpreter_interop::InteropValue)
 pub trait StoredInteropValue
 where
     Self: Copy + Debug + PartialEq + TryFrom<StoredValue, Error = ValueTypeMismatchError>,
@@ -253,9 +253,9 @@ where
 
 impl<T: Config> Store<'_, T> {
     /// This is a variant of
-    /// [`StoreTypedInvocationExt::func_alloc_typed`](interop::StoreTypedInvocationExt::func_alloc_typed).
-    /// It is functionally equal, with the only difference being that this
-    /// function returns a [`Stored<FuncAddr>`].
+    /// [`StoreTypedInvocationExt::func_alloc_typed`](dlr_wasm_interpreter_interop::StoreTypedInvocationExt::func_alloc_typed).
+    /// It is functionally equal, with the only difference being that this function returns a
+    /// [`Stored<FuncAddr>`].
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
     pub fn func_alloc_typed<Params: StoredInteropValueList, Returns: StoredInteropValueList>(
         &mut self,

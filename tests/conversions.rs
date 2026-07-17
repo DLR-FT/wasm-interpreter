@@ -17,9 +17,9 @@
 */
 use core::{f32, f64};
 
-use checked::Store;
+use dlr_wasm_interpreter::{decode_and_validate, RuntimeError, TrapError};
+use dlr_wasm_interpreter_checked::Store;
 use hexf::{hexf32, hexf64};
-use wasm::{decode_and_validate, RuntimeError, TrapError};
 
 const WAT: &str = r#"
       (module

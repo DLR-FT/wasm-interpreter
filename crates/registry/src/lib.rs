@@ -10,9 +10,11 @@ extern crate alloc;
 
 use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
 
-use checked::{Store, Stored, StoredHostCall, StoredInteropValueList, StoredRunState, StoredValue};
-use wasm::{
+use dlr_wasm_interpreter::{
     Config, FuncAddr, FuncType, HostResumable, ResultType, RuntimeError, ValueTypeMismatchError,
+};
+use dlr_wasm_interpreter_checked::{
+    Store, Stored, StoredHostCall, StoredInteropValueList, StoredRunState, StoredValue,
 };
 
 type BoxedHostFn<T> = Box<dyn FnMut(&mut T, Vec<StoredValue>) -> Vec<StoredValue>>;
@@ -21,7 +23,7 @@ type BoxedHostFn<T> = Box<dyn FnMut(&mut T, Vec<StoredValue>) -> Vec<StoredValue
 ///
 /// # Features
 ///
-/// - based on the [`checked API`](checked) and its `interop` feature
+/// - based on the [`checked API`](dlr_wasm_interpreter_checked) and its `interop` feature
 /// - host functions may access generic user data `T`
 /// - boxed and dynamically dispatched host functions
 pub struct Registry<T> {

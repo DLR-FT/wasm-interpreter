@@ -1,8 +1,7 @@
-use checked::{Store, StoredValue};
-use wasm::decode_and_validate;
+use dlr_wasm_interpreter::decode_and_validate;
+use dlr_wasm_interpreter_checked::{Store, StoredValue};
 
-/// A simple function to add two numbers and return the result, using [invoke_dynamic](wasm::RuntimeInstance::invoke_dynamic)
-/// instead of [invoke_named](wasm::RuntimeInstance::invoke_named).
+/// A simple function to add two numbers and return the result
 #[test_log::test]
 fn dynamic_add() {
     let wat = r#"

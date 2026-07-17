@@ -113,10 +113,10 @@
           in
           {
             # packages from `pkgs/`, injected into the `pkgs` via our `overlay.nix`
-            packages = pkgs.wasm-interpreter-pkgs // {
-              # build the wasm-interpreter with the current rust toolchain, as opposed to the
+            packages = pkgs.dlr-wasm-interpreter-pkgs // {
+              # build the dlr-wasm-interpreter with the current rust toolchain, as opposed to the
               # default nixpkgs rustc + cargo
-              wasm-interpreter-current-rust = pkgs.wasm-interpreter.override {
+              dlr-wasm-interpreter-current-rust = pkgs.dlr-wasm-interpreter.override {
                 rustPlatform = pkgs.makeRustPlatform {
                   cargo = rust-toolchain-nixpkgs-current;
                   rustc = rust-toolchain-nixpkgs-current;
@@ -128,7 +128,7 @@
             devShells.default = (
               pkgs.devshell.mkShell {
                 imports = [ "${devshell}/extra/git/hooks.nix" ];
-                name = "wasm-interpreter";
+                name = "dlr-wasm-interpreter";
                 packagesFrom = [
                   self.packages.${system}.report
                   self.packages.${system}.requirements
@@ -300,7 +300,7 @@
 
             # a simple devShell to compile with the MSRV
             devShells.msrv = pkgs.mkShell {
-              inputsFrom = [ self.checks.${system}.wasm-interpreter-msrv ];
+              inputsFrom = [ self.checks.${system}.dlr-wasm-interpreter-msrv ];
             };
 
             # a devShell for nightly based commands
@@ -317,7 +317,7 @@
             # Run this to find unused dependencies:
             # cargo udeps --workspace --benches --tests
             devShells.nightly = pkgs.mkShell {
-              inputsFrom = [ self.checks.${system}.wasm-interpreter-msrv ];
+              inputsFrom = [ self.checks.${system}.dlr-wasm-interpreter-msrv ];
               nativeBuildInputs = with pkgs; [
                 ((rust-bin.selectLatestNightlyWith (toolchain: toolchain.default)).override {
                   extensions = [
@@ -342,7 +342,7 @@
               formatting = treefmtEval.config.build.check self;
 
               # check that the Minimum Supported Rust Version (MSRV) we promise does actually compile
-              wasm-interpreter-msrv = self.packages.${system}.wasm-interpreter.override {
+              dlr-wasm-interpreter-msrv = self.packages.${system}.dlr-wasm-interpreter.override {
                 # rustPlatform based on the MSRV we promise
                 rustPlatform = pkgs.makeRustPlatform {
                   cargo = rust-toolchain-msrv;
@@ -355,9 +355,9 @@
               };
 
               # check that the Minimum Supported Rust Version (MSRV) we promise does actually compile
-              wasm-interpreter-clippy = (
-                self.packages.${system}.wasm-interpreter-current-rust.overrideAttrs (old: {
-                  name = self.packages.${system}.wasm-interpreter.name + "-clippy-report.txt";
+              dlr-wasm-interpreter-clippy = (
+                self.packages.${system}.dlr-wasm-interpreter-current-rust.overrideAttrs (old: {
+                  name = self.packages.${system}.dlr-wasm-interpreter.name + "-clippy-report.txt";
                   phases = [
                     "unpackPhase"
                     "patchPhase"

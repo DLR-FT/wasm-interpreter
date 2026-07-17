@@ -77,7 +77,7 @@ do333:
 
 our-repo:
   type: Web
-  title: wasm-interpreter
+  title: dlr-wasm-interpreter
   author:
     - DLR e. V.
     - OxidOS

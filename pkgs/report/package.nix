@@ -1,12 +1,12 @@
 {
   stdenvNoCC,
   python3Packages,
-  wasm-interpreter-pkgs,
+  dlr-wasm-interpreter-pkgs,
 }:
 
 stdenvNoCC.mkDerivation {
-  pname = wasm-interpreter-pkgs.wasm-interpreter.pname + "-report";
-  version = wasm-interpreter-pkgs.wasm-interpreter.version;
+  pname = dlr-wasm-interpreter-pkgs.dlr-wasm-interpreter.pname + "-report";
+  version = dlr-wasm-interpreter-pkgs.dlr-wasm-interpreter.version;
   dontUnpack = true;
 
   nativeBuildInputs = [
@@ -19,17 +19,17 @@ stdenvNoCC.mkDerivation {
     mkdir -- "$out"
     pushd "$out"
 
-    cp --recursive -- ${wasm-interpreter-pkgs.benchmark} bench
-    cp --recursive -- ${wasm-interpreter-pkgs.coverage}/lcov-html coverage
-    cp --recursive -- ${wasm-interpreter-pkgs.requirements} requirements
+    cp --recursive -- ${dlr-wasm-interpreter-pkgs.benchmark} bench
+    cp --recursive -- ${dlr-wasm-interpreter-pkgs.coverage}/lcov-html coverage
+    cp --recursive -- ${dlr-wasm-interpreter-pkgs.requirements} requirements
     cp --recursive -- ${
-      wasm-interpreter-pkgs.wasm-interpreter.override { doDoc = true; }
+      dlr-wasm-interpreter-pkgs.dlr-wasm-interpreter.override { doDoc = true; }
     }/share/doc/ rustdoc
-    cp --dereference -- ${wasm-interpreter-pkgs.whitepaper} whitepaper.pdf
+    cp --dereference -- ${dlr-wasm-interpreter-pkgs.whitepaper} whitepaper.pdf
 
     mkdir test
     junit2html ${
-      wasm-interpreter-pkgs.wasm-interpreter.override { useNextest = true; }
+      dlr-wasm-interpreter-pkgs.dlr-wasm-interpreter.override { useNextest = true; }
     }/junit.xml test/index.html
 
 

@@ -117,7 +117,7 @@ name = "benchmark"
 version = "0.1.0"
 dependencies = [
  "criterion",
- "wasm-interpreter",
+ "dlr-wasm-interpreter",
  "wasmi",
  "wasmtime",
  "wat",
@@ -156,15 +156,6 @@ name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
-
-[[package]]
-name = "checked"
-version = "0.2.0"
-dependencies = [
- "interop",
- "linker",
- "wasm-interpreter",
-]
 
 [[package]]
 name = "ciborium"
@@ -442,6 +433,62 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
+name = "dlr-wasm-interpreter"
+version = "0.2.0"
+dependencies = [
+ "bumpalo",
+ "dlr-wasm-interpreter-checked",
+ "dlr-wasm-interpreter-interop",
+ "dlr-wasm-interpreter-registry",
+ "env_logger 0.10.2",
+ "envconfig",
+ "hexf",
+ "itertools 0.14.0",
+ "lazy_static",
+ "libm",
+ "log",
+ "log_wrapper",
+ "regex",
+ "serde",
+ "serde_json",
+ "test-log",
+ "thiserror 2.0.17",
+ "wast 212.0.0",
+ "wat",
+]
+
+[[package]]
+name = "dlr-wasm-interpreter-checked"
+version = "0.2.0"
+dependencies = [
+ "dlr-wasm-interpreter",
+ "dlr-wasm-interpreter-interop",
+ "dlr-wasm-interpreter-linker",
+]
+
+[[package]]
+name = "dlr-wasm-interpreter-interop"
+version = "0.2.0"
+dependencies = [
+ "dlr-wasm-interpreter",
+]
+
+[[package]]
+name = "dlr-wasm-interpreter-linker"
+version = "0.2.0"
+dependencies = [
+ "dlr-wasm-interpreter",
+]
+
+[[package]]
+name = "dlr-wasm-interpreter-registry"
+version = "0.1.0"
+dependencies = [
+ "dlr-wasm-interpreter",
+ "dlr-wasm-interpreter-checked",
+]
+
+[[package]]
 name = "downcast-rs"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -653,13 +700,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "interop"
-version = "0.2.0"
-dependencies = [
- "wasm-interpreter",
-]
-
-[[package]]
 name = "is-terminal"
 version = "0.4.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -748,13 +788,6 @@ name = "libm"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
-
-[[package]]
-name = "linker"
-version = "0.2.0"
-dependencies = [
- "wasm-interpreter",
-]
 
 [[package]]
 name = "linux-raw-sys"
@@ -1029,14 +1062,6 @@ name = "regex-syntax"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
-
-[[package]]
-name = "registry"
-version = "0.1.0"
-dependencies = [
- "checked",
- "wasm-interpreter",
-]
 
 [[package]]
 name = "rustc-hash"
@@ -1488,31 +1513,6 @@ checksum = "c55db9c896d70bd9fa535ce83cd4e1f2ec3726b0edd2142079f594fc3be1cb35"
 dependencies = [
  "leb128fmt",
  "wasmparser 0.243.0",
-]
-
-[[package]]
-name = "wasm-interpreter"
-version = "0.2.0"
-dependencies = [
- "bumpalo",
- "checked",
- "env_logger 0.10.2",
- "envconfig",
- "hexf",
- "interop",
- "itertools 0.14.0",
- "lazy_static",
- "libm",
- "log",
- "log_wrapper",
- "regex",
- "registry",
- "serde",
- "serde_json",
- "test-log",
- "thiserror 2.0.17",
- "wast 212.0.0",
- "wat",
 ]
 
 [[package]]

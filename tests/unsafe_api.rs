@@ -1,5 +1,5 @@
-use interop::StoreTypedInvocationExt;
-use wasm::{decode_and_validate, RunState, Store, Value};
+use dlr_wasm_interpreter::{decode_and_validate, RunState, Store, Value};
+use dlr_wasm_interpreter_interop::StoreTypedInvocationExt;
 
 #[test_log::test]
 fn invoke_typed() {

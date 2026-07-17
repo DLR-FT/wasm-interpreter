@@ -1,5 +1,5 @@
-use checked::{Store, StoredValue};
-use wasm::{decode_and_validate, GlobalType, NumType, ValType};
+use dlr_wasm_interpreter::{decode_and_validate, GlobalType, NumType, ValType};
+use dlr_wasm_interpreter_checked::{Store, StoredValue};
 
 /// The WASM program has one mutable global initialized with a constant 3.
 /// It exports two methods:
@@ -122,7 +122,7 @@ fn imported_globals() {
 
 #[test_log::test]
 fn global_invalid_instr() {
-    use wasm::decode_and_validate;
+    use dlr_wasm_interpreter::decode_and_validate;
 
     let wat = r#"
     (module
