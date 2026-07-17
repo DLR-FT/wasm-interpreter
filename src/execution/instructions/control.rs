@@ -17,7 +17,7 @@ use crate::{
         },
         runtime_structure::function_instances::FuncInst,
     },
-    unreachable_validated, DecodingError, Ref, TrapError,
+    trace, unreachable_validated, DecodingError, Ref, TrapError,
 };
 
 define_instruction_fn! {nop, fuel_check = flat(instructions::NOP), |_args| Ok(

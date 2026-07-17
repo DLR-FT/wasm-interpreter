@@ -17,6 +17,7 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
+    trace,
     validation::{
         config::ValidationConfig,
         validation_stack::{LabelInfo, ValidationStack},

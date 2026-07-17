@@ -14,7 +14,7 @@ use crate::{
             define_instruction_fn, elem_drop, table_init, Args, InterpreterLoopOutcome,
         },
     },
-    Ref, RuntimeError, TrapError, Value,
+    trace, Ref, RuntimeError, TrapError, Value,
 };
 
 define_instruction_fn! {

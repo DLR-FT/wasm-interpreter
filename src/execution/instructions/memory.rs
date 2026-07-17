@@ -16,7 +16,7 @@ use crate::{
             to_lanes, Args, InterpreterLoopOutcome,
         },
     },
-    RuntimeError, Value, F32, F64,
+    trace, warn, RuntimeError, Value, F32, F64,
 };
 
 // t.load

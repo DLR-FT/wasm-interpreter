@@ -27,6 +27,7 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
+    debug, trace,
     validation::{config::ValidationConfig, modules::functions::decode_and_validate_code_section},
     CustomSection, DecodingError, ValidationError,
 };

@@ -3,7 +3,7 @@ use crate::{
         decoding::reader::{span::Span, WasmDecoder},
         utils::ToUsizeExt,
     },
-    DecodingError,
+    trace, DecodingError,
 };
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
