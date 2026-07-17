@@ -1,4 +1,64 @@
-#![doc = include_str!( "../README.md")]
+//! An in-place interpreter for WebAssembly 2.0
+//!
+//! # General Usage
+//!
+//! WebAssembly (Wasm) modules must first be decoded and validated through [`decode_and_validate`],
+//! producing a [`Module`]. This module can then be instantiated in a [`Store`] via
+//! [`Store::module_instantiate`], creating a module instance and returning its module address,
+//! uniquely identifying this module instance within that store.
+//!
+//! When a [`Store`] is initially created through [`Store::new`], it is empty. This store exposes
+//! many other functions besides module instantiation to interact with it and objects allocated
+//! within it. Most notably, the [`Store::invoke_simple`] and [`Store::invoke`] methods are used to
+//! interpret Wasm code. Refer to the examples in `examples/` for more information.
+//!
+//! # Example
+//!
+//! This is an example for how to run a function exposed from a simple Wasm module (full code in
+//! `examples/function_invocation.rs`):
+//!
+//! ```
+//! # use wasm::{ExternVal, FuncAddr, InstantiationOutcome, Module, Store, Value};
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! const WAT_CODE: &str = r#"
+//! (module
+//!     (func (export "add_one") (param $n i32) (result i32)
+//!         local.get $n
+//!         i32.const 1
+//!         i32.add))
+//! "#;
+//!
+//! // Use the `wat` crate to convert from the text format to bytecode
+//! let wasm_bytecode = wat::parse_str(WAT_CODE)?;
+//!
+//! // Decode and validate the module
+//! let module = wasm::decode_and_validate(&wasm_bytecode, &mut ())?;
+//!
+//! // Create a new empty store
+//! let mut store = Store::new(());
+//!
+//! // Instantiate the module to create a module instance, returning its address
+//! // SAFETY: There are no extern values.
+//! let module_addr = unsafe { store.module_instantiate(&module, vec![], None) }?.module_addr;
+//!
+//! // Get the function address of the exported add_one function
+//! // SAFETY: The module address was returned from the same store.
+//! let add_one_extern = unsafe { store.instance_export(module_addr, "add_one") }?;
+//! let add_one = add_one_extern.as_func().ok_or("add_one is not a function")?;
+//!
+//! // Invoke the function
+//! // SAFETY: The function address was returned from the same store. There are also no address
+//! // type parameters.
+//! let return_values = unsafe { store.invoke_simple(add_one, vec![Value::I32(16)]) }?;
+//! assert_eq!(*return_values, [Value::I32(17)]);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Optional Features
+//!
+//! - `log`: Enables logging (enables `log` dependency).
+
 #![no_std]
 
 extern crate alloc;
