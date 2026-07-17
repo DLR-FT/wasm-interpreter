@@ -19,7 +19,7 @@ use std::{error::Error, time::Duration};
 use wasm::{Config, FuncAddr, InstantiationOutcome, MemAddr, Module, RunState, Store, Value};
 
 const WAT_CODE: &str = r#"
-(module $wasm_src.wasm
+(module
     (memory (export "memory") 1)
     (func $fibonacci (export "fibonacci") (param $n i32) (result i32) (local $tmp i32) (local $tmp2 i32)
         i32.const 1
