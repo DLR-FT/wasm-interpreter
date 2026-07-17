@@ -4,14 +4,17 @@ use std::panic::AssertUnwindSafe;
 use std::panic::UnwindSafe;
 
 use bumpalo::Bump;
-use checked::{Linker, Store, Stored, StoredExternVal, StoredRef, StoredValue};
-use itertools::enumerate;
-use log::debug;
-use registry::Registry;
-use wasm::{
+use dlr_wasm_interpreter::ExternAddr;
+use dlr_wasm_interpreter::{
     decode_and_validate, GlobalType, Limits, MemType, ModuleAddr, NumType, RefType, RuntimeError,
     TableType, TrapError, ValType, F32, F64,
 };
+use dlr_wasm_interpreter_checked::{
+    Linker, Store, Stored, StoredExternVal, StoredRef, StoredValue,
+};
+use dlr_wasm_interpreter_registry::Registry;
+use itertools::enumerate;
+use log::debug;
 
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
@@ -246,7 +249,7 @@ fn run_directive<'a>(
                 registry,
             );
             let result = match result {
-                Err(WastError::WasmRuntimeError(wasm::RuntimeError::Trap(trap_error))) => {
+                Err(WastError::WasmRuntimeError(RuntimeError::Trap(trap_error))) => {
                     let actual_matches_expected =
                         error_to_wasm_testsuite_string(&RuntimeError::Trap(trap_error.clone()))
                             .is_ok_and(|actual| {
@@ -651,8 +654,8 @@ pub fn arg_to_value(arg: WastArg) -> StoredValue {
         WastArg::Core(core_arg) => match core_arg {
             WastArgCore::I32(val) => StoredValue::I32(val as u32),
             WastArgCore::I64(val) => StoredValue::I64(val as u64),
-            WastArgCore::F32(val) => StoredValue::F32(wasm::F32(f32::from_bits(val.bits))),
-            WastArgCore::F64(val) => StoredValue::F64(wasm::F64(f64::from_bits(val.bits))),
+            WastArgCore::F32(val) => StoredValue::F32(F32(f32::from_bits(val.bits))),
+            WastArgCore::F64(val) => StoredValue::F64(F64(f64::from_bits(val.bits))),
             WastArgCore::V128(val) => StoredValue::V128(val.to_le_bytes()),
             WastArgCore::RefNull(rref) => match rref {
                 wast::core::HeapType::Concrete(_) => {
@@ -668,7 +671,7 @@ pub fn arg_to_value(arg: WastArg) -> StoredValue {
                 }
             },
             WastArgCore::RefExtern(index) => {
-                StoredValue::Ref(StoredRef::Extern(wasm::ExternAddr(index as usize)))
+                StoredValue::Ref(StoredRef::Extern(ExternAddr(index as usize)))
             }
             WastArgCore::RefHost(_) => {
                 todo!("`RefHost` value arguments")

@@ -6,7 +6,7 @@ let
   flakeRoot = ./.;
 
   # all packages from the local tree
-  wasm-interpreter-pkgs = lib.filesystem.packagesFromDirectoryRecursive {
+  dlr-wasm-interpreter-pkgs = lib.filesystem.packagesFromDirectoryRecursive {
     # a special callPackage variant that contains our flakeRoot
     callPackage = lib.callPackageWith (final // { inherit flakeRoot; });
 
@@ -24,6 +24,6 @@ in
     });
 
   # custom namespace for packages from the local tree
-  inherit wasm-interpreter-pkgs;
+  inherit dlr-wasm-interpreter-pkgs;
 }
-// wasm-interpreter-pkgs
+// dlr-wasm-interpreter-pkgs

@@ -1,7 +1,7 @@
 use std::io::Write;
 
-use checked::Store;
-use wasm::{Limits, MemType};
+use dlr_wasm_interpreter::{Limits, MemType};
+use dlr_wasm_interpreter_checked::Store;
 
 #[test_log::test]
 fn simple_byte_writes() {

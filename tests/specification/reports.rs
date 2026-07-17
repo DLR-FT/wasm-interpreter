@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use wasm::{RuntimeError, TrapError};
+use dlr_wasm_interpreter::{RuntimeError, TrapError, ValidationError};
 
 use super::test_errors::AssertEqError;
 
@@ -15,9 +15,9 @@ pub enum WastError {
     #[error("Panic: {}", .0.downcast_ref::<&str>().unwrap_or(&"Unknown panic"))]
     Panic(Box<dyn Any + Send + 'static>),
     #[error("{0}")]
-    WasmError(wasm::ValidationError),
+    WasmError(ValidationError),
     #[error("{0}")]
-    WasmRuntimeError(wasm::RuntimeError),
+    WasmRuntimeError(RuntimeError),
     #[error("{0}")]
     AssertEqualFailed(#[from] AssertEqError),
     #[error("Module validated and instantiated successfully, when it shouldn't have")]
@@ -56,14 +56,14 @@ pub enum WastError {
     FailedToLink,
 }
 
-impl From<wasm::ValidationError> for WastError {
-    fn from(value: wasm::ValidationError) -> Self {
+impl From<ValidationError> for WastError {
+    fn from(value: ValidationError) -> Self {
         Self::WasmError(value)
     }
 }
 
-impl From<wasm::RuntimeError> for WastError {
-    fn from(value: wasm::RuntimeError) -> Self {
+impl From<RuntimeError> for WastError {
+    fn from(value: RuntimeError) -> Self {
         Self::WasmRuntimeError(value)
     }
 }

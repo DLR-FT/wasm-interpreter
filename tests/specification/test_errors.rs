@@ -17,8 +17,8 @@
 
 use std::error::Error;
 
-use checked::{StoredRef, StoredValue};
-use wasm::{RefType, F32, F64};
+use dlr_wasm_interpreter::{RefType, F32, F64};
+use dlr_wasm_interpreter_checked::{StoredRef, StoredValue};
 use wast::core::{AbstractHeapType, HeapType, NanPattern, V128Const, WastRetCore};
 
 #[derive(Debug, PartialEq, Eq, Clone)]

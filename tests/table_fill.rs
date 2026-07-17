@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use checked::Store;
-use interop::RefExtern;
+use dlr_wasm_interpreter_checked::Store;
+use dlr_wasm_interpreter_interop::RefExtern;
 
-use wasm::{decode_and_validate, ExternAddr, RuntimeError, TrapError};
+use dlr_wasm_interpreter::{decode_and_validate, ExternAddr, RuntimeError, TrapError};
 
 #[test_log::test]
 fn table_fill_test() {

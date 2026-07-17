@@ -1,7 +1,7 @@
-use checked::{Store, StoredRunState, StoredValue};
 use core::panic;
+use dlr_wasm_interpreter::{decode_and_validate, RuntimeError};
+use dlr_wasm_interpreter_checked::{Store, StoredRunState, StoredValue};
 use log::info;
-use wasm::decode_and_validate;
 
 #[test_log::test]
 
@@ -283,5 +283,5 @@ fn fueled_initialization_fail() {
     let module = &decode_and_validate(&wasm_bytes, &mut ()).expect("validation falied");
     let mut store = Store::new(());
     let module = store.module_instantiate(module, Vec::new(), Some(0));
-    assert!(matches!(module, Err(wasm::RuntimeError::OutOfFuel)));
+    assert!(matches!(module, Err(RuntimeError::OutOfFuel)));
 }

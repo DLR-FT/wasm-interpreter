@@ -11,11 +11,11 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-checked = { path = "crates/checked" }
-interop = { path = "crates/interop" }
-linker = { path = "crates/linker" }
-registry = { path = "crates/registry" }
-wasm-interpreter = { path = "." }
+dlr-wasm-interpreter = { path = "." }
+dlr-wasm-interpreter-checked = { path = "crates/checked" }
+dlr-wasm-interpreter-interop = { path = "crates/interop" }
+dlr-wasm-interpreter-linker = { path = "crates/linker" }
+dlr-wasm-interpreter-registry = { path = "crates/registry" }
 
 env_logger = "0.10.1"
 indexmap = "=2.11.4"                                   # this version has MSRV 1.63, while the next 2.12.0 jumps to MSRV 1.82
@@ -28,7 +28,7 @@ wat = "1.0.83"
 
 
 [package]
-name = "wasm-interpreter"
+name = "dlr-wasm-interpreter"
 version = "0.2.0"
 edition = "2021"
 rust-version = "1.87.0" # Keep this in sync with the requirements!
@@ -38,35 +38,33 @@ A WASM interpreter tailored for safety use-cases, such as automotive and avionic
 homepage = "https://github.com/DLR-FT/wasm-interpreter"
 license = "MIT OR Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[lib]
-name = "wasm"
-path = "src/lib.rs"
-
 [dependencies]
 libm = "=0.2.8"
 log = { version = "0.4.22", optional = true }
 
 [dev-dependencies]
-checked = { workspace = true, features = ["linker", "interop"] }
-interop.workspace = true
-registry.workspace = true
+dlr-wasm-interpreter-checked = { workspace = true, features = [
+  "linker",
+  "interop",
+] }
+dlr-wasm-interpreter-interop.workspace = true
+dlr-wasm-interpreter-registry.workspace = true
+
+log.workspace = true
+env_logger.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+test-log = { workspace = true, features = ["log"] }
+wat.workspace = true
 
 bumpalo = "3.17.0"
-env_logger = { workspace = true }
 hexf = "0.2.1"
 itertools = "0.14.0"
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-test-log = { workspace = true, features = ["log"] }
 wast = "212.0.0"
-wat = { workspace = true }
 regex = "1.11.1"
 envconfig = "0.11.0"
 lazy_static = "1.5.0"
 thiserror = "2.0"
-log.workspace = true
 
 [features]
 default = []

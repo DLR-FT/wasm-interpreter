@@ -1,7 +1,7 @@
 use core::{num::NonZeroU64, ops::Deref};
 
 use alloc::vec::Vec;
-use wasm::{
+use dlr_wasm_interpreter::{
     ExternVal, FuncAddr, GlobalAddr, HostCall, HostResumable, Hostcode, InstantiationOutcome,
     MemAddr, ModuleAddr, Resumable, RunState, TableAddr, WasmResumable,
 };

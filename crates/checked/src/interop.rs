@@ -1,9 +1,9 @@
 use alloc::{fmt::Debug, vec, vec::Vec};
-use interop::RefExtern;
-use wasm::{
+use dlr_wasm_interpreter::{
     Config, FuncAddr, FuncType, Hostcode, NumType, RefType, ResultType, RuntimeError, ValType,
     ValueTypeMismatchError, F32, F64,
 };
+use dlr_wasm_interpreter_interop::RefExtern;
 
 use crate::{stored_types::Stored, Store, StoredRef, StoredValue};
 

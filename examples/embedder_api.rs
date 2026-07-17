@@ -7,9 +7,9 @@
 
 use std::error::Error;
 
-use wasm::{
-    GlobalAddr, GlobalType, Limits, MemAddr, MemType, Ref, RefType, Store, TableAddr, TableType,
-    ValType, Value, F64,
+use dlr_wasm_interpreter::{
+    GlobalAddr, GlobalType, Limits, MemAddr, MemType, NumType, Ref, RefType, Store, TableAddr,
+    TableType, ValType, Value, F64,
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let _my_global: GlobalAddr = unsafe {
         store.global_alloc(
             GlobalType {
-                ty: ValType::NumType(wasm::NumType::F64),
+                ty: ValType::NumType(NumType::F64),
                 is_mut: true,
             },
             Value::F64(F64(123.456)),

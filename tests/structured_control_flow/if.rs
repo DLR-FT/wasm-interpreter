@@ -1,5 +1,5 @@
-use checked::Store;
-use wasm::decode_and_validate;
+use dlr_wasm_interpreter::{decode_and_validate, ValidationError};
+use dlr_wasm_interpreter_checked::Store;
 
 #[test_log::test]
 fn odd_with_if_else() {
@@ -236,7 +236,7 @@ fn if_without_else_type_check2() {
     .unwrap();
     assert_eq!(
         decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
-        wasm::ValidationError::IfWithoutMatchingElse
+        ValidationError::IfWithoutMatchingElse
     );
 }
 

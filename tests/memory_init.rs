@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use checked::Store;
-use wasm::ValidationError;
-use wasm::{decode_and_validate, RuntimeError, TrapError};
+use dlr_wasm_interpreter::ValidationError;
+use dlr_wasm_interpreter::{decode_and_validate, RuntimeError, TrapError};
+use dlr_wasm_interpreter_checked::Store;
 
 #[test_log::test]
 fn memory_init_test_1() {

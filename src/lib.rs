@@ -18,7 +18,7 @@
 //! `examples/function_invocation.rs`):
 //!
 //! ```
-//! # use wasm::{ExternVal, FuncAddr, InstantiationOutcome, Module, Store, Value};
+//! # use dlr_wasm_interpreter::{ExternVal, FuncAddr, InstantiationOutcome, Module, Store, Value, decode_and_validate};
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const WAT_CODE: &str = r#"
 //! (module
@@ -32,7 +32,7 @@
 //! let wasm_bytecode = wat::parse_str(WAT_CODE)?;
 //!
 //! // Decode and validate the module
-//! let module = wasm::decode_and_validate(&wasm_bytecode, &mut ())?;
+//! let module = decode_and_validate(&wasm_bytecode, &mut ())?;
 //!
 //! // Create a new empty store
 //! let mut store = Store::new(());

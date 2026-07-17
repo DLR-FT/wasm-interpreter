@@ -6,7 +6,7 @@
 
 use std::error::Error;
 
-use wasm::{Config, Store};
+use dlr_wasm_interpreter::{instructions, Config, Store};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let _store: Store<MyCustomFuelConfig> = Store::new(MyCustomFuelConfig);
@@ -27,16 +27,16 @@ impl Config for MyCustomFuelConfig {
     fn get_flat_cost(instr: u8) -> u64 {
         match instr {
             // Let's say we want additions to be very expensive...
-            wasm::instructions::I32_ADD
-            | wasm::instructions::I64_ADD
-            | wasm::instructions::F32_ADD
-            | wasm::instructions::F64_ADD => 20,
+            instructions::I32_ADD
+            | instructions::I64_ADD
+            | instructions::F32_ADD
+            | instructions::F64_ADD => 20,
 
             // ...and subtractions to be very cheap...
-            wasm::instructions::I32_SUB
-            | wasm::instructions::I64_SUB
-            | wasm::instructions::F32_SUB
-            | wasm::instructions::F64_SUB => 1,
+            instructions::I32_SUB
+            | instructions::I64_SUB
+            | instructions::F32_SUB
+            | instructions::F64_SUB => 1,
 
             // ... with everything else in the middle.
             _ => 10,

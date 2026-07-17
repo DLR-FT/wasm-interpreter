@@ -1,8 +1,8 @@
 [package]
-name = "linker"
+name = "dlr-wasm-interpreter-linker"
 version = "0.2.0"
 edition = "2021"
-rust-version = "1.87.0" # Keep this in sync with the requirements!
+rust-version = "1.87.0"              # Keep this in sync with the requirements!
 
 [dependencies]
-wasm-interpreter.workspace = true
+dlr-wasm-interpreter.workspace = true

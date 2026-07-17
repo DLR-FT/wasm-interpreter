@@ -1,6 +1,6 @@
-{ wasm-interpreter }:
+{ dlr-wasm-interpreter }:
 
-wasm-interpreter.overrideAttrs (old: {
+dlr-wasm-interpreter.overrideAttrs (old: {
   pname = old.pname + "-benchmark";
   cargoBuildFlags = [ "--package=benchmark" ];
 

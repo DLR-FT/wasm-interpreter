@@ -16,7 +16,10 @@
 
 use std::{error::Error, time::Duration};
 
-use wasm::{Config, FuncAddr, InstantiationOutcome, MemAddr, Module, RunState, Store, Value};
+use dlr_wasm_interpreter::{
+    decode_and_validate, Config, FuncAddr, InstantiationOutcome, MemAddr, Module, RunState, Store,
+    Value,
+};
 
 const WAT_CODE: &str = r#"
 (module
@@ -64,7 +67,7 @@ pub const SLEEP_DURATION_PER_INSTRUCTION: Duration = Duration::from_millis(30);
 
 fn main() -> Result<(), Box<dyn Error>> {
     let wasm_bytecode: Vec<u8> = wat::parse_str(WAT_CODE)?;
-    let module: Module = wasm::decode_and_validate(&wasm_bytecode, &mut ())?;
+    let module: Module = decode_and_validate(&wasm_bytecode, &mut ())?;
 
     let mut store: Store<SlowExecutionConfig> = Store::new(SlowExecutionConfig);
 

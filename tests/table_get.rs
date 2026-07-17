@@ -15,9 +15,9 @@
 # limitations under the License.
 */
 
-use checked::{Store, StoredRefFunc};
-use interop::RefExtern;
-use wasm::{decode_and_validate, ExternAddr, RuntimeError, TrapError};
+use dlr_wasm_interpreter::{decode_and_validate, ExternAddr, RuntimeError, TrapError};
+use dlr_wasm_interpreter_checked::{Store, StoredRefFunc};
+use dlr_wasm_interpreter_interop::RefExtern;
 
 #[test_log::test]
 fn table_funcref_test() {

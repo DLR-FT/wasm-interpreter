@@ -10,9 +10,11 @@ extern crate alloc;
 
 use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
 
-use checked::{Store, Stored, StoredHostCall, StoredInteropValueList, StoredRunState, StoredValue};
-use wasm::{
+use dlr_wasm_interpreter::{
     Config, FuncAddr, FuncType, HostResumable, ResultType, RuntimeError, ValueTypeMismatchError,
+};
+use dlr_wasm_interpreter_checked::{
+    Store, Stored, StoredHostCall, StoredInteropValueList, StoredRunState, StoredValue,
 };
 
 type BoxedHostFn<T> = Box<dyn FnMut(&mut T, Vec<StoredValue>) -> Vec<StoredValue>>;

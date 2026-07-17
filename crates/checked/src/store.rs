@@ -1,5 +1,5 @@
 use alloc::{string::String, vec::Vec};
-use wasm::{
+use dlr_wasm_interpreter::{
     Config, FuncAddr, FuncType, GlobalAddr, GlobalType, HostResumable, Hostcode, MemAddr, MemType,
     Module, ModuleAddr, RuntimeError, TableAddr, TableType, WasmResumable,
 };
@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub struct Store<'b, T: Config> {
-    pub(crate) inner: wasm::Store<'b, T>,
+    pub(crate) inner: dlr_wasm_interpreter::Store<'b, T>,
 
     /// A unique identifier for this store. This is used to verify that stored
     /// objects belong to the current [`Store`](wasm::Store).
@@ -19,12 +19,12 @@ pub struct Store<'b, T: Config> {
 
 impl<'b, T: Config> Store<'b, T> {
     /// Returns an immutable reference to the raw store.
-    pub fn inner(&self) -> &wasm::Store<'b, T> {
+    pub fn inner(&self) -> &dlr_wasm_interpreter::Store<'b, T> {
         &self.inner
     }
 
     /// Deconstructs this checked store and returns its inner representation.
-    pub fn into_inner(self) -> wasm::Store<'b, T> {
+    pub fn into_inner(self) -> dlr_wasm_interpreter::Store<'b, T> {
         self.inner
     }
 
@@ -45,7 +45,7 @@ impl<'b, T: Config> Store<'b, T> {
 impl<'b, T: Config> Store<'b, T> {
     pub fn new(user_data: T) -> Self {
         Self {
-            inner: wasm::Store::new(user_data),
+            inner: dlr_wasm_interpreter::Store::new(user_data),
             id: StoreId::new(),
         }
     }

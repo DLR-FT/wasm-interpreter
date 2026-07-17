@@ -1,7 +1,7 @@
 use std::{thread, time::Duration};
 
+use dlr_wasm_interpreter::rw_spinlock::*;
 use log::info;
-use wasm::rw_spinlock::*;
 
 #[test_log::test]
 fn rw_spin_lock_basic() {

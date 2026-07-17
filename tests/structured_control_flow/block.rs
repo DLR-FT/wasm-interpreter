@@ -1,5 +1,5 @@
-use checked::Store;
-use wasm::decode_and_validate;
+use dlr_wasm_interpreter::{decode_and_validate, ValidationError};
+use dlr_wasm_interpreter_checked::Store;
 
 /// Runs a function that does nothing and contains only a single empty block
 #[test_log::test]
@@ -469,7 +469,7 @@ fn br_table_label_typecheck1() {
 
     assert_eq!(
         decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
-        wasm::ValidationError::InvalidLabelIdx(0)
+        ValidationError::InvalidLabelIdx(0)
     );
 }
 

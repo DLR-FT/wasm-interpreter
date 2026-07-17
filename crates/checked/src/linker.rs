@@ -1,6 +1,6 @@
 use alloc::{string::String, vec::Vec};
 
-use wasm::{Config, Module, ModuleAddr, RuntimeError};
+use dlr_wasm_interpreter::{Config, Module, ModuleAddr, RuntimeError};
 
 use crate::{
     store::Store,
@@ -10,7 +10,7 @@ use crate::{
 
 #[derive(Default)]
 pub struct Linker {
-    inner: linker::Linker,
+    inner: dlr_wasm_interpreter_linker::Linker,
 
     /// This is for the checked API which makes sure that all objects used
     /// originate from the same [`Store`].
