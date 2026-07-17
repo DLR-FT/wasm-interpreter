@@ -1,7 +1,7 @@
 use std::sync::mpsc::Sender;
 
-use checked::Store;
-use registry::Registry;
+use dlr_wasm_interpreter_checked::Store;
+use dlr_wasm_interpreter_registry::Registry;
 
 #[test_log::test]
 fn counter() {

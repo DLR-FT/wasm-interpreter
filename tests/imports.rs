@@ -1,5 +1,5 @@
-use checked::Store;
-use wasm::decode_and_validate;
+use dlr_wasm_interpreter::decode_and_validate;
+use dlr_wasm_interpreter_checked::Store;
 
 const _UNMET_IMPORTS: &str = r#"
 (module
@@ -182,5 +182,5 @@ pub fn run_call_indirect() {
 //     // let run = instance.get_function_by_name("base", "get_three").unwrap();
 //     // Unmet import since we can't have cyclical imports
 //     // Currently, this passes since we don't allow chained imports.
-//     // assert!(store.invoke_simple_typed::<(), i32>(&run, ()).unwrap_err() == wasm::RuntimeError::UnmetImport);
+//     // assert!(store.invoke_simple_typed::<(), i32>(&run, ()).unwrap_err() == dlr_wasm_interpreter::RuntimeError::UnmetImport);
 // }

@@ -10,7 +10,9 @@
 //! Note, that this type of instruction hook may come with a severe performance penalty.
 use std::{collections::HashMap, error::Error, fmt};
 
-use wasm::{Config, FuncAddr, Module, ModuleAddr, Store, Value};
+use dlr_wasm_interpreter::{
+    decode_and_validate, instructions, Config, FuncAddr, Module, ModuleAddr, Store, Value,
+};
 
 // This is the same Wasm code as in the fuel example
 const WAT_CODE: &str = r#"
@@ -51,7 +53,7 @@ const WAT_CODE: &str = r#"
 
 fn main() -> Result<(), Box<dyn Error>> {
     let wasm_bytecode: Vec<u8> = wat::parse_str(WAT_CODE)?;
-    let module: Module = wasm::decode_and_validate(&wasm_bytecode, &mut ())?;
+    let module: Module = decode_and_validate(&wasm_bytecode, &mut ())?;
 
     let mut store: Store<MyHookConfig> = Store::new(MyHookConfig::default());
 
@@ -93,7 +95,7 @@ impl fmt::Display for MyHookConfig {
         writeln!(f, "----------------------------")?;
 
         for (instruction, count) in &self.count_per_instruction {
-            let instruction_as_str = wasm::instructions::instruction_byte_to_str(*instruction);
+            let instruction_as_str = instructions::instruction_byte_to_str(*instruction);
             writeln!(f, "{instruction_as_str}({instruction:#x}): {count}")?;
         }
 
@@ -107,7 +109,7 @@ impl Config for MyHookConfig {
 
         println!(
             "{}({:#x}) @ {}",
-            wasm::instructions::instruction_byte_to_str(instruction_byte),
+            instructions::instruction_byte_to_str(instruction_byte),
             instruction_byte,
             pc,
         );

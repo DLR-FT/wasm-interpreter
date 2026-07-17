@@ -1,5 +1,5 @@
 use alloc::{string::String, vec::Vec};
-use wasm::{
+use dlr_wasm_interpreter::{
     Config, FuncAddr, FuncType, GlobalAddr, GlobalType, HostResumable, Hostcode, MemAddr, MemType,
     Module, ModuleAddr, RuntimeError, TableAddr, TableType, WasmResumable,
 };
@@ -10,21 +10,21 @@ use crate::{
 };
 
 pub struct Store<'b, T: Config> {
-    pub(crate) inner: wasm::Store<'b, T>,
+    pub(crate) inner: dlr_wasm_interpreter::Store<'b, T>,
 
-    /// A unique identifier for this store. This is used to verify that stored
-    /// objects belong to the current [`Store`](wasm::Store).
+    /// A unique identifier for this store. This is used to verify that stored objects belong to the
+    /// current [`Store`](dlr_wasm_interpreter::Store).
     pub(crate) id: StoreId,
 }
 
 impl<'b, T: Config> Store<'b, T> {
     /// Returns an immutable reference to the raw store.
-    pub fn inner(&self) -> &wasm::Store<'b, T> {
+    pub fn inner(&self) -> &dlr_wasm_interpreter::Store<'b, T> {
         &self.inner
     }
 
     /// Deconstructs this checked store and returns its inner representation.
-    pub fn into_inner(self) -> wasm::Store<'b, T> {
+    pub fn into_inner(self) -> dlr_wasm_interpreter::Store<'b, T> {
         self.inner
     }
 
@@ -45,13 +45,13 @@ impl<'b, T: Config> Store<'b, T> {
 impl<'b, T: Config> Store<'b, T> {
     pub fn new(user_data: T) -> Self {
         Self {
-            inner: wasm::Store::new(user_data),
+            inner: dlr_wasm_interpreter::Store::new(user_data),
             id: StoreId::new(),
         }
     }
 
     /// This is a safe variant of
-    /// [`Store::module_instantiate`](wasm::Store::module_instantiate).
+    /// [`Store::module_instantiate`](dlr_wasm_interpreter::Store::module_instantiate).
     pub fn module_instantiate(
         &mut self,
         module: &Module<'b>,
@@ -76,7 +76,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::instance_export`](wasm::Store::instance_export).
+    /// [`Store::instance_export`](dlr_wasm_interpreter::Store::instance_export).
     pub fn instance_export(
         &self,
         module_addr: Stored<ModuleAddr>,
@@ -95,7 +95,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_extern_val)
     }
 
-    /// This is a variant of [`Store::func_alloc`](wasm::Store::func_alloc). It
+    /// This is a variant of [`Store::func_alloc`](dlr_wasm_interpreter::Store::func_alloc). It
     /// is functionally equal, with the only difference being that this function
     /// returns a [`Stored<FuncAddr>`].
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
@@ -110,7 +110,7 @@ impl<'b, T: Config> Store<'b, T> {
         unsafe { Stored::from_bare(func_addr, self.id) }
     }
 
-    /// This is a safe variant of [`Store::func_type`](wasm::Store::func_type).
+    /// This is a safe variant of [`Store::func_type`](dlr_wasm_interpreter::Store::func_type).
     pub fn func_type(&self, func_addr: Stored<FuncAddr>) -> FuncType {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id);
@@ -123,7 +123,7 @@ impl<'b, T: Config> Store<'b, T> {
         unsafe { self.inner.func_type(func_addr) }
     }
 
-    /// This is a safe variant of [`Store::invoke`](wasm::Store::invoke).
+    /// This is a safe variant of [`Store::invoke`](dlr_wasm_interpreter::Store::invoke).
     pub fn invoke(
         &mut self,
         func_addr: Stored<FuncAddr>,
@@ -145,7 +145,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::table_alloc`](wasm::Store::table_alloc).
+    /// [`Store::table_alloc`](dlr_wasm_interpreter::Store::table_alloc).
     pub fn table_alloc(
         &mut self,
         table_type: TableType,
@@ -165,7 +165,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::table_type`](wasm::Store::table_type).
+    /// [`Store::table_type`](dlr_wasm_interpreter::Store::table_type).
     pub fn table_type(&self, table_addr: Stored<TableAddr>) -> TableType {
         // 1. try unwrap
         let table_addr = table_addr.try_unwrap_into_bare(self.id);
@@ -179,7 +179,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::table_read`](wasm::Store::table_read).
+    /// [`Store::table_read`](dlr_wasm_interpreter::Store::table_read).
     pub fn table_read(
         &self,
         table_addr: Stored<TableAddr>,
@@ -199,7 +199,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::table_write`](wasm::Store::table_write).
+    /// [`Store::table_write`](dlr_wasm_interpreter::Store::table_write).
     pub fn table_write(
         &mut self,
         table_addr: Stored<TableAddr>,
@@ -220,7 +220,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::table_size`](wasm::Store::table_size).
+    /// [`Store::table_size`](dlr_wasm_interpreter::Store::table_size).
     pub fn table_size(&self, table_addr: Stored<TableAddr>) -> u32 {
         // 1. try unwrap
         let table_addr = table_addr.try_unwrap_into_bare(self.id);
@@ -233,7 +233,7 @@ impl<'b, T: Config> Store<'b, T> {
         unsafe { self.inner.table_size(table_addr) }
     }
 
-    /// This is a safe variant of [`Store::table_grow`](wasm::Store::table_grow).
+    /// This is a safe variant of [`Store::table_grow`](dlr_wasm_interpreter::Store::table_grow).
     pub fn table_grow(
         &mut self,
         table_addr: Stored<TableAddr>,
@@ -251,7 +251,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(())
     }
 
-    /// This is a variant of [`Store::mem_alloc`](wasm::Store::mem_alloc) that
+    /// This is a variant of [`Store::mem_alloc`](dlr_wasm_interpreter::Store::mem_alloc) that
     /// returns a stored object.
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
     pub fn mem_alloc(&mut self, mem_type: MemType) -> Stored<MemAddr> {
@@ -265,7 +265,7 @@ impl<'b, T: Config> Store<'b, T> {
         unsafe { Stored::from_bare(mem_addr, self.id) }
     }
 
-    /// This is a safe variant of [`Store::mem_type`](wasm::Store::mem_type).
+    /// This is a safe variant of [`Store::mem_type`](dlr_wasm_interpreter::Store::mem_type).
     pub fn mem_type(&self, mem_addr: Stored<MemAddr>) -> MemType {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
@@ -278,7 +278,7 @@ impl<'b, T: Config> Store<'b, T> {
         unsafe { self.inner.mem_type(mem_addr) }
     }
 
-    /// This is a safe variant of [`Store::mem_read`](wasm::Store::mem_read).
+    /// This is a safe variant of [`Store::mem_read`](dlr_wasm_interpreter::Store::mem_read).
     pub fn mem_read(&self, mem_addr: Stored<MemAddr>, i: u32) -> Result<u8, RuntimeError> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
@@ -292,7 +292,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(byte)
     }
 
-    /// This is a safe variant of [`Store::mem_write`](wasm::Store::mem_write).
+    /// This is a safe variant of [`Store::mem_write`](dlr_wasm_interpreter::Store::mem_write).
     pub fn mem_write(
         &mut self,
         mem_addr: Stored<MemAddr>,
@@ -311,7 +311,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(())
     }
 
-    /// This is a safe variant of [`Store::mem_size`](wasm::Store::mem_size).
+    /// This is a safe variant of [`Store::mem_size`](dlr_wasm_interpreter::Store::mem_size).
     pub fn mem_size(&self, mem_addr: Stored<MemAddr>) -> u32 {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
@@ -324,7 +324,7 @@ impl<'b, T: Config> Store<'b, T> {
         unsafe { self.inner.mem_size(mem_addr) }
     }
 
-    /// This is a safe variant of [`Store::mem_grow`](wasm::Store::mem_grow).
+    /// This is a safe variant of [`Store::mem_grow`](dlr_wasm_interpreter::Store::mem_grow).
     pub fn mem_grow(&mut self, mem_addr: Stored<MemAddr>, n: u32) -> Result<(), RuntimeError> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
@@ -339,7 +339,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::global_alloc`](wasm::Store::global_alloc).
+    /// [`Store::global_alloc`](dlr_wasm_interpreter::Store::global_alloc).
     pub fn global_alloc(
         &mut self,
         global_type: GlobalType,
@@ -359,7 +359,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::global_type`](wasm::Store::global_type).
+    /// [`Store::global_type`](dlr_wasm_interpreter::Store::global_type).
     pub fn global_type(&self, global_addr: Stored<GlobalAddr>) -> Result<GlobalType, RuntimeError> {
         // 1. try unwrap
         let global_addr = global_addr.try_unwrap_into_bare(self.id);
@@ -374,7 +374,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::global_read`](wasm::Store::global_read).
+    /// [`Store::global_read`](dlr_wasm_interpreter::Store::global_read).
     pub fn global_read(&self, global_addr: Stored<GlobalAddr>) -> StoredValue {
         // 1. try unwrap
         let global_addr = global_addr.try_unwrap_into_bare(self.id);
@@ -389,7 +389,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::global_write`](wasm::Store::global_write).
+    /// [`Store::global_write`](dlr_wasm_interpreter::Store::global_write).
     pub fn global_write(
         &mut self,
         global_addr: Stored<GlobalAddr>,
@@ -410,7 +410,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::create_resumable`](wasm::Store::create_resumable).
+    /// [`Store::create_resumable`](dlr_wasm_interpreter::Store::create_resumable).
     pub fn create_resumable(
         &self,
         func_addr: Stored<FuncAddr>,
@@ -432,7 +432,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_resumable)
     }
 
-    /// This is a safe variant of [`Store::resume`](wasm::Store::resume).
+    /// This is a safe variant of [`Store::resume`](dlr_wasm_interpreter::Store::resume).
     pub fn resume(&mut self, resumable: StoredResumable) -> Result<StoredRunState, RuntimeError> {
         // 1. try unwrap
         let resumable = resumable.try_unwrap_into_bare(self.id);
@@ -447,7 +447,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_run_state)
     }
 
-    /// This is a safe variant of [`Store::resume_wasm`](wasm::Store::resume_wasm).
+    /// This is a safe variant of [`Store::resume_wasm`](dlr_wasm_interpreter::Store::resume_wasm).
     pub fn resume_wasm(
         &mut self,
         resumable: Stored<WasmResumable>,
@@ -465,7 +465,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_run_state)
     }
 
-    /// This is a safe variant of [`wasm::Store::finish_host_call`].
+    /// This is a safe variant of [`dlr_wasm_interpreter::Store::finish_host_call`].
     pub fn finish_host_call(
         &mut self,
         host_resumable: Stored<HostResumable>,
@@ -489,7 +489,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::invoke_simple`](wasm::Store::invoke_simple)
+    /// [`Store::invoke_simple`](dlr_wasm_interpreter::Store::invoke_simple)
     pub fn invoke_simple(
         &mut self,
         function: Stored<FuncAddr>,
@@ -509,7 +509,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_return_values)
     }
 
-    /// This is a safe variant of [`Store::mem_data_mut`](wasm::Store::mem_data_mut).
+    /// This is a safe variant of [`Store::mem_data_mut`](dlr_wasm_interpreter::Store::mem_data_mut).
     pub fn mem_data_mut(&mut self, memory: Stored<MemAddr>) -> &mut [u8] {
         // 1. try unwrap
         let memory = memory.try_unwrap_into_bare(self.id);
@@ -523,7 +523,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::instance_exports`](wasm::Store::instance_exports)
+    /// [`Store::instance_exports`](dlr_wasm_interpreter::Store::instance_exports)
     pub fn instance_exports(
         &self,
         module_addr: Stored<ModuleAddr>,

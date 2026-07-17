@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.87.0"
 
 [dependencies]
-wasm-interpreter = { path = "../..", default-features = false }
+dlr-wasm-interpreter.workspace = true
 
 # wasm3-rs' PR #46 makes it work with newer rust-bindgen versions again, but it is not yet merged.
 # However, it is already merged in the fork used for the Roc programming language, which could be
@@ -19,7 +19,7 @@ criterion = { version = "0.5.1", default-features = false, features = [
   "cargo_bench_support",
   "plotters",
 ] }
-wasm-interpreter = { path = "../..", default-features = false }
+dlr-wasm-interpreter.workspace = true
 wasmi = "0.40.0"
 wasmtime = { version = "27.0.0", default-features = false, features = [
   "runtime",

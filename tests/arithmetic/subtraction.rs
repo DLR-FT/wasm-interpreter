@@ -1,5 +1,5 @@
-use checked::Store;
-use wasm::decode_and_validate;
+use dlr_wasm_interpreter::decode_and_validate;
+use dlr_wasm_interpreter_checked::Store;
 
 const WAT_SUBTRACT_TEMPLATE: &str = r#"
     (module

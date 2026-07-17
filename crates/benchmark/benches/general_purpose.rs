@@ -5,7 +5,7 @@ use criterion::{
     PlotConfiguration, Throughput,
 };
 
-use wasm::{decode_and_validate, Store};
+use dlr_wasm_interpreter::{decode_and_validate, Store};
 
 macro_rules! bench_wasm {
     {
@@ -55,7 +55,7 @@ macro_rules! bench_wasm {
             // Our interpreter
             let our_module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
             struct UserData;
-            impl wasm::Config for UserData {
+            impl dlr_wasm_interpreter::Config for UserData {
                 const MAX_VALUE_STACK_SIZE: usize = $value_stack_size;
                 const MAX_CALL_STACK_SIZE: usize = $call_stack_size;
             }
@@ -137,7 +137,7 @@ macro_rules! bench_wasm {
 
                 let bid = BenchmarkId::new("our", n);
                 group.bench_with_input(bid, &n, |b, &s| {
-                    let resumable = unsafe { store.create_resumable(our_fn, vec![wasm::Value::I32(s as u32)], None) }.unwrap().as_wasm().unwrap();
+                    let resumable = unsafe { store.create_resumable(our_fn, vec![dlr_wasm_interpreter::Value::I32(s as u32)], None) }.unwrap().as_wasm().unwrap();
                     b.iter_batched(|| {
                         resumable.clone()
                     }, |resumable| {

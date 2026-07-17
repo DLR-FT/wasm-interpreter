@@ -12,7 +12,7 @@
 
 extern crate alloc;
 
-use wasm::{
+use dlr_wasm_interpreter::{
     Config, ExternAddr, FuncAddr, FuncType, Hostcode, NumType, Ref, RefType, ResultType,
     RuntimeError, Store, ValType, Value, ValueTypeMismatchError,
 };
@@ -300,7 +300,7 @@ impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
 #[cfg(test)]
 mod tests {
     use alloc::vec::Vec;
-    use wasm::{ExternAddr, Value, ValueTypeMismatchError};
+    use dlr_wasm_interpreter::{ExternAddr, Value, ValueTypeMismatchError};
 
     use super::{InteropValueList, RefExtern, RefFunc};
 

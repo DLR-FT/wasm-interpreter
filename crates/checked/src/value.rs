@@ -1,4 +1,6 @@
-use wasm::{ExternAddr, FuncAddr, Ref, RefType, Value, ValueTypeMismatchError, F32, F64};
+use dlr_wasm_interpreter::{
+    ExternAddr, FuncAddr, Ref, RefType, Value, ValueTypeMismatchError, F32, F64,
+};
 
 use crate::stored_types::Stored;
 

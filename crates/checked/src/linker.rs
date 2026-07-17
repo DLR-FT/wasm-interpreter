@@ -1,6 +1,6 @@
 use alloc::{string::String, vec::Vec};
 
-use wasm::{Config, Module, ModuleAddr, RuntimeError};
+use dlr_wasm_interpreter::{Config, Module, ModuleAddr, RuntimeError};
 
 use crate::{
     store::Store,
@@ -10,7 +10,7 @@ use crate::{
 
 #[derive(Default)]
 pub struct Linker {
-    inner: linker::Linker,
+    inner: dlr_wasm_interpreter_linker::Linker,
 
     /// This is for the checked API which makes sure that all objects used
     /// originate from the same [`Store`].
@@ -37,7 +37,7 @@ impl Linker {
         Self::default()
     }
 
-    /// This is a safe variant of [`Linker::define`](linker::Linker::define).
+    /// This is a safe variant of [`Linker::define`](dlr_wasm_interpreter_linker::Linker::define).
     pub fn define(
         &mut self,
         module_name: String,
@@ -63,7 +63,7 @@ impl Linker {
     }
 
     /// This is a safe variant of
-    /// [`Linker::define_module_instance`](linker::Linker::define_module_instance).
+    /// [`Linker::define_module_instance`](dlr_wasm_interpreter_linker::Linker::define_module_instance).
     pub fn define_module_instance<T: Config>(
         &mut self,
         store: &Store<T>,
@@ -91,7 +91,7 @@ impl Linker {
         Ok(())
     }
 
-    /// This is a safe variant of [`Linker::get`](linker::Linker::get).
+    /// This is a safe variant of [`Linker::get`](dlr_wasm_interpreter_linker::Linker::get).
     pub fn get(&self, module_name: String, name: String) -> Option<StoredExternVal> {
         // 1. get or insert the `StoreId`
         // Note: We can only get the id. If it has not been set yet, no
@@ -111,7 +111,7 @@ impl Linker {
     }
 
     /// This is a variant of
-    /// [`Linker::instantiate_pre`](linker::Linker::instantiate_pre).
+    /// [`Linker::instantiate_pre`](dlr_wasm_interpreter_linker::Linker::instantiate_pre).
     pub fn instantiate_pre(&self, module: &Module) -> Option<Vec<StoredExternVal>> {
         // Special case: If the module has no imports, we don't perform any
         // linking. We need this special case, so that a `Linker`, that has not
@@ -138,7 +138,7 @@ impl Linker {
     }
 
     /// This is a safe variant of
-    /// [`Linker::module_instantiate`](linker::Linker::module_instantiate).
+    /// [`Linker::module_instantiate`](dlr_wasm_interpreter_linker::Linker::module_instantiate).
     pub fn module_instantiate<'b, T: Config>(
         &mut self,
         store: &mut Store<'b, T>,

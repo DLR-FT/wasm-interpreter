@@ -1,5 +1,7 @@
+use dlr_wasm_interpreter::{
+    decode_and_validate, ExternVal, FuncType, NumType, ResultType, RunState, Store, ValType, Value,
+};
 use std::time::UNIX_EPOCH;
-use wasm::{decode_and_validate, ExternVal, FuncType, ResultType, RunState, Store, ValType, Value};
 
 const COREMARK_MINIMAL_BYTECODE: &[u8] = include_bytes!("coremark-minimal.wasm");
 
@@ -17,7 +19,7 @@ pub fn run() -> f32 {
                 valtypes: Vec::new(),
             },
             returns: ResultType {
-                valtypes: vec![ValType::NumType(wasm::NumType::I64)],
+                valtypes: vec![ValType::NumType(NumType::I64)],
             },
         },
         0, // Use arbitrary host code, as there is only one host function

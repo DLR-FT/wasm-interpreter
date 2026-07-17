@@ -1,4 +1,6 @@
-use wasm::{decode_and_validate, ExternType, FuncType, GlobalType, NumType, ResultType, ValType};
+use dlr_wasm_interpreter::{
+    decode_and_validate, ExternType, FuncType, GlobalType, NumType, ResultType, ValType,
+};
 
 #[test_log::test]
 fn empty_module() {

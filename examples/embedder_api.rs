@@ -1,15 +1,15 @@
 //! Embedder API
 //!
-//! Most functions from the embedder API are supported and defined on the [`Store`](wasm::Store).
-//! This example lists a random selection of them without doing anything in particular.
+//! Most functions from the embedder API are supported and defined on the [`Store`]. This example
+//! lists a random selection of them without doing anything in particular.
 //!
 //! See: [WebAssembly Specification 2.0 - A.1 Embedding](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#a1-embedding)
 
 use std::error::Error;
 
-use wasm::{
-    GlobalAddr, GlobalType, Limits, MemAddr, MemType, Ref, RefType, Store, TableAddr, TableType,
-    ValType, Value, F64,
+use dlr_wasm_interpreter::{
+    GlobalAddr, GlobalType, Limits, MemAddr, MemType, NumType, Ref, RefType, Store, TableAddr,
+    TableType, ValType, Value, F64,
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let _my_global: GlobalAddr = unsafe {
         store.global_alloc(
             GlobalType {
-                ty: ValType::NumType(wasm::NumType::F64),
+                ty: ValType::NumType(NumType::F64),
                 is_mut: true,
             },
             Value::F64(F64(123.456)),
