@@ -112,12 +112,12 @@ impl Linker {
 
     /// This is a variant of
     /// [`Linker::instantiate_pre`](linker::Linker::instantiate_pre).
-    pub fn instantiate_pre(&self, validation_info: &Module) -> Option<Vec<StoredExternVal>> {
+    pub fn instantiate_pre(&self, module: &Module) -> Option<Vec<StoredExternVal>> {
         // Special case: If the module has no imports, we don't perform any
         // linking. We need this special case, so that a `Linker`, that has not
         // yet been associated with some `Store`, can still be used to
         // pre-instantiate modules.
-        if validation_info.imports().len() == 0 {
+        if module.imports().len() == 0 {
             return Some(Vec::new());
         }
         // 1. get or insert `StoreId`
@@ -127,7 +127,7 @@ impl Linker {
         // 2. try unwrap
         // no stored parameters
         // 3. call
-        let extern_vals = self.inner.instantiate_pre(validation_info)?;
+        let extern_vals = self.inner.instantiate_pre(module)?;
         // 4. rewrap
         // SAFETY: All `ExternVal`s just came from the current `Linker`. Because
         // a Linker can always be used with only one unique `Store`, all
@@ -142,7 +142,7 @@ impl Linker {
     pub fn module_instantiate<'b, T: Config>(
         &mut self,
         store: &mut Store<'b, T>,
-        validation_info: &Module<'b>,
+        module: &Module<'b>,
         maybe_fuel: Option<u64>,
     ) -> Option<Result<StoredInstantiationOutcome, RuntimeError>> {
         // 1. get or insert `StoreId`
@@ -157,7 +157,7 @@ impl Linker {
         // with the same id that is cached in the current linker instance.
         let instantiation_outcome = match unsafe {
             self.inner
-                .module_instantiate(&mut store.inner, validation_info, maybe_fuel)
+                .module_instantiate(&mut store.inner, module, maybe_fuel)
         } {
             Some(Ok(instantiation_outcome)) => instantiation_outcome,
             Some(Err(err)) => return Some(Err(err)),

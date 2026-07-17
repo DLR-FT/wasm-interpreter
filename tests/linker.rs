@@ -21,19 +21,17 @@ const SIMPLE_IMPORT_ADDON: &str = r#"
 #[test_log::test]
 pub fn compile_simple_import() {
     let wasm_bytes_addon = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
-    let validation_info_addon =
-        decode_and_validate(&wasm_bytes_addon, &mut ()).expect("validation failed");
+    let module_addon = decode_and_validate(&wasm_bytes_addon, &mut ()).expect("validation failed");
 
     let wasm_bytes_base = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
-    let validation_info_base =
-        decode_and_validate(&wasm_bytes_base, &mut ()).expect("validation failed");
+    let module_base = decode_and_validate(&wasm_bytes_base, &mut ()).expect("validation failed");
 
     let mut store = Store::new(());
     let mut linker = Linker::new();
 
     // First instantiate the addon module
     let addon = linker
-        .module_instantiate(&mut store, &validation_info_addon, None)
+        .module_instantiate(&mut store, &module_addon, None)
         .unwrap()
         .unwrap()
         .module_addr;
@@ -49,7 +47,7 @@ pub fn compile_simple_import() {
     // values in between.
 
     // 1. Perform linking
-    let linked_base_imports = linker.instantiate_pre(&validation_info_base).unwrap();
+    let linked_base_imports = linker.instantiate_pre(&module_base).unwrap();
 
     // 1.5 Freely inspect the linked extern values
     assert_eq!(
@@ -59,7 +57,7 @@ pub fn compile_simple_import() {
 
     // 2. Perform the actual instantiation directly on the `Store`
     let base = store
-        .module_instantiate(&validation_info_base, linked_base_imports, None)
+        .module_instantiate(&module_base, linked_base_imports, None)
         .unwrap()
         .module_addr;
 
@@ -78,12 +76,12 @@ pub fn compile_simple_import() {
 fn define_duplicate_extern_value() {
     const MODULE_WITH_EMPTY_FUNCTION: &str = r#"(module (func (export "foo") nop))"#;
     let wasm_bytes = wat::parse_str(MODULE_WITH_EMPTY_FUNCTION).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
 
     let mut store = Store::new(());
 
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 

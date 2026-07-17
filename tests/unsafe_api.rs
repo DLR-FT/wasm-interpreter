@@ -13,12 +13,12 @@ fn invoke_typed() {
     )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
 
     // SAFETY: There are no extern values and therefore none can be invalid in
     // this store.
-    let module = unsafe { store.module_instantiate(&validation_info, Vec::new(), None) }
+    let module = unsafe { store.module_instantiate(&module, Vec::new(), None) }
         .unwrap()
         .module_addr;
 

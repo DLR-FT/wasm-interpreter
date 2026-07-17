@@ -32,10 +32,10 @@ fn memory_copy_test_1() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -75,10 +75,10 @@ fn memory_copy_test_2() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -118,10 +118,10 @@ fn memory_copy_test_3() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -168,10 +168,10 @@ fn memory_copy_test_4() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -218,10 +218,10 @@ fn memory_copy_test_5() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -267,10 +267,10 @@ fn memory_copy_test_6() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -355,10 +355,10 @@ fn memory_copy_test_7() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -443,10 +443,10 @@ fn memory_copy_test_8() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -531,10 +531,10 @@ fn memory_copy_test_9() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -620,10 +620,10 @@ fn memory_copy_test_10() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -709,10 +709,10 @@ fn memory_copy_test_11() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -798,10 +798,10 @@ fn memory_copy_test_12() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -887,10 +887,10 @@ fn memory_copy_test_13() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -976,10 +976,10 @@ fn memory_copy_test_14() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -1065,10 +1065,10 @@ fn memory_copy_test_15() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -1154,10 +1154,10 @@ fn memory_copy_test_16() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 
@@ -1244,10 +1244,10 @@ fn memory_copy_test_17() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate(&module, Vec::new(), None)
         .unwrap()
         .module_addr;
 

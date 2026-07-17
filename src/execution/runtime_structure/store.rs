@@ -124,7 +124,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`ExternVal`]s came from the current [`Store`] object.
     pub unsafe fn module_instantiate(
         &mut self,
-        validation_info: &Module<'b>,
+        module: &Module<'b>,
         extern_vals: Vec<ExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<InstantiationOutcome, RuntimeError> {
@@ -133,15 +133,15 @@ impl<'b, T: Config> Store<'b, T> {
         // produce `Module`s.
 
         // instantiation: step 3
-        if validation_info.imports.len() != extern_vals.len() {
+        if module.imports.len() != extern_vals.len() {
             return Err(RuntimeError::ExternValsLenMismatch);
         }
 
         // instantiation: step 4
-        let imports_as_extern_types = validation_info.imports.iter().map(|import| {
-            // SAFETY: `import` is part of the same `validation_info` and
-            // therefore it was created as part of the same `validation_info`.
-            unsafe { import.desc.extern_type(validation_info) }
+        let imports_as_extern_types = module.imports.iter().map(|import| {
+            // SAFETY: `import` is part of the same `module` and
+            // therefore it was created as part of the same `module`.
+            unsafe { import.desc.extern_type(module) }
         });
         for (extern_val, import_as_extern_type) in extern_vals.iter().zip(imports_as_extern_types) {
             // instantiation: step 4a
@@ -162,7 +162,7 @@ impl<'b, T: Config> Store<'b, T> {
         // therefore I am mimicking the reference interpreter code here, I will allocate functions in the store in this step instead of step 11.
         // https://github.com/WebAssembly/spec/blob/8d6792e3d6709e8d3e90828f9c8468253287f7ed/interpreter/exec/eval.ml#L789
         let module_inst = ModuleInst {
-            types: validation_info.types.clone(),
+            types: module.types.clone(),
             func_addrs: IdxVec::default(),
             table_addrs: IdxVec::default(),
             mem_addrs: IdxVec::default(),
@@ -177,16 +177,16 @@ impl<'b, T: Config> Store<'b, T> {
             elem_addrs: IdxVec::default(),
             data_addrs: IdxVec::default(),
             exports: BTreeMap::new(),
-            wasm_bytecode: validation_info.wasm,
-            sidetable: validation_info.sidetable.clone(),
+            wasm_bytecode: module.wasm,
+            sidetable: module.sidetable.clone(),
         };
         let module_addr = self.modules.insert(module_inst);
 
         let imported_functions = extern_vals.iter().funcs();
-        let local_func_addrs = validation_info
+        let local_func_addrs = module
             .functions
             .iter_local_definitions()
-            .zip(validation_info.func_blocks_stps.iter())
+            .zip(module.func_blocks_stps.iter())
             .map(|(ty_idx, (span, stp))| {
                 // SAFETY: The module address is valid for the current store,
                 // because it was just created and the type index is valid for
@@ -195,15 +195,15 @@ impl<'b, T: Config> Store<'b, T> {
                 unsafe { self.alloc_func((*ty_idx, (*span, *stp)), module_addr) }
             });
 
-        let func_addrs = validation_info
+        let func_addrs = module
             .functions
             .map(imported_functions.collect(), local_func_addrs.collect())
             .expect(
                 "that the numbers of imported and local functions always \
-                match the respective numbers in the validation info. Step 3 and 4 \
+                match the respective numbers in the module. Step 3 and 4 \
                 check if the number of imported functions is correct and the number \
                 of local functions is a direct one-to-one mapping of \
-                `validation_info.func_blocks_stps`",
+                `module.func_blocks_stps`",
             )
             .into_inner();
 
@@ -214,7 +214,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         // instantiation: this roughly matches step 6,7,8
         // validation guarantees these will evaluate without errors.
-        let local_globals_init_vals: Vec<Value> = validation_info
+        let local_globals_init_vals: Vec<Value> = module
             .globals
             .iter_local_definitions()
             .map(|global| {
@@ -223,16 +223,15 @@ impl<'b, T: Config> Store<'b, T> {
                 //    this global is valid.
                 // 2. The module with this module address was just inserted into
                 //    this store's `AddrVec`.
-                let const_expr_result = unsafe {
-                    run_const_span(validation_info.wasm, &global.init_expr, module_addr, self)
-                };
+                let const_expr_result =
+                    unsafe { run_const_span(module.wasm, &global.init_expr, module_addr, self) };
                 const_expr_result.transpose().unwrap_validated()
             })
             .collect::<Result<Vec<Value>, _>>()?;
 
         // instantiation: this roughly matches step 9,10 and performs allocation
         // step 6,12 already
-        let elem_addrs: IdxVec<ElemIdx, ElemAddr> = validation_info.elements.map(|elem| {
+        let elem_addrs: IdxVec<ElemIdx, ElemAddr> = module.elements.map(|elem| {
             let refs = match &elem.init {
                 // shortcut of evaluation of "ref.func <func_idx>; end;"
                 // validation guarantees corresponding func_idx's existence
@@ -261,9 +260,8 @@ impl<'b, T: Config> Store<'b, T> {
                         //    for elements, including this one, are valid.
                         // 2. The module with this module address was just inserted into
                         //    this store's `AddrVec`.
-                        let const_expr_result = unsafe {
-                            run_const_span(validation_info.wasm, expr, module_addr, self)
-                        };
+                        let const_expr_result =
+                            unsafe { run_const_span(module.wasm, expr, module_addr, self) };
                         const_expr_result
                             .map(|res| res.unwrap_validated().try_into().unwrap_validated())
                     })
@@ -283,8 +281,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         // allocation: begin
 
-        // allocation: step 1
-        let module = validation_info;
+        // allocation: step 1 is a noop
 
         // allocation: skip step 2 & 8 as it was done in instantiation step 5
 
@@ -327,12 +324,12 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: skip step 14 as it was done in instantiation step 5
 
         // allocation: step 15
-        let table_addrs = validation_info
+        let table_addrs = module
             .tables
             .map(extern_vals.iter().tables().collect(), table_addrs_local)
             .expect(
                 "that the numbers of imported and local tables always \
-                match the respective numbers in the validation info. Step 3 and 4 \
+                match the respective numbers in the module. Step 3 and 4 \
                 check if the number of imported tables is correct and the number \
                 of local tables is produced by iterating through all table \
                 definitions and performing one-to-one mapping on each one.",
@@ -340,12 +337,12 @@ impl<'b, T: Config> Store<'b, T> {
             .into_inner();
 
         // allocation: step 16
-        let mem_addrs = validation_info
+        let mem_addrs = module
             .memories
             .map(extern_vals.iter().mems().collect(), mem_addrs_local)
             .expect(
                 "that the number of imported and local memories always \
-            match the respective numbers in the validation info. Step 3 and 4 \
+            match the respective numbers in the module. Step 3 and 4 \
             check if the number of imported memories is correct and the number \
             of local memories is produced by iterating through all memory \
             definitions and performing one-to-one mapping on each one.",
@@ -353,12 +350,12 @@ impl<'b, T: Config> Store<'b, T> {
             .into_inner();
 
         // allocation step 17
-        let global_addrs = validation_info
+        let global_addrs = module
             .globals
             .map(extern_vals.iter().globals().collect(), global_addrs_local)
             .expect(
                 "that the number of imported and local globals always \
-            match the respective numbers in the validation info. Step 3 and 4 \
+            match the respective numbers in the module. Step 3 and 4 \
             check if the number of imported globals is correct and the number \
             of local globals is produced by iterating through all global \
             definitions and performing one-to-one mapping on each one.",
@@ -437,7 +434,7 @@ impl<'b, T: Config> Store<'b, T> {
                 init: elem_items,
                 mode,
             },
-        ) in validation_info.elements.iter_enumerated()
+        ) in module.elements.iter_enumerated()
         {
             match mode {
                 ElemMode::Active(ActiveElem {
@@ -457,12 +454,11 @@ impl<'b, T: Config> Store<'b, T> {
 
                     // SAFETY: The module with this module address was just
                     // inserted into this `AddrVec`. Furthermore, the span comes
-                    // from an element contained in the same validation info the
+                    // from an element contained in the same module the
                     // Wasm bytecode is from. Therefore, the constant expression
                     // in that span must be validated already.
-                    let const_expr_result = unsafe {
-                        run_const_span(validation_info.wasm, einstr_i, module_addr, self)?
-                    };
+                    let const_expr_result =
+                        unsafe { run_const_span(module.wasm, einstr_i, module_addr, self)? };
                     let d: i32 = const_expr_result
                         .unwrap_validated() // there is a return value
                         .try_into()
@@ -474,13 +470,13 @@ impl<'b, T: Config> Store<'b, T> {
                     //    new module instance into the current store. Therefore, it
                     //    is valid in the current store.
                     // 2. The table index is valid for the current module
-                    //    instance because it came from the validation info of the
+                    //    instance because it came from the module of the
                     //    same module.
                     // 3./5. The table and element addresses are valid because
                     //       they come from a module instance that is part of the
                     //       current store itself.
                     // 4. The element index is valid for the current module
-                    //    instance because it came from the validation info of the
+                    //    instance because it came from the module of the
                     //    same module.
                     unsafe {
                         table_init(
@@ -500,7 +496,7 @@ impl<'b, T: Config> Store<'b, T> {
                     //    new module instance into the current store. Therefore, it
                     //    is valid in the current store.
                     // 2. The element index is valid for the current module
-                    //    instance because it came from the validation info of the
+                    //    instance because it came from the module of the
                     //    same module.
                     // 3. The element address is valid because it comes from a
                     //    module instance that is part of the current store itself.
@@ -520,7 +516,7 @@ impl<'b, T: Config> Store<'b, T> {
                     //   elem.drop i
 
                     // SAFETY: The passed element index comes from the
-                    // validation info, that was just used to allocate a new
+                    // module, that was just used to allocate a new
                     // module instance with address `module_addr` in
                     // `self.modules`. Therefore, it must be safe to use for
                     // accessing the referenced element.
@@ -529,7 +525,7 @@ impl<'b, T: Config> Store<'b, T> {
                     //    new module instance into the current store. Therefore, it
                     //    is valid in the current store.
                     // 2. The element index is valid for the current module
-                    //    instance because it came from the validation info of the
+                    //    instance because it came from the module of the
                     //    same module.
                     // 3. The element address is valid because it comes from a
                     //    module instance that is part of the current store itself.
@@ -548,7 +544,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         // instantiation: step 16
         // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
-        for (i, DataSegment { init, mode }) in validation_info.data.iter_enumerated() {
+        for (i, DataSegment { init, mode }) in module.data.iter_enumerated() {
             match mode {
                 DataMode::Active(DataModeActive {
                     memory_idx,
@@ -565,12 +561,11 @@ impl<'b, T: Config> Store<'b, T> {
                     //   data.drop i
                     // SAFETY: The module with this module address was just
                     // inserted into this `AddrVec`. Furthermore, the span comes
-                    // from a data segment contained in the same validation info
+                    // from a data segment contained in the same module
                     // the Wasm bytecode is from. Therefore, the constant
                     // expression in that span must be validated already.
-                    let const_expr_result = unsafe {
-                        run_const_span(validation_info.wasm, dinstr_i, module_addr, self)?
-                    };
+                    let const_expr_result =
+                        unsafe { run_const_span(module.wasm, dinstr_i, module_addr, self)? };
                     let d: u32 = const_expr_result
                         .unwrap_validated() // there is a return value
                         .try_into()
@@ -582,13 +577,13 @@ impl<'b, T: Config> Store<'b, T> {
                     //    new module instance into the current store. Therefore, it
                     //    is valid in the current store.
                     // 2. The memory index is valid for the current module
-                    //    instance because it came from the validation info of the
+                    //    instance because it came from the module of the
                     //    same module.
                     // 3./5. The memory and data addresses are valid because
                     //       they come from a module instance that is part of the
                     //       current store itself.
                     // 4. The data index is valid for the current module
-                    //    instance because it came from the validation info of the
+                    //    instance because it came from the module of the
                     //    same module.
                     unsafe {
                         memory_init(
@@ -609,7 +604,7 @@ impl<'b, T: Config> Store<'b, T> {
                     //    new module instance into the current store. Therefore, it
                     //    is valid in the current store.
                     // 2. The data index is valid for the current module
-                    //    instance because it came from the validation info of the
+                    //    instance because it came from the module of the
                     //    same module.
                     // 3. The data address is valid because it comes from a
                     //    module instance that is part of the current store itself.
@@ -620,7 +615,7 @@ impl<'b, T: Config> Store<'b, T> {
         }
 
         // instantiation: step 17
-        let maybe_remaining_fuel = if let Some(func_idx) = validation_info.start {
+        let maybe_remaining_fuel = if let Some(func_idx) = module.start {
             // TODO (for now, we are doing hopefully what is equivalent to it)
             // execute
             //   call func_ifx
