@@ -22,7 +22,7 @@
   };
   programs.rustfmt = {
     enable = true;
-    edition = (lib.importTOML ./Cargo.toml).package.edition;
+    edition = (lib.importTOML ./Cargo.toml).workspace.package.edition;
   };
   programs.taplo.enable = true; # formats TOML files
   programs.typstyle.enable = true;
