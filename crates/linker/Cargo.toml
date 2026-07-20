@@ -1,8 +1,15 @@
 [package]
 name = "dlr-wasm-interpreter-linker"
-version = "0.2.0"
-edition = "2021"
-rust-version = "1.87.0"              # Keep this in sync with the requirements!
+description = """
+A name-resolution based linker for dlr-wasm-interpreter
+"""
+
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [dependencies]
 dlr-wasm-interpreter.workspace = true

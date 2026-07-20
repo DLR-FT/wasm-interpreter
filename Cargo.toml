@@ -1,21 +1,42 @@
 [workspace]
-
-members = [
-  "crates/benchmark",
-  "crates/checked",
-  "crates/compare-testsuite-rs",
-  "crates/interop",
-  "crates/linker",
-  "crates/registry",
-]
+members = ["crates/*"]
 resolver = "2"
 
+[workspace.package]
+version = "0.2.0"
+rust-version = "1.87.0" # Keep this in sync with the requirements!
+edition = "2021"
+repository = "https://github.com/DLR-FT/wasm-interpreter"
+license = "MIT OR Apache-2.0"
+authors = ["Florian Hartung <florian.hartung@dlr.de>"]
+keywords = ["wasm", "interpreter", "no-std", "embedded", "webassembly"]
+categories = ["wasm", "virtualization", "no-std", "embedded"]
+exclude = [
+  # Nix
+  "*.nix",
+  "flake.*",
+  "pkgs/*",
+  ".envrc",
+  # CI
+  ".github/*",
+  "ci-tools/*",
+  "codecov.yml",
+  # Specification testsuite (too large and contains a git submodule that is not owned by us)
+  "tests/wasm_spec_testsuite.rs",
+  "tests/specification/*",
+  ".gitmodules",
+  # Nextest config
+  ".config/nextest.toml",
+  # TODO: Consider excluding "tests/*" entirely. Currently they are ~780KB large and Cargo's limit
+  # is 10MB per crate.
+]
+
 [workspace.dependencies]
-dlr-wasm-interpreter = { path = "." }
-dlr-wasm-interpreter-checked = { path = "crates/checked" }
-dlr-wasm-interpreter-interop = { path = "crates/interop" }
-dlr-wasm-interpreter-linker = { path = "crates/linker" }
-dlr-wasm-interpreter-registry = { path = "crates/registry" }
+dlr-wasm-interpreter = { version = "0.2", path = "." }
+dlr-wasm-interpreter-checked = { version = "0.2", path = "crates/checked" }
+dlr-wasm-interpreter-interop = { version = "0.2", path = "crates/interop" }
+dlr-wasm-interpreter-linker = { version = "0.2", path = "crates/linker" }
+dlr-wasm-interpreter-registry = { version = "0.2", path = "crates/registry" }
 
 env_logger = "0.10.1"
 indexmap = "=2.11.4"                                   # this version has MSRV 1.63, while the next 2.12.0 jumps to MSRV 1.82
@@ -26,33 +47,41 @@ serde_json = "1.0.138"
 test-log = { version = "0.2.14", features = ["log"] }
 wat = "1.0.83"
 
-
 [package]
 name = "dlr-wasm-interpreter"
-version = "0.2.0"
-edition = "2021"
-rust-version = "1.87.0" # Keep this in sync with the requirements!
 description = """
-A WASM interpreter tailored for safety use-cases, such as automotive and avionics applications
+An in-place Wasm interpreter tailored for safety use-cases, such as avionics and automotive applications
 """
-homepage = "https://github.com/DLR-FT/wasm-interpreter"
-license = "MIT OR Apache-2.0"
+
+edition.workspace = true
+repository.workspace = true
+keywords.workspace = true
+license.workspace = true
+rust-version.workspace = true
+version.workspace = true
+exclude.workspace = true
 
 [dependencies]
 libm.workspace = true
-log_wrapper.path = "crates/log_wrapper"
-
-# libm = "=0.2.8"
-# log = { version = "0.4.22", optional = true }
+log = { workspace = true, optional = true }
 
 [dev-dependencies]
-dlr-wasm-interpreter-checked = { workspace = true, features = [
+# Crates defined in this workspace
+#
+# We must specify these using a path so that `cargo package` does not fail. Unfortunately, this
+# makes it so that the tests fail in the packaged crate. There are a couple solutions (a combination
+# of 1 & 2 is likely the best):
+# 1. Make our tests independant of utility crates.
+# 2. Move tests that need utility crates to their respective crates.
+# 3. Move all tests to a separate crate that does not get published.
+dlr-wasm-interpreter-checked = { path = "crates/checked", features = [
   "linker",
   "interop",
 ] }
-dlr-wasm-interpreter-interop.workspace = true
-dlr-wasm-interpreter-registry.workspace = true
+dlr-wasm-interpreter-interop = { path = "crates/interop" }
+dlr-wasm-interpreter-registry = { path = "crates/registry" }
 
+# Workspace dependencies
 log.workspace = true
 env_logger.workspace = true
 serde = { workspace = true, features = ["derive"] }
@@ -60,6 +89,7 @@ serde_json.workspace = true
 test-log = { workspace = true, features = ["log"] }
 wat.workspace = true
 
+# Other dependencies
 bumpalo = "3.17.0"
 hexf = "0.2.1"
 itertools = "0.14.0"
@@ -68,9 +98,6 @@ regex = "1.11.1"
 envconfig = "0.11.0"
 lazy_static = "1.5.0"
 thiserror = "2.0"
-
-[features]
-default = []
 
 [lints.rust]
 missing_docs = "allow"          # TODO change this to warn

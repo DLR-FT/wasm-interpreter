@@ -1,25 +1,29 @@
 [package]
 name = "benchmark"
-version = "0.1.0"
-edition = "2021"
-rust-version = "1.87.0"
+description = "Benchmarks for dlr-wasm-interpreter"
+
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [dependencies]
 dlr-wasm-interpreter.workspace = true
 
-# wasm3-rs' PR #46 makes it work with newer rust-bindgen versions again, but it is not yet merged.
-# However, it is already merged in the fork used for the Roc programming language, which could be
-# considered a somewhat reliable source.
-# By default this is commented out because this causes issues with Nix.
-# wasm3 = { git = "https://github.com/roc-lang/wasm3-rs", rev = "ba0cdab7404f7f2995a8c18e614ce020dabd6da0", optional = true }
-
-
 [dev-dependencies]
+# Crates defined in our workspace
+dlr-wasm-interpreter.workspace = true
+
+# Workspace dependencies
+wat.workspace = true
+
+# Other dependencies
 criterion = { version = "0.5.1", default-features = false, features = [
   "cargo_bench_support",
   "plotters",
 ] }
-dlr-wasm-interpreter.workspace = true
 wasmi = "0.40.0"
 wasmtime = { version = "27.0.0", default-features = false, features = [
   "runtime",
@@ -27,7 +31,6 @@ wasmtime = { version = "27.0.0", default-features = false, features = [
   "parallel-compilation",
   "std",
 ] }
-wat = { workspace = true }
 
 [features]
 wasmi = []

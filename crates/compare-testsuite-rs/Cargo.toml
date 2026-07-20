@@ -1,10 +1,15 @@
 [package]
 name = "compare-testsuite-rs"
-version = "0.1.0"
-edition = "2021"
-rust-version = "1.81.0"
+description = """
+A program that compares two sets of specification testsuite results produced by dlr-wasm-interpreter
+"""
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
