@@ -1,4 +1,4 @@
-//! The Instruction Hook
+//! A hook executed on every instruction
 //!
 //! An instruction hook is a function that is called prior to interpretation of every instruction.
 //! It can be used to do various things, like measuring coverage, tracing, logging or gathering
