@@ -7,8 +7,8 @@ use core::iter::Map;
 use crate::{
     core::{
         decoding::{
+            decoder::{span::Span, WasmDecoder},
             modules::sections::{decode_section_if_ty_matches, SectionTy},
-            reader::{span::Span, WasmDecoder},
         },
         sidetable::Sidetable,
         structure::{

@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{
-        decoding::reader::{span::Span, WasmDecoder},
+        decoding::decoder::{span::Span, WasmDecoder},
         structure::{
             modules::indices::{FuncIdx, IdxVec, TypeIdx},
             types::GlobalType,

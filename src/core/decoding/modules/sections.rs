@@ -1,6 +1,6 @@
 use crate::{
     core::{
-        decoding::reader::{span::Span, WasmDecoder},
+        decoding::decoder::{span::Span, WasmDecoder},
         utils::ToUsizeExt,
     },
     trace, DecodingError,

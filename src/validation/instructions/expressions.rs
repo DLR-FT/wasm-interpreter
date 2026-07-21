@@ -2,7 +2,7 @@ use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::{
     core::{
-        decoding::{modules::indices::decode_label_idx, reader::WasmDecoder},
+        decoding::{decoder::WasmDecoder, modules::indices::decode_label_idx},
         sidetable::{Sidetable, SidetableEntry},
         structure::{
             modules::{

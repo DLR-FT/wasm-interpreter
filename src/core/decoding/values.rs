@@ -8,7 +8,7 @@
 use alloc::vec::Vec;
 
 use crate::{
-    core::{decoding::reader::WasmDecoder, utils::ToUsizeExt},
+    core::{decoding::decoder::WasmDecoder, utils::ToUsizeExt},
     DecodingError,
 };
 
@@ -401,7 +401,7 @@ impl<'wasm> WasmDecoder<'wasm> {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::decoding::reader::WasmDecoder;
+    use crate::core::decoding::decoder::WasmDecoder;
 
     #[test]
     fn test_var_i32() {

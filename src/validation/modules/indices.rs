@@ -1,6 +1,6 @@
 use crate::{
     core::{
-        decoding::reader::WasmDecoder,
+        decoding::decoder::WasmDecoder,
         structure::modules::indices::{
             DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, IdxVec, LocalIdx, MemIdx, TableIdx, TypeIdx,
         },

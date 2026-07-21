@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 use core::iter;
 
 use crate::{
-    core::{decoding::reader::WasmDecoder, utils::ToUsizeExt},
+    core::{decoding::decoder::WasmDecoder, utils::ToUsizeExt},
     DecodingError, ValType,
 };
 

@@ -5,7 +5,7 @@ use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
     core::{
-        decoding::reader::WasmDecoder,
+        decoding::decoder::WasmDecoder,
         sidetable::Sidetable,
         structure::{
             modules::indices::{DataIdx, ElemIdx, MemIdx, TableIdx},
@@ -425,7 +425,7 @@ macro_rules! define_instruction_fn {
         // Disable inlining to inspect the emitted code of individual instruction handlers:
         // #[inline(never)]
         pub(crate) unsafe fn $name<'wasm, 'modules, T: $crate::execution::config::Config>(
-            wasm: &mut $crate::core::decoding::reader::WasmDecoder<'wasm>,
+            wasm: &mut $crate::core::decoding::decoder::WasmDecoder<'wasm>,
             resumable: &mut $crate::execution::resumable::WasmResumable,
             current_sidetable: &mut &'modules $crate::core::sidetable::Sidetable,
             store_inner: &mut $crate::execution::runtime_structure::store::StoreInner,

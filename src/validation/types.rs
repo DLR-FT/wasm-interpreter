@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{
-        decoding::reader::WasmDecoder,
+        decoding::decoder::WasmDecoder,
         structure::{
             modules::indices::{IdxVec, TypeIdx},
             types::BlockType,

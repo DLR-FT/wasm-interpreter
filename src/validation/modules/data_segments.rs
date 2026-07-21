@@ -1,6 +1,6 @@
 use crate::{
     core::{
-        decoding::reader::WasmDecoder,
+        decoding::decoder::WasmDecoder,
         structure::{
             modules::{
                 data_segments::{DataMode, DataModeActive, DataSegment},
