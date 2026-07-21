@@ -13,7 +13,6 @@ use dlr_wasm_interpreter_checked::{
     Linker, Store, Stored, StoredExternVal, StoredRef, StoredValue,
 };
 use dlr_wasm_interpreter_registry::Registry;
-use itertools::enumerate;
 use log::debug;
 
 use wast::core::WastArgCore;
@@ -135,7 +134,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     // of modules, we need to store modules by their names separately.
     let mut visible_modules = HashMap::new();
 
-    for (i, directive) in enumerate(wast.directives) {
+    for (i, directive) in wast.directives.into_iter().enumerate() {
         debug!("at directive {:?}", i);
 
         let directive_result = run_directive(
