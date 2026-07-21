@@ -87,7 +87,7 @@
             cargoToml = lib.trivial.importTOML ./Cargo.toml;
 
             # minimum rust version that we support according to Cargo.toml
-            msrv = cargoToml.package.rust-version;
+            msrv = cargoToml.workspace.package.rust-version;
 
             # Rust distribution for our hostSystem
             rust-toolchain-nixpkgs-current = pkgs.rust-bin.stable.${pkgs.rustc.version}.default.override {
