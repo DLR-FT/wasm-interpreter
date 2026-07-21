@@ -38,12 +38,7 @@ dlr-wasm-interpreter-interop = { version = "0.2", path = "crates/interop" }
 dlr-wasm-interpreter-linker = { version = "0.2", path = "crates/linker" }
 dlr-wasm-interpreter-registry = { version = "0.2", path = "crates/registry" }
 
-env_logger = "0.10.1"
-indexmap = "=2.11.4"                                   # this version has MSRV 1.63, while the next 2.12.0 jumps to MSRV 1.82
-libm = "0.2.8"
 log = "0.4.22"
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.138"
 test-log = { version = "0.2.14", features = ["log"] }
 wat = "1.0.83"
 
@@ -62,7 +57,7 @@ version.workspace = true
 exclude.workspace = true
 
 [dependencies]
-libm.workspace = true
+libm = "0.2.8"
 log = { workspace = true, optional = true }
 
 [dev-dependencies]
@@ -83,21 +78,19 @@ dlr-wasm-interpreter-registry = { path = "crates/registry" }
 
 # Workspace dependencies
 log.workspace = true
-env_logger.workspace = true
-serde = { workspace = true, features = ["derive"] }
-serde_json.workspace = true
-test-log = { workspace = true, features = ["log"] }
 wat.workspace = true
+test-log = { workspace = true, features = ["log"] }
 
 # Other dependencies
 bumpalo = "3.17.0"
 hexf = "0.2.1"
-itertools = "0.14.0"
-wast = "212.0.0"
-regex = "1.11.1"
 envconfig = "0.11.0"
 lazy_static = "1.5.0"
+regex = "1.11.1"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.138"
 thiserror = "2.0"
+wast = "212.0.0"
 
 [lints.rust]
 missing_docs = "allow"          # TODO change this to warn
