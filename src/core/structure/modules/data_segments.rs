@@ -1,7 +1,7 @@
 use alloc::{format, vec::Vec};
 use core::fmt;
 
-use crate::core::{decoding::reader::span::Span, structure::modules::indices::MemIdx};
+use crate::core::{decoding::decoder::span::Span, structure::modules::indices::MemIdx};
 
 #[derive(Clone)]
 pub struct DataSegment {

@@ -3,8 +3,8 @@ use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 use crate::{
     core::{
         decoding::{
+            decoder::{span::Span, WasmDecoder},
             modules::element_section::ElemKind,
-            reader::{span::Span, WasmDecoder},
         },
         structure::modules::{
             element_segments::{ActiveElem, ElemItems, ElemMode, ElemType},

@@ -4,8 +4,8 @@ use core::convert::Infallible;
 use crate::{
     core::{
         decoding::{
+            decoder::{span::Span, WasmDecoder},
             modules::code_section::decode_locals,
-            reader::{span::Span, WasmDecoder},
         },
         structure::{
             import_subtyping::ImportSubTypeRelation,
@@ -1175,14 +1175,14 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that the given module address is valid in
         // the current store.
         let module = unsafe { self.modules.get(module_addr) };
-        let mut wasm_reader = WasmDecoder::new(module.wasm_bytecode);
-        wasm_reader.move_start_to(span).unwrap_validated();
+        let mut wasm_decoder = WasmDecoder::new(module.wasm_bytecode);
+        wasm_decoder.move_start_to(span).unwrap_validated();
 
-        let (locals, bytes_read) = wasm_reader
+        let (locals, bytes_read) = wasm_decoder
             .measure_num_read_bytes(decode_locals)
             .unwrap_validated();
 
-        let code_expr = wasm_reader
+        let code_expr = wasm_decoder
             .make_span(span.len() - bytes_read)
             .unwrap_validated();
 

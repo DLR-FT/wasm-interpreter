@@ -2,7 +2,7 @@ use alloc::collections::btree_set::BTreeSet;
 
 use crate::{
     core::{
-        decoding::reader::WasmDecoder,
+        decoding::decoder::WasmDecoder,
         structure::modules::{
             globals::Global,
             indices::{FuncIdx, IdxVec, TypeIdx},

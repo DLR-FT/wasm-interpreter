@@ -3,7 +3,7 @@ use core::fmt;
 
 use crate::{
     core::{
-        decoding::reader::span::Span,
+        decoding::decoder::span::Span,
         structure::modules::indices::{FuncIdx, TableIdx},
     },
     RefType,

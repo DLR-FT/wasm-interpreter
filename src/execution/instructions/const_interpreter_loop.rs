@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{
-        decoding::reader::{span::Span, WasmDecoder},
+        decoding::decoder::{span::Span, WasmDecoder},
         structure::{
             modules::indices::{FuncIdx, GlobalIdx},
             types::{FuncType, ResultType},
@@ -22,7 +22,7 @@ use crate::{
 ///
 /// # Safety
 ///
-/// 1. the constant expression in the reader must be valid
+/// 1. the constant expression in the decoder must be valid
 /// 2. the module address must be valid in the given store
 ///
 // TODO this signature might change to support hooks or match the spec better
@@ -116,8 +116,8 @@ pub(crate) unsafe fn run_const_span<T: Config>(
     Ok(stack.peek_value())
 }
 
-struct Args<'reader, 'resumable, 'store, 'wasm, T: Config> {
-    wasm: &'reader mut WasmDecoder<'wasm>,
+struct Args<'decoder, 'resumable, 'store, 'wasm, T: Config> {
+    wasm: &'decoder mut WasmDecoder<'wasm>,
     stack: &'resumable mut Stack,
     module: ModuleAddr,
     store: &'store Store<'wasm, T>,
@@ -127,7 +127,7 @@ macro_rules! define_instruction {
     ($name:ident, $instruction:expr, $contents:expr) => {
         /// # Safety
         ///
-        /// 1. the constant expression in the reader must be valid
+        /// 1. the constant expression in the decoder must be valid
         /// 2. the module address must be valid in the given store
         // Disable inlining to inspect the emitted code of individual instruction handlers
         // #[inline(never)]

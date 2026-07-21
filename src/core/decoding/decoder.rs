@@ -1,8 +1,6 @@
-use crate::{core::decoding::reader::span::Span, DecodingError};
+use crate::{core::decoding::decoder::span::Span, DecodingError};
 
-/// A struct for managing and reading WASM bytecode
-///
-/// Its purpose is to abstract parsing basic WASM values from the bytecode.
+/// A struct for decoding Wasm bytecode
 #[derive(Clone)]
 pub struct WasmDecoder<'a> {
     /// Entire WASM binary as slice
@@ -164,7 +162,7 @@ impl<'a> WasmDecoder<'a> {
 pub mod span {
     use core::ops::Index;
 
-    use crate::core::decoding::reader::WasmDecoder;
+    use crate::core::decoding::decoder::WasmDecoder;
 
     /// An index and offset to describe a (sub-) slice into WASM bytecode
     ///
@@ -212,152 +210,152 @@ mod test {
     #[test]
     fn move_start_to() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmDecoder::new(&my_bytes);
+        let mut wasm_decoder = WasmDecoder::new(&my_bytes);
 
         let span = Span::new(0, 0);
-        wasm_reader.move_start_to(span).unwrap();
+        wasm_decoder.move_start_to(span).unwrap();
         // this actually dangerous, we did not validate there to be more than 0 bytes using the Span
-        wasm_reader.peek_u8().unwrap();
+        wasm_decoder.peek_u8().unwrap();
 
         let span = Span::new(0, my_bytes.len());
-        wasm_reader.move_start_to(span).unwrap();
-        wasm_reader.peek_u8().unwrap();
-        assert_eq!(wasm_reader[span], my_bytes);
+        wasm_decoder.move_start_to(span).unwrap();
+        wasm_decoder.peek_u8().unwrap();
+        assert_eq!(wasm_decoder[span], my_bytes);
 
         let span = Span::new(my_bytes.len(), 0);
-        wasm_reader.move_start_to(span).unwrap();
-        // span had zero length, hence wasm_reader.peek_u8() would be allowed to fail
+        wasm_decoder.move_start_to(span).unwrap();
+        // span had zero length, hence wasm_decoder.peek_u8() would be allowed to fail
 
         let span = Span::new(my_bytes.len() - 1, 1);
-        wasm_reader.move_start_to(span).unwrap();
+        wasm_decoder.move_start_to(span).unwrap();
 
-        assert_eq!(wasm_reader.peek_u8().unwrap(), *my_bytes.last().unwrap());
+        assert_eq!(wasm_decoder.peek_u8().unwrap(), *my_bytes.last().unwrap());
     }
 
     #[test]
     fn move_start_to_out_of_bounds_1() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmDecoder::new(&my_bytes);
+        let mut wasm_decoder = WasmDecoder::new(&my_bytes);
 
         let span = Span::new(my_bytes.len(), 1);
-        assert_eq!(wasm_reader.move_start_to(span), Err(DecodingError::Eof));
+        assert_eq!(wasm_decoder.move_start_to(span), Err(DecodingError::Eof));
     }
 
     #[test]
     fn move_start_to_out_of_bounds_2() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmDecoder::new(&my_bytes);
+        let mut wasm_decoder = WasmDecoder::new(&my_bytes);
 
         let span = Span::new(0, my_bytes.len() + 1);
-        assert_eq!(wasm_reader.move_start_to(span), Err(DecodingError::Eof));
+        assert_eq!(wasm_decoder.move_start_to(span), Err(DecodingError::Eof));
     }
 
     #[test]
     fn remaining_bytes_1() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmDecoder::new(&my_bytes);
+        let mut wasm_decoder = WasmDecoder::new(&my_bytes);
 
-        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
-        wasm_reader.skip(4).unwrap();
-        assert_eq!(wasm_reader.peek_u8().unwrap(), 0x15);
+        assert_eq!(wasm_decoder.remaining_bytes(), my_bytes);
+        wasm_decoder.skip(4).unwrap();
+        assert_eq!(wasm_decoder.peek_u8().unwrap(), 0x15);
 
-        assert_eq!(wasm_reader.remaining_bytes(), &my_bytes[4..]);
+        assert_eq!(wasm_decoder.remaining_bytes(), &my_bytes[4..]);
     }
 
     #[test]
     fn remaining_bytes_2() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmDecoder::new(&my_bytes);
+        let mut wasm_decoder = WasmDecoder::new(&my_bytes);
 
-        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
-        wasm_reader.skip(5).unwrap();
-        assert_eq!(wasm_reader.remaining_bytes(), &my_bytes[5..]);
-        assert_eq!(wasm_reader.remaining_bytes(), &[]);
+        assert_eq!(wasm_decoder.remaining_bytes(), my_bytes);
+        wasm_decoder.skip(5).unwrap();
+        assert_eq!(wasm_decoder.remaining_bytes(), &my_bytes[5..]);
+        assert_eq!(wasm_decoder.remaining_bytes(), &[]);
     }
 
     #[test]
     fn strip_bytes_1() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmDecoder::new(&my_bytes);
+        let mut wasm_decoder = WasmDecoder::new(&my_bytes);
 
-        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
-        let stripped_bytes = wasm_reader.strip_bytes::<4>().unwrap();
+        assert_eq!(wasm_decoder.remaining_bytes(), my_bytes);
+        let stripped_bytes = wasm_decoder.strip_bytes::<4>().unwrap();
         assert_eq!(&stripped_bytes, &my_bytes[..4]);
-        assert_eq!(wasm_reader.remaining_bytes(), &[0x15]);
+        assert_eq!(wasm_decoder.remaining_bytes(), &[0x15]);
     }
 
     #[test]
     fn strip_bytes_2() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmDecoder::new(&my_bytes);
+        let mut wasm_decoder = WasmDecoder::new(&my_bytes);
 
-        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
-        wasm_reader.skip(1).unwrap();
-        let stripped_bytes = wasm_reader.strip_bytes::<4>().unwrap();
+        assert_eq!(wasm_decoder.remaining_bytes(), my_bytes);
+        wasm_decoder.skip(1).unwrap();
+        let stripped_bytes = wasm_decoder.strip_bytes::<4>().unwrap();
         assert_eq!(&stripped_bytes, &my_bytes[1..5]);
-        assert_eq!(wasm_reader.remaining_bytes(), &[]);
+        assert_eq!(wasm_decoder.remaining_bytes(), &[]);
     }
 
     #[test]
     fn strip_bytes_3() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmDecoder::new(&my_bytes);
+        let mut wasm_decoder = WasmDecoder::new(&my_bytes);
 
-        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
-        wasm_reader.skip(2).unwrap();
-        let stripped_bytes = wasm_reader.strip_bytes::<4>();
+        assert_eq!(wasm_decoder.remaining_bytes(), my_bytes);
+        wasm_decoder.skip(2).unwrap();
+        let stripped_bytes = wasm_decoder.strip_bytes::<4>();
         assert_eq!(stripped_bytes, Err(DecodingError::Eof));
     }
 
     #[test]
     fn strip_bytes_4() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmDecoder::new(&my_bytes);
+        let mut wasm_decoder = WasmDecoder::new(&my_bytes);
 
-        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
-        wasm_reader.skip(5).unwrap();
-        let stripped_bytes = wasm_reader.strip_bytes::<0>().unwrap();
+        assert_eq!(wasm_decoder.remaining_bytes(), my_bytes);
+        wasm_decoder.skip(5).unwrap();
+        let stripped_bytes = wasm_decoder.strip_bytes::<0>().unwrap();
         assert_eq!(stripped_bytes, [0u8; 0]);
     }
 
     #[test]
     fn skip_1() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
-        let mut wasm_reader = WasmDecoder::new(&my_bytes);
-        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
-        assert_eq!(wasm_reader.skip(6), Err(DecodingError::Eof));
+        let mut wasm_decoder = WasmDecoder::new(&my_bytes);
+        assert_eq!(wasm_decoder.remaining_bytes(), my_bytes);
+        assert_eq!(wasm_decoder.skip(6), Err(DecodingError::Eof));
     }
 
     #[test]
-    fn reader_transaction() {
+    fn decoder_transaction() {
         let bytes = [0x1, 0x2, 0x3, 0x4, 0x5, 0x6];
-        let mut reader = WasmDecoder::new(&bytes);
+        let mut decoder = WasmDecoder::new(&bytes);
 
         assert_eq!(
-            reader.handle_transaction(|reader| { reader.strip_bytes::<2>() }),
+            decoder.handle_transaction(|decoder| { decoder.strip_bytes::<2>() }),
             Ok([0x1, 0x2]),
         );
 
-        let transaction_result: Result<(), DecodingError> = reader.handle_transaction(|reader| {
-            assert_eq!(reader.strip_bytes::<2>(), Ok([0x3, 0x4]));
+        let transaction_result: Result<(), DecodingError> = decoder.handle_transaction(|decoder| {
+            assert_eq!(decoder.strip_bytes::<2>(), Ok([0x3, 0x4]));
 
             // The exact error type does not matter
             Err(DecodingError::InvalidMagic)
         });
         assert_eq!(transaction_result, Err(DecodingError::InvalidMagic));
 
-        assert_eq!(reader.strip_bytes::<3>(), Ok([0x3, 0x4, 0x5]));
+        assert_eq!(decoder.strip_bytes::<3>(), Ok([0x3, 0x4, 0x5]));
     }
 
     #[test]
-    fn reader_transaction_ergonomics() {
+    fn decoder_transaction_ergonomics() {
         let bytes = [0x1, 0x2, 0x3, 0x4, 0x5, 0x6];
-        let mut reader = WasmDecoder::new(&bytes);
+        let mut decoder = WasmDecoder::new(&bytes);
 
-        assert_eq!(reader.handle_transaction(WasmDecoder::decode_u8), Ok(0x1));
+        assert_eq!(decoder.handle_transaction(WasmDecoder::decode_u8), Ok(0x1));
 
         assert_eq!(
-            reader.handle_transaction(ValType::decode),
+            decoder.handle_transaction(ValType::decode),
             Err(DecodingError::MalformedValType)
         );
     }

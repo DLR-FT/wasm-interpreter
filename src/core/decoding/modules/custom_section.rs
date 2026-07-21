@@ -1,5 +1,5 @@
 use crate::{
-    core::decoding::reader::{span::Span, WasmDecoder},
+    core::decoding::decoder::{span::Span, WasmDecoder},
     DecodingError, ValidationError,
 };
 

@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
 use crate::{
-    core::{decoding::reader::span::Span, structure::modules::indices::TypeIdx},
+    core::{decoding::decoder::span::Span, structure::modules::indices::TypeIdx},
     FuncType, Hostcode, ModuleAddr, ValType,
 };
 
