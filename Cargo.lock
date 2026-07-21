@@ -439,6 +439,7 @@ dependencies = [
  "bumpalo",
  "dlr-wasm-interpreter-checked",
  "dlr-wasm-interpreter-interop",
+ "dlr-wasm-interpreter-linker",
  "dlr-wasm-interpreter-registry",
  "envconfig",
  "hexf",
