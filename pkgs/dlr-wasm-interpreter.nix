@@ -10,7 +10,7 @@ let
 in
 rustPlatform.buildRustPackage rec {
   pname = cargoToml.package.name;
-  version = cargoToml.package.version;
+  version = cargoToml.workspace.package.version; # get the version from the workspace because we do package.version = { workspace = true }
 
   src =
     let
