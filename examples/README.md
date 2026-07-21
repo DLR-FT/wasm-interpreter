@@ -2,6 +2,7 @@
 
 - **[`function_invocation`](function_invocation.rs)**: [RECOMMENDED FIRST] Instantiation and
   function invocation with a simple Wasm module.
+- **[`checked_api`](checked_api.rs)**: Using the checked utility crate for a safe API
 - **[`embedder_api`](embedder_api.rs)**: The Embedder API
 - **[`fuel`](fuel.rs)**: Using fuel to preempt a fibonacci computation regulary combined with progress reporting via an exported memory.
 - **[`fuel_configuration`](fuel_configuration.rs)**: Configuration of fuel consumption per instruction
