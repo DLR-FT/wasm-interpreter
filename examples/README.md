@@ -7,3 +7,4 @@
 - **[`fuel_configuration`](fuel_configuration.rs)**: Configuration of fuel consumption per instruction
 - **[`host_functions`](host_functions.rs)**: Allocate host functions into the store and invoke them
 - **[`instruction_hook`](instruction_hook.rs)**: A hook executed on every instruction
+- **[`linking`](linking.rs)**: Linking multiple Wasm modules together

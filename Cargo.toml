@@ -75,6 +75,7 @@ dlr-wasm-interpreter-checked = { path = "crates/checked", features = [
 ] }
 dlr-wasm-interpreter-interop = { path = "crates/interop" }
 dlr-wasm-interpreter-registry = { path = "crates/registry" }
+dlr-wasm-interpreter-linker = { path = "crates/linker" }
 
 # Workspace dependencies
 log.workspace = true
