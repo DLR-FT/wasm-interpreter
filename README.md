@@ -7,10 +7,9 @@
   <a href="#resources">Resources</a>
 </p>
 <p align="center">
-  <a href="https://github.com/DLR-FT/wasm-interpreter/actions/workflows/nix.yaml"><img src="https://github.com/DLR-FT/wasm-interpreter/actions/workflows/nix.yaml/badge.svg" alt="ci status" /></a>
+  <a href="https://crates.io/crates/dlr-wasm-interpreter"><img src="https://img.shields.io/crates/v/dlr-wasm-interpreter" /></a>
+  <a href="https://docs.rs/dlr-wasm-interpreter/latest/dlr_wasm_interpreter"><img src="https://img.shields.io/docsrs/dlr-wasm-interpreter" alt="docs.rs" /></a>
   <a href="https://app.codecov.io/github/DLR-FT/wasm-interpreter"><img src="https://codecov.io/gh/DLR-FT/wasm-interpreter/graph/badge.svg?component=interpreter" alt="code coverage" /></a>
-  <a href="https://dlr-ft.github.io/wasm-interpreter/main/rustdoc/wasm"><img src="https://img.shields.io/badge/rustdoc-passing-orange" alt="license" /></a>
-  <a href="#license"><img src="https://img.shields.io/badge/license-MIT%20or%20Apache%202.0-blue" alt="license" /></a>
 </p>
 
 A minimal in-place interpreter for [WebAssembly 2.0](https://webassembly.org/) bytecode (almost without) dependencies while being `no_std`.
