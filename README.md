@@ -1,4 +1,4 @@
-# wasm-interpreter
+# dlr-wasm-interpreter
 
 <p align="center">
   <a href="https://dlr-ft.github.io/wasm-interpreter/main/">Website</a> &nbsp;&bull;&nbsp;
