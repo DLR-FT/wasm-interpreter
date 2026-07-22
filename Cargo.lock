@@ -114,7 +114,7 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "benchmark"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "criterion",
  "dlr-wasm-interpreter",
@@ -241,7 +241,7 @@ checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
 name = "compare-testsuite-rs"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -434,7 +434,7 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
 name = "dlr-wasm-interpreter"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bumpalo",
  "dlr-wasm-interpreter-checked",
@@ -457,7 +457,7 @@ dependencies = [
 
 [[package]]
 name = "dlr-wasm-interpreter-checked"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "dlr-wasm-interpreter",
  "dlr-wasm-interpreter-interop",
@@ -466,21 +466,21 @@ dependencies = [
 
 [[package]]
 name = "dlr-wasm-interpreter-interop"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "dlr-wasm-interpreter",
 ]
 
 [[package]]
 name = "dlr-wasm-interpreter-linker"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "dlr-wasm-interpreter",
 ]
 
 [[package]]
 name = "dlr-wasm-interpreter-registry"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "dlr-wasm-interpreter",
  "dlr-wasm-interpreter-checked",

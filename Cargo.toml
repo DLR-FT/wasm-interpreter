@@ -3,7 +3,7 @@ members = ["crates/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 rust-version = "1.87.0" # Keep this in sync with the requirements!
 edition = "2021"
 repository = "https://github.com/DLR-FT/wasm-interpreter"
@@ -32,11 +32,11 @@ exclude = [
 ]
 
 [workspace.dependencies]
-dlr-wasm-interpreter = { version = "0.2", path = "." }
-dlr-wasm-interpreter-checked = { version = "0.2", path = "crates/checked" }
-dlr-wasm-interpreter-interop = { version = "0.2", path = "crates/interop" }
-dlr-wasm-interpreter-linker = { version = "0.2", path = "crates/linker" }
-dlr-wasm-interpreter-registry = { version = "0.2", path = "crates/registry" }
+dlr-wasm-interpreter = { version = "0.3", path = "." }
+dlr-wasm-interpreter-checked = { version = "0.3", path = "crates/checked" }
+dlr-wasm-interpreter-interop = { version = "0.3", path = "crates/interop" }
+dlr-wasm-interpreter-linker = { version = "0.3", path = "crates/linker" }
+dlr-wasm-interpreter-registry = { version = "0.3", path = "crates/registry" }
 
 log = "0.4.22"
 test-log = { version = "0.2.14", features = ["log"] }
