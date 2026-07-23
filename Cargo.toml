@@ -112,3 +112,10 @@ invalid_rust_codeblocks = "deny"
 bare_urls = "deny"
 unescaped_backticks = "deny"
 redundant_explicit_links = "deny"
+
+
+[profile.bench]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

@@ -173,7 +173,7 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
     // TODO explain  why the argument is unused and we create a new prev_pc here
     let prev_pc = wasm.pc;
 
-    let first_instr_byte = wasm.decode_u8().unwrap_validated();
+    let first_instr_byte = unsafe { wasm.decode_u8().unwrap_unchecked() };
 
     trace!(
         "Executing instruction {} at pc={}",

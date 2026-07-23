@@ -5,6 +5,7 @@ use crate::{
             DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, LocalIdx, MemIdx, TableIdx, TypeIdx,
         },
     },
+    execution::assert_validated::UnwrapValidatedExt,
     DecodingError,
 };
 
@@ -100,8 +101,9 @@ impl LocalIdx {
     /// # Safety
     ///
     /// The caller must ensure that there is a valid local index in the [`WasmDecoder`].
+    #[inline(always)]
     pub unsafe fn decode_unchecked(wasm: &mut WasmDecoder) -> Self {
-        let index = wasm.decode_var_u32().unwrap();
+        let index = unsafe { wasm.decode_var_u32().unwrap_unchecked() };
         Self(index)
     }
 }

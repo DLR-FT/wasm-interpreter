@@ -16,7 +16,7 @@ define_instruction_fn! {
     |Args {
          resumable, wasm, ..
      }| {
-        let constant = wasm.decode_var_i32().unwrap_validated();
+        let constant = unsafe { wasm.decode_var_i32().unwrap_unchecked() };
         trace!("Instruction: i32.const [] -> [{constant}]");
         resumable.stack.push_value(constant.into())?;
         Ok(ControlFlow::Continue(()))

@@ -148,12 +148,13 @@ impl Stack {
     }
 
     /// Returns a shared reference to a specific local by its index in the current call frame.
+    #[inline(always)]
     pub fn get_local(&self, idx: LocalIdx) -> &Value {
         let idx = idx.into_inner().into_usize();
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
-        self.values
+        unsafe { self.values
             .get(call_frame_base_idx + idx)
-            .unwrap_validated()
+            .unwrap_unchecked() }
     }
 
     /// Returns a mutable reference to a specific local by its index in the current call frame.
@@ -170,6 +171,7 @@ impl Stack {
     /// # Safety
     ///
     /// This will underflow if no active call frame is on the stack.
+    #[inline(always)]
     pub fn current_call_frame(&self) -> &CallFrame {
         // SAFETY: must only be called if there is at least one callframe on the stack.
         unsafe { self.frames.peek_unchecked() }

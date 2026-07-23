@@ -23,6 +23,7 @@ const INTEGER_BIT_FLAG: u8 = !CONTINUATION_BIT;
 
 impl<'wasm> WasmDecoder<'wasm> {
     /// Tries to read one byte and fails if the end of file is reached.
+    #[inline(always)]
     pub fn decode_u8(&mut self) -> Result<u8, DecodingError> {
         let byte = self.peek_u8()?;
         self.pc += 1;
@@ -31,6 +32,7 @@ impl<'wasm> WasmDecoder<'wasm> {
 
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
     /// Note: If `Err`, the [WasmDecoder] object is no longer guaranteed to be in a valid state
+    #[inline(always)]
     pub fn decode_var_u32(&mut self) -> Result<u32, DecodingError> {
         /// Because up to 5 bytes (each storing 7 bits) may be used to store 32 bits,
         /// some bits in the last byte will be left unused. This is a bitmask for
@@ -82,6 +84,7 @@ impl<'wasm> WasmDecoder<'wasm> {
         Ok(u64::from_le_bytes(bytes))
     }
 
+    #[inline(always)]
     pub fn decode_var_i32(&mut self) -> Result<i32, DecodingError> {
         /// Because up to 5 bytes (each storing 7 bits) may be used to store 32 bits,
         /// some bits in the last byte will be left unused. This is a bitmask for
