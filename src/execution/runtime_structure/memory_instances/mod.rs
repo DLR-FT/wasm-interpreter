@@ -1,4 +1,4 @@
-use crate::{core::utils::ToUsizeExt, Limits, MemType, RuntimeError};
+use crate::{Limits, MemType, RuntimeError};
 
 pub mod linear_memory;
 
@@ -16,31 +16,43 @@ impl core::fmt::Debug for MemInst {
 
 impl MemInst {
     /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-memories>
-    pub fn grow(&mut self, n: u32) -> Result<(), RuntimeError> {
-        let len = n + self.mem.pages() as u32;
-        if len > Limits::MAX_MEM_PAGES {
-            return Err(RuntimeError::MemoryGrowOverflowed);
-        }
+    pub fn grow(&mut self, n: u16) -> Result<(), RuntimeError> {
+        // step 2
+        let len_pages = self.len_pages();
 
-        // roughly matches step 4,5,6
+        // step 3,4
+        let Some(new_len_pages) = len_pages.checked_add(n) else {
+            return Err(RuntimeError::MemoryGrowOverflowed);
+        };
+
+        // roughly matches step 5, 6, 7
         // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
         // https://webassembly.github.io/spec/core/valid/types.html#limits
-        if self.ty.limits.max.is_some_and(|max| len > max) {
+        if self
+            .ty
+            .limits
+            .max
+            .is_some_and(|max| u32::from(new_len_pages) > max)
+        {
             return Err(RuntimeError::MemoryGrowExceededLimit);
         }
         let limits_prime = Limits {
-            min: len,
+            min: u32::from(new_len_pages),
             max: self.ty.limits.max,
         };
 
-        self.mem.grow(n.try_into().unwrap());
+        // step 8
+        self.mem.grow(usize::from(n));
 
+        // step 9
         self.ty.limits = limits_prime;
         Ok(())
     }
 
-    /// Can never be bigger than 65,356 pages
-    pub fn size(&self) -> usize {
-        self.mem.len() / (crate::Limits::MEM_PAGE_SIZE.into_usize())
+    /// The length of this memory in pages.
+    pub fn len_pages(&self) -> u16 {
+        self.mem.len_pages().try_into().expect(
+            "we always use the default page size thereby limiting the number of pages to < 2^16",
+        )
     }
 }

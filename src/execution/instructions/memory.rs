@@ -1885,7 +1885,7 @@ pub unsafe fn memory_size(
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
-    let size = mem.size() as u32;
+    let size = u32::from(mem.len_pages());
     state.resumable.stack.push_value(Value::I32(size))?;
     trace!("Instruction: memory.size [] -> [{}]", size);
     Ok(ControlFlow::Continue(()))
@@ -1912,7 +1912,7 @@ pub unsafe fn memory_grow<T: Config>(
     // store. Therefore, it is valid in the current store.
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let sz: u32 = mem.size() as u32;
+    let sz = u32::from(mem.len_pages());
 
     let n: u32 = state
         .resumable
@@ -1943,7 +1943,10 @@ pub unsafe fn memory_grow<T: Config>(
     // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
     // for now we execute it always according to the following match expr.
     // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the stack per spec
-    let pushed_value = match mem.grow(n) {
+    let grow_result = u16::try_from(n)
+        .map_err(|_| RuntimeError::MemoryGrowOverflowed)
+        .and_then(|n| mem.grow(n));
+    let pushed_value = match grow_result {
         Ok(_) => sz,
         Err(RuntimeError::MemoryGrowOverflowed | RuntimeError::MemoryGrowExceededLimit) => u32::MAX,
         Err(_) => unreachable!("growing memory cannot return any other errors"),
