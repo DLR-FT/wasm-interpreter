@@ -24,6 +24,7 @@ criterion = { version = "0.5.1", default-features = false, features = [
   "cargo_bench_support",
   "plotters",
 ] }
+envconfig = "0.11.1"
 wasmi = "0.40.0"
 wasmtime = { version = "27.0.0", default-features = false, features = [
   "runtime",

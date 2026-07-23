@@ -1,13 +1,52 @@
 use dlr_wasm_interpreter::{
     decode_and_validate, ExternVal, FuncType, NumType, ResultType, RunState, Store, ValType, Value,
 };
-use std::time::UNIX_EPOCH;
+use envconfig::Envconfig;
+use std::{str::FromStr, time::UNIX_EPOCH};
 
 const COREMARK_MINIMAL_BYTECODE: &[u8] = include_bytes!("coremark-minimal.wasm");
 
+#[derive(Debug, Clone, Default)]
+enum OutputFormat {
+    #[default]
+    HumanReadable,
+    /// Bencher Metric Format: https://bencher.dev/docs/reference/bencher-metric-format/
+    Bmf,
+}
+
+impl FromStr for OutputFormat {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "bmf" => Ok(Self::Bmf),
+            "human" => Ok(Self::HumanReadable),
+            other => Err(format!("invalid output format: {other}")),
+        }
+    }
+}
+
+#[derive(Envconfig, Debug, Default)]
+struct Config {
+    /// Output format
+    #[envconfig(from = "BENCH_OUTPUT_FORMAT")]
+    format: Option<OutputFormat>,
+}
+
 fn main() {
+    let config = Config::init_from_env().unwrap();
+
     let score = run();
-    println!("{score}");
+
+    let format = config.format.unwrap_or_default();
+    match format {
+        OutputFormat::HumanReadable => {
+            println!("Score: {score}");
+        }
+        OutputFormat::Bmf => {
+            println!(r#"{{ "coremark_minimal": {{ "score": {{ "value": {score} }} }} }}"#)
+        }
+    }
 }
 
 pub fn run() -> f32 {
