@@ -69,18 +69,21 @@ pub enum InterpreterLoopOutcome {
     },
 }
 
-type InstructionHandlerFn<T> =
-    for<'wasm, 'modules> unsafe fn(
-        wasm: &mut WasmDecoder<'wasm>,
-        resumable: &mut WasmResumable,
-        current_sidetable: &mut &'modules Sidetable,
-        store_inner: &mut StoreInner,
-        modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
-        current_module: &mut ModuleAddr,
-        current_function_end_marker: &mut usize,
-        user_data: &mut T,
-        prev_pc: usize,
-    ) -> Result<InterpreterLoopOutcome, RuntimeError>;
+type InstructionHandlerFn<T> = for<'wasm, 'modules> unsafe extern "rust-preserve-none" fn(
+    wasm: &mut WasmDecoder<'wasm>,
+    resumable: &mut WasmResumable,
+    current_sidetable: &mut &'modules Sidetable,
+    store_inner: &mut StoreInner,
+    modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
+    current_module: &mut ModuleAddr,
+    current_function_end_marker: &mut usize,
+    user_data: &mut T,
+    prev_pc: usize,
+)
+    -> Result<
+    InterpreterLoopOutcome,
+    RuntimeError,
+>;
 
 // A placeholder instruction for unassigned instruction bytes. This function is by definition dead
 // code!
@@ -151,7 +154,7 @@ pub(super) unsafe fn run<T: Config>(
 }
 
 #[inline(always)]
-unsafe fn dispatch<'wasm, 'modules, T: Config>(
+unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
     wasm: &mut WasmDecoder<'wasm>,
     resumable: &mut WasmResumable,
     current_sidetable: &mut &'modules Sidetable,
@@ -449,7 +452,11 @@ macro_rules! define_instruction_fn {
         // Disable inlining to inspect the emitted code of individual instruction handlers:
         // #[inline(never)]
         #[expect(clippy::too_many_arguments)]
-        pub(crate) unsafe fn $name<'wasm, 'modules, T: $crate::execution::config::Config>(
+        pub(crate) unsafe extern "rust-preserve-none" fn $name<
+            'wasm,
+            'modules,
+            T: $crate::execution::config::Config,
+        >(
             wasm: &mut $crate::core::decoding::decoder::WasmDecoder<'wasm>,
             resumable: &mut $crate::execution::resumable::WasmResumable,
             current_sidetable: &mut &'modules $crate::core::sidetable::Sidetable,
@@ -593,7 +600,11 @@ fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> ControlFlow<Interp
 /// types contained in the [`Args`](crate::execution::interpreter_loop::Args) must be valid
 /// in the [`StoreInner`](crate::execution::store::StoreInner) that is also contained in the
 /// [`Args`](crate::execution::interpreter_loop::Args).
-pub(crate) unsafe fn fc_extensions<'wasm, 'modules, T: crate::execution::config::Config>(
+pub(crate) unsafe extern "rust-preserve-none" fn fc_extensions<
+    'wasm,
+    'modules,
+    T: crate::execution::config::Config,
+>(
     wasm: &mut WasmDecoder<'wasm>,
     resumable: &mut WasmResumable,
     current_sidetable: &mut &'modules Sidetable,
@@ -642,7 +653,11 @@ pub(crate) unsafe fn fc_extensions<'wasm, 'modules, T: crate::execution::config:
 /// types contained in the [`Args`](crate::execution::interpreter_loop::Args) must be valid
 /// in the [`StoreInner`](crate::execution::store::StoreInner) that is also contained in the
 /// [`Args`](crate::execution::interpreter_loop::Args).
-pub(crate) unsafe fn fd_extensions<'wasm, 'modules, T: crate::execution::config::Config>(
+pub(crate) unsafe extern "rust-preserve-none" fn fd_extensions<
+    'wasm,
+    'modules,
+    T: crate::execution::config::Config,
+>(
     wasm: &mut WasmDecoder<'wasm>,
     resumable: &mut WasmResumable,
     current_sidetable: &mut &'modules Sidetable,

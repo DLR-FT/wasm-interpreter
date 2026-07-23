@@ -62,6 +62,7 @@
 #![no_std]
 #![expect(incomplete_features)]
 #![feature(explicit_tail_calls)]
+#![feature(rust_preserve_none_cc)]
 
 extern crate alloc;
 
