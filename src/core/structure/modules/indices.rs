@@ -112,11 +112,10 @@ impl<I: Idx, T> IdxVec<I, T> {
     pub unsafe fn get(&self, index: I) -> &T {
         let index = index.into_inner().into_usize();
 
-        // TODO use `unwrap_unchecked` when we are sure everything is sound and
-        // our validation is properly tested
-        self.inner
-            .get(index)
-            .expect("this to be a valid index due to the safety guarantees made by the caller")
+        debug_assert!(self.inner.get(index).is_some());
+        // SAFETY: The caller ensures that the given index is valid in this vector. Because this
+        // vector cannot shrink, the index must still be valid.
+        unsafe { self.inner.get_unchecked(index) }
     }
 
     #[allow(unused)] // reason = "temporary until used by new index types"
