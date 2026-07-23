@@ -82,38 +82,37 @@ impl Stack {
             .to_vec()
     }
 
-    /// Pop a value from the value stack
+    /// Pop a [`Value`] from the value stack
+    ///
+    /// # Safety
+    ///
+    /// This is UB if the stack is empty or if it would pop a value that is not part of the current
+    /// call frame.
     #[inline(always)]
     pub fn pop_value(&mut self) -> Value {
         // If there is at least one call frame, we shall not pop values past the current
         // call frame. However, there is one legitimate reason to pop when there is **no** current
         // call frame: after the outermost function returns, to extract the final return values of
         // this interpreter invocation.
+
         debug_assert!(
-            if !self.frames.is_empty() {
-                self.values.len() > self.current_call_frame().value_stack_base_idx
-            } else {
-                true
+            {
+                if !self.frames.is_empty() {
+                    // SAFETY: There is at least one call frame.
+                    let current_call_frame = unsafe { self.current_call_frame() };
+                    self.values.len() > current_call_frame.value_stack_base_idx
+                } else {
+                    true
+                }
             },
             "can not pop values past the current call frame"
         );
-
-        debug_assert!(!self.values.is_empty(), "pop results in stack underflow");
-
-        // SAFETY: this is safe only if there is at least one `Value` on the stack, which must
-        // belong to the current `CallFrame`.
-        unsafe { self.pop_value_unchecked() }
-    }
-
-    /// Pop a [`Value`] from the value stack
-    ///
-    /// # Safety
-    ///
-    /// This will underflow the stack and cause undefined behavior, if the stack is empty. To
-    /// check, before pushing, assure that [`Self::values`] is not empty.
-    #[inline(always)]
-    unsafe fn pop_value_unchecked(&mut self) -> Value {
-        // SAFETY: safe only if stack contains at least one element
+        debug_assert!(
+            !self.values.is_empty(),
+            "popping would have resulted in a stack underflow"
+        );
+        // SAFETY: The caller ensures that the stack is not empty and that this value belongs to the
+        // current call frame
         unsafe { self.values.pop_unchecked() }
     }
 
@@ -122,7 +121,7 @@ impl Stack {
         self.values.peek().ok().cloned()
     }
 
-    /// Push a value to the value stack after veryfing that this will not overflow the stack
+    /// Push a value to the value stack after verifying that this will not overflow the stack
     pub fn push_value(&mut self, value: Value) -> Result<(), RuntimeError> {
         // check for value stack exhaustion
         if self.values.len() >= self.values.capacity() {
@@ -148,30 +147,48 @@ impl Stack {
     }
 
     /// Returns a shared reference to a specific local by its index in the current call frame.
-    pub fn get_local(&self, idx: LocalIdx) -> &Value {
+    ///
+    /// # Safety
+    ///
+    /// There must be a call frame on this value stack and the given index must point to a local
+    /// that belongs to it.
+    pub unsafe fn get_local(&self, idx: LocalIdx) -> &Value {
         let idx = idx.into_inner().into_usize();
-        let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
-        self.values
-            .get(call_frame_base_idx + idx)
-            .unwrap_validated()
+        // SAFETY: The caller ensures that there is a call frame on this stack.
+        let current_call_frame = unsafe { self.current_call_frame() };
+        let call_frame_base_idx = current_call_frame.call_frame_base_idx;
+
+        // SAFETY: If the given local index is valid in the current call frame, offsetting the base
+        // value index by its amount will result in a new valid value index.
+        unsafe { self.values.get_unchecked(call_frame_base_idx + idx) }
     }
 
     /// Returns a mutable reference to a specific local by its index in the current call frame.
-    pub fn get_local_mut(&mut self, idx: LocalIdx) -> &mut Value {
+    ///
+    ///
+    /// # Safety
+    ///
+    /// There must be a call frame on this value stack and the given index must point to a local
+    /// that belongs to it.
+    pub unsafe fn get_local_mut(&mut self, idx: LocalIdx) -> &mut Value {
         let idx = idx.into_inner().into_usize();
-        let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
-        self.values
-            .get_mut(call_frame_base_idx + idx)
-            .unwrap_validated()
+        // SAFETY: The caller ensures that there is a call frame on this stack.
+        let current_call_frame = unsafe { self.current_call_frame() };
+        let call_frame_base_idx = current_call_frame.call_frame_base_idx;
+
+        // SAFETY: If the given local index is valid in the current call frame, offsetting the base
+        // value index by its amount will result in a new valid value index.
+        unsafe { self.values.get_unchecked_mut(call_frame_base_idx + idx) }
     }
 
     /// Get a shared reference to the current [`CallFrame`]
     ///
     /// # Safety
     ///
-    /// This will underflow if no active call frame is on the stack.
-    pub fn current_call_frame(&self) -> &CallFrame {
-        // SAFETY: must only be called if there is at least one callframe on the stack.
+    /// This is UB if no call frame is on the stack
+    unsafe fn current_call_frame(&self) -> &CallFrame {
+        debug_assert!(!self.frames.is_empty());
+        // SAFETY: The caller ensures that there is at least one call frame on the stack
         unsafe { self.frames.peek_unchecked() }
     }
 
