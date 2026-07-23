@@ -373,7 +373,7 @@
               # check that the requirements can be parsed
               requirements = pkgs.runCommand "check-requirement" { nativeBuildInputs = [ pkgs.strictdoc ]; } ''
                 shopt -s globstar
-                strictdoc passthrough ${./.}/requirements/**.sdoc
+                strictdoc export --formats sdoc ${./.}/requirements/**.sdoc
                 touch $out
               '';
             };
