@@ -190,30 +190,57 @@ impl<T> FixedCapacityVec<T> {
     /// Get a shared ref to the nth element in [`Self`]
     #[inline(always)]
     pub fn get(&self, idx: usize) -> Option<&T> {
-        if idx < self.len {
-            self.elements.get(idx).map(|e| {
-                // SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
-                // number of initialized values starting from `self.element`'s beginning. The pervious
-                // if condition in term checks that idx is Smaller than
-                unsafe { e.assume_init_ref() }
-            })
-        } else {
-            None
-        }
+        (idx < self.len).then(|| {
+            // SAFETY: `idx` is less than `self.len()`
+            unsafe { self.get_unchecked(idx) }
+        })
     }
 
-    /// Get a mut ref to the nth element in [`Self`]
+    /// Get a shared ref to the nth element in [`Self`]
+    ///
+    /// # Safety
+    ///
+    /// `idx` must be within bounds, i.e. `0 <= idx < self.len()`.
     #[inline(always)]
+    pub unsafe fn get_unchecked(&self, idx: usize) -> &T {
+        debug_assert!(self.elements.get(idx).is_some());
+        // SAFETY: The caller ensures that `idx` is less than `self.len()` which it always less or
+        // equal to `self.capacity()`. Therefore, `idx` is always less than `self.capacity()`.
+        let element = unsafe { self.elements.get_unchecked(idx) };
+
+        debug_assert!(idx < self.len());
+        // SAFETY: The caller ensures that `idx` is less than `self.len()`. Therefore, the element
+        // at this index must be initialized.
+        unsafe { element.assume_init_ref() }
+    }
+
+    /// Get an exclusive reference to the nth element in [`Self`]
+    #[inline(always)]
+    #[expect(unused, reason = "this might be used in the future")]
     pub fn get_mut(&mut self, idx: usize) -> Option<&mut T> {
-        if idx < self.len {
-            self.elements.get_mut(idx).map(|e| {
-                // SAFETY: per the previous if statement, the index points into the range of
-                // initialized stack members.
-                unsafe { e.assume_init_mut() }
-            })
-        } else {
-            None
-        }
+        (idx < self.len).then(|| {
+            // SAFETY: `idx` is less than `self.len()`
+            unsafe { self.get_unchecked_mut(idx) }
+        })
+    }
+
+    /// Get an exclusive reference to the n-th element in [`Self`]
+    ///
+    /// # Safety
+    ///
+    /// `idx` must be within bounds, i.e. `0 <= idx < self.len()`.
+    #[inline(always)]
+    pub unsafe fn get_unchecked_mut(&mut self, idx: usize) -> &mut T {
+        debug_assert!(self.elements.get(idx).is_some());
+        debug_assert!(idx < self.len());
+
+        // SAFETY: The caller ensures that `idx` is less than `self.len()` which it always less or
+        // equal to `self.capacity()`. Therefore, `idx` is always less than `self.capacity()`.
+        let element = unsafe { self.elements.get_unchecked_mut(idx) };
+
+        // SAFETY: The caller ensures that `idx` is less than `self.len()`. Therefore, the element
+        // at this index is guaranteed to be initialized.
+        unsafe { element.assume_init_mut() }
     }
 }
 
