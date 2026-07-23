@@ -345,7 +345,6 @@ pub unsafe fn call<T: Config>(
     Ok(ControlFlow::Continue(()))
 }
 
-// TODO: fix push_call_frame, because the func idx that you get from the table is global func idx
 define_instruction!(
     super::call_indirect::<T>,
     call_indirect_mod,
