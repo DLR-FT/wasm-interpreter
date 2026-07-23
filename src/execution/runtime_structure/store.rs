@@ -30,7 +30,10 @@ use crate::{
             external_values::ExternFilterable,
             function_instances::{FuncInst, HostFuncInst, WasmFuncInst},
             global_instances::GlobalInst,
-            memory_instances::{linear_memory::LinearMemory, MemInst},
+            memory_instances::{
+                linear_memory::{self, LinearMemory},
+                MemInst,
+            },
             module_instances::ModuleInst,
             table_instances::TableInst,
             value_stack::Stack,
@@ -1011,16 +1014,11 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn mem_size(&self, mem_addr: MemAddr) -> u32 {
+    pub unsafe fn mem_size(&self, mem_addr: MemAddr) -> u16 {
         // 1. Return the length of `store.mems[memaddr].data` divided by the page size.
-        // SAFETY: The caller ensures that the given memory address is valid in
-        // the current store.
+        // SAFETY: The caller ensures that the given memory address is valid in the current store.
         let memory = unsafe { self.inner.memories.get(mem_addr) };
-        let length = memory.size();
-
-        // In addition we have to convert the length back to a `u32`
-        length.try_into().expect(
-            "the maximum memory length to be smaller than u32::MAX because thats what the specification allows for indexing into the memory. Also the memory size is measured in pages, not bytes.")
+        memory.len_pages()
     }
 
     /// Grows some memory by its memory address by `n` pages.
@@ -1031,7 +1029,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn mem_grow(&mut self, mem_addr: MemAddr, n: u32) -> Result<(), RuntimeError> {
+    pub unsafe fn mem_grow(&mut self, mem_addr: MemAddr, n: u16) -> Result<(), RuntimeError> {
         // 1. Try growing the memory instance `store.mems[memaddr]` by `n` pages:
         //   a. If it succeeds, then return the updated store.
         //   b. Else, return `error`.
@@ -1224,6 +1222,7 @@ impl<'b, T: Config> Store<'b, T> {
         let mem_inst = MemInst {
             ty: mem_type,
             mem: LinearMemory::new_with_initial_pages(
+                linear_memory::DEFAULT_PAGE_SIZE,
                 mem_type.limits.min.try_into().unwrap_validated(),
             ),
         };

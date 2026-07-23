@@ -312,7 +312,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of [`Store::mem_size`](dlr_wasm_interpreter::Store::mem_size).
-    pub fn mem_size(&self, mem_addr: Stored<MemAddr>) -> u32 {
+    pub fn mem_size(&self, mem_addr: Stored<MemAddr>) -> u16 {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
         // 2. call
@@ -325,7 +325,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of [`Store::mem_grow`](dlr_wasm_interpreter::Store::mem_grow).
-    pub fn mem_grow(&mut self, mem_addr: Stored<MemAddr>, n: u32) -> Result<(), RuntimeError> {
+    pub fn mem_grow(&mut self, mem_addr: Stored<MemAddr>, n: u16) -> Result<(), RuntimeError> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
         // 2. call
