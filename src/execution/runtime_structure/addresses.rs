@@ -50,10 +50,12 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     ///
     /// The caller must ensure that the given address is valid in this vector.
     pub unsafe fn get(&self, addr: A) -> &Inst {
-        // TODO use unwrap_unchecked instead
-        self.inner
-            .get(addr.into_inner())
-            .expect("addrs to always be valid")
+        let addr = addr.into_inner();
+
+        debug_assert!(self.inner.get(addr).is_some());
+        // SAFETY: The caller ensures that the given address is valid in this vector. Because this
+        // vector cannot shrink the address must point to an existing element.
+        unsafe { self.inner.get_unchecked(addr) }
     }
 
     /// Returns a mutable reference to some instance by its address `addr`.
@@ -62,10 +64,12 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     ///
     /// The caller must ensure that the given address is valid in this vector.
     pub unsafe fn get_mut(&mut self, addr: A) -> &mut Inst {
-        // TODO use unwrap_unchecked instead
-        self.inner
-            .get_mut(addr.into_inner())
-            .expect("addrs to always be valid")
+        let addr = addr.into_inner();
+
+        debug_assert!(self.inner.get_mut(addr).is_some());
+        // SAFETY: The caller ensures that the given address is valid in this vector. Because this
+        // vector cannot shrink, the address must still be valid.
+        unsafe { self.inner.get_unchecked_mut(addr) }
     }
 
     /// Inserts a new instance into the current [`Store`](crate::Store) and returns its address.
@@ -95,24 +99,41 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
 
         match addr_one.cmp(&addr_two) {
             Ordering::Greater => {
-                let (left, right) = self.inner.split_at_mut(addr_one);
-                let one = right.get_mut(0).expect(
-                    "this to be exactly the same as addr_one and addresses to always be valid",
-                );
-                let two = left
-                    .get_mut(addr_two)
-                    .expect("addresses to always be valid");
+                debug_assert!(self.inner.get(addr_one).is_some());
+                // SAFETY: The caller ensures that the given address is valid in this vector.
+                // Because this vector cannot shrink, the address must still point to an existing
+                // element.
+                let (left, right) = unsafe { self.inner.split_at_mut_unchecked(addr_one) };
+
+                debug_assert!(!right.is_empty());
+                // SAFETY: `right` starts with the element pointed to by `addr_one`, which was valid
+                // in this vector. Therefore, `right` must contain at least one element.
+                let one = unsafe { right.get_unchecked_mut(0) };
+
+                debug_assert!(left.get(addr_two).is_some());
+                // SAFETY: `left` contains the first `addr_one` elements from this vector. Because
+                // `addr_one` is greater than `addr_two`, `addr_two` must be a valid index in
+                // `left`.
+                let two = unsafe { left.get_unchecked_mut(addr_two) };
 
                 Some((one, two))
             }
             Ordering::Less => {
-                let (left, right) = self.inner.split_at_mut(addr_two);
-                let one = left
-                    .get_mut(addr_one)
-                    .expect("addresses to always be valid");
-                let two = right.get_mut(0).expect(
-                    "this to be exactly the same as addr_two and addresses to always be valid",
-                );
+                debug_assert!(self.inner.get(addr_two).is_some());
+                // SAFETY: The caller ensures that the given address is valid in this vector.
+                // Because this vector cannot shrink, the address must still point to an existing
+                // element.
+                let (left, right) = unsafe { self.inner.split_at_mut_unchecked(addr_two) };
+
+                debug_assert!(left.get(addr_one).is_some());
+                // SAFETY: `left` contains the first `addr_two` elements from this vector. Because
+                // `addr_one` is less than `addr_two`, `addr_one` must be a valid index in `left`.
+                let one = unsafe { left.get_unchecked_mut(addr_one) };
+
+                debug_assert!(!right.is_empty());
+                // SAFETY: `right` starts with the element points to by `addr_two`, which was valid
+                // in this vector. Therefore, `right` must contain at least one element.
+                let two = unsafe { right.get_unchecked_mut(0) };
 
                 Some((one, two))
             }
