@@ -32,7 +32,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode(wasm).unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_i32() as u32 };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that

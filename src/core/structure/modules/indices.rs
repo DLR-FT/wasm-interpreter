@@ -114,9 +114,7 @@ impl<I: Idx, T> IdxVec<I, T> {
 
         // TODO use `unwrap_unchecked` when we are sure everything is sound and
         // our validation is properly tested
-        self.inner
-            .get(index)
-            .expect("this to be a valid index due to the safety guarantees made by the caller")
+        unsafe { self.inner.get_unchecked(index) }
     }
 
     #[allow(unused)] // reason = "temporary until used by new index types"

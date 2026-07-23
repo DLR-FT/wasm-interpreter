@@ -90,11 +90,17 @@ impl<'a> WasmDecoder<'a> {
     /// Read the current byte without advancing the [`pc`](Self::pc)
     ///
     /// May yield an error if the [`pc`](Self::pc) advanced past the end of the WASM binary slice
+    #[inline(always)]
     pub fn peek_u8(&self) -> Result<u8, DecodingError> {
         self.full_wasm_binary
             .get(self.pc)
             .copied()
             .ok_or(DecodingError::Eof)
+    }
+
+    #[inline(always)]
+    pub unsafe fn peek_u8_unchecked(&self) -> u8 {
+        unsafe { *self.full_wasm_binary.get_unchecked(self.pc) }
     }
 
     /// Call a closure that may mutate the [WasmDecoder]

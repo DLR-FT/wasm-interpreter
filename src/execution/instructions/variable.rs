@@ -38,7 +38,7 @@ define_instruction_fn! {
         // next.
         let local_idx = unsafe { LocalIdx::decode_unchecked(wasm) };
         let value = resumable.stack.pop_value();
-        *resumable.stack.get_local_mut(local_idx) = value;
+        *unsafe { resumable.stack.get_local_mut_unchecked(local_idx) } = value;
         trace!("Instruction: local.set {} [t] -> []", local_idx);
         Ok(ControlFlow::Continue(()))
     }

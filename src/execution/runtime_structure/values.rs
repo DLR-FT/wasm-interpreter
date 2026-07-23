@@ -1,6 +1,5 @@
 use core::{
-    fmt::{Debug, Display},
-    ops::{Add, Div, Mul, Sub},
+    fmt::{Debug, Display}, hint::unreachable_unchecked, ops::{Add, Div, Mul, Sub}
 };
 
 use crate::{FuncAddr, NumType, RefType, ValType};
@@ -393,9 +392,20 @@ impl From<u32> for Value {
         Value::I32(x)
     }
 }
+
+impl Value {
+    pub unsafe fn as_i32(self) -> i32 {
+        match self {
+            Value::I32(x) => x.cast_signed(),
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+}
+
 impl TryFrom<Value> for u32 {
     type Error = ValueTypeMismatchError;
 
+    #[inline(always)]
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::I32(x) => Ok(x),
@@ -412,6 +422,7 @@ impl From<i32> for Value {
 impl TryFrom<Value> for i32 {
     type Error = ValueTypeMismatchError;
 
+    #[inline(always)]
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::I32(x) => Ok(x as i32),

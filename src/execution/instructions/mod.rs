@@ -173,7 +173,7 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
     // TODO explain  why the argument is unused and we create a new prev_pc here
     let prev_pc = wasm.pc;
 
-    let first_instr_byte = unsafe { wasm.decode_u8().unwrap_unchecked() };
+    let first_instr_byte = unsafe { wasm.decode_u8_unchecked() };
 
     trace!(
         "Executing instruction {} at pc={}",
@@ -181,9 +181,8 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
         wasm.pc
     );
 
-    let instruction_fn = *T::DISPATCH_TABLE
-        .get(usize::from(first_instr_byte))
-        .expect("the instruction to be valid because the code is validated");
+    let instruction_fn = unsafe { *T::DISPATCH_TABLE.get_unchecked(usize::from(first_instr_byte)) };
+    // .expect("the instruction to be valid because the code is validated");
 
     // SAFETY: All possible instruction handler functions use the same safety requirements, as
     // they are defined through the same macro: The caller ensures that the resumable is valid

@@ -189,6 +189,12 @@ impl<T> FixedCapacityVec<T> {
 
     /// Get a shared ref to the nth element in [`Self`]
     #[inline(always)]
+    pub unsafe fn get_unchecked(&self, idx: usize) -> &T {
+        unsafe { self.elements.get_unchecked(idx).assume_init_ref() }
+    }
+
+    /// Get a shared ref to the nth element in [`Self`]
+    #[inline(always)]
     pub fn get(&self, idx: usize) -> Option<&T> {
         if idx < self.len {
             self.elements.get(idx).map(|e| {
@@ -200,6 +206,11 @@ impl<T> FixedCapacityVec<T> {
         } else {
             None
         }
+    }
+
+    #[inline(always)]
+    pub fn get_unchecked_mut(&mut self, idx: usize) -> &mut T {
+        unsafe { self.elements.get_unchecked_mut(idx).assume_init_mut() }
     }
 
     /// Get a mut ref to the nth element in [`Self`]

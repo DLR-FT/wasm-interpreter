@@ -331,8 +331,8 @@ define_instruction_fn! {
     i32_add,
     fuel_check = flat(instructions::I32_ADD),
     |Args { resumable, .. }| {
-        let v1: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let v2: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: i32 = unsafe { resumable.stack.pop_value().as_i32() };
+        let v2: i32 = unsafe { resumable.stack.pop_value().as_i32() };
         let res = v1.wrapping_add(v2);
 
         trace!("Instruction: i32.add [{v1} {v2}] -> [{res}]");

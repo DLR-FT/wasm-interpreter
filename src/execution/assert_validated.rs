@@ -8,23 +8,30 @@ pub(crate) trait UnwrapValidatedExt<T> {
 
 impl<T> UnwrapValidatedExt<T> for Option<T> {
     /// Indicate that we can assume this Option to be Some(_) due to prior validation
+    #[inline(always)]
     fn unwrap_validated(self) -> T {
-        self.expect("Validation guarantees this to be `Some(_)`, but it is `None`")
+        // self.expect("Validation guarantees this to be `Some(_)`, but it is `None`")
+        unsafe { self.unwrap_unchecked() }
     }
 }
 
 impl<T, E: Debug> UnwrapValidatedExt<T> for Result<T, E> {
     /// Indicate that we can assume this Result to be Ok(_) due to prior validation
+    #[inline(always)]
     fn unwrap_validated(self) -> T {
-        self.unwrap_or_else(|e| {
-            panic!("Validation guarantees this to be `Ok(_)`, but it is `Err({e:?})`");
-        })
+        // self.unwrap_or_else(|e| {
+        //     panic!("Validation guarantees this to be `Ok(_)`, but it is `Err({e:?})`");
+        // })
+
+        unsafe { self.unwrap_unchecked() }
     }
 }
 
 #[macro_export]
 macro_rules! unreachable_validated {
     () => {
-        unreachable!("because of prior validation")
+        // unreachable!("because of prior validation")
+
+        unsafe { core::hint::unreachable_unchecked()}
     };
 }

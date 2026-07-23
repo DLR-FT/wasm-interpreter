@@ -170,6 +170,7 @@ impl MemArg {
     /// Decodes a memarg
     ///
     /// See: WebAssembly Specification 2.0 - 5.4.6 - Memory Instructions
+    #[inline(always)]
     pub fn decode(wasm: &mut WasmDecoder) -> Result<Self, DecodingError> {
         let align = wasm.decode_var_u32()?;
         let offset = wasm.decode_var_u32()?;

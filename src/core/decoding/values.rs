@@ -30,6 +30,13 @@ impl<'wasm> WasmDecoder<'wasm> {
         Ok(byte)
     }
 
+    #[inline(always)]
+    pub unsafe fn decode_u8_unchecked(&mut self) -> u8 {
+        let byte = unsafe { self.peek_u8_unchecked() };
+        self.pc += 1;
+        byte
+    }
+
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
     /// Note: If `Err`, the [WasmDecoder] object is no longer guaranteed to be in a valid state
     #[inline(always)]

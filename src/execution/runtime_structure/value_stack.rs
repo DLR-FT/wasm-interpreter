@@ -123,8 +123,9 @@ impl Stack {
     }
 
     /// Push a value to the value stack after veryfing that this will not overflow the stack
+    #[inline(always)]
     pub fn push_value(&mut self, value: Value) -> Result<(), RuntimeError> {
-        // check for value stack exhaustion
+        // // check for value stack exhaustion
         if self.values.len() >= self.values.capacity() {
             return Err(RuntimeError::StackExhaustion);
         }
@@ -152,9 +153,7 @@ impl Stack {
     pub fn get_local(&self, idx: LocalIdx) -> &Value {
         let idx = idx.into_inner().into_usize();
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
-        unsafe { self.values
-            .get(call_frame_base_idx + idx)
-            .unwrap_unchecked() }
+        unsafe { self.values.get_unchecked(call_frame_base_idx + idx) }
     }
 
     /// Returns a mutable reference to a specific local by its index in the current call frame.
@@ -164,6 +163,13 @@ impl Stack {
         self.values
             .get_mut(call_frame_base_idx + idx)
             .unwrap_validated()
+    }
+
+    #[inline(always)]
+    pub unsafe fn get_local_mut_unchecked(&mut self, idx: LocalIdx) -> &mut Value {
+        let idx = idx.into_inner().into_usize();
+        let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
+        self.values.get_unchecked_mut(call_frame_base_idx + idx)
     }
 
     /// Get a shared reference to the current [`CallFrame`]

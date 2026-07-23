@@ -124,9 +124,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             .get(target_range)
             .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
 
-        let bytes: [u8; N] = target_bytes
-            .try_into()
-            .expect("bytes slice to be of length N");
+        let bytes: [u8; N] = unsafe { target_bytes.try_into().unwrap_unchecked() };
 
         Ok(bytes)
     }
