@@ -1,0 +1,3 @@
+# Uncomment the following for cargo-flamegraph (for Rust >= 1.90.0):
+# [target.x86_64-unknown-linux-gnu]
+# rustflags = ["-Clink-arg=-Wl,--no-rosegment"]

@@ -6,3 +6,5 @@
 result
 result-*
 testsuite_results.json
+flamegraph.svg
+perf.data*
