@@ -477,7 +477,7 @@ mod optimal {
         let v1 = unsafe { read_u8_unchecked(wasm, i) } as u32;
         let v2 = unsafe { read_u8_unchecked(wasm, i) } as u32;
 
-        v1 as u32 & 0x7F | v2 << 7
+        v1 & 0x7F | v2 << 7
     }
 
     /// # Safety
@@ -489,7 +489,7 @@ mod optimal {
         let v2 = unsafe { read_u8_unchecked(wasm, i) } as u32;
         let v3 = unsafe { read_u8_unchecked(wasm, i) } as u32;
 
-        v1 as u32 & 0x7F | v2 & 0x7F << 7 | v3 << 14
+        v1 & 0x7F | v2 & 0x7F << 7 | v3 << 14
     }
 
     /// # Safety
@@ -502,7 +502,7 @@ mod optimal {
         let v3 = unsafe { read_u8_unchecked(wasm, i) } as u32;
         let v4 = unsafe { read_u8_unchecked(wasm, i) } as u32;
 
-        v1 as u32 & 0x7F | v2 & 0x7F << 7 | v3 & 0x7F << 14 | v4 << 21
+        v1 & 0x7F | v2 & 0x7F << 7 | v3 & 0x7F << 14 | v4 << 21
     }
 
     /// # Safety
@@ -516,6 +516,6 @@ mod optimal {
         let v4 = unsafe { read_u8_unchecked(wasm, i) } as u32;
         let v5 = unsafe { read_u8_unchecked(wasm, i) } as u32;
 
-        v1 as u32 & 0x7F | v2 & 0x7F << 7 | v3 & 0x7F << 14 | v4 & 0x7F << 21 | v5 << 28
+        v1 & 0x7F | v2 & 0x7F << 7 | v3 & 0x7F << 14 | v4 & 0x7F << 21 | v5 << 28
     }
 }
