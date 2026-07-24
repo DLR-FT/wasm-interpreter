@@ -15,7 +15,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let reftype = RefType::decode(wasm).unwrap_validated();
+        let reftype = RefType::decode_ptr(wasm);
 
         resumable.stack.push_value(Value::Ref(Ref::Null(reftype)))?;
         trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
@@ -50,7 +50,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees a valid function index to be
         // next.
-        let func_idx = unsafe { FuncIdx::decode_unchecked(wasm) };
+        let func_idx = unsafe { FuncIdx::decode_unchecked_ptr(wasm) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that

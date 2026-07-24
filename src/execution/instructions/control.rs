@@ -297,7 +297,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid function
         // index next.
-        let func_idx = unsafe { FuncIdx::decode_unchecked(wasm) };
+        let func_idx = unsafe { FuncIdx::decode_unchecked_ptr(wasm) };
 
         // SAFETY: The current function address must come from the given
         // resumable or the current store, because these are the only
@@ -391,10 +391,10 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid type index
         // next.
-        let given_type_idx = unsafe { TypeIdx::decode_unchecked(wasm) };
+        let given_type_idx = unsafe { TypeIdx::decode_unchecked_ptr(wasm) };
         // SAFETY: Validation guarantees there to be a valid table index
         // next.
-        let table_idx = unsafe { TableIdx::decode_unchecked(wasm) };
+        let table_idx = unsafe { TableIdx::decode_unchecked_ptr(wasm) };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that

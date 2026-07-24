@@ -5,7 +5,7 @@ use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
     core::{
-        decoding::decoder::WasmDecoder,
+        decoding::{decoder::WasmDecoder, decoder_ptr::WasmDecoderPtr},
         sidetable::Sidetable,
         structure::{
             modules::indices::{DataIdx, ElemIdx, MemIdx, TableIdx},
@@ -70,7 +70,7 @@ pub enum InterpreterLoopOutcome {
 }
 
 type InstructionHandlerFn<T> = for<'wasm, 'modules> unsafe extern "rust-preserve-none" fn(
-    wasm: &mut WasmDecoder<'wasm>,
+    wasm: WasmDecoderPtr,
     resumable: &mut WasmResumable,
     current_sidetable: &mut &'modules Sidetable,
     store_inner: &mut StoreInner,
@@ -81,7 +81,7 @@ type InstructionHandlerFn<T> = for<'wasm, 'modules> unsafe extern "rust-preserve
     prev_pc: usize,
 )
     -> Result<
-    InterpreterLoopOutcome,
+    (InterpreterLoopOutcome, WasmDecoderPtr),
     RuntimeError,
 >;
 
@@ -124,7 +124,7 @@ pub(super) unsafe fn run<T: Config>(
     // store guarantees all addresses contained in it to be valid within itself.
     let module = unsafe { store.modules.get(current_module) };
     let wasm_bytecode = module.wasm_bytecode;
-    let wasm = &mut WasmDecoder::new(wasm_bytecode);
+    let wasm = unsafe { WasmDecoderPtr::new(wasm_bytecode.as_ptr().add(pc)) };
 
     let mut current_sidetable: &Sidetable = &module.sidetable;
 
@@ -135,10 +135,8 @@ pub(super) unsafe fn run<T: Config>(
     let user_data = &mut store.user_data;
 
     // local variable for holding where the function code ends (last END instr address + 1) to avoid lookup at every END instr
-
-    wasm.pc = pc;
-
-    unsafe {
+    //
+    let (outcome, decoder_ptr) = unsafe {
         dispatch(
             wasm,
             resumable,
@@ -150,12 +148,32 @@ pub(super) unsafe fn run<T: Config>(
             user_data,
             0, // this is set in dispatch function
         )
-    }
+    }?;
+
+    // SAFETY: The caller ensures that the resumable and thus also its function
+    // address is valid in the current store.
+    let func_inst = unsafe { store.inner.functions.get(current_func_addr) };
+    let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
+        unreachable!(
+            "the interpreter loop shall only be executed with native wasm functions as root call"
+        );
+    };
+    let current_module = wasm_func_inst.module_addr;
+
+    // Start reading the function's instructions
+    // SAFETY: This module address was just read from the current store. Every
+    // store guarantees all addresses contained in it to be valid within itself.
+    let module = unsafe { store.modules.get(current_module) };
+    let wasm_bytecode = module.wasm_bytecode;
+
+    resumable.pc = unsafe { decoder_ptr.0.offset_from_unsigned(wasm_bytecode.as_ptr()) };
+
+    todo!()
 }
 
 #[inline(always)]
 unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
-    wasm: &mut WasmDecoder<'wasm>,
+    mut wasm: WasmDecoderPtr,
     resumable: &mut WasmResumable,
     current_sidetable: &mut &'modules Sidetable,
     store_inner: &mut StoreInner,
@@ -164,14 +182,14 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
     current_function_end_marker: &mut usize,
     user_data: &mut T,
     _prev_pc: usize,
-) -> Result<InterpreterLoopOutcome, RuntimeError> {
+) -> Result<(InterpreterLoopOutcome, WasmDecoderPtr), RuntimeError> {
     let _: InstructionHandlerFn<T> = dispatch::<T>;
 
     // call the instruction hook
-    user_data.instruction_hook(wasm.full_wasm_binary, wasm.pc);
+    // user_data.instruction_hook(wasm.full_wasm_binary, wasm.pc);
 
     // TODO explain  why the argument is unused and we create a new prev_pc here
-    let prev_pc = wasm.pc;
+    let prev_pc = 0;
 
     let first_instr_byte = unsafe { wasm.decode_u8_unchecked() };
 
@@ -205,7 +223,7 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
 
 //helper function for avoiding code duplication at intraprocedural jumps
 fn do_sidetable_control_transfer(
-    wasm: &mut WasmDecoder,
+    wasm: &mut WasmDecoderPtr,
     stack: &mut Stack,
     current_stp: &mut usize,
     current_sidetable: &Sidetable,
@@ -215,7 +233,7 @@ fn do_sidetable_control_transfer(
     stack.remove_in_between(sidetable_entry.popcnt, sidetable_entry.valcnt);
 
     *current_stp = sidetable_entry.stp;
-    wasm.pc = sidetable_entry.pc;
+    wasm.0 += sidetable_entry.delta_pc;
 
     Ok(())
 }
@@ -430,7 +448,7 @@ pub(crate) fn from_lanes<const M: usize, const N: usize, T: LittleEndianBytes<M>
 }
 
 pub(crate) struct Args<'a, 'sidetable, 'wasm, 'other, 'resumable, 'user_data, T> {
-    wasm: &'a mut WasmDecoder<'wasm>,
+    wasm: &'a mut WasmDecoderPtr,
     resumable: &'resumable mut WasmResumable,
     current_sidetable: &'a mut &'sidetable Sidetable,
     store_inner: &'other mut StoreInner,
@@ -456,7 +474,7 @@ macro_rules! define_instruction_fn {
             'modules,
             T: $crate::execution::config::Config,
         >(
-            wasm: &mut $crate::core::decoding::decoder::WasmDecoder<'wasm>,
+            mut wasm: $crate::core::decoding::decoder_ptr::WasmDecoderPtr,
             resumable: &mut $crate::execution::resumable::WasmResumable,
             current_sidetable: &mut &'modules $crate::core::sidetable::Sidetable,
             store_inner: &mut $crate::execution::runtime_structure::store::StoreInner,
@@ -468,11 +486,17 @@ macro_rules! define_instruction_fn {
             current_function_end_marker: &mut usize,
             user_data: &mut T,
             prev_pc: usize,
-        ) -> Result<$crate::execution::instructions::InterpreterLoopOutcome, $crate::RuntimeError> {
+        ) -> Result<
+            (
+                $crate::execution::instructions::InterpreterLoopOutcome,
+                $crate::core::decoding::decoder_ptr::WasmDecoderPtr,
+            ),
+            $crate::RuntimeError,
+        > {
             let args = $crate::execution::instructions::Args {
                 store_inner,
                 modules,
-                wasm,
+                wasm: &mut wasm,
                 current_module,
                 current_function_end_marker,
                 current_sidetable,
@@ -490,15 +514,7 @@ macro_rules! define_instruction_fn {
             if let core::ops::ControlFlow::Break(interpreter_loop_outcome) =
                 maybe_interpreter_loop_outcome?
             {
-                if let $crate::execution::instructions::InterpreterLoopOutcome::OutOfFuel {
-                    ..
-                } = interpreter_loop_outcome
-                {
-                    wasm.pc = prev_pc;
-                }
-
-                resumable.pc = wasm.pc;
-                return Ok(interpreter_loop_outcome);
+                return Ok((interpreter_loop_outcome, wasm));
             }
 
             unsafe {
@@ -604,7 +620,7 @@ pub(crate) unsafe extern "rust-preserve-none" fn fc_extensions<
     'modules,
     T: crate::execution::config::Config,
 >(
-    wasm: &mut WasmDecoder<'wasm>,
+    mut wasm: WasmDecoderPtr,
     resumable: &mut WasmResumable,
     current_sidetable: &mut &'modules Sidetable,
     store_inner: &mut StoreInner,
@@ -613,9 +629,15 @@ pub(crate) unsafe extern "rust-preserve-none" fn fc_extensions<
     current_function_end_marker: &mut usize,
     user_data: &mut T,
     prev_pc: usize,
-) -> Result<crate::execution::instructions::InterpreterLoopOutcome, crate::RuntimeError> {
+) -> Result<
+    (
+        crate::execution::instructions::InterpreterLoopOutcome,
+        crate::core::decoding::decoder_ptr::WasmDecoderPtr,
+    ),
+    crate::RuntimeError,
+> {
     // should we call instruction hook here as well? multibyte instruction
-    let second_instr = wasm.decode_var_u32().unwrap_validated();
+    let second_instr = wasm.decode_var_u32();
 
     trace!(
         "Executing FC instruction {} at pc={}",
@@ -657,7 +679,7 @@ pub(crate) unsafe extern "rust-preserve-none" fn fd_extensions<
     'modules,
     T: crate::execution::config::Config,
 >(
-    wasm: &mut WasmDecoder<'wasm>,
+    mut wasm: WasmDecoderPtr,
     resumable: &mut WasmResumable,
     current_sidetable: &mut &'modules Sidetable,
     store_inner: &mut StoreInner,
@@ -666,9 +688,15 @@ pub(crate) unsafe extern "rust-preserve-none" fn fd_extensions<
     current_function_end_marker: &mut usize,
     user_data: &mut T,
     prev_pc: usize,
-) -> Result<crate::execution::instructions::InterpreterLoopOutcome, crate::RuntimeError> {
+) -> Result<
+    (
+        crate::execution::instructions::InterpreterLoopOutcome,
+        crate::core::decoding::decoder_ptr::WasmDecoderPtr,
+    ),
+    crate::RuntimeError,
+> {
     // Should we call instruction hook here as well? Multibyte instruction
-    let second_instr = wasm.decode_var_u32().unwrap_validated();
+    let second_instr = wasm.decode_var_u32();
 
     trace!(
         "Executing FD instruction {} at pc={}",

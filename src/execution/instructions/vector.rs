@@ -21,7 +21,7 @@ define_instruction_fn! {
      }| {
         let mut data = [0; 16];
         for byte_ref in &mut data {
-            *byte_ref = wasm.decode_u8().unwrap_validated();
+            *byte_ref = wasm.decode_u8();
         }
 
         resumable.stack.push_value(Value::V128(data))?;
@@ -137,7 +137,7 @@ define_instruction_fn! {
         let data2: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let data1: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
 
-        let lane_selector_indices: [u8; 16] = array::from_fn(|_| wasm.decode_u8().unwrap_validated());
+        let lane_selector_indices: [u8; 16] = array::from_fn(|_| wasm.decode_u8());
 
         let result = lane_selector_indices.map(|i| {
             *data1
@@ -222,7 +222,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i8; 16] = to_lanes(data);
         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -236,7 +236,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u8; 16] = to_lanes(data);
         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -250,7 +250,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [i16; 8] = to_lanes(data);
         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -264,7 +264,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u16; 8] = to_lanes(data);
         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -278,7 +278,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u32; 4] = to_lanes(data);
         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -292,7 +292,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [u64; 2] = to_lanes(data);
         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -306,7 +306,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F32; 4] = to_lanes(data);
         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -320,7 +320,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let lanes: [F64; 2] = to_lanes(data);
         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -336,7 +336,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let value: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let new_lane = value as u8;
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -352,7 +352,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let value: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let new_lane = value as u16;
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
@@ -368,7 +368,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let new_lane: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let mut lanes: [u32; 4] = to_lanes(data);
@@ -383,7 +383,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let new_lane: u64 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let mut lanes: [u64; 2] = to_lanes(data);
@@ -398,7 +398,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let new_lane: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let mut lanes: [F32; 4] = to_lanes(data);
@@ -413,7 +413,7 @@ define_instruction_fn! {
     |Args {
          wasm, resumable, ..
      }| {
-        let lane_idx = usize::from(wasm.decode_u8().unwrap_validated());
+        let lane_idx = usize::from(wasm.decode_u8());
         let new_lane: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let mut lanes: [F64; 2] = to_lanes(data);
