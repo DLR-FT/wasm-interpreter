@@ -116,7 +116,6 @@ redundant_explicit_links = "deny"
 
 [profile.bench]
 panic = "abort"
-# debug = true
 
 [profile.release]
 panic = "abort"

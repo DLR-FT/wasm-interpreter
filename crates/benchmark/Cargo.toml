@@ -10,11 +10,11 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-dlr-wasm-interpreter.workspace = true
+dlr-wasm-interpreter = {workspace = true }
 
 [dev-dependencies]
 # Crates defined in our workspace
-dlr-wasm-interpreter.workspace = true
+dlr-wasm-interpreter = {workspace = true }
 
 # Workspace dependencies
 wat.workspace = true

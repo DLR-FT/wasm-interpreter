@@ -1024,7 +1024,7 @@ define_instruction_fn! {
     i32_eqz,
     fuel_check = flat(instructions::I32_EQZ),
     |Args { resumable, .. }| {
-        let v1: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let v1: i32 = unsafe { resumable.stack.pop_value().as_i32() };
 
         let res = if v1 == 0 { 1 } else { 0 };
 

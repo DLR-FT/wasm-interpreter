@@ -76,7 +76,7 @@ type InstructionHandlerFn<T> = for<'wasm, 'modules> unsafe extern "rust-preserve
     store_inner: &mut StoreInner,
     modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: &mut ModuleAddr,
-    current_function_end_marker: &mut usize,
+    current_function_end_marker: &mut *const u8,
     user_data: &mut T,
     prev_pc: usize,
 )
@@ -130,6 +130,9 @@ pub(super) unsafe fn run<T: Config>(
 
     let mut current_function_end_marker =
         wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
+    let mut current_function_end_marker = wasm_bytecode
+        .as_ptr()
+        .wrapping_add(current_function_end_marker);
 
     let store_inner = &mut store.inner;
     let user_data = &mut store.user_data;
@@ -168,7 +171,7 @@ pub(super) unsafe fn run<T: Config>(
 
     resumable.pc = unsafe { decoder_ptr.0.offset_from_unsigned(wasm_bytecode.as_ptr()) };
 
-    todo!()
+    Ok(outcome)
 }
 
 #[inline(always)]
@@ -179,7 +182,7 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
     store_inner: &mut StoreInner,
     modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: &mut ModuleAddr,
-    current_function_end_marker: &mut usize,
+    current_function_end_marker: &mut *const u8,
     user_data: &mut T,
     _prev_pc: usize,
 ) -> Result<(InterpreterLoopOutcome, WasmDecoderPtr), RuntimeError> {
@@ -194,9 +197,9 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
     let first_instr_byte = unsafe { wasm.decode_u8_unchecked() };
 
     trace!(
-        "Executing instruction {} at pc={}",
+        "Executing instruction {} at pc={:?}",
         crate::core::structure::instructions::instruction_byte_to_str(first_instr_byte),
-        wasm.pc
+        wasm.0
     );
 
     let instruction_fn = unsafe { *T::DISPATCH_TABLE.get_unchecked(usize::from(first_instr_byte)) };
@@ -232,8 +235,10 @@ fn do_sidetable_control_transfer(
 
     stack.remove_in_between(sidetable_entry.popcnt, sidetable_entry.valcnt);
 
-    *current_stp = sidetable_entry.stp;
-    wasm.0 += sidetable_entry.delta_pc;
+    *current_stp = current_stp
+        .checked_add_signed(sidetable_entry.delta_stp)
+        .unwrap();
+    wasm.0 = unsafe { wasm.0.offset(sidetable_entry.delta_pc) };
 
     Ok(())
 }
@@ -454,7 +459,7 @@ pub(crate) struct Args<'a, 'sidetable, 'wasm, 'other, 'resumable, 'user_data, T>
     store_inner: &'other mut StoreInner,
     modules: &'sidetable AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: &'a mut ModuleAddr,
-    current_function_end_marker: &'a mut usize,
+    current_function_end_marker: &'a mut *const u8,
     user_data: &'user_data mut T,
 }
 
@@ -483,7 +488,7 @@ macro_rules! define_instruction_fn {
                 $crate::execution::runtime_structure::module_instances::ModuleInst<'wasm>,
             >,
             current_module: &mut $crate::execution::runtime_structure::addresses::ModuleAddr,
-            current_function_end_marker: &mut usize,
+            current_function_end_marker: &mut *const u8,
             user_data: &mut T,
             prev_pc: usize,
         ) -> Result<
@@ -626,7 +631,7 @@ pub(crate) unsafe extern "rust-preserve-none" fn fc_extensions<
     store_inner: &mut StoreInner,
     modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: &mut ModuleAddr,
-    current_function_end_marker: &mut usize,
+    current_function_end_marker: &mut *const u8,
     user_data: &mut T,
     prev_pc: usize,
 ) -> Result<
@@ -640,9 +645,9 @@ pub(crate) unsafe extern "rust-preserve-none" fn fc_extensions<
     let second_instr = wasm.decode_var_u32();
 
     trace!(
-        "Executing FC instruction {} at pc={}",
+        "Executing FC instruction {} at pc={:?}",
         crate::core::structure::instructions::fc_extension_instruction_to_str(second_instr),
-        wasm.pc
+        wasm.0
     );
 
     let instruction_fn: InstructionHandlerFn<T> = *T::FC_DISPATCH_TABLE
@@ -685,7 +690,7 @@ pub(crate) unsafe extern "rust-preserve-none" fn fd_extensions<
     store_inner: &mut StoreInner,
     modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: &mut ModuleAddr,
-    current_function_end_marker: &mut usize,
+    current_function_end_marker: &mut *const u8,
     user_data: &mut T,
     prev_pc: usize,
 ) -> Result<
@@ -699,9 +704,9 @@ pub(crate) unsafe extern "rust-preserve-none" fn fd_extensions<
     let second_instr = wasm.decode_var_u32();
 
     trace!(
-        "Executing FD instruction {} at pc={}",
+        "Executing FD instruction {} at pc={:?}",
         crate::core::structure::instructions::fd_extension_instruction_to_str(second_instr),
-        wasm.pc
+        wasm.0
     );
 
     let instruction_fn: InstructionHandlerFn<T> = *T::FD_DISPATCH_TABLE

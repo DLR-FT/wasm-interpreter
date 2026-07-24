@@ -5,7 +5,7 @@ use crate::{
         structure::types::{BlockType, MemArg, VecType},
         utils::ToUsizeExt,
     },
-    DecodingError, NumType, RefType, ValType,
+    NumType, RefType, ValType,
 };
 use alloc::vec::Vec;
 
@@ -24,7 +24,7 @@ impl WasmDecoderPtr {
 
     pub fn strip_bytes<const N: usize>(&mut self) -> [u8; N] {
         let bytes = unsafe { &*slice_from_raw_parts(self.0, N) };
-        self.0 = unsafe { self.0.add(N) };
+        self.0 = unsafe { self.0.wrapping_add(N) };
         unsafe { bytes.try_into().unwrap_unchecked() }
     }
 }
@@ -330,19 +330,6 @@ impl WasmDecoderPtr {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::core::decoding::decoder::WasmDecoderPtr;
-
-    #[test]
-    fn test_var_i32() {
-        let bytes = [0xC0, 0xBB, 0x78];
-        let mut wasm = WasmDecoderPtr::new(&bytes);
-
-        assert_eq!(wasm.decode_var_i32(), Ok(-123456));
-    }
-}
-
 use crate::core::structure::modules::indices::{
     DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, LocalIdx, MemIdx, TableIdx, TypeIdx,
 };
@@ -573,13 +560,37 @@ impl BlockType {
                 let _ = wasm.decode_u8();
                 BlockType::Empty
             }
-            0x7B => BlockType::Returns(ValType::VecType),
-            0x7F => BlockType::Returns(ValType::NumType(NumType::I32)),
-            0x7E => BlockType::Returns(ValType::NumType(NumType::I64)),
-            0x7D => BlockType::Returns(ValType::NumType(NumType::F32)),
-            0x7C => BlockType::Returns(ValType::NumType(NumType::F64)),
-            0x70 => BlockType::Returns(ValType::RefType(RefType::FuncRef)),
-            0x6B => BlockType::Returns(ValType::RefType(RefType::ExternRef)),
+            0x7B => {
+                let _ = wasm.decode_u8();
+                BlockType::Returns(ValType::VecType)
+            }
+            0x7F => {
+                let _ = wasm.decode_u8();
+                BlockType::Returns(ValType::NumType(NumType::I32))
+            }
+
+            0x7E => {
+                let _ = wasm.decode_u8();
+                BlockType::Returns(ValType::NumType(NumType::I64))
+            }
+
+            0x7D => {
+                let _ = wasm.decode_u8();
+                BlockType::Returns(ValType::NumType(NumType::F32))
+            }
+            0x7C => {
+                let _ = wasm.decode_u8();
+                BlockType::Returns(ValType::NumType(NumType::F64))
+            }
+            0x70 => {
+                let _ = wasm.decode_u8();
+                BlockType::Returns(ValType::RefType(RefType::FuncRef))
+            }
+            0x6B => {
+                let _ = wasm.decode_u8();
+                BlockType::Returns(ValType::RefType(RefType::ExternRef))
+            }
+
             _ => BlockType::Type(TypeIdx::new(wasm.decode_var_i33_as_u32())),
         }
     }

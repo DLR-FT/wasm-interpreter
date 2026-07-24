@@ -2,7 +2,7 @@ use core::ops::ControlFlow;
 
 use crate::{
     core::{
-        decoding::modules::indices::decode_label_idx_unchecked,
+        decoding::decoder_ptr::decode_label_idx_unchecked,
         structure::{
             instructions,
             modules::indices::{FuncIdx, TableIdx, TypeIdx},
@@ -36,7 +36,7 @@ define_instruction_fn! {
     |Args { wasm, .. }| {
         // SAFETY: Validation guarantess there to be a valid block type
         // next.
-        let _ = unsafe { BlockType::decode_unchecked(wasm) };
+        let _ = unsafe { BlockType::decode_unchecked_ptr(wasm) };
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -54,9 +54,10 @@ define_instruction_fn! {
          current_sidetable,
          ..
      }| {
+         trace!("handling end. marker={current_function_end_marker:?}");
         // There might be multiple ENDs in a single function. We want to
         // exit only when the outermost block (aka function block) ends.
-        if wasm.pc != *current_function_end_marker {
+        if wasm.0 != *current_function_end_marker {
             return Ok(ControlFlow::Continue(()));
         }
 
@@ -94,14 +95,13 @@ define_instruction_fn! {
         // addresses in them to be valid within themselves.
         let module = unsafe { modules.get(*current_module) };
 
-        wasm.full_wasm_binary = module.wasm_bytecode;
-        wasm.pc = maybe_return_address;
+        wasm.0 = module.wasm_bytecode.as_ptr().wrapping_add(maybe_return_address);
         resumable.stp = maybe_return_stp;
 
         *current_sidetable = &module.sidetable;
 
         *current_function_end_marker =
-            current_wasm_func_inst.code_expr.from() + current_wasm_func_inst.code_expr.len();
+            module.wasm_bytecode.as_ptr().wrapping_add(current_wasm_func_inst.code_expr.from() + current_wasm_func_inst.code_expr.len());
 
         trace!("Instruction: END");
 
@@ -115,7 +115,7 @@ define_instruction_fn! {
     |Args { wasm, .. }| {
         // SAFETY: Validation guarantees there to be a valid block type
         // next.
-        let _ = unsafe { BlockType::decode_unchecked(wasm) };
+        let _ = unsafe { BlockType::decode_unchecked_ptr(wasm) };
         Ok(ControlFlow::Continue(()))
     }
 }
@@ -131,7 +131,7 @@ define_instruction_fn! {
      }| {
         // SAFETY: Validation guarantees there to be a valid block type
         // next.
-        let _block_type = unsafe { BlockType::decode_unchecked(wasm) };
+        let _block_type = unsafe { BlockType::decode_unchecked_ptr(wasm) };
 
         let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
@@ -232,11 +232,11 @@ define_instruction_fn! {
          ..
      }| {
         let label_vec = wasm
-            .decode_vec::<_, _, DecodingError>(|wasm| {
+            .decode_vec(|wasm| {
                 // SAFETY: Validation guarantees that there is a
                 // valid vec of label indices.
-                Ok(unsafe { decode_label_idx_unchecked(wasm) })
-            }).unwrap();
+                unsafe { decode_label_idx_unchecked(wasm) }
+            });
 
         // SAFETY: Validation guarantees there to be another label index
         // for the default case.
@@ -342,11 +342,13 @@ define_instruction_fn! {
             FuncInst::WasmFunc(wasm_func_to_call_inst) => {
                 let remaining_locals = &wasm_func_to_call_inst.locals;
 
+                let pc = unsafe { wasm.0.offset_from_unsigned(current_module_inst.wasm_bytecode.as_ptr()) };
+
                 resumable.stack.push_call_frame::<T>(
                     resumable.current_func_addr,
                     &wasm_func_to_call_inst.function_type,
                     remaining_locals,
-                    wasm.pc,
+                    pc,
                     resumable.stp,
                 )?;
 
@@ -359,14 +361,11 @@ define_instruction_fn! {
                 // current store.
                 let module = unsafe { modules.get(*current_module) };
 
-                wasm.full_wasm_binary = module.wasm_bytecode;
-                wasm.move_start_to(wasm_func_to_call_inst.code_expr)
-                    .expect("code expression spans to always be valid");
+                wasm.0 = module.wasm_bytecode.as_ptr().wrapping_add(wasm_func_to_call_inst.code_expr.from);
 
                 resumable.stp = wasm_func_to_call_inst.stp;
                 *current_sidetable = &module.sidetable;
-                *current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
-                    + wasm_func_to_call_inst.code_expr.len();
+                *current_function_end_marker = module.wasm_bytecode.as_ptr().wrapping_add(wasm_func_to_call_inst.code_expr.from + wasm_func_to_call_inst.code_expr.len);
             }
         }
         trace!("Instruction: CALL");
@@ -459,11 +458,13 @@ define_instruction_fn! {
             FuncInst::WasmFunc(wasm_func_to_call_inst) => {
                 let remaining_locals = &wasm_func_to_call_inst.locals;
 
+                let pc = unsafe { wasm.0.offset_from_unsigned(module.wasm_bytecode.as_ptr()) };
+
                 resumable.stack.push_call_frame::<T>(
                     resumable.current_func_addr,
                     &wasm_func_to_call_inst.function_type,
                     remaining_locals,
-                    wasm.pc,
+                    pc,
                     resumable.stp,
                 )?;
 
@@ -475,14 +476,13 @@ define_instruction_fn! {
                 // this address must automatically be valid in the
                 // current store.
                 let module = unsafe { modules.get(*current_module) };
-                wasm.full_wasm_binary = module.wasm_bytecode;
-                wasm.move_start_to(wasm_func_to_call_inst.code_expr)
-                    .expect("code expression spans to always be valid");
+                wasm.0 = module.wasm_bytecode.as_ptr().wrapping_add(wasm_func_to_call_inst.code_expr.from);
 
                 resumable.stp = wasm_func_to_call_inst.stp;
                 *current_sidetable = &module.sidetable;
-                *current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
-                    + wasm_func_to_call_inst.code_expr.len();
+                *current_function_end_marker = module.wasm_bytecode.as_ptr().wrapping_add(wasm_func_to_call_inst.code_expr.from + wasm_func_to_call_inst.code_expr.len);
+
+
             }
         }
         trace!("Instruction: CALL_INDIRECT");
