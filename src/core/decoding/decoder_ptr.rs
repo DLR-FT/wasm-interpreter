@@ -5,7 +5,7 @@ use crate::{
         structure::types::{BlockType, MemArg, VecType},
         utils::ToUsizeExt,
     },
-    NumType, RefType, ValType,
+    trace, NumType, RefType, ValType,
 };
 use alloc::vec::Vec;
 
@@ -87,6 +87,56 @@ impl WasmDecoderPtr {
 
         let byte = self.decode_u8();
         result |= u32::from(byte & INTEGER_BIT_FLAG) << 28;
+
+        result
+    }
+
+    #[inline(always)]
+    pub unsafe fn decode_var_u32_branchless(&mut self, end: *const u8) -> u32 {
+        if end as usize <= self.0 as usize {
+            unsafe {
+                core::hint::unreachable_unchecked();
+            }
+        }
+
+        let ptrs = [
+            self.0,
+            (self.0.wrapping_add(1) as usize).min(end as usize) as *const u8,
+            (self.0.wrapping_add(2) as usize).min(end as usize) as *const u8,
+            (self.0.wrapping_add(3) as usize).min(end as usize) as *const u8,
+            (self.0.wrapping_add(4) as usize).min(end as usize) as *const u8,
+        ];
+
+        let byte1 = unsafe { *ptrs[0] };
+        let byte2 = unsafe { *ptrs[1] };
+        let byte3 = unsafe { *ptrs[2] };
+        let byte4 = unsafe { *ptrs[3] };
+        let byte5 = unsafe { *ptrs[4] };
+
+        let bits1 = byte1 & 0x7F;
+        let bits2 = byte2 & 0x7F;
+        let bits3 = byte3 & 0x7F;
+        let bits4 = byte4 & 0x7F;
+        let bits5 = byte5 & 0x7F;
+
+        let next_bit1_mask = (byte1.cast_signed() >> 7).cast_unsigned();
+        let next_bit2_mask = (byte2.cast_signed() >> 7).cast_unsigned() & next_bit1_mask;
+        let next_bit3_mask = (byte3.cast_signed() >> 7).cast_unsigned() & next_bit2_mask;
+        let next_bit4_mask = (byte4.cast_signed() >> 7).cast_unsigned() & next_bit3_mask;
+
+        let mut result = bits1 as u32;
+        result |= ((bits2 & next_bit1_mask) as u32) << 7;
+        result |= ((bits3 & next_bit2_mask) as u32) << 14;
+        result |= ((bits4 & next_bit3_mask) as u32) << 21;
+        result |= ((bits5 & next_bit4_mask) as u32) << 28;
+
+        self.0 = self.0.wrapping_add(
+            1 + (((next_bit1_mask > 0) as usize
+                + (next_bit2_mask > 0) as usize
+                + (next_bit3_mask > 0) as usize
+                + (next_bit4_mask > 0) as usize)
+                >> 7),
+        );
 
         result
     }

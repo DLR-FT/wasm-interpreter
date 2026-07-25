@@ -76,7 +76,7 @@ type InstructionHandlerFn<T> = for<'wasm, 'modules> unsafe extern "rust-preserve
     store_inner: &mut StoreInner,
     modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: &mut ModuleAddr,
-    current_function_end_marker: &mut *const u8,
+    current_function_end_marker: *const u8,
     user_data: &mut T,
     prev_pc: usize,
 )
@@ -128,7 +128,7 @@ pub(super) unsafe fn run<T: Config>(
 
     let mut current_sidetable: &Sidetable = &module.sidetable;
 
-    let mut current_function_end_marker =
+    let current_function_end_marker =
         wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
     let mut current_function_end_marker = wasm_bytecode
         .as_ptr()
@@ -147,7 +147,7 @@ pub(super) unsafe fn run<T: Config>(
             store_inner,
             &store.modules,
             &mut current_module,
-            &mut current_function_end_marker,
+            current_function_end_marker,
             user_data,
             0, // this is set in dispatch function
         )
@@ -182,7 +182,7 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
     store_inner: &mut StoreInner,
     modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: &mut ModuleAddr,
-    current_function_end_marker: &mut *const u8,
+    current_function_end_marker: *const u8,
     user_data: &mut T,
     _prev_pc: usize,
 ) -> Result<(InterpreterLoopOutcome, WasmDecoderPtr), RuntimeError> {
@@ -488,7 +488,7 @@ macro_rules! define_instruction_fn {
                 $crate::execution::runtime_structure::module_instances::ModuleInst<'wasm>,
             >,
             current_module: &mut $crate::execution::runtime_structure::addresses::ModuleAddr,
-            current_function_end_marker: &mut *const u8,
+            mut current_function_end_marker: *const u8,
             user_data: &mut T,
             prev_pc: usize,
         ) -> Result<
@@ -503,7 +503,7 @@ macro_rules! define_instruction_fn {
                 modules,
                 wasm: &mut wasm,
                 current_module,
-                current_function_end_marker,
+                current_function_end_marker: &mut current_function_end_marker,
                 current_sidetable,
                 resumable,
                 user_data,
@@ -631,7 +631,7 @@ pub(crate) unsafe extern "rust-preserve-none" fn fc_extensions<
     store_inner: &mut StoreInner,
     modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: &mut ModuleAddr,
-    current_function_end_marker: &mut *const u8,
+    current_function_end_marker: *const u8,
     user_data: &mut T,
     prev_pc: usize,
 ) -> Result<
@@ -690,7 +690,7 @@ pub(crate) unsafe extern "rust-preserve-none" fn fd_extensions<
     store_inner: &mut StoreInner,
     modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: &mut ModuleAddr,
-    current_function_end_marker: &mut *const u8,
+    current_function_end_marker: *const u8,
     user_data: &mut T,
     prev_pc: usize,
 ) -> Result<

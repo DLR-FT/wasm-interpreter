@@ -32,11 +32,12 @@ define_instruction_fn! {
     local_set,
     fuel_check = flat(instructions::LOCAL_SET),
     |Args {
-         resumable, wasm, ..
+         resumable, wasm, current_function_end_marker, ..
      }| {
         // SAFETY: Validation guarantees there to be a valid local index
         // next.
-        let local_idx = unsafe { LocalIdx::decode_unchecked_ptr(wasm) };
+        let local_idx = unsafe { LocalIdx(wasm.decode_var_u32_branchless(*current_function_end_marker)) };
+        // let local_idx = unsafe { LocalIdx::decode_unchecked_ptr(wasm) };
         let value = resumable.stack.pop_value();
         *unsafe { resumable.stack.get_local_mut_unchecked(local_idx) } = value;
         trace!("Instruction: local.set {} [t] -> []", local_idx);
