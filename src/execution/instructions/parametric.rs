@@ -1,4 +1,4 @@
-use core::ops::ControlFlow;
+use core::{hint::unreachable_unchecked, ops::ControlFlow};
 
 use crate::{
     core::structure::instructions,
@@ -24,9 +24,18 @@ define_instruction_fn! {
     select,
     fuel_check = flat(instructions::SELECT),
     |Args { resumable, .. }| {
-        let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let test_val: i32 = unsafe { resumable.stack.pop_value().as_i32() };
         let val2 = resumable.stack.pop_value();
         let val1 = resumable.stack.pop_value();
+        match (val1, val2) {
+            (crate::Value::I32(_), crate::Value::I32(_)) => {},
+            (crate::Value::I64(_), crate::Value::I64(_)) => {},
+            (crate::Value::F32(_), crate::Value::F32(_)) => {}
+            (crate::Value::F64(_), crate::Value::F64(_)) => {},
+            (crate::Value::V128(_), crate::Value::V128(_)) => {},
+            (crate::Value::Ref(_), crate::Value::Ref(_)) => {},
+            _ => unsafe { unreachable_unchecked() },
+        }
         if test_val != 0 {
             resumable.stack.push_value(val1)?;
         } else {
@@ -44,7 +53,7 @@ define_instruction_fn! {
          resumable, wasm, ..
      }| {
         let _type_vec = wasm.decode_vec(|x| x.decode_u8());
-        let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let test_val: i32 = unsafe { resumable.stack.pop_value().as_i32() };
         let val2 = resumable.stack.pop_value();
         let val1 = resumable.stack.pop_value();
         if test_val != 0 {

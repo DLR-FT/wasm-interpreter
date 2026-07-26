@@ -78,7 +78,6 @@ type InstructionHandlerFn<T> = for<'wasm, 'modules> unsafe extern "rust-preserve
     current_module: &mut ModuleAddr,
     current_function_end_marker: *const u8,
     user_data: &mut T,
-    prev_pc: usize,
 )
     -> Result<
     (InterpreterLoopOutcome, WasmDecoderPtr),
@@ -149,7 +148,6 @@ pub(super) unsafe fn run<T: Config>(
             &mut current_module,
             current_function_end_marker,
             user_data,
-            0, // this is set in dispatch function
         )
     }?;
 
@@ -184,7 +182,6 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
     current_module: &mut ModuleAddr,
     current_function_end_marker: *const u8,
     user_data: &mut T,
-    _prev_pc: usize,
 ) -> Result<(InterpreterLoopOutcome, WasmDecoderPtr), RuntimeError> {
     let _: InstructionHandlerFn<T> = dispatch::<T>;
 
@@ -192,7 +189,6 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
     // user_data.instruction_hook(wasm.full_wasm_binary, wasm.pc);
 
     // TODO explain  why the argument is unused and we create a new prev_pc here
-    let prev_pc = 0;
 
     let first_instr_byte = unsafe { wasm.decode_u8_unchecked() };
 
@@ -219,7 +215,6 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
             current_module,
             current_function_end_marker,
             user_data,
-            prev_pc,
         )
     }
 }
@@ -490,7 +485,6 @@ macro_rules! define_instruction_fn {
             current_module: &mut $crate::execution::runtime_structure::addresses::ModuleAddr,
             mut current_function_end_marker: *const u8,
             user_data: &mut T,
-            prev_pc: usize,
         ) -> Result<
             (
                 $crate::execution::instructions::InterpreterLoopOutcome,
@@ -532,7 +526,6 @@ macro_rules! define_instruction_fn {
                     current_module,
                     current_function_end_marker,
                     user_data,
-                    prev_pc,
                 )
             }
         }
@@ -633,7 +626,6 @@ pub(crate) unsafe extern "rust-preserve-none" fn fc_extensions<
     current_module: &mut ModuleAddr,
     current_function_end_marker: *const u8,
     user_data: &mut T,
-    prev_pc: usize,
 ) -> Result<
     (
         crate::execution::instructions::InterpreterLoopOutcome,
@@ -668,7 +660,6 @@ pub(crate) unsafe extern "rust-preserve-none" fn fc_extensions<
             current_module,
             current_function_end_marker,
             user_data,
-            prev_pc,
         )
     }
 }
@@ -692,7 +683,6 @@ pub(crate) unsafe extern "rust-preserve-none" fn fd_extensions<
     current_module: &mut ModuleAddr,
     current_function_end_marker: *const u8,
     user_data: &mut T,
-    prev_pc: usize,
 ) -> Result<
     (
         crate::execution::instructions::InterpreterLoopOutcome,
@@ -727,7 +717,6 @@ pub(crate) unsafe extern "rust-preserve-none" fn fd_extensions<
             current_module,
             current_function_end_marker,
             user_data,
-            prev_pc,
         )
     }
 }

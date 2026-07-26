@@ -44,7 +44,7 @@ define_instruction_fn! {
         // store. Therefore, it is valid in the current store.
         let tab = unsafe { store_inner.tables.get(table_addr) };
 
-        let i: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let i: i32 = unsafe { resumable.stack.pop_value().as_i32() };
 
         let val = tab
             .elem
@@ -89,8 +89,8 @@ define_instruction_fn! {
         // store. Therefore, it is valid in the current store.
         let tab = unsafe { store_inner.tables.get_mut(table_addr) };
 
-        let val: Ref = resumable.stack.pop_value().try_into().unwrap_validated();
-        let i: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let val: Ref = unsafe { resumable.stack.pop_value().as_ref() };
+        let i: i32 = unsafe { resumable.stack.pop_value().as_i32() };
 
         tab.elem
             .get_mut(i.cast_unsigned().into_usize())
@@ -175,7 +175,7 @@ define_instruction_fn! {
 
         let sz = tab.elem.len() as u32;
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let n: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_GROW)
             + u64::from(n)
                 * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_GROW);
@@ -192,7 +192,7 @@ define_instruction_fn! {
             }
         }
 
-        let val: Ref = resumable.stack.pop_value().try_into().unwrap_validated();
+        let val: Ref = unsafe { resumable.stack.pop_value().as_ref() };
 
         // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
         // for now we execute it always according to the following match expr.
@@ -241,7 +241,7 @@ define_instruction_fn! {
         // store.
         let tab = unsafe { store_inner.tables.get_mut(table_addr) };
 
-        let len: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let len: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_FILL)
             + u64::from(len)
                 * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_FILL);
@@ -261,8 +261,8 @@ define_instruction_fn! {
             }
         }
 
-        let val: Ref = resumable.stack.pop_value().try_into().unwrap_validated();
-        let dst: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let val: Ref = unsafe { resumable.stack.pop_value().as_ref() };
+        let dst: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         let end = (dst.into_usize())
             .checked_add(len.into_usize())
@@ -325,7 +325,7 @@ define_instruction_fn! {
         // store.
         let tab_y_elem_len = unsafe { store_inner.tables.get(table_addr_y) }.elem.len();
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated(); // size
+        let n: u32 = unsafe { resumable.stack.pop_value().as_u32() }; // size
         let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_COPY)
             + u64::from(n)
                 * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_COPY);
@@ -342,8 +342,8 @@ define_instruction_fn! {
             }
         }
 
-        let s: u32 = resumable.stack.pop_value().try_into().unwrap_validated(); // source
-        let d: u32 = resumable.stack.pop_value().try_into().unwrap_validated(); // destination
+        let s: u32 = unsafe { resumable.stack.pop_value().as_u32() }; // source
+        let d: u32 = unsafe { resumable.stack.pop_value().as_u32() }; // destination
 
         let src_res = match s.checked_add(n) {
             Some(res) => {
@@ -423,7 +423,7 @@ define_instruction_fn! {
         // table index next.
         let table_idx = unsafe { TableIdx::decode_unchecked_ptr(wasm) };
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated(); // size
+        let n: u32 = unsafe { resumable.stack.pop_value().as_u32() }; // size
         let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_INIT)
             + u64::from(n)
                 * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_INIT);
@@ -440,8 +440,8 @@ define_instruction_fn! {
             }
         }
 
-        let s: i32 = resumable.stack.pop_value().try_into().unwrap_validated(); // offset
-        let d: i32 = resumable.stack.pop_value().try_into().unwrap_validated(); // dst
+        let s: i32 = unsafe { resumable.stack.pop_value().as_i32() }; // offset
+        let d: i32 = unsafe { resumable.stack.pop_value().as_i32() }; // dst
 
         // SAFETY: All requirements are met:
         // 1. The current module address must come from the

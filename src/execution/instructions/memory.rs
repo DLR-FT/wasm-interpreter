@@ -67,7 +67,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -102,7 +102,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -137,7 +137,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -186,7 +186,7 @@ define_instruction_fn! {
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let data: u128 = memory.mem.load(idx)?;
@@ -208,7 +208,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -243,7 +243,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -278,7 +278,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -313,7 +313,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -348,7 +348,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -383,7 +383,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -418,7 +418,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -453,7 +453,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -488,7 +488,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -523,7 +523,7 @@ define_instruction_fn! {
          ..
      }| {
         let memarg = MemArg::decode_ptr(wasm);
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -573,7 +573,7 @@ define_instruction_fn! {
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -616,7 +616,7 @@ define_instruction_fn! {
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -659,7 +659,7 @@ define_instruction_fn! {
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -702,7 +702,7 @@ define_instruction_fn! {
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -745,7 +745,7 @@ define_instruction_fn! {
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -788,7 +788,7 @@ define_instruction_fn! {
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
@@ -832,7 +832,7 @@ define_instruction_fn! {
         // current store. Therefore, it is valid in the current
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = memory.mem.load::<1, u8>(idx)?;
@@ -867,7 +867,7 @@ define_instruction_fn! {
         // current store. Therefore, it is valid in the current
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = memory.mem.load::<2, u16>(idx)?;
@@ -902,7 +902,7 @@ define_instruction_fn! {
         // current store. Therefore, it is valid in the current
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = memory.mem.load::<4, u32>(idx)?;
@@ -937,7 +937,7 @@ define_instruction_fn! {
         // current store. Therefore, it is valid in the current
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = memory.mem.load::<8, u64>(idx)?;
@@ -976,7 +976,7 @@ define_instruction_fn! {
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let data = memory.mem.load::<4, u32>(idx)? as u128;
@@ -1012,7 +1012,7 @@ define_instruction_fn! {
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let data = memory.mem.load::<8, u64>(idx)? as u128;
@@ -1035,8 +1035,8 @@ define_instruction_fn! {
          store_inner,
          ..
      }| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data: [u8; 16] = unsafe { resumable.stack.pop_value().as_vec() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let memarg = MemArg::decode_ptr(wasm);
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1071,8 +1071,8 @@ define_instruction_fn! {
          store_inner,
          ..
      }| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data: [u8; 16] = unsafe { resumable.stack.pop_value().as_vec() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let memarg = MemArg::decode_ptr(wasm);
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1106,8 +1106,8 @@ define_instruction_fn! {
          store_inner,
          ..
      }| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data: [u8; 16] = unsafe { resumable.stack.pop_value().as_vec() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let memarg = MemArg::decode_ptr(wasm);
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1141,8 +1141,8 @@ define_instruction_fn! {
          store_inner,
          ..
      }| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data: [u8; 16] = unsafe { resumable.stack.pop_value().as_vec() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let memarg = MemArg::decode_ptr(wasm);
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1180,8 +1180,8 @@ define_instruction_fn! {
      }| {
         let memarg = MemArg::decode_ptr(wasm);
 
-        let data_to_store: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: u32 = unsafe { resumable.stack.pop_value().as_u32() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1216,8 +1216,8 @@ define_instruction_fn! {
      }| {
         let memarg = MemArg::decode_ptr(wasm);
 
-        let data_to_store: u64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: u64 = unsafe { resumable.stack.pop_value().as_u64() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1252,8 +1252,8 @@ define_instruction_fn! {
      }| {
         let memarg = MemArg::decode_ptr(wasm);
 
-        let data_to_store: F32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: F32 = unsafe { resumable.stack.pop_value().as_f32() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1288,8 +1288,8 @@ define_instruction_fn! {
      }| {
         let memarg = MemArg::decode_ptr(wasm);
 
-        let data_to_store: F64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: F64 = unsafe { resumable.stack.pop_value().as_f64() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1337,8 +1337,8 @@ define_instruction_fn! {
         // store.
         let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data: [u8; 16] = unsafe { resumable.stack.pop_value().as_vec() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         memory.mem.store(idx, u128::from_le_bytes(data))?;
@@ -1360,8 +1360,8 @@ define_instruction_fn! {
      }| {
         let memarg = MemArg::decode_ptr(wasm);
 
-        let data_to_store: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: i32 = unsafe { resumable.stack.pop_value().as_i32() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         let wrapped_data = data_to_store as i8;
 
@@ -1398,8 +1398,8 @@ define_instruction_fn! {
      }| {
         let memarg = MemArg::decode_ptr(wasm);
 
-        let data_to_store: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: i32 = unsafe { resumable.stack.pop_value().as_i32() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         let wrapped_data = data_to_store as i16;
 
@@ -1436,8 +1436,8 @@ define_instruction_fn! {
      }| {
         let memarg = MemArg::decode_ptr(wasm);
 
-        let data_to_store: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: i64 = unsafe { resumable.stack.pop_value().as_i64() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         let wrapped_data = data_to_store as i8;
 
@@ -1474,8 +1474,8 @@ define_instruction_fn! {
      }| {
         let memarg = MemArg::decode_ptr(wasm);
 
-        let data_to_store: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: i64 = unsafe { resumable.stack.pop_value().as_i64() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         let wrapped_data = data_to_store as i16;
 
@@ -1512,8 +1512,8 @@ define_instruction_fn! {
      }| {
         let memarg = MemArg::decode_ptr(wasm);
 
-        let data_to_store: i64 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data_to_store: i64 = unsafe { resumable.stack.pop_value().as_i64() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         let wrapped_data = data_to_store as i32;
 
@@ -1549,8 +1549,8 @@ define_instruction_fn! {
          store_inner,
          ..
      }| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data: [u8; 16] = unsafe { resumable.stack.pop_value().as_vec() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let memarg = MemArg::decode_ptr(wasm);
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1585,8 +1585,8 @@ define_instruction_fn! {
          store_inner,
          ..
      }| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data: [u8; 16] = unsafe { resumable.stack.pop_value().as_vec() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let memarg = MemArg::decode_ptr(wasm);
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1621,8 +1621,8 @@ define_instruction_fn! {
          store_inner,
          ..
      }| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data: [u8; 16] = unsafe { resumable.stack.pop_value().as_vec() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let memarg = MemArg::decode_ptr(wasm);
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1657,8 +1657,8 @@ define_instruction_fn! {
          store_inner,
          ..
      }| {
-        let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
-        let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let data: [u8; 16] = unsafe { resumable.stack.pop_value().as_vec() };
+        let relative_address: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         let memarg = MemArg::decode_ptr(wasm);
         // SAFETY: The current module address must come from the current
         // store, because it is the only parameter to this function that
@@ -1745,7 +1745,7 @@ define_instruction_fn! {
 
         let sz: u32 = mem.size() as u32;
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let n: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         // decrement fuel, but push n back if it fails
         let cost = T::get_flat_cost(instructions::MEMORY_GROW)
             + u64::from(n) * T::get_cost_per_element(instructions::MEMORY_GROW);
@@ -1814,7 +1814,7 @@ define_instruction_fn! {
         // store.
         let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let n: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         // decrement fuel, but push n back if it fails
         let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_FILL)
             + u64::from(n)
@@ -1832,13 +1832,13 @@ define_instruction_fn! {
             }
         }
 
-        let val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let val: i32 = unsafe { resumable.stack.pop_value().as_i32() };
 
         if !(0..=255).contains(&val) {
             warn!("Value for memory.fill does not fit in a byte ({val})");
         }
 
-        let d: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let d: i32 = unsafe { resumable.stack.pop_value().as_i32() };
 
         mem.mem
             .fill(d.cast_unsigned().into_usize(), val as u8, n.into_usize())?;
@@ -1883,7 +1883,7 @@ define_instruction_fn! {
         // exist.
         let dst_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let n: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         // decrement fuel, but push n back if it fails
         let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_COPY)
             + u64::from(n)
@@ -1904,8 +1904,8 @@ define_instruction_fn! {
         assert_eq!(src_addr, dst_addr, "the multiple memories proposal is not yet supported");
         let src_dst_addr = src_addr;
 
-        let s: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let d: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let s: i32 = unsafe { resumable.stack.pop_value().as_i32() };
+        let d: i32 = unsafe { resumable.stack.pop_value().as_i32() };
 
         // SAFETY: The source and destination addresses (which must be the same as of now!) were
         // just read from the current store. Therefore, it must also be valid in the current store.
@@ -1944,7 +1944,7 @@ define_instruction_fn! {
         // proposal.
         let _zero = wasm.decode_u8();
 
-        let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let n: u32 = unsafe { resumable.stack.pop_value().as_u32() };
         // decrement fuel, but push n back if it fails
         let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_INIT)
             + u64::from(n)
@@ -1962,8 +1962,8 @@ define_instruction_fn! {
             }
         }
 
-        let s: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let d: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let s: u32 = unsafe { resumable.stack.pop_value().as_u32() };
+        let d: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         // SAFETY: All requirements are met:
         // 1. The current module address must come from the

@@ -27,7 +27,7 @@ define_instruction_fn! {
     ref_is_null,
     fuel_check = flat(instructions::REF_IS_NULL),
     |Args { resumable, .. }| {
-        let rref: Ref = resumable.stack.pop_value().try_into().unwrap_validated();
+        let rref: Ref = unsafe { resumable.stack.pop_value().as_ref() };
         let is_null = matches!(rref, Ref::Null(_));
 
         let res = if is_null { 1 } else { 0 };

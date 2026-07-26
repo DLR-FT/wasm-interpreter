@@ -1,5 +1,7 @@
 use core::{
-    fmt::{Debug, Display}, hint::unreachable_unchecked, ops::{Add, Div, Mul, Sub}
+    fmt::{Debug, Display},
+    hint::unreachable_unchecked,
+    ops::{Add, Div, Mul, Sub},
 };
 
 use crate::{FuncAddr, NumType, RefType, ValType};
@@ -388,6 +390,7 @@ impl Display for ValueTypeMismatchError {
 }
 
 impl From<u32> for Value {
+    #[inline(always)]
     fn from(x: u32) -> Self {
         Value::I32(x)
     }
@@ -397,6 +400,62 @@ impl Value {
     pub unsafe fn as_i32(self) -> i32 {
         match self {
             Value::I32(x) => x.cast_signed(),
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_i64(self) -> i64 {
+        match self {
+            Value::I64(x) => x.cast_signed(),
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_u32(self) -> u32 {
+        match self {
+            Value::I32(x) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_u64(self) -> u64 {
+        match self {
+            Value::I64(x) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_u32_mut(&mut self) -> &mut u32 {
+        match self {
+            Value::I32(x) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_f32(self) -> F32 {
+        match self {
+            Value::F32(x) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_f64(self) -> F64 {
+        match self {
+            Value::F64(x) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_ref(self) -> Ref {
+        match self {
+            Value::Ref(x) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_vec(self) -> [u8; 16] {
+        match self {
+            Value::V128(x) => x,
             _ => unsafe { unreachable_unchecked() },
         }
     }
@@ -415,6 +474,7 @@ impl TryFrom<Value> for u32 {
 }
 
 impl From<i32> for Value {
+    #[inline(always)]
     fn from(x: i32) -> Self {
         Value::I32(x as u32)
     }
@@ -432,6 +492,7 @@ impl TryFrom<Value> for i32 {
 }
 
 impl From<u64> for Value {
+    #[inline(always)]
     fn from(x: u64) -> Self {
         Value::I64(x)
     }
@@ -439,6 +500,7 @@ impl From<u64> for Value {
 impl TryFrom<Value> for u64 {
     type Error = ValueTypeMismatchError;
 
+    #[inline(always)]
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::I64(x) => Ok(x),
@@ -447,6 +509,7 @@ impl TryFrom<Value> for u64 {
     }
 }
 impl From<i64> for Value {
+    #[inline(always)]
     fn from(x: i64) -> Self {
         Value::I64(x as u64)
     }
@@ -454,6 +517,7 @@ impl From<i64> for Value {
 impl TryFrom<Value> for i64 {
     type Error = ValueTypeMismatchError;
 
+    #[inline(always)]
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::I64(x) => Ok(x as i64),

@@ -133,7 +133,7 @@ define_instruction_fn! {
         // next.
         let _block_type = unsafe { BlockType::decode_unchecked_ptr(wasm) };
 
-        let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let test_val: i32 = unsafe { resumable.stack.pop_value().as_i32() };
 
         if test_val != 0 {
             resumable.stp += 1;
@@ -205,7 +205,7 @@ define_instruction_fn! {
         // next.
         let _label_idx = unsafe { decode_label_idx_unchecked(wasm) };
 
-        let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let test_val: i32 = unsafe { resumable.stack.pop_value().as_i32() };
 
         if test_val != 0 {
             do_sidetable_control_transfer(
@@ -243,7 +243,7 @@ define_instruction_fn! {
         let _default_label_idx = unsafe { decode_label_idx_unchecked(wasm) };
 
         // TODO is this correct?
-        let case_val_i32: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let case_val_i32: i32 = unsafe { resumable.stack.pop_value().as_i32() };
         let case_val = case_val_i32.cast_unsigned().into_usize();
 
         if case_val >= label_vec.len() {
@@ -411,7 +411,7 @@ define_instruction_fn! {
         // the current module.
         let func_ty = unsafe { module.types.get(given_type_idx) };
 
-        let i: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
+        let i: u32 = unsafe { resumable.stack.pop_value().as_u32() };
 
         let r = tab
             .elem
