@@ -432,6 +432,62 @@ impl Value {
         }
     }
 
+    pub unsafe fn as_u64_mut(&mut self) -> &mut u64 {
+        match self {
+            Value::I64(x) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_f32_mut(&mut self) -> &mut F32 {
+        match self {
+            Value::F32(x) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_f64_mut(&mut self) -> &mut F64 {
+        match self {
+            Value::F64(x) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_vec_mut(&mut self) -> &mut [u8; 16] {
+        match self {
+            Value::V128(x) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_ref_mut(&mut self) -> &mut Ref {
+        match self {
+            Value::Ref(x) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_ref_null_mut(&mut self) -> &mut RefType {
+        match self {
+            Value::Ref(Ref::Null(x)) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_ref_extern_mut(&mut self) -> &mut ExternAddr {
+        match self {
+            Value::Ref(Ref::Extern(x)) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
+    pub unsafe fn as_ref_func_mut(&mut self) -> &mut FuncAddr {
+        match self {
+            Value::Ref(Ref::Func(x)) => x,
+            _ => unsafe { unreachable_unchecked() },
+        }
+    }
+
     pub unsafe fn as_f32(self) -> F32 {
         match self {
             Value::F32(x) => x,
