@@ -22,10 +22,10 @@ define_instruction!(
 #[inline(always)]
 pub unsafe fn local_get(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid local index next.
-    let local_idx = unsafe { LocalIdx::decode_unchecked(wasm) };
+    let local_idx = unsafe { LocalIdx::decode_unchecked(state.wasm) };
     // SAFETY: Validation guarantees that the local index is valid in the current call frame.
-    let value = *unsafe { resumable.stack.get_local(local_idx) };
-    resumable.stack.push_value(value)?;
+    let value = *unsafe { state.resumable.stack.get_local(local_idx) };
+    state.resumable.stack.push_value(value)?;
     trace!("Instruction: local.get {} [] -> [t]", local_idx);
     Ok(ControlFlow::Continue(()))
 }
@@ -38,10 +38,11 @@ define_instruction!(
 #[inline(always)]
 pub unsafe fn local_set(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid local index next.
-    let local_idx = unsafe { LocalIdx::decode_unchecked(wasm) };
-    let value = resumable.stack.pop_value();
+    let local_idx = unsafe { LocalIdx::decode_unchecked(state.wasm) };
+    // SAFETY: Validation guarantees there to be a value on the stack
+    let value = unsafe { state.resumable.stack.pop_value() };
     // SAFETY: Validation guarantees that the local index is valid in the current call frame.
-    let local = unsafe { resumable.stack.get_local_mut(local_idx) };
+    let local = unsafe { state.resumable.stack.get_local_mut(local_idx) };
     *local = value;
     trace!("Instruction: local.set {} [t] -> []", local_idx);
     Ok(ControlFlow::Continue(()))
@@ -55,10 +56,10 @@ define_instruction!(
 #[inline(always)]
 pub unsafe fn local_tee(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid local index next.
-    let local_idx = unsafe { LocalIdx::decode_unchecked(wasm) };
-    let value = resumable.stack.peek_value().unwrap_validated();
+    let local_idx = unsafe { LocalIdx::decode_unchecked(state.wasm) };
+    let value = state.resumable.stack.peek_value().unwrap_validated();
     // SAFETY: Validation guarantees that the local index is valid in the current call frame.
-    let local = unsafe { resumable.stack.get_local_mut(local_idx) };
+    let local = unsafe { state.resumable.stack.get_local_mut(local_idx) };
     *local = value;
     trace!("Instruction: local.tee {} [t] -> [t]", local_idx);
     Ok(ControlFlow::Continue(()))
@@ -123,7 +124,10 @@ pub unsafe fn global_set(
     // store. Therefore, it is valid in the current store.
     let global = unsafe { state.store_inner.globals.get_mut(global_addr) };
 
-    global.value = state.resumable.stack.pop_value();
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let new_value = unsafe { state.resumable.stack.pop_value() };
+
+    global.value = new_value;
     trace!("Instruction: GLOBAL_SET");
     Ok(ControlFlow::Continue(()))
 }

@@ -29,10 +29,8 @@ define_instruction!(super::i32_load, i32_load_mod, fuel_check = flat(I32_LOAD));
 #[inline(always)]
 pub unsafe fn i32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -60,10 +58,8 @@ define_instruction!(super::i64_load, i64_load_mod, fuel_check = flat(I64_LOAD));
 #[inline(always)]
 pub unsafe fn i64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -91,10 +87,8 @@ define_instruction!(super::f32_load, f32_load_mod, fuel_check = flat(F32_LOAD));
 #[inline(always)]
 pub unsafe fn f32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -122,10 +116,8 @@ define_instruction!(super::f64_load, f64_load_mod, fuel_check = flat(F64_LOAD));
 #[inline(always)]
 pub unsafe fn f64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -171,10 +163,8 @@ pub unsafe fn v128_load(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -198,10 +188,8 @@ pub unsafe fn i32_load8_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -235,10 +223,8 @@ pub unsafe fn i32_load8_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -272,10 +258,8 @@ pub unsafe fn i32_load16_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -309,10 +293,8 @@ pub unsafe fn i32_load16_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -346,10 +328,8 @@ pub unsafe fn i64_load8_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -383,10 +363,8 @@ pub unsafe fn i64_load8_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -420,10 +398,8 @@ pub unsafe fn i64_load16_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -457,10 +433,8 @@ pub unsafe fn i64_load16_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -494,10 +468,8 @@ pub unsafe fn i64_load32_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -531,10 +503,8 @@ pub unsafe fn i64_load32_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -583,10 +553,8 @@ pub unsafe fn v128_load8x8_s(
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -629,10 +597,8 @@ pub unsafe fn v128_load8x8_u(
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -675,10 +641,8 @@ pub unsafe fn v128_load16x4_s(
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -721,10 +685,8 @@ pub unsafe fn v128_load16x4_u(
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -767,10 +729,8 @@ pub unsafe fn v128_load32x2_s(
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -813,10 +773,8 @@ pub unsafe fn v128_load32x2_u(
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -860,10 +818,8 @@ pub unsafe fn v128_load8_splat(
     // current store. Therefore, it is valid in the current
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -898,10 +854,8 @@ pub unsafe fn v128_load16_splat(
     // current store. Therefore, it is valid in the current
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -936,10 +890,8 @@ pub unsafe fn v128_load32_splat(
     // current store. Therefore, it is valid in the current
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -974,10 +926,8 @@ pub unsafe fn v128_load64_splat(
     // current store. Therefore, it is valid in the current
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -1016,10 +966,8 @@ pub unsafe fn v128_load32_zero(
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -1055,10 +1003,8 @@ pub unsafe fn v128_load64_zero(
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -1081,16 +1027,12 @@ define_instruction!(
 pub unsafe fn v128_load8_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1127,16 +1069,12 @@ define_instruction!(
 pub unsafe fn v128_load16_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1172,16 +1110,12 @@ define_instruction!(
 pub unsafe fn v128_load32_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1217,16 +1151,12 @@ define_instruction!(
 pub unsafe fn v128_load64_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1264,16 +1194,12 @@ define_instruction!(
 pub unsafe fn i32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data_to_store: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -1305,16 +1231,12 @@ define_instruction!(
 pub unsafe fn i64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: u64 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data_to_store: u64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -1346,16 +1268,12 @@ define_instruction!(
 pub unsafe fn f32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: F32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data_to_store: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -1387,16 +1305,12 @@ define_instruction!(
 pub unsafe fn f64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: F64 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data_to_store: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -1443,16 +1357,12 @@ pub unsafe fn v128_store(
     // store.
     let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -1473,16 +1383,12 @@ pub unsafe fn i32_store8(
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data_to_store: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -1518,16 +1424,12 @@ pub unsafe fn i32_store16(
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data_to_store: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -1563,16 +1465,12 @@ pub unsafe fn i64_store8(
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: i64 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data_to_store: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -1608,16 +1506,12 @@ pub unsafe fn i64_store16(
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: i64 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data_to_store: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -1653,16 +1547,12 @@ pub unsafe fn i64_store32(
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: i64 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data_to_store: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -1697,16 +1587,12 @@ define_instruction!(
 pub unsafe fn v128_store8_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1740,16 +1626,12 @@ define_instruction!(
 pub unsafe fn v128_store16_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1783,16 +1665,12 @@ define_instruction!(
 pub unsafe fn v128_store32_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1826,16 +1704,12 @@ define_instruction!(
 pub unsafe fn v128_store64_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1914,10 +1788,8 @@ pub unsafe fn memory_grow<T: Config>(
 
     let sz = u32::from(mem.len_pages());
 
-    let n: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let n: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     // decrement fuel, but push n back if it fails
@@ -1985,10 +1857,8 @@ pub unsafe fn memory_fill<T: Config>(
     // store.
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let n: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let n: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     // decrement fuel, but push n back if it fails
@@ -2011,10 +1881,8 @@ pub unsafe fn memory_fill<T: Config>(
         }
     }
 
-    let val: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let val: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -2022,10 +1890,8 @@ pub unsafe fn memory_fill<T: Config>(
         warn!("Value for memory.fill does not fit in a byte ({val})");
     }
 
-    let d: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let d: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -2065,10 +1931,8 @@ pub unsafe fn memory_copy<T: Config>(
     // exist.
     let dst_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
 
-    let n: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let n: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     // decrement fuel, but push n back if it fails
@@ -2097,16 +1961,12 @@ pub unsafe fn memory_copy<T: Config>(
     );
     let src_dst_addr = src_addr;
 
-    let s: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let s: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let d: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let d: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -2148,10 +2008,8 @@ pub unsafe fn memory_init_fn<T: Config>(
     // proposal.
     let _zero = state.wasm.decode_u8().unwrap_validated();
 
-    let n: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let n: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     // decrement fuel, but push n back if it fails
@@ -2174,16 +2032,12 @@ pub unsafe fn memory_init_fn<T: Config>(
         }
     }
 
-    let s: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let s: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let d: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let d: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 

@@ -89,7 +89,7 @@ impl Stack {
     /// This is UB if the stack is empty or if it would pop a value that is not part of the current
     /// call frame.
     #[inline(always)]
-    pub fn pop_value(&mut self) -> Value {
+    pub unsafe fn pop_value(&mut self) -> Value {
         // If there is at least one call frame, we shall not pop values past the current
         // call frame. However, there is one legitimate reason to pop when there is **no** current
         // call frame: after the outermost function returns, to extract the final return values of

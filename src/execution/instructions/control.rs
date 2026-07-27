@@ -125,10 +125,8 @@ pub unsafe fn r#if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
     // next.
     let _block_type = unsafe { BlockType::decode_unchecked(state.wasm) };
 
-    let test_val: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let test_val: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -181,10 +179,8 @@ pub unsafe fn br_if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>,
     // next.
     let _label_idx = unsafe { decode_label_idx_unchecked(state.wasm) };
 
-    let test_val: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let test_val: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -218,11 +214,8 @@ pub unsafe fn br_table(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     // for the default case.
     let _default_label_idx = unsafe { decode_label_idx_unchecked(state.wasm) };
 
-    // TODO is this correct?
-    let case_val_i32: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let case_val_i32: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let case_val = case_val_i32.cast_unsigned().into_usize();
@@ -377,10 +370,8 @@ pub unsafe fn call_indirect<T: Config>(
     // the current module.
     let func_ty = unsafe { module.types.get(given_type_idx) };
 
-    let i: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let i: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
