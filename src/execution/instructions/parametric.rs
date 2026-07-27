@@ -16,7 +16,8 @@ use crate::{
 define_instruction!(super::drop, drop_mod, fuel_check = flat(DROP));
 #[inline(always)]
 pub unsafe fn drop(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    state.resumable.stack.pop_value();
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let _ = unsafe { state.resumable.stack.pop_value() };
     trace!("Instruction: DROP");
 
     Ok(ControlFlow::Continue(()))
@@ -25,14 +26,14 @@ pub unsafe fn drop(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
 define_instruction!(super::select, select_mod, fuel_check = flat(SELECT));
 #[inline(always)]
 pub unsafe fn select(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let test_val: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let test_val: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let val2 = state.resumable.stack.pop_value();
-    let val1 = state.resumable.stack.pop_value();
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let val2 = unsafe { state.resumable.stack.pop_value() };
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let val1 = unsafe { state.resumable.stack.pop_value() };
     if test_val != 0 {
         state.resumable.stack.push_value(val1)?;
     } else {
@@ -46,14 +47,14 @@ define_instruction!(super::select_t, select_t_mod, fuel_check = flat(SELECT_T));
 #[inline(always)]
 pub unsafe fn select_t(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let _type_vec = state.wasm.decode_vec(ValType::decode).unwrap_validated();
-    let test_val: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let test_val: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let val2 = state.resumable.stack.pop_value();
-    let val1 = state.resumable.stack.pop_value();
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let val2 = unsafe { state.resumable.stack.pop_value() };
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let val1 = unsafe { state.resumable.stack.pop_value() };
     if test_val != 0 {
         state.resumable.stack.push_value(val1)?;
     } else {

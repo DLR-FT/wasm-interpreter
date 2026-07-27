@@ -43,10 +43,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_not(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     state
@@ -64,16 +62,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_and(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| data1[i] & data2[i]);
@@ -89,16 +83,12 @@ define_instruction!(
 pub unsafe fn v128_andnot(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| data1[i] & !data2[i]);
@@ -108,16 +98,12 @@ pub unsafe fn v128_andnot(
 define_instruction!(super::v128_or, v128_or_mod, fuel_check = flat_fd(V128_OR));
 #[inline(always)]
 pub unsafe fn v128_or(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| data1[i] | data2[i]);
@@ -131,16 +117,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_xor(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| data1[i] ^ data2[i]);
@@ -158,22 +140,16 @@ define_instruction!(
 pub unsafe fn v128_bitselect(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data3: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data3: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| (data1[i] & data3[i]) | (data2[i] & !data3[i]));
@@ -191,10 +167,8 @@ define_instruction!(
 pub unsafe fn v128_any_true(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let any_true = data.into_iter().any(|byte| byte > 0);
@@ -215,16 +189,12 @@ define_instruction!(
 pub unsafe fn i8x16_swizzle(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| *data1.get(usize::from(data2[i])).unwrap_or(&0));
@@ -242,16 +212,12 @@ define_instruction!(
 pub unsafe fn i8x16_shuffle(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -279,10 +245,8 @@ define_instruction!(
 pub unsafe fn i8x16_splat(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let value: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let value: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lane = value as u8;
@@ -299,10 +263,8 @@ define_instruction!(
 pub unsafe fn i16x8_splat(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let value: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let value: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lane = value as u16;
@@ -319,10 +281,8 @@ define_instruction!(
 pub unsafe fn i32x4_splat(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let lane: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let data = from_lanes([lane; 4]);
@@ -338,10 +298,8 @@ define_instruction!(
 pub unsafe fn i64x2_splat(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane: u64 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let lane: u64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let data = from_lanes([lane; 2]);
@@ -357,10 +315,8 @@ define_instruction!(
 pub unsafe fn f32x4_splat(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane: F32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let lane: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let data = from_lanes([lane; 4]);
@@ -376,10 +332,8 @@ define_instruction!(
 pub unsafe fn f64x2_splat(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane: F64 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let lane: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let data = from_lanes([lane; 2]);
@@ -398,10 +352,8 @@ pub unsafe fn i8x16_extract_lane_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
@@ -419,10 +371,8 @@ pub unsafe fn i8x16_extract_lane_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
@@ -440,10 +390,8 @@ pub unsafe fn i16x8_extract_lane_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
@@ -461,10 +409,8 @@ pub unsafe fn i16x8_extract_lane_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u16; 8] = to_lanes(data);
@@ -482,10 +428,8 @@ pub unsafe fn i32x4_extract_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
@@ -503,10 +447,8 @@ pub unsafe fn i64x2_extract_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u64; 2] = to_lanes(data);
@@ -524,10 +466,8 @@ pub unsafe fn f32x4_extract_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
@@ -545,10 +485,8 @@ pub unsafe fn f64x2_extract_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
@@ -568,17 +506,13 @@ pub unsafe fn i8x16_replace_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let value: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let value: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let new_lane = value as u8;
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let mut lanes: [u8; 16] = to_lanes(data);
@@ -599,17 +533,13 @@ pub unsafe fn i16x8_replace_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let value: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let value: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let new_lane = value as u16;
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let mut lanes: [u16; 8] = to_lanes(data);
@@ -630,16 +560,12 @@ pub unsafe fn i32x4_replace_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let new_lane: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let new_lane: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let mut lanes: [u32; 4] = to_lanes(data);
@@ -660,16 +586,12 @@ pub unsafe fn i64x2_replace_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let new_lane: u64 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let new_lane: u64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let mut lanes: [u64; 2] = to_lanes(data);
@@ -690,16 +612,12 @@ pub unsafe fn f32x4_replace_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let new_lane: F32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let new_lane: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let mut lanes: [F32; 4] = to_lanes(data);
@@ -720,16 +638,12 @@ pub unsafe fn f64x2_replace_lane(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
-    let new_lane: F64 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let new_lane: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let mut lanes: [F64; 2] = to_lanes(data);
@@ -749,10 +663,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
@@ -770,10 +682,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
@@ -791,10 +701,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
@@ -812,10 +720,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i64; 2] = to_lanes(data);
@@ -833,10 +739,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
@@ -854,10 +758,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
@@ -875,10 +777,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
@@ -896,10 +796,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i64; 2] = to_lanes(data);
@@ -917,10 +815,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
@@ -938,10 +834,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
@@ -959,10 +853,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
@@ -980,10 +872,8 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
@@ -1003,10 +893,8 @@ define_instruction!(
 pub unsafe fn f32x4_sqrt(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
@@ -1026,10 +914,8 @@ define_instruction!(
 pub unsafe fn f64x2_sqrt(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
@@ -1049,10 +935,8 @@ define_instruction!(
 pub unsafe fn f32x4_ceil(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
@@ -1072,10 +956,8 @@ define_instruction!(
 pub unsafe fn f64x2_ceil(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
@@ -1095,10 +977,8 @@ define_instruction!(
 pub unsafe fn f32x4_floor(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
@@ -1118,10 +998,8 @@ define_instruction!(
 pub unsafe fn f64x2_floor(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
@@ -1141,10 +1019,8 @@ define_instruction!(
 pub unsafe fn f32x4_trunc(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
@@ -1164,10 +1040,8 @@ define_instruction!(
 pub unsafe fn f64x2_trunc(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
@@ -1187,10 +1061,8 @@ define_instruction!(
 pub unsafe fn f32x4_nearest(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
@@ -1210,10 +1082,8 @@ define_instruction!(
 pub unsafe fn f64x2_nearest(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
@@ -1233,10 +1103,8 @@ define_instruction!(
 pub unsafe fn i8x16_popcnt(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
@@ -1256,16 +1124,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -1284,16 +1148,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -1312,16 +1172,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u32; 4] = to_lanes(data2);
@@ -1340,16 +1196,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u64; 2] = to_lanes(data2);
@@ -1368,16 +1220,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -1396,16 +1244,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -1424,16 +1268,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u32; 4] = to_lanes(data2);
@@ -1452,16 +1292,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u64; 2] = to_lanes(data2);
@@ -1480,16 +1316,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -1508,16 +1340,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -1536,16 +1364,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -1564,16 +1388,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -1592,16 +1412,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -1620,16 +1436,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -1648,16 +1460,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -1676,16 +1484,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -1704,16 +1508,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -1732,16 +1532,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -1760,16 +1556,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -1788,16 +1580,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -1818,16 +1606,12 @@ define_instruction!(
 pub unsafe fn f32x4_pmin(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -1856,16 +1640,12 @@ define_instruction!(
 pub unsafe fn f64x2_pmin(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -1894,16 +1674,12 @@ define_instruction!(
 pub unsafe fn f32x4_pmax(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -1932,16 +1708,12 @@ define_instruction!(
 pub unsafe fn f64x2_pmax(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -1970,16 +1742,12 @@ define_instruction!(
 pub unsafe fn i8x16_min_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i8; 16] = to_lanes(data2);
@@ -2000,16 +1768,12 @@ define_instruction!(
 pub unsafe fn i16x8_min_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i16; 8] = to_lanes(data2);
@@ -2030,16 +1794,12 @@ define_instruction!(
 pub unsafe fn i32x4_min_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i32; 4] = to_lanes(data2);
@@ -2060,16 +1820,12 @@ define_instruction!(
 pub unsafe fn i8x16_min_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -2090,16 +1846,12 @@ define_instruction!(
 pub unsafe fn i16x8_min_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -2120,16 +1872,12 @@ define_instruction!(
 pub unsafe fn i32x4_min_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u32; 4] = to_lanes(data2);
@@ -2150,16 +1898,12 @@ define_instruction!(
 pub unsafe fn i8x16_max_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i8; 16] = to_lanes(data2);
@@ -2180,16 +1924,12 @@ define_instruction!(
 pub unsafe fn i16x8_max_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i16; 8] = to_lanes(data2);
@@ -2210,16 +1950,12 @@ define_instruction!(
 pub unsafe fn i32x4_max_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i32; 4] = to_lanes(data2);
@@ -2240,16 +1976,12 @@ define_instruction!(
 pub unsafe fn i8x16_max_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -2270,16 +2002,12 @@ define_instruction!(
 pub unsafe fn i16x8_max_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -2300,16 +2028,12 @@ define_instruction!(
 pub unsafe fn i32x4_max_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u32; 4] = to_lanes(data2);
@@ -2331,16 +2055,12 @@ define_instruction!(
 pub unsafe fn i8x16_add_sat_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i8; 16] = to_lanes(data2);
@@ -2361,16 +2081,12 @@ define_instruction!(
 pub unsafe fn i16x8_add_sat_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i16; 8] = to_lanes(data2);
@@ -2391,16 +2107,12 @@ define_instruction!(
 pub unsafe fn i8x16_add_sat_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -2421,16 +2133,12 @@ define_instruction!(
 pub unsafe fn i16x8_add_sat_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -2451,16 +2159,12 @@ define_instruction!(
 pub unsafe fn i8x16_sub_sat_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i8; 16] = to_lanes(data2);
@@ -2481,16 +2185,12 @@ define_instruction!(
 pub unsafe fn i16x8_sub_sat_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i16; 8] = to_lanes(data2);
@@ -2511,16 +2211,12 @@ define_instruction!(
 pub unsafe fn i8x16_sub_sat_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -2541,16 +2237,12 @@ define_instruction!(
 pub unsafe fn i16x8_sub_sat_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -2569,16 +2261,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -2597,16 +2285,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u32; 4] = to_lanes(data2);
@@ -2625,16 +2309,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u64; 2] = to_lanes(data2);
@@ -2655,16 +2335,12 @@ define_instruction!(
 pub unsafe fn i8x16_avgr_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -2686,16 +2362,12 @@ define_instruction!(
 pub unsafe fn i16x8_avgr_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -2717,16 +2389,12 @@ define_instruction!(
 pub unsafe fn i16x8_q15mulrsat_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i16; 8] = to_lanes(data2);
@@ -2750,16 +2418,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -2778,16 +2442,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -2806,16 +2466,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u32; 4] = to_lanes(data2);
@@ -2834,16 +2490,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u64; 2] = to_lanes(data2);
@@ -2862,16 +2514,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -2890,16 +2538,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -2918,16 +2562,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u32; 4] = to_lanes(data2);
@@ -2946,16 +2586,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u64; 2] = to_lanes(data2);
@@ -2976,16 +2612,12 @@ define_instruction!(
 pub unsafe fn i8x16_lt_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i8; 16] = to_lanes(data2);
@@ -3006,16 +2638,12 @@ define_instruction!(
 pub unsafe fn i16x8_lt_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i16; 8] = to_lanes(data2);
@@ -3036,16 +2664,12 @@ define_instruction!(
 pub unsafe fn i32x4_lt_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i32; 4] = to_lanes(data2);
@@ -3066,16 +2690,12 @@ define_instruction!(
 pub unsafe fn i64x2_lt_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i64; 2] = to_lanes(data2);
@@ -3096,16 +2716,12 @@ define_instruction!(
 pub unsafe fn i8x16_lt_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -3126,16 +2742,12 @@ define_instruction!(
 pub unsafe fn i16x8_lt_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -3156,16 +2768,12 @@ define_instruction!(
 pub unsafe fn i32x4_lt_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u32; 4] = to_lanes(data2);
@@ -3186,16 +2794,12 @@ define_instruction!(
 pub unsafe fn i8x16_gt_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i8; 16] = to_lanes(data2);
@@ -3216,16 +2820,12 @@ define_instruction!(
 pub unsafe fn i16x8_gt_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i16; 8] = to_lanes(data2);
@@ -3246,16 +2846,12 @@ define_instruction!(
 pub unsafe fn i32x4_gt_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i32; 4] = to_lanes(data2);
@@ -3276,16 +2872,12 @@ define_instruction!(
 pub unsafe fn i64x2_gt_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i64; 2] = to_lanes(data2);
@@ -3306,16 +2898,12 @@ define_instruction!(
 pub unsafe fn i8x16_gt_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -3336,16 +2924,12 @@ define_instruction!(
 pub unsafe fn i16x8_gt_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -3366,16 +2950,12 @@ define_instruction!(
 pub unsafe fn i32x4_gt_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u32; 4] = to_lanes(data2);
@@ -3396,16 +2976,12 @@ define_instruction!(
 pub unsafe fn i8x16_le_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i8; 16] = to_lanes(data2);
@@ -3426,16 +3002,12 @@ define_instruction!(
 pub unsafe fn i16x8_le_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i16; 8] = to_lanes(data2);
@@ -3456,16 +3028,12 @@ define_instruction!(
 pub unsafe fn i32x4_le_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i32; 4] = to_lanes(data2);
@@ -3486,16 +3054,12 @@ define_instruction!(
 pub unsafe fn i64x2_le_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i64; 2] = to_lanes(data2);
@@ -3516,16 +3080,12 @@ define_instruction!(
 pub unsafe fn i8x16_le_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -3546,16 +3106,12 @@ define_instruction!(
 pub unsafe fn i16x8_le_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -3576,16 +3132,12 @@ define_instruction!(
 pub unsafe fn i32x4_le_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u32; 4] = to_lanes(data2);
@@ -3607,16 +3159,12 @@ define_instruction!(
 pub unsafe fn i8x16_ge_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i8; 16] = to_lanes(data2);
@@ -3637,16 +3185,12 @@ define_instruction!(
 pub unsafe fn i16x8_ge_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i16; 8] = to_lanes(data2);
@@ -3667,16 +3211,12 @@ define_instruction!(
 pub unsafe fn i32x4_ge_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i32; 4] = to_lanes(data2);
@@ -3697,16 +3237,12 @@ define_instruction!(
 pub unsafe fn i64x2_ge_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i64; 2] = to_lanes(data2);
@@ -3727,16 +3263,12 @@ define_instruction!(
 pub unsafe fn i8x16_ge_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u8; 16] = to_lanes(data2);
@@ -3757,16 +3289,12 @@ define_instruction!(
 pub unsafe fn i16x8_ge_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u16; 8] = to_lanes(data2);
@@ -3787,16 +3315,12 @@ define_instruction!(
 pub unsafe fn i32x4_ge_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [u32; 4] = to_lanes(data2);
@@ -3816,16 +3340,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -3844,16 +3364,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -3872,16 +3388,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -3900,16 +3412,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -3928,16 +3436,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -3956,16 +3460,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -3984,16 +3484,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -4012,16 +3508,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -4040,16 +3532,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -4068,16 +3556,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -4096,16 +3580,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F32; 4] = to_lanes(data2);
@@ -4124,16 +3604,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [F64; 2] = to_lanes(data2);
@@ -4154,16 +3630,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
@@ -4181,16 +3653,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u16; 8] = to_lanes(data);
@@ -4208,16 +3676,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
@@ -4235,16 +3699,12 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u64; 2] = to_lanes(data);
@@ -4264,16 +3724,12 @@ define_instruction!(
 pub unsafe fn i8x16_shr_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
@@ -4293,16 +3749,12 @@ define_instruction!(
 pub unsafe fn i8x16_shr_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
@@ -4322,16 +3774,12 @@ define_instruction!(
 pub unsafe fn i16x8_shr_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
@@ -4351,16 +3799,12 @@ define_instruction!(
 pub unsafe fn i16x8_shr_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u16; 8] = to_lanes(data);
@@ -4380,16 +3824,12 @@ define_instruction!(
 pub unsafe fn i32x4_shr_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
@@ -4409,16 +3849,12 @@ define_instruction!(
 pub unsafe fn i32x4_shr_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
@@ -4438,16 +3874,12 @@ define_instruction!(
 pub unsafe fn i64x2_shr_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i64; 2] = to_lanes(data);
@@ -4467,16 +3899,12 @@ define_instruction!(
 pub unsafe fn i64x2_shr_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let shift: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u64; 2] = to_lanes(data);
@@ -4498,10 +3926,8 @@ define_instruction!(
 pub unsafe fn i8x16_all_true(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
@@ -4521,10 +3947,8 @@ define_instruction!(
 pub unsafe fn i16x8_all_true(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u16; 8] = to_lanes(data);
@@ -4544,10 +3968,8 @@ define_instruction!(
 pub unsafe fn i32x4_all_true(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
@@ -4567,10 +3989,8 @@ define_instruction!(
 pub unsafe fn i64x2_all_true(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u64; 2] = to_lanes(data);
@@ -4592,10 +4012,8 @@ define_instruction!(
 pub unsafe fn i8x16_bitmask(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
@@ -4616,10 +4034,8 @@ define_instruction!(
 pub unsafe fn i16x8_bitmask(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
@@ -4640,10 +4056,8 @@ define_instruction!(
 pub unsafe fn i32x4_bitmask(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
@@ -4664,10 +4078,8 @@ define_instruction!(
 pub unsafe fn i64x2_bitmask(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i64; 2] = to_lanes(data);
@@ -4690,16 +4102,12 @@ define_instruction!(
 pub unsafe fn i8x16_narrow_i16x8_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i16; 8] = to_lanes(data2);
@@ -4724,16 +4132,12 @@ define_instruction!(
 pub unsafe fn i8x16_narrow_i16x8_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i16; 8] = to_lanes(data2);
@@ -4758,16 +4162,12 @@ define_instruction!(
 pub unsafe fn i16x8_narrow_i32x4_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i32; 4] = to_lanes(data2);
@@ -4792,16 +4192,12 @@ define_instruction!(
 pub unsafe fn i16x8_narrow_i32x4_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes2: [i32; 4] = to_lanes(data2);
@@ -4828,10 +4224,8 @@ define_instruction!(
 pub unsafe fn i32x4_trunc_sat_f32x4_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
@@ -4861,10 +4255,8 @@ define_instruction!(
 pub unsafe fn i32x4_trunc_sat_f32x4_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
@@ -4892,10 +4284,8 @@ define_instruction!(
 pub unsafe fn f32x4_convert_i32x4_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
@@ -4915,10 +4305,8 @@ define_instruction!(
 pub unsafe fn f32x4_convert_i32x4_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
@@ -4940,10 +4328,8 @@ define_instruction!(
 pub unsafe fn i16x8_extend_high_i8x16_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
@@ -4964,10 +4350,8 @@ define_instruction!(
 pub unsafe fn i16x8_extend_high_i8x16_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
@@ -4988,10 +4372,8 @@ define_instruction!(
 pub unsafe fn i16x8_extend_low_i8x16_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
@@ -5012,10 +4394,8 @@ define_instruction!(
 pub unsafe fn i16x8_extend_low_i8x16_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
@@ -5036,10 +4416,8 @@ define_instruction!(
 pub unsafe fn i32x4_extend_high_i16x8_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
@@ -5060,10 +4438,8 @@ define_instruction!(
 pub unsafe fn i32x4_extend_high_i16x8_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u16; 8] = to_lanes(data);
@@ -5084,10 +4460,8 @@ define_instruction!(
 pub unsafe fn i32x4_extend_low_i16x8_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
@@ -5108,10 +4482,8 @@ define_instruction!(
 pub unsafe fn i32x4_extend_low_i16x8_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u16; 8] = to_lanes(data);
@@ -5132,10 +4504,8 @@ define_instruction!(
 pub unsafe fn i64x2_extend_high_i32x4_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
@@ -5156,10 +4526,8 @@ define_instruction!(
 pub unsafe fn i64x2_extend_high_i32x4_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
@@ -5180,10 +4548,8 @@ define_instruction!(
 pub unsafe fn i64x2_extend_low_i32x4_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
@@ -5204,10 +4570,8 @@ define_instruction!(
 pub unsafe fn i64x2_extend_low_i32x4_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
@@ -5228,10 +4592,8 @@ define_instruction!(
 pub unsafe fn f64x2_convert_low_i32x4_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
@@ -5252,10 +4614,8 @@ define_instruction!(
 pub unsafe fn f64x2_convert_low_i32x4_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
@@ -5276,10 +4636,8 @@ define_instruction!(
 pub unsafe fn f64x2_promote_low_f32x4(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
@@ -5302,10 +4660,8 @@ define_instruction!(
 pub unsafe fn i32x4_trunc_sat_f64x2_s_zero(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
@@ -5335,10 +4691,8 @@ define_instruction!(
 pub unsafe fn i32x4_trunc_sat_f64x2_u_zero(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
@@ -5366,10 +4720,8 @@ define_instruction!(
 pub unsafe fn f32x4_demote_f64x2_zero(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes = to_lanes::<8, 2, F64>(data);
@@ -5392,16 +4744,12 @@ define_instruction!(
 pub unsafe fn i32x4_dot_i16x8_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [i16; 8] = to_lanes(data1);
@@ -5433,16 +4781,12 @@ define_instruction!(
 pub unsafe fn i16x8_extmul_high_i8x16_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [i8; 16] = to_lanes(data1);
@@ -5469,16 +4813,12 @@ define_instruction!(
 pub unsafe fn i16x8_extmul_high_i8x16_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [u8; 16] = to_lanes(data1);
@@ -5505,16 +4845,12 @@ define_instruction!(
 pub unsafe fn i16x8_extmul_low_i8x16_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [i8; 16] = to_lanes(data1);
@@ -5541,16 +4877,12 @@ define_instruction!(
 pub unsafe fn i16x8_extmul_low_i8x16_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [u8; 16] = to_lanes(data1);
@@ -5577,16 +4909,12 @@ define_instruction!(
 pub unsafe fn i32x4_extmul_high_i16x8_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [i16; 8] = to_lanes(data1);
@@ -5613,16 +4941,12 @@ define_instruction!(
 pub unsafe fn i32x4_extmul_high_i16x8_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [u16; 8] = to_lanes(data1);
@@ -5649,16 +4973,12 @@ define_instruction!(
 pub unsafe fn i32x4_extmul_low_i16x8_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [i16; 8] = to_lanes(data1);
@@ -5685,16 +5005,12 @@ define_instruction!(
 pub unsafe fn i32x4_extmul_low_i16x8_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [u16; 8] = to_lanes(data1);
@@ -5721,16 +5037,12 @@ define_instruction!(
 pub unsafe fn i64x2_extmul_high_i32x4_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [i32; 4] = to_lanes(data1);
@@ -5757,16 +5069,12 @@ define_instruction!(
 pub unsafe fn i64x2_extmul_high_i32x4_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [u32; 4] = to_lanes(data1);
@@ -5793,16 +5101,12 @@ define_instruction!(
 pub unsafe fn i64x2_extmul_low_i32x4_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [i32; 4] = to_lanes(data1);
@@ -5829,16 +5133,12 @@ define_instruction!(
 pub unsafe fn i64x2_extmul_low_i32x4_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data1: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data2: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes1: [u32; 4] = to_lanes(data1);
@@ -5867,10 +5167,8 @@ define_instruction!(
 pub unsafe fn i16x8_extadd_pairwise_i8x16_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
@@ -5894,10 +5192,8 @@ define_instruction!(
 pub unsafe fn i16x8_extadd_pairwise_i8x16_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
@@ -5921,10 +5217,8 @@ define_instruction!(
 pub unsafe fn i32x4_extadd_pairwise_i16x8_s(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
@@ -5948,10 +5242,8 @@ define_instruction!(
 pub unsafe fn i32x4_extadd_pairwise_i16x8_u(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a value on the stack.
+    let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let lanes: [u16; 8] = to_lanes(data);

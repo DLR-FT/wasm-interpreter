@@ -36,10 +36,8 @@ define_instruction!(
 pub unsafe fn ref_is_null(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let rref: Ref = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a ref value on the stack.
+    let rref: Ref = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let is_null = matches!(rref, Ref::Null(_));

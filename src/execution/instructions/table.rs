@@ -43,10 +43,8 @@ pub unsafe fn table_get(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     // store. Therefore, it is valid in the current store.
     let tab = unsafe { state.store_inner.tables.get(table_addr) };
 
-    let i: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is an i32 on the stack.
+    let i: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -88,16 +86,12 @@ pub unsafe fn table_set(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     // store. Therefore, it is valid in the current store.
     let tab = unsafe { state.store_inner.tables.get_mut(table_addr) };
 
-    let val: Ref = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a ref type value on the stack.
+    let val: Ref = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let i: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is an i32 on the stack.
+    let i: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -174,10 +168,8 @@ pub unsafe fn table_grow<T: Config>(
 
     let sz = tab.elem.len() as u32;
 
-    let n: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a u32 on the stack.
+    let n: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_GROW)
@@ -199,10 +191,8 @@ pub unsafe fn table_grow<T: Config>(
         }
     }
 
-    let val: Ref = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a ref type value on the stack.
+    let val: Ref = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -242,10 +232,8 @@ pub unsafe fn table_fill<T: Config>(
     // store.
     let tab = unsafe { state.store_inner.tables.get_mut(table_addr) };
 
-    let len: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a u32 on the stack.
+    let len: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
     let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_FILL)
@@ -267,16 +255,12 @@ pub unsafe fn table_fill<T: Config>(
         }
     }
 
-    let val: Ref = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a ref type value on the stack.
+    let val: Ref = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
-    let dst: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a u32 on the stack.
+    let dst: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated();
 
@@ -338,10 +322,8 @@ pub unsafe fn table_copy<T: Config>(
         .elem
         .len();
 
-    let n: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a u32 on the stack.
+    let n: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated(); // size
     let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_COPY)
@@ -363,18 +345,14 @@ pub unsafe fn table_copy<T: Config>(
         }
     }
 
-    let s: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a u32 on the stack.
+    let s: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
-        .unwrap_validated(); // source
-    let d: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+        .unwrap_validated();
+    // SAFETY: Validation guarantees that there is a u32 on the stack.
+    let d: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
-        .unwrap_validated(); // destination
+        .unwrap_validated();
 
     let src_res = match s.checked_add(n) {
         Some(res) => {
@@ -451,10 +429,8 @@ pub unsafe fn table_init_fn<T: Config>(
     // table index next.
     let table_idx = unsafe { TableIdx::decode_unchecked(state.wasm) };
 
-    let n: u32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is a u32 on the stack.
+    let n: u32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
         .unwrap_validated(); // size
     let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_INIT)
@@ -476,18 +452,14 @@ pub unsafe fn table_init_fn<T: Config>(
         }
     }
 
-    let s: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+    // SAFETY: Validation guarantees that there is an i32 on the stack.
+    let s: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
-        .unwrap_validated(); // offset
-    let d: i32 = state
-        .resumable
-        .stack
-        .pop_value()
+        .unwrap_validated();
+    // SAFETY: Validation guarantees that there is an i32 on the stack.
+    let d: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
-        .unwrap_validated(); // dst
+        .unwrap_validated();
 
     // SAFETY: All requirements are met:
     // 1. The current module address must come from the
