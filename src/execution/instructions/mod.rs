@@ -83,7 +83,7 @@ type InstructionHandlerFn =
 
 // A placeholder instruction for unassigned instruction bytes. This function is by definition dead
 // code!
-define_instruction_fn! {unset, fuel_check = omit, |Args { .. }| {
+define_instruction_fn! {unset, fuel_check = omit, |_: Args| {
     // Access T to circumvent warning that it is unused by this function. #[allow] does not work for
     // macros.
     let _ = T::DISPATCH_TABLE;

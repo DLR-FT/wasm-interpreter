@@ -12,8 +12,8 @@ use crate::{
 define_instruction_fn! {
     drop,
     fuel_check = flat(instructions::DROP),
-    |Args { resumable, .. }| {
-        resumable.stack.pop_value();
+    |args: Args| {
+        args.resumable.stack.pop_value();
         trace!("Instruction: DROP");
 
         Ok(ControlFlow::Continue(()))
@@ -23,14 +23,14 @@ define_instruction_fn! {
 define_instruction_fn! {
     select,
     fuel_check = flat(instructions::SELECT),
-    |Args { resumable, .. }| {
-        let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let val2 = resumable.stack.pop_value();
-        let val1 = resumable.stack.pop_value();
+    |args: Args| {
+        let test_val: i32 = args.resumable.stack.pop_value().try_into().unwrap_validated();
+        let val2 = args.resumable.stack.pop_value();
+        let val1 = args.resumable.stack.pop_value();
         if test_val != 0 {
-            resumable.stack.push_value(val1)?;
+            args.resumable.stack.push_value(val1)?;
         } else {
-            resumable.stack.push_value(val2)?;
+            args.resumable.stack.push_value(val2)?;
         }
         trace!("Instruction: SELECT");
         Ok(ControlFlow::Continue(()))
@@ -40,17 +40,15 @@ define_instruction_fn! {
 define_instruction_fn! {
     select_t,
     fuel_check = flat(instructions::SELECT_T),
-    |Args {
-         resumable, wasm, ..
-     }| {
-        let _type_vec = wasm.decode_vec(ValType::decode).unwrap_validated();
-        let test_val: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
-        let val2 = resumable.stack.pop_value();
-        let val1 = resumable.stack.pop_value();
+    |args: Args| {
+        let _type_vec = args.wasm.decode_vec(ValType::decode).unwrap_validated();
+        let test_val: i32 = args.resumable.stack.pop_value().try_into().unwrap_validated();
+        let val2 = args.resumable.stack.pop_value();
+        let val1 = args.resumable.stack.pop_value();
         if test_val != 0 {
-            resumable.stack.push_value(val1)?;
+            args.resumable.stack.push_value(val1)?;
         } else {
-            resumable.stack.push_value(val2)?;
+            args.resumable.stack.push_value(val2)?;
         }
         trace!("Instruction: SELECT_T");
         Ok(ControlFlow::Continue(()))
