@@ -4,7 +4,11 @@
   
   <meta charset="UTF-8"/>
   <meta name="keywords" content="strictdoc, documentation, documentation-tool, requirements-management, requirements, documentation-generator, requirement-specifications, requirements-engineering, technical-documentation, requirements-specification"/>
-  <meta name="description" content="strictdoc. Software for technical documentation and requirements management."/><meta name="strictdoc-export-type" content="static"><link rel="shortcut icon" href="../_static/favicon.ico" type="image/x-icon"/>
+  <meta name="description" content="strictdoc. Software for technical documentation and requirements management."/>
+  <meta name="strictdoc-export-type" content="static">
+  <meta name="strictdoc-document-level" content="1">
+
+  <link rel="shortcut icon" href="../_static/favicon.ico" type="image/x-icon"/>
 
   
   
@@ -17,14 +21,18 @@
   <link rel="stylesheet" href="../_static/form.css"/>
   <link rel="stylesheet" href="../_static/requirement__temporary.css"/>
   <link rel="stylesheet" href="../_static/autogen.css"/>
+  <link rel="stylesheet" href="../_static/pygments.css"/>
   
   <link rel="stylesheet" href="../_static/table_vew.css"/>
 
 
   
-  <script src="../_static/viewtype_menu.js"></script>
+  
+  <script src="../_static/app_core.js"></script>
+  <script src="../_static/dropdown_menu.js"></script>
   <script src="../_static/resizable_bar.js"></script>
   <script src="../_static/collapsible_toc.js"></script>
+  <script src="../_static/project_tree_preserve_scroll.js"></script>
   <script src="../_static/toc_highlighting.js"></script><script id="MathJax-script" async src="../_static/mathjax/tex-mml-chtml.js"></script>
   
   
@@ -74,7 +82,15 @@
   data-state="open"
   data-position="left"
 >
-<div class="tree">
+
+<div class="project_tree_with_ad">
+  <turbo-frame id="frame_aside_project_tree">
+  <div
+    class="tree"
+    js-project_tree_preserve_scroll="tree"
+    data-project-title="Untitled Project"
+    data-testid="aside-project-tree"
+  >
     
         
           <div
@@ -88,7 +104,7 @@
       
         
         <a
-          href="../888f5686cxk024vr224bfkhfb5immci1-requirements/requirements.html"
+          href="../888f5686cxk024vr224bfkhfb5immci1-requirements/requirements-TABLE.html"
           class="tree_item"
           
           active="true"
@@ -110,6 +126,10 @@
         
         
       </div>
+</turbo-frame>
+  
+  <div id="ethical-ad-placement"></div>
+</div>
 </div>
 
     </aside><aside
@@ -135,7 +155,7 @@
       js-collapsible_list="list"
       class="toc"
       id="toc"
-      data-controller="draggable_list"><li data-nodeid="16bf3c845b764db4b28733b4a3b13965">
+      data-controller="draggable_list"><li data-nodeid="bc56e8f6897641cd82b0ddb32ea18274">
         <a
           href="#1-Functional-Requirements"
           anchor="1-Functional-Requirements"
@@ -144,7 +164,7 @@
           <span class="section-number">
             1
           </span>Functional Requirements
-            </a><ul><li data-nodeid="06d89455ed504a228ea30edc7c605c8b">
+            </a><ul><li data-nodeid="1a8d5387a13f4c35b737fb62f586a559">
         <a
           href="#REQ-1"
           anchor="REQ-1"
@@ -153,7 +173,7 @@
           <span class="section-number">
             1.1
           </span>Resumable
-            </a></li><li data-nodeid="1b5d9f99da4f41fc87a42e365b8a7722">
+            </a></li><li data-nodeid="fbca3fa72de746fd9c904e11f4f2ea5a">
         <a
           href="#REQ-3"
           anchor="REQ-3"
@@ -162,7 +182,7 @@
           <span class="section-number">
             1.2
           </span>Baremetal
-            </a></li><li data-nodeid="2086bb7fb27844a79c32b60c263b295a">
+            </a></li><li data-nodeid="d1a6dcdf3b4846b69c3c160ab34f67ed">
         <a
           href="#REQ-5"
           anchor="REQ-5"
@@ -171,7 +191,7 @@
           <span class="section-number">
             1.3
           </span>Bounded execution
-            </a></li><li data-nodeid="b7753f18786e40e38f006f1d9b7b26e1">
+            </a></li><li data-nodeid="b702f7d534b44680a3967e8b57618ae1">
         <a
           href="#REQ-12"
           anchor="REQ-12"
@@ -180,7 +200,7 @@
           <span class="section-number">
             1.4
           </span>Migrateable
-            </a></li><li data-nodeid="76f29cdb9c9e478d889fadacca2d7bc4">
+            </a></li><li data-nodeid="08f5a6177d604659b2ddd7fca10d4adb">
         <a
           href="#REQ-14"
           anchor="REQ-14"
@@ -189,7 +209,7 @@
           <span class="section-number">
             1.5
           </span>No Dependencies
-            </a></li><li data-nodeid="ce71ec5c8b064851afffaeb1b2799107">
+            </a></li><li data-nodeid="73f84ce392784ef491021617fbd12148">
         <a
           href="#REQ-18"
           anchor="REQ-18"
@@ -198,7 +218,7 @@
           <span class="section-number">
             1.6
           </span>Standard Compliance
-            </a></li><li data-nodeid="91d3203f8c584d7082ce9c7732322089">
+            </a></li><li data-nodeid="5dcff709c6974d10b1ad6f4f88ee886b">
         <a
           href="#1.7-Low-Level-Functional-Requirements"
           anchor="1.7-Low-Level-Functional-Requirements"
@@ -207,7 +227,7 @@
           <span class="section-number">
             1.7
           </span>Low-Level Functional Requirements
-            </a><ul><li data-nodeid="9adabd2172294299ac4a41e41d050016">
+            </a><ul><li data-nodeid="d0d420011f8c4050a6a9597fa9ace375">
         <a
           href="#REQ-2"
           anchor="REQ-2"
@@ -216,7 +236,7 @@
           <span class="section-number">
             1.7.1
           </span>Stackless
-            </a></li><li data-nodeid="64fa2c72ad144b508ca765f56e1a19eb">
+            </a></li><li data-nodeid="872c6f4d49e345a18a865f3fe513871f">
         <a
           href="#REQ-4"
           anchor="REQ-4"
@@ -225,7 +245,7 @@
           <span class="section-number">
             1.7.2
           </span>no_std
-            </a></li><li data-nodeid="6acda89a767e4401af29295e6abffc60">
+            </a></li><li data-nodeid="bcb7ac510ce7423c95efae84ce0d689c">
         <a
           href="#REQ-6"
           anchor="REQ-6"
@@ -234,7 +254,7 @@
           <span class="section-number">
             1.7.3
           </span>Fuel
-            </a></li><li data-nodeid="499c875d433241c185ca969c66da4e9d">
+            </a></li><li data-nodeid="c62ae3bf53e04e9cb3c1e6a9feaacf02">
         <a
           href="#REQ-13"
           anchor="REQ-13"
@@ -243,7 +263,7 @@
           <span class="section-number">
             1.7.4
           </span>De-/Serializable
-            </a></li><li data-nodeid="879c5cbf0d084297b680597f073193f1">
+            </a></li><li data-nodeid="1ea954eaab2a47d5935edecc4b573c10">
         <a
           href="#REQ-15"
           anchor="REQ-15"
@@ -252,7 +272,7 @@
           <span class="section-number">
             1.7.5
           </span>Allow log dependency
-            </a></li><li data-nodeid="10749f56963c4bd3af1783fcabf6c282">
+            </a></li><li data-nodeid="371fff137ae4416ab2e3b86fd913c3bf">
         <a
           href="#REQ-16"
           anchor="REQ-16"
@@ -261,7 +281,7 @@
           <span class="section-number">
             1.7.6
           </span>Allow libm dependency
-            </a></li><li data-nodeid="e65acd80e0e943f3a6326d3a464f9289">
+            </a></li><li data-nodeid="790920bb97e54921af6022cd003f23cb">
         <a
           href="#REQ-17"
           anchor="REQ-17"
@@ -272,7 +292,7 @@
           </span>Minimum Supported Rust Version (MSRV)
             </a></li></ul>
             </li></ul>
-            </li><li data-nodeid="90e58c1b01674e83a07f876c3d799dbe">
+            </li><li data-nodeid="63ab6ceb29bf4212a616036bf758b98c">
         <a
           href="#2-Observability-Requirements"
           anchor="2-Observability-Requirements"
@@ -281,7 +301,7 @@
           <span class="section-number">
             2
           </span>Observability Requirements
-            </a><ul><li data-nodeid="ad69d9201ed84e43a770c398d78b64a2">
+            </a><ul><li data-nodeid="7016023eb8fd48ed84386d3163ca6c7a">
         <a
           href="#REQ-7"
           anchor="REQ-7"
@@ -290,7 +310,7 @@
           <span class="section-number">
             2.1
           </span>Instrumentation
-            </a></li><li data-nodeid="9ba0574bc105481fbf59a8957a4e2ddf">
+            </a></li><li data-nodeid="43049518ec6b42c8ba51b2236ded2b85">
         <a
           href="#2.2-Low-Level-Observability-Requirements"
           anchor="2.2-Low-Level-Observability-Requirements"
@@ -299,7 +319,7 @@
           <span class="section-number">
             2.2
           </span>Low-Level Observability Requirements
-            </a><ul><li data-nodeid="167ee97ecb264c8097fb8de931ec020a">
+            </a><ul><li data-nodeid="ac06420204e743b886afaca7445a3676">
         <a
           href="#REQ-8"
           anchor="REQ-8"
@@ -308,7 +328,7 @@
           <span class="section-number">
             2.2.1
           </span>Statement Coverage
-            </a></li><li data-nodeid="c3931b3c96e345778d29c0de2b71ae84">
+            </a></li><li data-nodeid="76cd83c5c6d547708890798953451541">
         <a
           href="#REQ-9"
           anchor="REQ-9"
@@ -317,7 +337,7 @@
           <span class="section-number">
             2.2.2
           </span>Decision Coverage
-            </a></li><li data-nodeid="18e607776bbe4a92a30cef8eea0acf57">
+            </a></li><li data-nodeid="ba182a30fe3b4bcdb9dbd355e9399eab">
         <a
           href="#REQ-10"
           anchor="REQ-10"
@@ -326,7 +346,7 @@
           <span class="section-number">
             2.2.3
           </span>Modified Condition/Decision Coverage
-            </a></li><li data-nodeid="0e2a1ce6386c44b5b37fb8795a04b2c6">
+            </a></li><li data-nodeid="a9941ce56ca544678abdb691aa3e202a">
         <a
           href="#REQ-11"
           anchor="REQ-11"
@@ -374,6 +394,7 @@
   <div
     id="viewtype_handler"
     class="viewtype__handler"
+    data-dropdown-handler
     aria-expanded="false"
     aria-controls="viewtype_menu"
   >
@@ -384,42 +405,45 @@
   </div>
   <menu
     id="viewtype_menu"
-    class="viewtype__menu"
+    class="dropdown_menu"
     aria-hidden="true"
     aria-labelledby="viewtype_handler"
   >
-    <li class="viewtype__menu_header">VIEWS</li>
+    <li class="dropdown_menu_header">VIEWS</li>
     <li>
       <a
         data-viewtype_link="document"
-        class="viewtype__menu_item"
+        class="dropdown_menu_item"
         title="Go to Document view"
-        href="../888f5686cxk024vr224bfkhfb5immci1-requirements/requirements.html#_TOP">
+        href="../888f5686cxk024vr224bfkhfb5immci1-requirements/requirements.html#None-WASM-Interpreter-for-Safety-Requirements">
       Document</a>
     </li><li>
       <a
         data-viewtype_link="table"
-        class="viewtype__menu_item"
+        class="dropdown_menu_item"
         title="Go to Table view"
-        href="../888f5686cxk024vr224bfkhfb5immci1-requirements/requirements-TABLE.html#_TOP">
+        href="../888f5686cxk024vr224bfkhfb5immci1-requirements/requirements-TABLE.html#None-WASM-Interpreter-for-Safety-Requirements">
       Table</a>
     </li><li>
       <a
         data-viewtype_link="traceability"
-        class="viewtype__menu_item"
+        class="dropdown_menu_item"
         title="Go to Traceability view"
-        href="../888f5686cxk024vr224bfkhfb5immci1-requirements/requirements-TRACE.html#_TOP">
+        href="../888f5686cxk024vr224bfkhfb5immci1-requirements/requirements-TRACE.html#None-WASM-Interpreter-for-Safety-Requirements">
       Traceability</a>
     </li><li>
       <a
         data-viewtype_link="deep_traceability"
-        class="viewtype__menu_item"
+        class="dropdown_menu_item"
         title="Go to Deep Traceability view"
-        href="../888f5686cxk024vr224bfkhfb5immci1-requirements/requirements-DEEP-TRACE.html#_TOP">
+        href="../888f5686cxk024vr224bfkhfb5immci1-requirements/requirements-DEEP-TRACE.html#None-WASM-Interpreter-for-Safety-Requirements">
       Deep Traceability</a>
     </li></menu>
 </div>
-    </div>
+    
+  <div class="header__placeholder" data-testid="header-placeholder" id="header-placeholder"></div>
+
+  </div>
     </header>
 
     <main class="layout_main">
@@ -430,7 +454,11 @@
 </div>
       <div class="content">
         <sdoc-node>
-        <h1 data-testid="document-title">WASM Interpreter for Safety - Requirements</h1>
+        
+<h1 data-testid="document-title">
+  WASM Interpreter for Safety - Requirements
+  <span style="position: absolute; left: 0;" id="None-WASM-Interpreter-for-Safety-Requirements" data-uid="None-WASM-Interpreter-for-Safety-Requirements" data-anchor="None-WASM-Interpreter-for-Safety-Requirements"></span>
+</h1>
         
 
         </sdoc-node>
@@ -446,7 +474,8 @@
           </thead>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  SECTION
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1
                 </td>
@@ -455,15 +484,20 @@
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="1-Functional-Requirements"
+  data-anchor="1-Functional-Requirements"
   node-role="requirement"
-  ></sdoc-anchor>
+  
+  
+>
+  </sdoc-anchor>
                     <div class="requirement__title">Functional Requirements</div></td>
                 <td class="content-view-td content-view-td-content"></td>
                 <td class="content-view-td content-view-td-content"></td>
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.1
                 </td>
@@ -482,8 +516,37 @@
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-1"
+  data-anchor="REQ-1"
   node-role="requirement"
-  data-uid="REQ-1"></sdoc-anchor>
+  data-uid="REQ-1"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-1</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Resumable</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter shall be resumable</p>
@@ -497,7 +560,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.2
                 </td>
@@ -516,8 +580,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-3"
+  data-anchor="REQ-3"
   node-role="requirement"
-  data-uid="REQ-3"></sdoc-anchor>
+  data-uid="REQ-3"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-3</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Baremetal</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter shall be executable on bare-metal environments</p>
@@ -530,7 +623,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.3
                 </td>
@@ -549,8 +643,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-5"
+  data-anchor="REQ-5"
   node-role="requirement"
-  data-uid="REQ-5"></sdoc-anchor>
+  data-uid="REQ-5"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-5</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Bounded execution</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter shall yield back control flow eventually</p>
@@ -566,7 +689,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
 </sdoc-autogen></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.4
                 </td>
@@ -585,8 +709,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-12"
+  data-anchor="REQ-12"
   node-role="requirement"
-  data-uid="REQ-12"></sdoc-anchor>
+  data-uid="REQ-12"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-12</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Migrateable</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter state shall be able to halt on one computer and continue execution on another</p>
@@ -599,7 +752,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.5
                 </td>
@@ -625,8 +779,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-14"
+  data-anchor="REQ-14"
   node-role="requirement"
-  data-uid="REQ-14"></sdoc-anchor>
+  data-uid="REQ-14"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-14</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">No Dependencies</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>No dependencies but those explicitly allowed by a requirement shall be used</p>
@@ -660,7 +843,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
 </sdoc-autogen></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.6
                 </td>
@@ -669,8 +853,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-18"
+  data-anchor="REQ-18"
   node-role="requirement"
-  data-uid="REQ-18"></sdoc-anchor>
+  data-uid="REQ-18"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-18</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Standard Compliance</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter shall be compliant with version 2.0, 16 June 2025, of the core WebAssembly standard (<a class="reference external" href="https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/">https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/</a>).</p>
@@ -686,7 +899,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
 </sdoc-autogen></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  SECTION
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.7
                 </td>
@@ -695,15 +909,20 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="1.7-Low-Level-Functional-Requirements"
+  data-anchor="1.7-Low-Level-Functional-Requirements"
   node-role="requirement"
-  ></sdoc-anchor>
+  
+  
+>
+  </sdoc-anchor>
                     <div class="requirement__title">Low-Level Functional Requirements</div></td>
                 <td class="content-view-td content-view-td-content"></td>
                 <td class="content-view-td content-view-td-content"></td>
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.7.1
                 </td>
@@ -722,8 +941,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-2"
+  data-anchor="REQ-2"
   node-role="requirement"
-  data-uid="REQ-2"></sdoc-anchor>
+  data-uid="REQ-2"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-2</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Stackless</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter shall be stackless</p>
@@ -737,7 +985,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.7.2
                 </td>
@@ -756,8 +1005,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-4"
+  data-anchor="REQ-4"
   node-role="requirement"
-  data-uid="REQ-4"></sdoc-anchor>
+  data-uid="REQ-4"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-4</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">no_std</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter shall be implemented in no_std Rust</p>
@@ -773,7 +1051,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
 </sdoc-autogen></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.7.3
                 </td>
@@ -792,8 +1071,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-6"
+  data-anchor="REQ-6"
   node-role="requirement"
-  data-uid="REQ-6"></sdoc-anchor>
+  data-uid="REQ-6"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-6</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Fuel</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter shall support fuel bounded execution</p>
@@ -807,7 +1115,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.7.4
                 </td>
@@ -826,8 +1135,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-13"
+  data-anchor="REQ-13"
   node-role="requirement"
-  data-uid="REQ-13"></sdoc-anchor>
+  data-uid="REQ-13"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-13</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">De-/Serializable</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter state shall be de-/serializable</p>
@@ -840,7 +1178,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.7.5
                 </td>
@@ -859,8 +1198,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-15"
+  data-anchor="REQ-15"
   node-role="requirement"
-  data-uid="REQ-15"></sdoc-anchor>
+  data-uid="REQ-15"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-15</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Allow log dependency</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter shall have an optional dependency on the <tt class="docutils literal">log</tt> version <tt class="docutils literal">0.4.22</tt> or later.</p>
@@ -873,7 +1241,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.7.6
                 </td>
@@ -892,8 +1261,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-16"
+  data-anchor="REQ-16"
   node-role="requirement"
-  data-uid="REQ-16"></sdoc-anchor>
+  data-uid="REQ-16"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-16</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Allow libm dependency</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter may depend on the <tt class="docutils literal">libm</tt> crate version <tt class="docutils literal">0.2.8</tt> or later.</p>
@@ -916,7 +1314,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   1.7.7
                 </td>
@@ -925,8 +1324,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-17"
+  data-anchor="REQ-17"
   node-role="requirement"
-  data-uid="REQ-17"></sdoc-anchor>
+  data-uid="REQ-17"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-17</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Minimum Supported Rust Version (MSRV)</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter shall compile on Rust <tt class="docutils literal">1.87.0</tt> and later versions</p>
@@ -939,7 +1367,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  SECTION
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   2
                 </td>
@@ -948,15 +1377,20 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="2-Observability-Requirements"
+  data-anchor="2-Observability-Requirements"
   node-role="requirement"
-  ></sdoc-anchor>
+  
+  
+>
+  </sdoc-anchor>
                     <div class="requirement__title">Observability Requirements</div></td>
                 <td class="content-view-td content-view-td-content"></td>
                 <td class="content-view-td content-view-td-content"></td>
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   2.1
                 </td>
@@ -989,8 +1423,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-7"
+  data-anchor="REQ-7"
   node-role="requirement"
-  data-uid="REQ-7"></sdoc-anchor>
+  data-uid="REQ-7"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-7</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Instrumentation</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter shall implement means for instrumentation</p>
@@ -1003,7 +1466,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  SECTION
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   2.2
                 </td>
@@ -1012,15 +1476,20 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="2.2-Low-Level-Observability-Requirements"
+  data-anchor="2.2-Low-Level-Observability-Requirements"
   node-role="requirement"
-  ></sdoc-anchor>
+  
+  
+>
+  </sdoc-anchor>
                     <div class="requirement__title">Low-Level Observability Requirements</div></td>
                 <td class="content-view-td content-view-td-content"></td>
                 <td class="content-view-td content-view-td-content"></td>
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   2.2.1
                 </td>
@@ -1046,8 +1515,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-8"
+  data-anchor="REQ-8"
   node-role="requirement"
-  data-uid="REQ-8"></sdoc-anchor>
+  data-uid="REQ-8"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-8</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Statement Coverage</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The instrumentation shall enable the measurement of statement coverage</p>
@@ -1060,7 +1558,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   2.2.2
                 </td>
@@ -1086,8 +1585,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-9"
+  data-anchor="REQ-9"
   node-role="requirement"
-  data-uid="REQ-9"></sdoc-anchor>
+  data-uid="REQ-9"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-9</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Decision Coverage</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The instrumentation shall enable the measurement of decision coverage</p>
@@ -1100,7 +1628,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   2.2.3
                 </td>
@@ -1126,8 +1655,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-10"
+  data-anchor="REQ-10"
   node-role="requirement"
-  data-uid="REQ-10"></sdoc-anchor>
+  data-uid="REQ-10"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-10</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Modified Condition/Decision Coverage</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The instrumentation shall enable the measurement of modified condition/decision coverage</p>
@@ -1140,7 +1698,8 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 <td class="content-view-td content-view-td-content"></td></tr>
               <tr>
                 <td class="content-view-td content-view-td-type">
-                    Requirement</td>
+                  REQUIREMENT
+                </td>
                 <td class="content-view-td content-view-td-meta">
                   2.2.4
                 </td>
@@ -1173,8 +1732,37 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
                 </td>
                 <td class="content-view-td content-view-td-title"><sdoc-anchor
   id="REQ-11"
+  data-anchor="REQ-11"
   node-role="requirement"
-  data-uid="REQ-11"></sdoc-anchor>
+  data-uid="REQ-11"
+  
+  
+>
+  
+  <div class="anchor_block" data-testid="anchor_hover_button">
+    
+      
+<div class="anchor_button" title="Click to copy" data-testid="section-anchor-button">
+  <span class="anchor_base_icon" style="line-height: 0.1;">
+    <span class="svg_icon_not_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <circle cx="8" cy="3" r="1"></circle>
+  <line x1="8" y1="4" x2="8" y2="14.5"></line>
+  <path d="M5.5,6 C5.5,6 7,6 10.5,6 C10.5,6 5.5,6 5.5,6 Z"/>
+  <path d="M2,11 C3,10 3.5,9.5 3.5,9.5 C3.5,12 5,13 8,13 C11,13 12.5,12 12.5,9.5 C12.5,9.5 13,10 14,11"/>
+</svg></span>
+    <span class="svg_icon_hover_visible"><svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M8,2 L12,2 C13,2 14,3 14,4 L14,8 C14,9 13,10 12,10 L8,10 C7,10 6,9 6,8 L6,4 C6,3 7,2 8,2 Z"/>
+  <path d="M10,12 C10,13 9,14 8,14 L4,14 C3,14 2,13 2,12 L2,8 C2,7 3,6 4,6"/>
+</svg></span>
+  </span>
+  <span class="anchor_check_icon" style="line-height: 0.1; display: none;">
+    <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16">
+  <path d="M2.5,8.5 C2.5,8.5 3.5,9.5 6,12 C11,7 13.5,4.5 13.5,4.5" />
+</svg>
+  </span>
+  <span class="anchor_button_text">REQ-11</span>
+</div>
+    </div></sdoc-anchor>
                     <div class="requirement__title">Certification Evidence</div></td>
                 <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
 <p>The interpreter shall support the generation of certification evidence</p>
@@ -1200,13 +1788,13 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
         >StrictDoc</a>
         <a
           class="strictdoc__version"
-          href="https://github.com/strictdoc-project/strictdoc/releases/tag/0.10.1"
+          href="https://github.com/strictdoc-project/strictdoc/releases/tag/0.19.0"
           target="_blank"
         >
           <svg height="16" viewBox="0 0 16 16" version="1.1" width="16" >
             <path fill-rule="evenodd" d="M2.5 7.775V2.75a.25.25 0 01.25-.25h5.025a.25.25 0 01.177.073l6.25 6.25a.25.25 0 010 .354l-5.025 5.025a.25.25 0 01-.354 0l-6.25-6.25a.25.25 0 01-.073-.177zm-1.5 0V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 010 2.474l-5.026 5.026a1.75 1.75 0 01-2.474 0l-6.25-6.25A1.75 1.75 0 011 7.775zM6 5a1 1 0 100 2 1 1 0 000-2z"/>
           </svg>
-          0.10.1
+          0.19.0
         </a>
       </div>
     </footer>
@@ -1220,5 +1808,6 @@ Conversely, later on the interpreter may be resumed, as if it was not halted in 
   <div id="modal"></div>
   <div id="confirm"></div>
   
+
 </body>
 </html>

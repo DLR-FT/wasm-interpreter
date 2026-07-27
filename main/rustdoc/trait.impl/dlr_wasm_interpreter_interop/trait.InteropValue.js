@@ -1,9 +1,9 @@
 (function() {
-    var implementors = Object.fromEntries([["dlr_wasm_interpreter_interop",[]]]);
+    const implementors = Object.fromEntries([["dlr_wasm_interpreter_interop",[]]]);
     if (window.register_implementors) {
         window.register_implementors(implementors);
     } else {
         window.pending_implementors = implementors;
     }
 })()
-//{"start":57,"fragment_lengths":[35]}
+//{"start":59,"fragment_lengths":[35]}

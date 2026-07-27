@@ -1,5 +1,6 @@
 // @relation(SDOC-SRS-36, scope=file)
 
+(function () {
 const __log = (topic, ...payload) => {
   console.log(`%c ${topic} `, 'background:yellow;color:black',
     ...payload
@@ -231,7 +232,6 @@ class Dom {
     // state
     this.active = {
       range: null,
-      // requirement: null,
       pointers: [],
       labels: [],
       focus: false,
@@ -239,12 +239,6 @@ class Dom {
   }
 
   prepare() {
-
-    // rgb: '75,255,0',
-    // alpha: '0.2',
-    // rgb: '255,255,155',
-    // alpha: '1',
-
     this._prepareSourceContainer();
     this._prepareReferContainer();
     this._prepareSource();
@@ -262,7 +256,6 @@ class Dom {
     // console.log('this.closers', this.closers);
     // console.log('this.requirements', this.requirements);
     // console.log('this.active', this.active);
-
   }
 
   useLocationHash() {
@@ -270,12 +263,10 @@ class Dom {
     const rangeAlias = rangeBegin ? this._generateRangeAlias(rangeBegin, rangeEnd) : undefined;
 
     this.changeActive({
-      // requirement: this.requirements[reqId],
       rangeBegin,
       rangeEnd,
       rangeAlias,
       pointers: rangeAlias ? this.ranges[rangeAlias].pointers : null,
-      // range: rangeAlias ? this.ranges[rangeAlias].highlighter : null,
       labels: (reqId && rangeAlias) ? this.ranges[rangeAlias][reqId] : null,
     });
 
@@ -286,26 +277,28 @@ class Dom {
     rangeBegin,
     rangeEnd,
     rangeAlias,
-    //// range,
-    // handler,
-    // banner,
-    //// requirement,
     pointers,
     labels,
   }) => {
 
     // remove old 'active'
-    // this.active.requirement?.classList.remove(this.activeClass);
     this.active.pointers?.forEach(pointer => pointer?.classList.remove(this.activeClass));
     this.active.labels?.forEach(label => label?.classList.remove(this.activeClass));
     if (this.active.rangeAlias) {
       this.ranges[this.active.rangeAlias].banner.classList.remove(this.activeClass);
-      this.closers[this.active.rangeEnd].classList.remove(this.activeClass);
+
+      const closer = this.closers?.[this.active.rangeEnd];
+      console.assert(
+        closer,
+        "Closer must not be null. One known way of getting this error is " +
+        "when a closing function/range marker is missing and not registered " +
+        "with the file traceability info."
+      );
+
+      closer.classList.remove(this.activeClass);
     }
 
     // make changes to state
-    //// this.active.range = range;
-    //// this.active.requirement = requirement;
     this.active.pointers = pointers;
     this.active.labels = labels;
     this.active.rangeBegin = rangeBegin;
@@ -313,7 +306,6 @@ class Dom {
     this.active.rangeAlias = rangeAlias;
 
     // add new 'active'
-    // this.active.requirement?.classList.add(this.activeClass);
     this.active.pointers?.forEach(pointer => pointer.classList.add(this.activeClass));
     this.active.labels?.forEach(label => label.classList.add(this.activeClass));
     this.ranges[rangeAlias]?.banner.classList.add(this.activeClass);
@@ -380,13 +372,6 @@ class Dom {
 
   _prepareSourceContainer() {
     this.sourceContainer = document.getElementById('sourceContainer');
-
-    // this.sourceContainer.style.position = 'absolute';
-    // this.sourceContainer.style.top = 0;
-    // this.sourceContainer.style.bottom = 0;
-    // this.sourceContainer.style.right = 0;
-    // this.sourceContainer.style.left = 0;
-    // this.sourceContainer.style.overflow = 'auto';
   }
 
   _prepareReferContainer() {
@@ -614,8 +599,6 @@ class Dom {
 
   _updateLinesWithRanges() {
     Object.entries(this.ranges).forEach(([key, value]) => {
-      // console.log(value);
-
       const begin = parseInt(value.begin, 10);
       const end = parseInt(value.end, 10);
 
@@ -627,20 +610,13 @@ class Dom {
         this.lines[i].lineNumber.classList.add(this.strictdocSourceFilterClass);
         this.lines[i].line.classList.add(this.coveredClass);
       }
-
-      // const rangeNumContainer = this.lines[begin].line.querySelector(this.strictdocLineRangeSelector);
-      // rangeNumContainer.innerHTML = this.lines[begin].pointers.length;
     });
   }
 
   _generateRangeAlias(begin, end) { return `${begin}${this.hashSplitter}${end}` };
 }
 
-const dom = new Dom({
-  // sourceId: 'source',
-  // sourceContainerId: 'sourceContainer',
-  // hashSplitter: '#',
-});
+const dom = new Dom({});
 
 window.addEventListener("load", function () {
   dom.prepare();
@@ -665,3 +641,4 @@ window.addEventListener("load", function () {
 });
 
 window.addEventListener("hashchange", () => dom.useLocationHash());
+})();
