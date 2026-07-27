@@ -83,12 +83,11 @@ type InstructionHandlerFn =
 
 // A placeholder instruction for unassigned instruction bytes. This function is by definition dead
 // code!
-define_instruction_fn! {unset, fuel_check = omit, |_: Args| {
-    // Access T to circumvent warning that it is unused by this function. #[allow] does not work for
-    // macros.
-    let _ = T::DISPATCH_TABLE;
-    unreachable_validated!();
-}}
+define_instruction!(super::unset, unset_mod, fuel_check = omit);
+#[inline(always)]
+pub unsafe fn unset(_: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    unreachable_validated!()
+}
 
 /// Interprets wasm native functions. Wasm parameters and Wasm return values are passed on the stack.
 /// Returns `Ok(ControlFlow::Continue(()))` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
@@ -414,104 +413,222 @@ pub(crate) struct Args<'a, 'sidetable, 'wasm, 'other, 'resumable> {
     current_function_end_marker: &'a mut usize,
 }
 
-macro_rules! define_instruction_fn {
-    ($name:ident, fuel_check = omit, $contents:expr) => {
-        /// # Safety
-        ///
-        /// The given [`WasmResumable`](crate::execution::resumable::WasmResumable) and all address
-        /// types contained in the [`Args`](crate::execution::instructions::Args) must be valid
-        /// in the [`StoreInner`](crate::execution::runtime_structure::store::StoreInner) that is also contained in the
-        /// [`Args`](crate::execution::instructions::Args).
-        // Disable inlining to inspect the emitted code of individual instruction handlers:
-        // #[inline(never)]
-        pub(crate) unsafe fn $name<'wasm, 'modules, T: $crate::execution::config::Config>(
-            wasm: &mut $crate::core::decoding::decoder::WasmDecoder<'wasm>,
-            resumable: &mut $crate::execution::resumable::WasmResumable,
-            current_sidetable: &mut &'modules $crate::core::sidetable::Sidetable,
-            store_inner: &mut $crate::execution::runtime_structure::store::StoreInner,
-            modules: &'modules $crate::execution::runtime_structure::addresses::AddrVec<
-                $crate::execution::runtime_structure::addresses::ModuleAddr,
-                $crate::execution::runtime_structure::module_instances::ModuleInst<'wasm>,
-            >,
-            current_module: &mut $crate::execution::runtime_structure::addresses::ModuleAddr,
-            current_function_end_marker: &mut usize,
-        ) -> Result<
-            core::ops::ControlFlow<$crate::execution::instructions::InterpreterLoopOutcome>,
-            $crate::RuntimeError,
-        > {
-            let args = $crate::execution::instructions::Args {
-                store_inner,
-                modules,
-                wasm,
-                current_module,
-                current_function_end_marker,
-                current_sidetable,
-                resumable,
+macro_rules! define_instruction {
+    ($name:expr, $name_mod:ident, fuel_check = omit) => {
+        pub(crate) mod $name_mod {
+            use ::core::ops::ControlFlow;
+
+            use $crate::{
+                core::{decoding::decoder::WasmDecoder, sidetable::Sidetable},
+                execution::{
+                    instructions::{Args, InterpreterLoopOutcome},
+                    resumable::WasmResumable,
+                    runtime_structure::{
+                        addresses::{AddrVec, ModuleAddr},
+                        module_instances::ModuleInst,
+                        store::StoreInner,
+                    },
+                },
+                Config, RuntimeError,
             };
 
-            $contents(args)
-        }
-    };
+            pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
+                wasm: &mut WasmDecoder<'wasm>,
+                resumable: &mut WasmResumable,
+                current_sidetable: &mut &'modules Sidetable,
+                store_inner: &mut StoreInner,
+                modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
+                current_module: &mut ModuleAddr,
+                current_function_end_marker: &mut usize,
+            ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+                let args = Args {
+                    store_inner,
+                    modules,
+                    wasm,
+                    current_module,
+                    current_function_end_marker,
+                    current_sidetable,
+                    resumable,
+                };
 
-    ($name:ident, fuel_check = flat($instruction:expr), $contents:expr) => {
-        define_instruction_fn! {
-            $name,
-            fuel_check = omit,
-            |args: $crate::execution::instructions::Args| {
-                if let core::ops::ControlFlow::Break(outcome) =
-                    $crate::execution::instructions::decrement_fuel(
-                        T::get_flat_cost($instruction),
-                        &mut args.resumable.maybe_fuel,
-                    )
-                {
-                    return Ok(core::ops::ControlFlow::Break(outcome));
-                }
-
-                $contents(args)
+                // SAFETY: TODO
+                unsafe { $name(args) }
             }
         }
     };
 
-    ($name: ident, fuel_check = flat_fc($instruction: expr), $contents:expr) => {
-        define_instruction_fn! {
-            $name,
-            fuel_check = omit,
-            |args: $crate::execution::instructions::Args| {
-                if let core::ops::ControlFlow::Break(outcome) =
-                    $crate::execution::instructions::decrement_fuel(
-                        T::get_fc_extension_flat_cost($instruction),
-                        &mut args.resumable.maybe_fuel,
-                    )
-                {
+    ($name:expr, $name_mod:ident, fuel_check = flat($instruction:ident)) => {
+        pub(crate) mod $name_mod {
+            use ::core::ops::ControlFlow;
+
+            use $crate::{
+                core::{
+                    decoding::decoder::WasmDecoder, sidetable::Sidetable, structure::instructions,
+                },
+                execution::{
+                    instructions::{decrement_fuel, Args, InterpreterLoopOutcome},
+                    resumable::WasmResumable,
+                    runtime_structure::{
+                        addresses::{AddrVec, ModuleAddr},
+                        module_instances::ModuleInst,
+                        store::StoreInner,
+                    },
+                },
+                Config, RuntimeError,
+            };
+
+            /// # Safety
+            ///
+            /// The given [`WasmResumable`] and all address types contained in the [`Args`] must be
+            /// valid in the [`StoreInner`] that is also contained in the [`Args`].
+            pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
+                wasm: &mut WasmDecoder<'wasm>,
+                resumable: &mut WasmResumable,
+                current_sidetable: &mut &'modules Sidetable,
+                store_inner: &mut StoreInner,
+                modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
+                current_module: &mut ModuleAddr,
+                current_function_end_marker: &mut usize,
+            ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+                if let core::ops::ControlFlow::Break(outcome) = decrement_fuel(
+                    T::get_flat_cost(instructions::$instruction),
+                    &mut resumable.maybe_fuel,
+                ) {
                     return Ok(core::ops::ControlFlow::Break(outcome));
                 }
 
-                $contents(args)
+                let args = Args {
+                    store_inner,
+                    modules,
+                    wasm,
+                    current_module,
+                    current_function_end_marker,
+                    current_sidetable,
+                    resumable,
+                };
+
+                // SAFETY: TODO
+                unsafe { $name(args) }
             }
         }
     };
 
-    ($name: ident, fuel_check = flat_fd($instruction: expr), $contents:expr) => {
-        define_instruction_fn! {
-            $name,
-            fuel_check = omit,
-            |args: $crate::execution::instructions::Args| {
-                if let core::ops::ControlFlow::Break(outcome) =
-                    $crate::execution::instructions::decrement_fuel(
-                        T::get_fd_extension_flat_cost($instruction),
-                        &mut args.resumable.maybe_fuel,
-                    )
-                {
+    ($name:expr, $name_mod:ident, fuel_check = flat_fc($instruction:ident)) => {
+        pub(crate) mod $name_mod {
+            use ::core::ops::ControlFlow;
+
+            use $crate::{
+                core::{
+                    decoding::decoder::WasmDecoder, sidetable::Sidetable,
+                    structure::instructions::fc_extensions,
+                },
+                execution::{
+                    instructions::{decrement_fuel, Args, InterpreterLoopOutcome},
+                    resumable::WasmResumable,
+                    runtime_structure::{
+                        addresses::{AddrVec, ModuleAddr},
+                        module_instances::ModuleInst,
+                        store::StoreInner,
+                    },
+                },
+                Config, RuntimeError,
+            };
+
+            /// # Safety
+            ///
+            /// The given [`WasmResumable`] and all address types contained in the [`Args`] must be
+            /// valid in the [`StoreInner`] that is also contained in the [`Args`].
+            pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
+                wasm: &mut WasmDecoder<'wasm>,
+                resumable: &mut WasmResumable,
+                current_sidetable: &mut &'modules Sidetable,
+                store_inner: &mut StoreInner,
+                modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
+                current_module: &mut ModuleAddr,
+                current_function_end_marker: &mut usize,
+            ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+                if let core::ops::ControlFlow::Break(outcome) = decrement_fuel(
+                    T::get_fc_extension_flat_cost(fc_extensions::$instruction),
+                    &mut resumable.maybe_fuel,
+                ) {
                     return Ok(core::ops::ControlFlow::Break(outcome));
                 }
 
-                $contents(args)
+                let args = Args {
+                    store_inner,
+                    modules,
+                    wasm,
+                    current_module,
+                    current_function_end_marker,
+                    current_sidetable,
+                    resumable,
+                };
+
+                // SAFETY: TODO
+                unsafe { $name(args) }
+            }
+        }
+    };
+
+    ($name:expr, $name_mod:ident, fuel_check = flat_fd($instruction:ident)) => {
+        pub(crate) mod $name_mod {
+            use ::core::ops::ControlFlow;
+
+            use $crate::{
+                core::{
+                    decoding::decoder::WasmDecoder, sidetable::Sidetable,
+                    structure::instructions::fd_extensions,
+                },
+                execution::{
+                    instructions::{decrement_fuel, Args, InterpreterLoopOutcome},
+                    resumable::WasmResumable,
+                    runtime_structure::{
+                        addresses::{AddrVec, ModuleAddr},
+                        module_instances::ModuleInst,
+                        store::StoreInner,
+                    },
+                },
+                Config, RuntimeError,
+            };
+
+            /// # Safety
+            ///
+            /// The given [`WasmResumable`] and all address types contained in the [`Args`] must be
+            /// valid in the [`StoreInner`] that is also contained in the [`Args`].
+            pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
+                wasm: &mut WasmDecoder<'wasm>,
+                resumable: &mut WasmResumable,
+                current_sidetable: &mut &'modules Sidetable,
+                store_inner: &mut StoreInner,
+                modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
+                current_module: &mut ModuleAddr,
+                current_function_end_marker: &mut usize,
+            ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+                if let ControlFlow::Break(outcome) = decrement_fuel(
+                    T::get_fd_extension_flat_cost(fd_extensions::$instruction),
+                    &mut resumable.maybe_fuel,
+                ) {
+                    return Ok(core::ops::ControlFlow::Break(outcome));
+                }
+
+                let args = Args {
+                    store_inner,
+                    modules,
+                    wasm,
+                    current_module,
+                    current_function_end_marker,
+                    current_sidetable,
+                    resumable,
+                };
+
+                // SAFETY: TODO
+                unsafe { $name(args) }
             }
         }
     };
 }
 
-pub(crate) use define_instruction_fn;
+pub(crate) use define_instruction;
 
 #[inline(always)]
 fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> ControlFlow<InterpreterLoopOutcome> {
@@ -529,7 +646,15 @@ fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> ControlFlow<Interp
     ControlFlow::Continue(())
 }
 
-define_instruction_fn! {fc_extensions, fuel_check = omit, |args: Args| {
+define_instruction!(
+    super::fc_extensions_dispatch::<T>,
+    fc_extensions_dispatch_mod,
+    fuel_check = omit
+);
+#[inline(always)]
+pub unsafe fn fc_extensions_dispatch<T: Config>(
+    args: Args,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // should we call instruction hook here as well? multibyte instruction
     let second_instr = args.wasm.decode_var_u32().unwrap_validated();
 
@@ -558,9 +683,17 @@ define_instruction_fn! {fc_extensions, fuel_check = omit, |args: Args| {
             args.current_function_end_marker,
         )
     }
-}}
+}
 
-define_instruction_fn! {fd_extensions, fuel_check = omit, |args: Args| {
+define_instruction!(
+    super::fd_extensions_dispatch::<T>,
+    fd_extensions_dispatch_mod,
+    fuel_check = omit
+);
+#[inline(always)]
+pub unsafe fn fd_extensions_dispatch<T: Config>(
+    args: Args,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // Should we call instruction hook here as well? Multibyte instruction
     let second_instr = args.wasm.decode_var_u32().unwrap_validated();
 
@@ -589,4 +722,4 @@ define_instruction_fn! {fd_extensions, fuel_check = omit, |args: Args| {
             args.current_function_end_marker,
         )
     }
-}}
+}
