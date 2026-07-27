@@ -7,10 +7,7 @@ use core::ops::ControlFlow;
 
 use crate::{
     core::structure::modules::indices::{GlobalIdx, LocalIdx},
-    execution::{
-        assert_validated::UnwrapValidatedExt,
-        instructions::{define_instruction, InterpreterLoopOutcome, State},
-    },
+    execution::instructions::{define_instruction, InterpreterLoopOutcome, State},
     trace, RuntimeError,
 };
 
@@ -57,7 +54,8 @@ define_instruction!(
 pub unsafe fn local_tee(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid local index next.
     let local_idx = unsafe { LocalIdx::decode_unchecked(state.wasm) };
-    let value = state.resumable.stack.peek_value().unwrap_validated();
+    // SAFETY: Validation ensures that there is a value on the stack.
+    let value = *unsafe { state.resumable.stack.peek_value_unchecked() };
     // SAFETY: Validation guarantees that the local index is valid in the current call frame.
     let local = unsafe { state.resumable.stack.get_local_mut(local_idx) };
     *local = value;

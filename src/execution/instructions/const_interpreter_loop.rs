@@ -113,7 +113,7 @@ pub(crate) unsafe fn run_const_span<T: Config>(
     // SAFETY: The current caller makes the same safety guarantees.
     unsafe { run_const(&mut wasm, &mut stack, module, store)? };
 
-    Ok(stack.peek_value())
+    Ok(stack.peek_value().copied())
 }
 
 struct State<'a, 'wasm, T: Config> {

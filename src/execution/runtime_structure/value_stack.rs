@@ -116,9 +116,20 @@ impl Stack {
         unsafe { self.values.pop_unchecked() }
     }
 
-    /// Returns a cloned copy of the top value on the stack, or `None` if the stack is empty
-    pub fn peek_value(&self) -> Option<Value> {
-        self.values.peek().ok().cloned()
+    /// Returns a reference to the top value on the stack, or `None` if the stack is empty
+    pub fn peek_value(&self) -> Option<&Value> {
+        self.values.peek().ok()
+    }
+
+    /// Returns a reference to the top value on the stack
+    ///
+    /// # Safety
+    ///
+    /// There must be at least one value on the stack.
+    pub unsafe fn peek_value_unchecked(&self) -> &Value {
+        debug_assert!(!self.values.is_empty());
+        // SAFETY: The caller ensures that there is at least one value on the stack.
+        unsafe { self.values.peek_unchecked() }
     }
 
     /// Push a value to the value stack after verifying that this will not overflow the stack
