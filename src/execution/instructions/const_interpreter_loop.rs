@@ -116,11 +116,11 @@ pub(crate) unsafe fn run_const_span<T: Config>(
     Ok(stack.peek_value())
 }
 
-struct State<'decoder, 'resumable, 'store, 'wasm, T: Config> {
-    wasm: &'decoder mut WasmDecoder<'wasm>,
-    stack: &'resumable mut Stack,
+struct State<'a, 'wasm, T: Config> {
+    wasm: &'a mut WasmDecoder<'wasm>,
+    stack: &'a mut Stack,
     module: ModuleAddr,
-    store: &'store Store<'wasm, T>,
+    store: &'a Store<'wasm, T>,
 }
 
 macro_rules! define_instruction {

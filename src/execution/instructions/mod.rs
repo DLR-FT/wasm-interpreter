@@ -403,11 +403,11 @@ pub(crate) fn from_lanes<const M: usize, const N: usize, T: LittleEndianBytes<M>
     array::from_fn(|_| bytes.next().unwrap())
 }
 
-pub(crate) struct State<'a, 'sidetable, 'wasm, 'other, 'resumable> {
+pub(crate) struct State<'a, 'sidetable, 'wasm> {
     wasm: &'a mut WasmDecoder<'wasm>,
-    resumable: &'resumable mut WasmResumable,
+    resumable: &'a mut WasmResumable,
     current_sidetable: &'a mut &'sidetable Sidetable,
-    store_inner: &'other mut StoreInner,
+    store_inner: &'a mut StoreInner,
     modules: &'sidetable AddrVec<ModuleAddr, ModuleInst<'wasm>>,
     current_module: &'a mut ModuleAddr,
     current_function_end_marker: &'a mut usize,
