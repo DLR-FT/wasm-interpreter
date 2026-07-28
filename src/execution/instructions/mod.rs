@@ -85,7 +85,7 @@ type InstructionHandlerFn =
 // code!
 define_instruction!(super::unset, unset_mod, fuel_check = omit);
 #[inline(always)]
-pub unsafe fn unset(_: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn unset(_: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     unreachable_validated!()
 }
 
@@ -152,7 +152,7 @@ pub(super) unsafe fn run<T: Config>(
 
         // SAFETY: All possible instruction handler functions use the same safety requirements, as
         // they are defined through the same macro: The caller ensures that the resumable is valid
-        // in the current store. Also all other address types passed via the `Args` must come from
+        // in the current store. Also all other address types passed via the `State` must come from
         // the current store itself. Therefore, they are automatically valid in this store.
         let instruction_result = unsafe {
             instruction_fn(
@@ -403,7 +403,7 @@ pub(crate) fn from_lanes<const M: usize, const N: usize, T: LittleEndianBytes<M>
     array::from_fn(|_| bytes.next().unwrap())
 }
 
-pub(crate) struct Args<'a, 'sidetable, 'wasm, 'other, 'resumable> {
+pub(crate) struct State<'a, 'sidetable, 'wasm, 'other, 'resumable> {
     wasm: &'a mut WasmDecoder<'wasm>,
     resumable: &'resumable mut WasmResumable,
     current_sidetable: &'a mut &'sidetable Sidetable,
@@ -421,7 +421,7 @@ macro_rules! define_instruction {
             use $crate::{
                 core::{decoding::decoder::WasmDecoder, sidetable::Sidetable},
                 execution::{
-                    instructions::{Args, InterpreterLoopOutcome},
+                    instructions::{InterpreterLoopOutcome, State},
                     resumable::WasmResumable,
                     runtime_structure::{
                         addresses::{AddrVec, ModuleAddr},
@@ -441,7 +441,7 @@ macro_rules! define_instruction {
                 current_module: &mut ModuleAddr,
                 current_function_end_marker: &mut usize,
             ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-                let args = Args {
+                let state = State {
                     store_inner,
                     modules,
                     wasm,
@@ -452,7 +452,7 @@ macro_rules! define_instruction {
                 };
 
                 // SAFETY: TODO
-                unsafe { $name(args) }
+                unsafe { $name(state) }
             }
         }
     };
@@ -466,7 +466,7 @@ macro_rules! define_instruction {
                     decoding::decoder::WasmDecoder, sidetable::Sidetable, structure::instructions,
                 },
                 execution::{
-                    instructions::{decrement_fuel, Args, InterpreterLoopOutcome},
+                    instructions::{decrement_fuel, InterpreterLoopOutcome, State},
                     resumable::WasmResumable,
                     runtime_structure::{
                         addresses::{AddrVec, ModuleAddr},
@@ -479,8 +479,8 @@ macro_rules! define_instruction {
 
             /// # Safety
             ///
-            /// The given [`WasmResumable`] and all address types contained in the [`Args`] must be
-            /// valid in the [`StoreInner`] that is also contained in the [`Args`].
+            /// The given [`WasmResumable`] and all address types contained in the [`State`] must be
+            /// valid in the [`StoreInner`] that is also contained in the [`State`].
             pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
                 wasm: &mut WasmDecoder<'wasm>,
                 resumable: &mut WasmResumable,
@@ -497,7 +497,7 @@ macro_rules! define_instruction {
                     return Ok(core::ops::ControlFlow::Break(outcome));
                 }
 
-                let args = Args {
+                let state = State {
                     store_inner,
                     modules,
                     wasm,
@@ -508,7 +508,7 @@ macro_rules! define_instruction {
                 };
 
                 // SAFETY: TODO
-                unsafe { $name(args) }
+                unsafe { $name(state) }
             }
         }
     };
@@ -523,7 +523,7 @@ macro_rules! define_instruction {
                     structure::instructions::fc_extensions,
                 },
                 execution::{
-                    instructions::{decrement_fuel, Args, InterpreterLoopOutcome},
+                    instructions::{decrement_fuel, InterpreterLoopOutcome, State},
                     resumable::WasmResumable,
                     runtime_structure::{
                         addresses::{AddrVec, ModuleAddr},
@@ -536,8 +536,8 @@ macro_rules! define_instruction {
 
             /// # Safety
             ///
-            /// The given [`WasmResumable`] and all address types contained in the [`Args`] must be
-            /// valid in the [`StoreInner`] that is also contained in the [`Args`].
+            /// The given [`WasmResumable`] and all address types contained in the [`State`] must be
+            /// valid in the [`StoreInner`] that is also contained in the [`State`].
             pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
                 wasm: &mut WasmDecoder<'wasm>,
                 resumable: &mut WasmResumable,
@@ -554,7 +554,7 @@ macro_rules! define_instruction {
                     return Ok(core::ops::ControlFlow::Break(outcome));
                 }
 
-                let args = Args {
+                let state = State {
                     store_inner,
                     modules,
                     wasm,
@@ -565,7 +565,7 @@ macro_rules! define_instruction {
                 };
 
                 // SAFETY: TODO
-                unsafe { $name(args) }
+                unsafe { $name(state) }
             }
         }
     };
@@ -580,7 +580,7 @@ macro_rules! define_instruction {
                     structure::instructions::fd_extensions,
                 },
                 execution::{
-                    instructions::{decrement_fuel, Args, InterpreterLoopOutcome},
+                    instructions::{decrement_fuel, InterpreterLoopOutcome, State},
                     resumable::WasmResumable,
                     runtime_structure::{
                         addresses::{AddrVec, ModuleAddr},
@@ -593,8 +593,8 @@ macro_rules! define_instruction {
 
             /// # Safety
             ///
-            /// The given [`WasmResumable`] and all address types contained in the [`Args`] must be
-            /// valid in the [`StoreInner`] that is also contained in the [`Args`].
+            /// The given [`WasmResumable`] and all address types contained in the [`State`] must be
+            /// valid in the [`StoreInner`] that is also contained in the [`State`].
             pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
                 wasm: &mut WasmDecoder<'wasm>,
                 resumable: &mut WasmResumable,
@@ -611,7 +611,7 @@ macro_rules! define_instruction {
                     return Ok(core::ops::ControlFlow::Break(outcome));
                 }
 
-                let args = Args {
+                let state = State {
                     store_inner,
                     modules,
                     wasm,
@@ -622,7 +622,7 @@ macro_rules! define_instruction {
                 };
 
                 // SAFETY: TODO
-                unsafe { $name(args) }
+                unsafe { $name(state) }
             }
         }
     };
@@ -653,15 +653,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn fc_extensions_dispatch<T: Config>(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // should we call instruction hook here as well? multibyte instruction
-    let second_instr = args.wasm.decode_var_u32().unwrap_validated();
+    let second_instr = state.wasm.decode_var_u32().unwrap_validated();
 
     trace!(
         "Executing FC instruction {} at pc={}",
         crate::core::structure::instructions::fc_extension_instruction_to_str(second_instr),
-        args.wasm.pc
+        state.wasm.pc
     );
 
     let instruction_fn = T::FC_DISPATCH_TABLE
@@ -670,17 +670,17 @@ pub unsafe fn fc_extensions_dispatch<T: Config>(
 
     // SAFETY: All possible instruction handler functions use the same safety requirements, as
     // they are defined through the same macro: The caller ensures that the resumable is valid
-    // in the current store. Also all other address types passed via the `Args` must come from
+    // in the current store. Also all other address types passed via the `State` must come from
     // the current store itself. Therefore, they are automatically valid in this store.
     unsafe {
         instruction_fn(
-            args.wasm,
-            args.resumable,
-            args.current_sidetable,
-            args.store_inner,
-            args.modules,
-            args.current_module,
-            args.current_function_end_marker,
+            state.wasm,
+            state.resumable,
+            state.current_sidetable,
+            state.store_inner,
+            state.modules,
+            state.current_module,
+            state.current_function_end_marker,
         )
     }
 }
@@ -692,15 +692,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn fd_extensions_dispatch<T: Config>(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // Should we call instruction hook here as well? Multibyte instruction
-    let second_instr = args.wasm.decode_var_u32().unwrap_validated();
+    let second_instr = state.wasm.decode_var_u32().unwrap_validated();
 
     trace!(
         "Executing FD instruction {} at pc={}",
         crate::core::structure::instructions::fd_extension_instruction_to_str(second_instr),
-        args.wasm.pc
+        state.wasm.pc
     );
 
     let instruction_fn = T::FD_DISPATCH_TABLE
@@ -709,17 +709,17 @@ pub unsafe fn fd_extensions_dispatch<T: Config>(
 
     // SAFETY: All possible instruction handler functions use the same safety requirements, as
     // they are defined through the same macro: The caller ensures that the resumable is valid
-    // in the current store. Also all other address types passed via the `Args` must come from
+    // in the current store. Also all other address types passed via the `State` must come from
     // the current store itself. Therefore, they are automatically valid in this store.
     unsafe {
         instruction_fn(
-            args.wasm,
-            args.resumable,
-            args.current_sidetable,
-            args.store_inner,
-            args.modules,
-            args.current_module,
-            args.current_function_end_marker,
+            state.wasm,
+            state.resumable,
+            state.current_sidetable,
+            state.store_inner,
+            state.modules,
+            state.current_module,
+            state.current_function_end_marker,
         )
     }
 }

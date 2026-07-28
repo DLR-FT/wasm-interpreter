@@ -65,7 +65,7 @@ pub(crate) unsafe fn run_const<'wasm, T: Config>(
             }
         };
 
-        let args = Args {
+        let state = State {
             wasm,
             stack,
             module,
@@ -75,7 +75,7 @@ pub(crate) unsafe fn run_const<'wasm, T: Config>(
         // SAFETY: All possible instruction handler functions use the same safety requirements, as
         // they are defined through the same macro. These are the same requirements defined by the
         // current function, which must be fulfilled.
-        let should_break = unsafe { instruction_fn(args) }?;
+        let should_break = unsafe { instruction_fn(state) }?;
         if should_break {
             break;
         }
@@ -116,7 +116,7 @@ pub(crate) unsafe fn run_const_span<T: Config>(
     Ok(stack.peek_value())
 }
 
-struct Args<'decoder, 'resumable, 'store, 'wasm, T: Config> {
+struct State<'decoder, 'resumable, 'store, 'wasm, T: Config> {
     wasm: &'decoder mut WasmDecoder<'wasm>,
     stack: &'resumable mut Stack,
     module: ModuleAddr,
@@ -131,13 +131,13 @@ macro_rules! define_instruction {
         /// 2. the module address must be valid in the given store
         // Disable inlining to inspect the emitted code of individual instruction handlers
         // #[inline(never)]
-        unsafe fn $name<T: Config>(args: Args<T>) -> Result<bool, RuntimeError> {
-            $contents(args)
+        unsafe fn $name<T: Config>(state: State<T>) -> Result<bool, RuntimeError> {
+            $contents(state)
         }
     };
 }
 
-define_instruction!(end, instructions::END, |Args { .. }| {
+define_instruction!(end, instructions::END, |State { .. }| {
     trace!("Constant instruction: END");
     Ok(true)
 });
@@ -145,7 +145,7 @@ define_instruction!(end, instructions::END, |Args { .. }| {
 define_instruction!(
     global_get,
     instructions::GLOBAL_GET,
-    |Args {
+    |State {
          wasm,
          module,
          store,
@@ -179,7 +179,7 @@ define_instruction!(
 define_instruction!(
     i32_const,
     instructions::I32_CONST,
-    |Args { wasm, stack, .. }| {
+    |State { wasm, stack, .. }| {
         let constant = wasm.decode_var_i32().unwrap_validated();
         trace!("Constant instruction: i32.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
@@ -190,7 +190,7 @@ define_instruction!(
 define_instruction!(
     f32_const,
     instructions::F32_CONST,
-    |Args { wasm, stack, .. }| {
+    |State { wasm, stack, .. }| {
         let constant = F32::from_bits(wasm.decode_f32().unwrap_validated());
         trace!("Constanting instruction: f32.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
@@ -201,7 +201,7 @@ define_instruction!(
 define_instruction!(
     f64_const,
     instructions::F64_CONST,
-    |Args { wasm, stack, .. }| {
+    |State { wasm, stack, .. }| {
         let constant = F64::from_bits(wasm.decode_f64().unwrap_validated());
         trace!("Constanting instruction: f64.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
@@ -212,7 +212,7 @@ define_instruction!(
 define_instruction!(
     i64_const,
     instructions::I64_CONST,
-    |Args { wasm, stack, .. }| {
+    |State { wasm, stack, .. }| {
         let constant = wasm.decode_var_i64().unwrap_validated();
         trace!("Constant instruction: i64.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
@@ -223,7 +223,7 @@ define_instruction!(
 define_instruction!(
     ref_null,
     instructions::REF_NULL,
-    |Args { wasm, stack, .. }| {
+    |State { wasm, stack, .. }| {
         let reftype = RefType::decode(wasm).unwrap_validated();
 
         stack.push_value(Value::Ref(Ref::Null(reftype)))?;
@@ -235,7 +235,7 @@ define_instruction!(
 define_instruction!(
     ref_func,
     instructions::REF_FUNC,
-    |Args {
+    |State {
          wasm,
          module,
          store,
@@ -255,7 +255,7 @@ define_instruction!(
 define_instruction!(
     fd_extensions,
     instructions::FD_EXTENSIONS,
-    |Args { wasm, stack, .. }| {
+    |State { wasm, stack, .. }| {
         use crate::core::structure::instructions::fd_extensions::*;
         let second_instruction_part = wasm.decode_var_u32().unwrap_validated();
 

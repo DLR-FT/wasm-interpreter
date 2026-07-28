@@ -6,7 +6,7 @@ use core::{
 use crate::{
     execution::{
         assert_validated::UnwrapValidatedExt,
-        instructions::{define_instruction, from_lanes, to_lanes, Args, InterpreterLoopOutcome},
+        instructions::{define_instruction, from_lanes, to_lanes, InterpreterLoopOutcome, State},
     },
     RuntimeError, Value, F32, F64,
 };
@@ -18,13 +18,15 @@ define_instruction!(
     fuel_check = flat_fd(V128_CONST)
 );
 #[inline(always)]
-pub unsafe fn v128_const(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn v128_const(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let mut data = [0; 16];
     for byte_ref in &mut data {
-        *byte_ref = args.wasm.decode_u8().unwrap_validated();
+        *byte_ref = state.wasm.decode_u8().unwrap_validated();
     }
 
-    args.resumable.stack.push_value(Value::V128(data))?;
+    state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
 
@@ -35,14 +37,15 @@ define_instruction!(
     fuel_check = flat_fd(V128_NOT)
 );
 #[inline(always)]
-pub unsafe fn v128_not(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn v128_not(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(data.map(|byte| !byte)))?;
     Ok(ControlFlow::Continue(()))
@@ -55,21 +58,21 @@ define_instruction!(
     fuel_check = flat_fd(V128_AND)
 );
 #[inline(always)]
-pub unsafe fn v128_and(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn v128_and(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| data1[i] & data2[i]);
-    args.resumable.stack.push_value(Value::V128(result))?;
+    state.resumable.stack.push_value(Value::V128(result))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -78,40 +81,42 @@ define_instruction!(
     fuel_check = flat_fd(V128_ANDNOT)
 );
 #[inline(always)]
-pub unsafe fn v128_andnot(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn v128_andnot(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| data1[i] & !data2[i]);
-    args.resumable.stack.push_value(Value::V128(result))?;
+    state.resumable.stack.push_value(Value::V128(result))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(super::v128_or, v128_or_mod, fuel_check = flat_fd(V128_OR));
 #[inline(always)]
-pub unsafe fn v128_or(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn v128_or(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| data1[i] | data2[i]);
-    args.resumable.stack.push_value(Value::V128(result))?;
+    state.resumable.stack.push_value(Value::V128(result))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -120,21 +125,21 @@ define_instruction!(
     fuel_check = flat_fd(V128_XOR)
 );
 #[inline(always)]
-pub unsafe fn v128_xor(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn v128_xor(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| data1[i] ^ data2[i]);
-    args.resumable.stack.push_value(Value::V128(result))?;
+    state.resumable.stack.push_value(Value::V128(result))?;
     Ok(ControlFlow::Continue(()))
 }
 
@@ -146,28 +151,28 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_bitselect(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data3: [u8; 16] = args
+    let data3: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| (data1[i] & data3[i]) | (data2[i] & !data3[i]));
-    args.resumable.stack.push_value(Value::V128(result))?;
+    state.resumable.stack.push_value(Value::V128(result))?;
     Ok(ControlFlow::Continue(()))
 }
 
@@ -179,16 +184,17 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_any_true(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let any_true = data.into_iter().any(|byte| byte > 0);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::I32(any_true as u32))?;
     Ok(ControlFlow::Continue(()))
@@ -202,22 +208,22 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_swizzle(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let result = array::from_fn(|i| *data1.get(usize::from(data2[i])).unwrap_or(&0));
-    args.resumable.stack.push_value(Value::V128(result))?;
+    state.resumable.stack.push_value(Value::V128(result))?;
     Ok(ControlFlow::Continue(()))
 }
 
@@ -229,15 +235,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_shuffle(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -245,7 +251,7 @@ pub unsafe fn i8x16_shuffle(
         .unwrap_validated();
 
     let lane_selector_indices: [u8; 16] =
-        array::from_fn(|_| args.wasm.decode_u8().unwrap_validated());
+        array::from_fn(|_| state.wasm.decode_u8().unwrap_validated());
 
     let result = lane_selector_indices.map(|i| {
         *data1
@@ -254,7 +260,7 @@ pub unsafe fn i8x16_shuffle(
             .unwrap_validated()
     });
 
-    args.resumable.stack.push_value(Value::V128(result))?;
+    state.resumable.stack.push_value(Value::V128(result))?;
     Ok(ControlFlow::Continue(()))
 }
 
@@ -265,8 +271,10 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_SPLAT)
 );
 #[inline(always)]
-pub unsafe fn i8x16_splat(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let value: u32 = args
+pub unsafe fn i8x16_splat(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let value: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -274,7 +282,7 @@ pub unsafe fn i8x16_splat(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lane = value as u8;
     let data = from_lanes([lane; 16]);
-    args.resumable.stack.push_value(Value::V128(data))?;
+    state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -283,8 +291,10 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_SPLAT)
 );
 #[inline(always)]
-pub unsafe fn i16x8_splat(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let value: u32 = args
+pub unsafe fn i16x8_splat(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let value: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -292,7 +302,7 @@ pub unsafe fn i16x8_splat(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lane = value as u16;
     let data = from_lanes([lane; 8]);
-    args.resumable.stack.push_value(Value::V128(data))?;
+    state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -301,15 +311,17 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_SPLAT)
 );
 #[inline(always)]
-pub unsafe fn i32x4_splat(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane: u32 = args
+pub unsafe fn i32x4_splat(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let lane: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let data = from_lanes([lane; 4]);
-    args.resumable.stack.push_value(Value::V128(data))?;
+    state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -318,15 +330,17 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_SPLAT)
 );
 #[inline(always)]
-pub unsafe fn i64x2_splat(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane: u64 = args
+pub unsafe fn i64x2_splat(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let lane: u64 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let data = from_lanes([lane; 2]);
-    args.resumable.stack.push_value(Value::V128(data))?;
+    state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -335,15 +349,17 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_SPLAT)
 );
 #[inline(always)]
-pub unsafe fn f32x4_splat(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane: F32 = args
+pub unsafe fn f32x4_splat(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let lane: F32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let data = from_lanes([lane; 4]);
-    args.resumable.stack.push_value(Value::V128(data))?;
+    state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -352,15 +368,17 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_SPLAT)
 );
 #[inline(always)]
-pub unsafe fn f64x2_splat(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane: F64 = args
+pub unsafe fn f64x2_splat(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let lane: F64 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let data = from_lanes([lane; 2]);
-    args.resumable.stack.push_value(Value::V128(data))?;
+    state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
 
@@ -372,10 +390,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_extract_lane_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -383,7 +401,7 @@ pub unsafe fn i8x16_extract_lane_s(
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
     let lane = *lanes.get(lane_idx).unwrap_validated();
-    args.resumable.stack.push_value(Value::I32(lane as u32))?;
+    state.resumable.stack.push_value(Value::I32(lane as u32))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -393,10 +411,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_extract_lane_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -404,7 +422,7 @@ pub unsafe fn i8x16_extract_lane_u(
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
     let lane = *lanes.get(lane_idx).unwrap_validated();
-    args.resumable.stack.push_value(Value::I32(lane as u32))?;
+    state.resumable.stack.push_value(Value::I32(lane as u32))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -414,10 +432,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extract_lane_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -425,7 +443,7 @@ pub unsafe fn i16x8_extract_lane_s(
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
     let lane = *lanes.get(lane_idx).unwrap_validated();
-    args.resumable.stack.push_value(Value::I32(lane as u32))?;
+    state.resumable.stack.push_value(Value::I32(lane as u32))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -435,10 +453,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extract_lane_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -446,7 +464,7 @@ pub unsafe fn i16x8_extract_lane_u(
         .unwrap_validated();
     let lanes: [u16; 8] = to_lanes(data);
     let lane = *lanes.get(lane_idx).unwrap_validated();
-    args.resumable.stack.push_value(Value::I32(lane as u32))?;
+    state.resumable.stack.push_value(Value::I32(lane as u32))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -456,10 +474,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_extract_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -467,7 +485,7 @@ pub unsafe fn i32x4_extract_lane(
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
     let lane = *lanes.get(lane_idx).unwrap_validated();
-    args.resumable.stack.push_value(Value::I32(lane))?;
+    state.resumable.stack.push_value(Value::I32(lane))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -477,10 +495,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_extract_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -488,7 +506,7 @@ pub unsafe fn i64x2_extract_lane(
         .unwrap_validated();
     let lanes: [u64; 2] = to_lanes(data);
     let lane = *lanes.get(lane_idx).unwrap_validated();
-    args.resumable.stack.push_value(Value::I64(lane))?;
+    state.resumable.stack.push_value(Value::I64(lane))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -498,10 +516,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_extract_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -509,7 +527,7 @@ pub unsafe fn f32x4_extract_lane(
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
     let lane = *lanes.get(lane_idx).unwrap_validated();
-    args.resumable.stack.push_value(Value::F32(lane))?;
+    state.resumable.stack.push_value(Value::F32(lane))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -519,10 +537,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_extract_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let data: [u8; 16] = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -530,7 +548,7 @@ pub unsafe fn f64x2_extract_lane(
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
     let lane = *lanes.get(lane_idx).unwrap_validated();
-    args.resumable.stack.push_value(Value::F64(lane))?;
+    state.resumable.stack.push_value(Value::F64(lane))?;
     Ok(ControlFlow::Continue(()))
 }
 
@@ -542,17 +560,17 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_replace_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let value: u32 = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let value: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let new_lane = value as u8;
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -560,7 +578,8 @@ pub unsafe fn i8x16_replace_lane(
         .unwrap_validated();
     let mut lanes: [u8; 16] = to_lanes(data);
     *lanes.get_mut(lane_idx).unwrap_validated() = new_lane;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -572,17 +591,17 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_replace_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let value: u32 = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let value: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
     let new_lane = value as u16;
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -590,7 +609,8 @@ pub unsafe fn i16x8_replace_lane(
         .unwrap_validated();
     let mut lanes: [u16; 8] = to_lanes(data);
     *lanes.get_mut(lane_idx).unwrap_validated() = new_lane;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -602,16 +622,16 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_replace_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let new_lane: u32 = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let new_lane: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -619,7 +639,8 @@ pub unsafe fn i32x4_replace_lane(
         .unwrap_validated();
     let mut lanes: [u32; 4] = to_lanes(data);
     *lanes.get_mut(lane_idx).unwrap_validated() = new_lane;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -631,16 +652,16 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_replace_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let new_lane: u64 = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let new_lane: u64 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -648,7 +669,8 @@ pub unsafe fn i64x2_replace_lane(
         .unwrap_validated();
     let mut lanes: [u64; 2] = to_lanes(data);
     *lanes.get_mut(lane_idx).unwrap_validated() = new_lane;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -660,16 +682,16 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_replace_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let new_lane: F32 = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let new_lane: F32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -677,7 +699,8 @@ pub unsafe fn f32x4_replace_lane(
         .unwrap_validated();
     let mut lanes: [F32; 4] = to_lanes(data);
     *lanes.get_mut(lane_idx).unwrap_validated() = new_lane;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -689,16 +712,16 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_replace_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
-    let new_lane: F64 = args
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
+    let new_lane: F64 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -706,7 +729,8 @@ pub unsafe fn f64x2_replace_lane(
         .unwrap_validated();
     let mut lanes: [F64; 2] = to_lanes(data);
     *lanes.get_mut(lane_idx).unwrap_validated() = new_lane;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -719,8 +743,8 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_ABS)
 );
 #[inline(always)]
-pub unsafe fn i8x16_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn i8x16_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -728,7 +752,8 @@ pub unsafe fn i8x16_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
     let result: [i8; 16] = lanes.map(i8::wrapping_abs);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -739,8 +764,8 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_ABS)
 );
 #[inline(always)]
-pub unsafe fn i16x8_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn i16x8_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -748,7 +773,8 @@ pub unsafe fn i16x8_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
     let result: [i16; 8] = lanes.map(i16::wrapping_abs);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -759,8 +785,8 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_ABS)
 );
 #[inline(always)]
-pub unsafe fn i32x4_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn i32x4_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -768,7 +794,8 @@ pub unsafe fn i32x4_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
     let result: [i32; 4] = lanes.map(i32::wrapping_abs);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -779,8 +806,8 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_ABS)
 );
 #[inline(always)]
-pub unsafe fn i64x2_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn i64x2_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -788,7 +815,8 @@ pub unsafe fn i64x2_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [i64; 2] = to_lanes(data);
     let result: [i64; 2] = lanes.map(i64::wrapping_abs);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -799,8 +827,8 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_NEG)
 );
 #[inline(always)]
-pub unsafe fn i8x16_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn i8x16_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -808,7 +836,8 @@ pub unsafe fn i8x16_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
     let result: [i8; 16] = lanes.map(i8::wrapping_neg);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -819,8 +848,8 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_NEG)
 );
 #[inline(always)]
-pub unsafe fn i16x8_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn i16x8_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -828,7 +857,8 @@ pub unsafe fn i16x8_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
     let result: [i16; 8] = lanes.map(i16::wrapping_neg);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -839,8 +869,8 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_NEG)
 );
 #[inline(always)]
-pub unsafe fn i32x4_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn i32x4_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -848,7 +878,8 @@ pub unsafe fn i32x4_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
     let result: [i32; 4] = lanes.map(i32::wrapping_neg);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -859,8 +890,8 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_NEG)
 );
 #[inline(always)]
-pub unsafe fn i64x2_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn i64x2_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -868,7 +899,8 @@ pub unsafe fn i64x2_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [i64; 2] = to_lanes(data);
     let result: [i64; 2] = lanes.map(i64::wrapping_neg);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -879,8 +911,8 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_ABS)
 );
 #[inline(always)]
-pub unsafe fn f32x4_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f32x4_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -888,7 +920,8 @@ pub unsafe fn f32x4_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
     let result: [F32; 4] = lanes.map(|lane| lane.abs());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -899,8 +932,8 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_ABS)
 );
 #[inline(always)]
-pub unsafe fn f64x2_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f64x2_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -908,7 +941,8 @@ pub unsafe fn f64x2_abs(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
     let result: [F64; 2] = lanes.map(|lane| lane.abs());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -919,8 +953,8 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_NEG)
 );
 #[inline(always)]
-pub unsafe fn f32x4_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f32x4_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -928,7 +962,8 @@ pub unsafe fn f32x4_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
     let result: [F32; 4] = lanes.map(|lane| lane.neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -939,8 +974,8 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_NEG)
 );
 #[inline(always)]
-pub unsafe fn f64x2_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f64x2_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -948,7 +983,8 @@ pub unsafe fn f64x2_neg(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
     let result: [F64; 2] = lanes.map(|lane| lane.neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -959,8 +995,10 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_SQRT)
 );
 #[inline(always)]
-pub unsafe fn f32x4_sqrt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f32x4_sqrt(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -968,7 +1006,8 @@ pub unsafe fn f32x4_sqrt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
     let result: [F32; 4] = lanes.map(|lane| lane.sqrt());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -979,8 +1018,10 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_SQRT)
 );
 #[inline(always)]
-pub unsafe fn f64x2_sqrt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f64x2_sqrt(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -988,7 +1029,8 @@ pub unsafe fn f64x2_sqrt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
     let result: [F64; 2] = lanes.map(|lane| lane.sqrt());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -999,8 +1041,10 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_CEIL)
 );
 #[inline(always)]
-pub unsafe fn f32x4_ceil(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f32x4_ceil(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1008,7 +1052,8 @@ pub unsafe fn f32x4_ceil(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
     let result: [F32; 4] = lanes.map(|lane| lane.ceil());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1019,8 +1064,10 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_CEIL)
 );
 #[inline(always)]
-pub unsafe fn f64x2_ceil(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f64x2_ceil(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1028,7 +1075,8 @@ pub unsafe fn f64x2_ceil(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
     let result: [F64; 2] = lanes.map(|lane| lane.ceil());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1039,8 +1087,10 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_FLOOR)
 );
 #[inline(always)]
-pub unsafe fn f32x4_floor(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f32x4_floor(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1048,7 +1098,8 @@ pub unsafe fn f32x4_floor(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
     let result: [F32; 4] = lanes.map(|lane| lane.floor());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1059,8 +1110,10 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_FLOOR)
 );
 #[inline(always)]
-pub unsafe fn f64x2_floor(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f64x2_floor(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1068,7 +1121,8 @@ pub unsafe fn f64x2_floor(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
     let result: [F64; 2] = lanes.map(|lane| lane.floor());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1079,8 +1133,10 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_TRUNC)
 );
 #[inline(always)]
-pub unsafe fn f32x4_trunc(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f32x4_trunc(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1088,7 +1144,8 @@ pub unsafe fn f32x4_trunc(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
     let result: [F32; 4] = lanes.map(|lane| lane.trunc());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1099,8 +1156,10 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_TRUNC)
 );
 #[inline(always)]
-pub unsafe fn f64x2_trunc(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+pub unsafe fn f64x2_trunc(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1108,7 +1167,8 @@ pub unsafe fn f64x2_trunc(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
     let result: [F64; 2] = lanes.map(|lane| lane.trunc());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1120,9 +1180,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_nearest(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1130,7 +1190,8 @@ pub unsafe fn f32x4_nearest(
         .unwrap_validated();
     let lanes: [F32; 4] = to_lanes(data);
     let result: [F32; 4] = lanes.map(|lane| lane.nearest());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1142,9 +1203,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_nearest(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1152,7 +1213,8 @@ pub unsafe fn f64x2_nearest(
         .unwrap_validated();
     let lanes: [F64; 2] = to_lanes(data);
     let result: [F64; 2] = lanes.map(|lane| lane.nearest());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1164,9 +1226,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_popcnt(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1174,7 +1236,8 @@ pub unsafe fn i8x16_popcnt(
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
     let result: [u8; 16] = lanes.map(|lane| lane.count_ones() as u8);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1187,14 +1250,14 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_ADD)
 );
 #[inline(always)]
-pub unsafe fn i8x16_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1203,7 +1266,8 @@ pub unsafe fn i8x16_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [u8; 16] = array::from_fn(|i| lanes1[i].wrapping_add(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1214,14 +1278,14 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_ADD)
 );
 #[inline(always)]
-pub unsafe fn i16x8_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1230,7 +1294,8 @@ pub unsafe fn i16x8_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [u16; 8] = array::from_fn(|i| lanes1[i].wrapping_add(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1241,14 +1306,14 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_ADD)
 );
 #[inline(always)]
-pub unsafe fn i32x4_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1257,7 +1322,8 @@ pub unsafe fn i32x4_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [u32; 4] = to_lanes(data2);
     let lanes1: [u32; 4] = to_lanes(data1);
     let result: [u32; 4] = array::from_fn(|i| lanes1[i].wrapping_add(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1268,14 +1334,14 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_ADD)
 );
 #[inline(always)]
-pub unsafe fn i64x2_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i64x2_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1284,7 +1350,8 @@ pub unsafe fn i64x2_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [u64; 2] = to_lanes(data2);
     let lanes1: [u64; 2] = to_lanes(data1);
     let result: [u64; 2] = array::from_fn(|i| lanes1[i].wrapping_add(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1295,14 +1362,14 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_SUB)
 );
 #[inline(always)]
-pub unsafe fn i8x16_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1311,7 +1378,8 @@ pub unsafe fn i8x16_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [u8; 16] = array::from_fn(|i| lanes1[i].wrapping_sub(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1322,14 +1390,14 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_SUB)
 );
 #[inline(always)]
-pub unsafe fn i16x8_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1338,7 +1406,8 @@ pub unsafe fn i16x8_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [u16; 8] = array::from_fn(|i| lanes1[i].wrapping_sub(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1349,14 +1418,14 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_SUB)
 );
 #[inline(always)]
-pub unsafe fn i32x4_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1365,7 +1434,8 @@ pub unsafe fn i32x4_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [u32; 4] = to_lanes(data2);
     let lanes1: [u32; 4] = to_lanes(data1);
     let result: [u32; 4] = array::from_fn(|i| lanes1[i].wrapping_sub(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1376,14 +1446,14 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_SUB)
 );
 #[inline(always)]
-pub unsafe fn i64x2_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i64x2_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1392,7 +1462,8 @@ pub unsafe fn i64x2_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [u64; 2] = to_lanes(data2);
     let lanes1: [u64; 2] = to_lanes(data1);
     let result: [u64; 2] = array::from_fn(|i| lanes1[i].wrapping_sub(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1403,14 +1474,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_ADD)
 );
 #[inline(always)]
-pub unsafe fn f32x4_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1419,7 +1490,8 @@ pub unsafe fn f32x4_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [F32; 4] = array::from_fn(|i| lanes1[i].add(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1430,14 +1502,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_ADD)
 );
 #[inline(always)]
-pub unsafe fn f64x2_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1446,7 +1518,8 @@ pub unsafe fn f64x2_add(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [F64; 2] = array::from_fn(|i| lanes1[i].add(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1457,14 +1530,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_SUB)
 );
 #[inline(always)]
-pub unsafe fn f32x4_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1473,7 +1546,8 @@ pub unsafe fn f32x4_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [F32; 4] = array::from_fn(|i| lanes1[i].sub(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1484,14 +1558,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_SUB)
 );
 #[inline(always)]
-pub unsafe fn f64x2_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1500,7 +1574,8 @@ pub unsafe fn f64x2_sub(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [F64; 2] = array::from_fn(|i| lanes1[i].sub(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1511,14 +1586,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_MUL)
 );
 #[inline(always)]
-pub unsafe fn f32x4_mul(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1527,7 +1602,8 @@ pub unsafe fn f32x4_mul(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [F32; 4] = array::from_fn(|i| lanes1[i].mul(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1538,14 +1614,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_MUL)
 );
 #[inline(always)]
-pub unsafe fn f64x2_mul(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1554,7 +1630,8 @@ pub unsafe fn f64x2_mul(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [F64; 2] = array::from_fn(|i| lanes1[i].mul(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1565,14 +1642,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_DIV)
 );
 #[inline(always)]
-pub unsafe fn f32x4_div(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1581,7 +1658,8 @@ pub unsafe fn f32x4_div(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [F32; 4] = array::from_fn(|i| lanes1[i].div(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1592,14 +1670,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_DIV)
 );
 #[inline(always)]
-pub unsafe fn f64x2_div(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1608,7 +1686,8 @@ pub unsafe fn f64x2_div(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [F64; 2] = array::from_fn(|i| lanes1[i].div(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1619,14 +1698,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_MIN)
 );
 #[inline(always)]
-pub unsafe fn f32x4_min(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1635,7 +1714,8 @@ pub unsafe fn f32x4_min(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [F32; 4] = array::from_fn(|i| lanes1[i].min(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1646,14 +1726,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_MIN)
 );
 #[inline(always)]
-pub unsafe fn f64x2_min(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1662,7 +1742,8 @@ pub unsafe fn f64x2_min(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [F64; 2] = array::from_fn(|i| lanes1[i].min(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1673,14 +1754,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_MAX)
 );
 #[inline(always)]
-pub unsafe fn f32x4_max(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1689,7 +1770,8 @@ pub unsafe fn f32x4_max(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [F32; 4] = array::from_fn(|i| lanes1[i].max(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1700,14 +1782,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_MAX)
 );
 #[inline(always)]
-pub unsafe fn f64x2_max(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1716,7 +1798,8 @@ pub unsafe fn f64x2_max(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [F64; 2] = array::from_fn(|i| lanes1[i].max(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1727,14 +1810,16 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_PMIN)
 );
 #[inline(always)]
-pub unsafe fn f32x4_pmin(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_pmin(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1751,7 +1836,8 @@ pub unsafe fn f32x4_pmin(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
             v1
         }
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1762,14 +1848,16 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_PMIN)
 );
 #[inline(always)]
-pub unsafe fn f64x2_pmin(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_pmin(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1786,7 +1874,8 @@ pub unsafe fn f64x2_pmin(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
             v1
         }
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1797,14 +1886,16 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_PMAX)
 );
 #[inline(always)]
-pub unsafe fn f32x4_pmax(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_pmax(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1821,7 +1912,8 @@ pub unsafe fn f32x4_pmax(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
             v1
         }
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1832,14 +1924,16 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_PMAX)
 );
 #[inline(always)]
-pub unsafe fn f64x2_pmax(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_pmax(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1856,7 +1950,8 @@ pub unsafe fn f64x2_pmax(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
             v1
         }
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1867,14 +1962,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_MIN_S)
 );
 #[inline(always)]
-pub unsafe fn i8x16_min_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_min_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1883,7 +1980,8 @@ pub unsafe fn i8x16_min_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [i8; 16] = to_lanes(data2);
     let lanes1: [i8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| lanes1[i].min(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1894,14 +1992,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_MIN_S)
 );
 #[inline(always)]
-pub unsafe fn i16x8_min_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_min_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1910,7 +2010,8 @@ pub unsafe fn i16x8_min_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [i16; 8] = to_lanes(data2);
     let lanes1: [i16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| lanes1[i].min(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1921,14 +2022,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_MIN_S)
 );
 #[inline(always)]
-pub unsafe fn i32x4_min_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_min_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1937,7 +2040,8 @@ pub unsafe fn i32x4_min_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [i32; 4] = to_lanes(data2);
     let lanes1: [i32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| lanes1[i].min(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1948,14 +2052,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_MIN_U)
 );
 #[inline(always)]
-pub unsafe fn i8x16_min_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_min_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1964,7 +2070,8 @@ pub unsafe fn i8x16_min_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [u8; 16] = array::from_fn(|i| lanes1[i].min(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -1975,14 +2082,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_MIN_U)
 );
 #[inline(always)]
-pub unsafe fn i16x8_min_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_min_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -1991,7 +2100,8 @@ pub unsafe fn i16x8_min_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [u16; 8] = array::from_fn(|i| lanes1[i].min(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2002,14 +2112,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_MIN_U)
 );
 #[inline(always)]
-pub unsafe fn i32x4_min_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_min_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2018,7 +2130,8 @@ pub unsafe fn i32x4_min_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [u32; 4] = to_lanes(data2);
     let lanes1: [u32; 4] = to_lanes(data1);
     let result: [u32; 4] = array::from_fn(|i| lanes1[i].min(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2029,14 +2142,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_MAX_S)
 );
 #[inline(always)]
-pub unsafe fn i8x16_max_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_max_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2045,7 +2160,8 @@ pub unsafe fn i8x16_max_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [i8; 16] = to_lanes(data2);
     let lanes1: [i8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| lanes1[i].max(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2056,14 +2172,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_MAX_S)
 );
 #[inline(always)]
-pub unsafe fn i16x8_max_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_max_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2072,7 +2190,8 @@ pub unsafe fn i16x8_max_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [i16; 8] = to_lanes(data2);
     let lanes1: [i16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| lanes1[i].max(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2083,14 +2202,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_MAX_S)
 );
 #[inline(always)]
-pub unsafe fn i32x4_max_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_max_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2099,7 +2220,8 @@ pub unsafe fn i32x4_max_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [i32; 4] = to_lanes(data2);
     let lanes1: [i32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| lanes1[i].max(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2110,14 +2232,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_MAX_U)
 );
 #[inline(always)]
-pub unsafe fn i8x16_max_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_max_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2126,7 +2250,8 @@ pub unsafe fn i8x16_max_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [u8; 16] = array::from_fn(|i| lanes1[i].max(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2137,14 +2262,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_MAX_U)
 );
 #[inline(always)]
-pub unsafe fn i16x8_max_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_max_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2153,7 +2280,8 @@ pub unsafe fn i16x8_max_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [u16; 8] = array::from_fn(|i| lanes1[i].max(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2164,14 +2292,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_MAX_U)
 );
 #[inline(always)]
-pub unsafe fn i32x4_max_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_max_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2180,7 +2310,8 @@ pub unsafe fn i32x4_max_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     let lanes2: [u32; 4] = to_lanes(data2);
     let lanes1: [u32; 4] = to_lanes(data1);
     let result: [u32; 4] = array::from_fn(|i| lanes1[i].max(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2193,15 +2324,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_add_sat_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2210,7 +2341,8 @@ pub unsafe fn i8x16_add_sat_s(
     let lanes2: [i8; 16] = to_lanes(data2);
     let lanes1: [i8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| lanes1[i].saturating_add(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2222,15 +2354,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_add_sat_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2239,7 +2371,8 @@ pub unsafe fn i16x8_add_sat_s(
     let lanes2: [i16; 8] = to_lanes(data2);
     let lanes1: [i16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| lanes1[i].saturating_add(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2251,15 +2384,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_add_sat_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2268,7 +2401,8 @@ pub unsafe fn i8x16_add_sat_u(
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [u8; 16] = array::from_fn(|i| lanes1[i].saturating_add(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2280,15 +2414,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_add_sat_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2297,7 +2431,8 @@ pub unsafe fn i16x8_add_sat_u(
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [u16; 8] = array::from_fn(|i| lanes1[i].saturating_add(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2309,15 +2444,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_sub_sat_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2326,7 +2461,8 @@ pub unsafe fn i8x16_sub_sat_s(
     let lanes2: [i8; 16] = to_lanes(data2);
     let lanes1: [i8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| lanes1[i].saturating_sub(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2338,15 +2474,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_sub_sat_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2355,7 +2491,8 @@ pub unsafe fn i16x8_sub_sat_s(
     let lanes2: [i16; 8] = to_lanes(data2);
     let lanes1: [i16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| lanes1[i].saturating_sub(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2367,15 +2504,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_sub_sat_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2384,7 +2521,8 @@ pub unsafe fn i8x16_sub_sat_u(
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [u8; 16] = array::from_fn(|i| lanes1[i].saturating_sub(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2396,15 +2534,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_sub_sat_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2413,7 +2551,8 @@ pub unsafe fn i16x8_sub_sat_u(
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [u16; 8] = array::from_fn(|i| lanes1[i].saturating_sub(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2424,14 +2563,14 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_MUL)
 );
 #[inline(always)]
-pub unsafe fn i16x8_mul(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2440,7 +2579,8 @@ pub unsafe fn i16x8_mul(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [u16; 8] = array::from_fn(|i| lanes1[i].wrapping_mul(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2451,14 +2591,14 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_MUL)
 );
 #[inline(always)]
-pub unsafe fn i32x4_mul(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2467,7 +2607,8 @@ pub unsafe fn i32x4_mul(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [u32; 4] = to_lanes(data2);
     let lanes1: [u32; 4] = to_lanes(data1);
     let result: [u32; 4] = array::from_fn(|i| lanes1[i].wrapping_mul(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2478,14 +2619,14 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_MUL)
 );
 #[inline(always)]
-pub unsafe fn i64x2_mul(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i64x2_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2494,7 +2635,8 @@ pub unsafe fn i64x2_mul(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let lanes2: [u64; 2] = to_lanes(data2);
     let lanes1: [u64; 2] = to_lanes(data1);
     let result: [u64; 2] = array::from_fn(|i| lanes1[i].wrapping_mul(lanes2[i]));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2506,15 +2648,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_avgr_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2524,7 +2666,8 @@ pub unsafe fn i8x16_avgr_u(
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [u8; 16] =
         array::from_fn(|i| (lanes1[i] as u16 + lanes2[i] as u16).div_ceil(2) as u8);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2536,15 +2679,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_avgr_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2554,7 +2697,8 @@ pub unsafe fn i16x8_avgr_u(
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [u16; 8] =
         array::from_fn(|i| (lanes1[i] as u32 + lanes2[i] as u32).div_ceil(2) as u16);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2566,15 +2710,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_q15mulrsat_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2586,7 +2730,8 @@ pub unsafe fn i16x8_q15mulrsat_s(
         (((lanes1[i] as i64).mul(lanes2[i] as i64) + 2i64.pow(14)) >> 15i64)
             .clamp(i16::MIN as i64, i16::MAX as i64) as i16
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2599,14 +2744,14 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_EQ)
 );
 #[inline(always)]
-pub unsafe fn i8x16_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2615,7 +2760,8 @@ pub unsafe fn i8x16_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i8).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2626,14 +2772,14 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_EQ)
 );
 #[inline(always)]
-pub unsafe fn i16x8_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2642,7 +2788,8 @@ pub unsafe fn i16x8_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i16).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2653,14 +2800,14 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_EQ)
 );
 #[inline(always)]
-pub unsafe fn i32x4_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2669,7 +2816,8 @@ pub unsafe fn i32x4_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [u32; 4] = to_lanes(data2);
     let lanes1: [u32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2680,14 +2828,14 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_EQ)
 );
 #[inline(always)]
-pub unsafe fn i64x2_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i64x2_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2696,7 +2844,8 @@ pub unsafe fn i64x2_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [u64; 2] = to_lanes(data2);
     let lanes1: [u64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2707,14 +2856,14 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_NE)
 );
 #[inline(always)]
-pub unsafe fn i8x16_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2723,7 +2872,8 @@ pub unsafe fn i8x16_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i8).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2734,14 +2884,14 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_NE)
 );
 #[inline(always)]
-pub unsafe fn i16x8_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2750,7 +2900,8 @@ pub unsafe fn i16x8_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i16).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2761,14 +2912,14 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_NE)
 );
 #[inline(always)]
-pub unsafe fn i32x4_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2777,7 +2928,8 @@ pub unsafe fn i32x4_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [u32; 4] = to_lanes(data2);
     let lanes1: [u32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2788,14 +2940,14 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_NE)
 );
 #[inline(always)]
-pub unsafe fn i64x2_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i64x2_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2804,7 +2956,8 @@ pub unsafe fn i64x2_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [u64; 2] = to_lanes(data2);
     let lanes1: [u64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2815,14 +2968,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_LT_S)
 );
 #[inline(always)]
-pub unsafe fn i8x16_lt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_lt_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2831,7 +2986,8 @@ pub unsafe fn i8x16_lt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i8; 16] = to_lanes(data2);
     let lanes1: [i8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i8).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2842,14 +2998,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_LT_S)
 );
 #[inline(always)]
-pub unsafe fn i16x8_lt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_lt_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2858,7 +3016,8 @@ pub unsafe fn i16x8_lt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i16; 8] = to_lanes(data2);
     let lanes1: [i16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i16).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2869,14 +3028,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_LT_S)
 );
 #[inline(always)]
-pub unsafe fn i32x4_lt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_lt_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2885,7 +3046,8 @@ pub unsafe fn i32x4_lt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i32; 4] = to_lanes(data2);
     let lanes1: [i32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2896,14 +3058,16 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_LT_S)
 );
 #[inline(always)]
-pub unsafe fn i64x2_lt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i64x2_lt_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2912,7 +3076,8 @@ pub unsafe fn i64x2_lt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i64; 2] = to_lanes(data2);
     let lanes1: [i64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2923,14 +3088,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_LT_U)
 );
 #[inline(always)]
-pub unsafe fn i8x16_lt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_lt_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2939,7 +3106,8 @@ pub unsafe fn i8x16_lt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i8).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2950,14 +3118,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_LT_U)
 );
 #[inline(always)]
-pub unsafe fn i16x8_lt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_lt_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2966,7 +3136,8 @@ pub unsafe fn i16x8_lt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i16).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -2977,14 +3148,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_LT_U)
 );
 #[inline(always)]
-pub unsafe fn i32x4_lt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_lt_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -2993,7 +3166,8 @@ pub unsafe fn i32x4_lt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u32; 4] = to_lanes(data2);
     let lanes1: [u32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3004,14 +3178,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_GT_S)
 );
 #[inline(always)]
-pub unsafe fn i8x16_gt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_gt_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3020,7 +3196,8 @@ pub unsafe fn i8x16_gt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i8; 16] = to_lanes(data2);
     let lanes1: [i8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i8).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3031,14 +3208,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_GT_S)
 );
 #[inline(always)]
-pub unsafe fn i16x8_gt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_gt_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3047,7 +3226,8 @@ pub unsafe fn i16x8_gt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i16; 8] = to_lanes(data2);
     let lanes1: [i16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i16).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3058,14 +3238,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_GT_S)
 );
 #[inline(always)]
-pub unsafe fn i32x4_gt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_gt_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3074,7 +3256,8 @@ pub unsafe fn i32x4_gt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i32; 4] = to_lanes(data2);
     let lanes1: [i32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3085,14 +3268,16 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_GT_S)
 );
 #[inline(always)]
-pub unsafe fn i64x2_gt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i64x2_gt_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3101,7 +3286,8 @@ pub unsafe fn i64x2_gt_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i64; 2] = to_lanes(data2);
     let lanes1: [i64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3112,14 +3298,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_GT_U)
 );
 #[inline(always)]
-pub unsafe fn i8x16_gt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_gt_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3128,7 +3316,8 @@ pub unsafe fn i8x16_gt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i8).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3139,14 +3328,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_GT_U)
 );
 #[inline(always)]
-pub unsafe fn i16x8_gt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_gt_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3155,7 +3346,8 @@ pub unsafe fn i16x8_gt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i16).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3166,14 +3358,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_GT_U)
 );
 #[inline(always)]
-pub unsafe fn i32x4_gt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_gt_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3182,7 +3376,8 @@ pub unsafe fn i32x4_gt_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u32; 4] = to_lanes(data2);
     let lanes1: [u32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3193,14 +3388,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_LE_S)
 );
 #[inline(always)]
-pub unsafe fn i8x16_le_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_le_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3209,7 +3406,8 @@ pub unsafe fn i8x16_le_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i8; 16] = to_lanes(data2);
     let lanes1: [i8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i8).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3220,14 +3418,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_LE_S)
 );
 #[inline(always)]
-pub unsafe fn i16x8_le_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_le_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3236,7 +3436,8 @@ pub unsafe fn i16x8_le_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i16; 8] = to_lanes(data2);
     let lanes1: [i16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i16).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3247,14 +3448,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_LE_S)
 );
 #[inline(always)]
-pub unsafe fn i32x4_le_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_le_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3263,7 +3466,8 @@ pub unsafe fn i32x4_le_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i32; 4] = to_lanes(data2);
     let lanes1: [i32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3274,14 +3478,16 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_LE_S)
 );
 #[inline(always)]
-pub unsafe fn i64x2_le_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i64x2_le_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3290,7 +3496,8 @@ pub unsafe fn i64x2_le_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i64; 2] = to_lanes(data2);
     let lanes1: [i64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3301,14 +3508,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_LE_U)
 );
 #[inline(always)]
-pub unsafe fn i8x16_le_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_le_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3317,7 +3526,8 @@ pub unsafe fn i8x16_le_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i8).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3328,14 +3538,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_LE_U)
 );
 #[inline(always)]
-pub unsafe fn i16x8_le_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_le_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3344,7 +3556,8 @@ pub unsafe fn i16x8_le_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i16).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3355,14 +3568,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_LE_U)
 );
 #[inline(always)]
-pub unsafe fn i32x4_le_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_le_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3371,7 +3586,8 @@ pub unsafe fn i32x4_le_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u32; 4] = to_lanes(data2);
     let lanes1: [u32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3383,14 +3599,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_GE_S)
 );
 #[inline(always)]
-pub unsafe fn i8x16_ge_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_ge_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3399,7 +3617,8 @@ pub unsafe fn i8x16_ge_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i8; 16] = to_lanes(data2);
     let lanes1: [i8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i8).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3410,14 +3629,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_GE_S)
 );
 #[inline(always)]
-pub unsafe fn i16x8_ge_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_ge_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3426,7 +3647,8 @@ pub unsafe fn i16x8_ge_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i16; 8] = to_lanes(data2);
     let lanes1: [i16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i16).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3437,14 +3659,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_GE_S)
 );
 #[inline(always)]
-pub unsafe fn i32x4_ge_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_ge_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3453,7 +3677,8 @@ pub unsafe fn i32x4_ge_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i32; 4] = to_lanes(data2);
     let lanes1: [i32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3464,14 +3689,16 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_GE_S)
 );
 #[inline(always)]
-pub unsafe fn i64x2_ge_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i64x2_ge_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3480,7 +3707,8 @@ pub unsafe fn i64x2_ge_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [i64; 2] = to_lanes(data2);
     let lanes1: [i64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3491,14 +3719,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_GE_U)
 );
 #[inline(always)]
-pub unsafe fn i8x16_ge_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i8x16_ge_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3507,7 +3737,8 @@ pub unsafe fn i8x16_ge_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u8; 16] = to_lanes(data2);
     let lanes1: [u8; 16] = to_lanes(data1);
     let result: [i8; 16] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i8).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3518,14 +3749,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_GE_U)
 );
 #[inline(always)]
-pub unsafe fn i16x8_ge_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i16x8_ge_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3534,7 +3767,8 @@ pub unsafe fn i16x8_ge_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u16; 8] = to_lanes(data2);
     let lanes1: [u16; 8] = to_lanes(data1);
     let result: [i16; 8] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i16).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3545,14 +3779,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_GE_U)
 );
 #[inline(always)]
-pub unsafe fn i32x4_ge_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn i32x4_ge_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3561,7 +3797,8 @@ pub unsafe fn i32x4_ge_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     let lanes2: [u32; 4] = to_lanes(data2);
     let lanes1: [u32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3573,14 +3810,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_EQ)
 );
 #[inline(always)]
-pub unsafe fn f32x4_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3589,7 +3826,8 @@ pub unsafe fn f32x4_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3600,14 +3838,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_EQ)
 );
 #[inline(always)]
-pub unsafe fn f64x2_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3616,7 +3854,8 @@ pub unsafe fn f64x2_eq(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] == lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3627,14 +3866,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_NE)
 );
 #[inline(always)]
-pub unsafe fn f32x4_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3643,7 +3882,8 @@ pub unsafe fn f32x4_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3654,14 +3894,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_NE)
 );
 #[inline(always)]
-pub unsafe fn f64x2_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3670,7 +3910,8 @@ pub unsafe fn f64x2_ne(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] != lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3681,14 +3922,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_LT)
 );
 #[inline(always)]
-pub unsafe fn f32x4_lt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3697,7 +3938,8 @@ pub unsafe fn f32x4_lt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3708,14 +3950,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_LT)
 );
 #[inline(always)]
-pub unsafe fn f64x2_lt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3724,7 +3966,8 @@ pub unsafe fn f64x2_lt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] < lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3735,14 +3978,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_GT)
 );
 #[inline(always)]
-pub unsafe fn f32x4_gt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3751,7 +3994,8 @@ pub unsafe fn f32x4_gt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3762,14 +4006,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_GT)
 );
 #[inline(always)]
-pub unsafe fn f64x2_gt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3778,7 +4022,8 @@ pub unsafe fn f64x2_gt(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] > lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3789,14 +4034,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_LE)
 );
 #[inline(always)]
-pub unsafe fn f32x4_le(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3805,7 +4050,8 @@ pub unsafe fn f32x4_le(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3816,14 +4062,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_LE)
 );
 #[inline(always)]
-pub unsafe fn f64x2_le(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3832,7 +4078,8 @@ pub unsafe fn f64x2_le(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] <= lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3843,14 +4090,14 @@ define_instruction!(
     fuel_check = flat_fd(F32X4_GE)
 );
 #[inline(always)]
-pub unsafe fn f32x4_ge(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f32x4_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3859,7 +4106,8 @@ pub unsafe fn f32x4_ge(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F32; 4] = to_lanes(data2);
     let lanes1: [F32; 4] = to_lanes(data1);
     let result: [i32; 4] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i32).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3870,14 +4118,14 @@ define_instruction!(
     fuel_check = flat_fd(F64X2_GE)
 );
 #[inline(always)]
-pub unsafe fn f64x2_ge(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+pub unsafe fn f64x2_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3886,7 +4134,8 @@ pub unsafe fn f64x2_ge(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     let lanes2: [F64; 2] = to_lanes(data2);
     let lanes1: [F64; 2] = to_lanes(data1);
     let result: [i64; 2] = array::from_fn(|i| ((lanes1[i] >= lanes2[i]) as i64).neg());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3899,14 +4148,14 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_SHL)
 );
 #[inline(always)]
-pub unsafe fn i8x16_shl(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i8x16_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3914,7 +4163,8 @@ pub unsafe fn i8x16_shl(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
     let result: [u8; 16] = lanes.map(|lane| lane.wrapping_shl(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3925,14 +4175,14 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_SHL)
 );
 #[inline(always)]
-pub unsafe fn i16x8_shl(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i16x8_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3940,7 +4190,8 @@ pub unsafe fn i16x8_shl(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [u16; 8] = to_lanes(data);
     let result: [u16; 8] = lanes.map(|lane| lane.wrapping_shl(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3951,14 +4202,14 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_SHL)
 );
 #[inline(always)]
-pub unsafe fn i32x4_shl(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i32x4_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3966,7 +4217,8 @@ pub unsafe fn i32x4_shl(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
     let result: [u32; 4] = lanes.map(|lane| lane.wrapping_shl(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -3977,14 +4229,14 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_SHL)
 );
 #[inline(always)]
-pub unsafe fn i64x2_shl(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i64x2_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -3992,7 +4244,8 @@ pub unsafe fn i64x2_shl(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let lanes: [u64; 2] = to_lanes(data);
     let result: [u64; 2] = lanes.map(|lane| lane.wrapping_shl(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4003,14 +4256,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_SHR_S)
 );
 #[inline(always)]
-pub unsafe fn i8x16_shr_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i8x16_shr_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4018,7 +4273,8 @@ pub unsafe fn i8x16_shr_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [i8; 16] = to_lanes(data);
     let result: [i8; 16] = lanes.map(|lane| lane.wrapping_shr(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4029,14 +4285,16 @@ define_instruction!(
     fuel_check = flat_fd(I8X16_SHR_U)
 );
 #[inline(always)]
-pub unsafe fn i8x16_shr_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i8x16_shr_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4044,7 +4302,8 @@ pub unsafe fn i8x16_shr_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
     let result: [u8; 16] = lanes.map(|lane| lane.wrapping_shr(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4055,14 +4314,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_SHR_S)
 );
 #[inline(always)]
-pub unsafe fn i16x8_shr_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i16x8_shr_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4070,7 +4331,8 @@ pub unsafe fn i16x8_shr_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [i16; 8] = to_lanes(data);
     let result: [i16; 8] = lanes.map(|lane| lane.wrapping_shr(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4081,14 +4343,16 @@ define_instruction!(
     fuel_check = flat_fd(I16X8_SHR_U)
 );
 #[inline(always)]
-pub unsafe fn i16x8_shr_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i16x8_shr_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4096,7 +4360,8 @@ pub unsafe fn i16x8_shr_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [u16; 8] = to_lanes(data);
     let result: [u16; 8] = lanes.map(|lane| lane.wrapping_shr(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4107,14 +4372,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_SHR_S)
 );
 #[inline(always)]
-pub unsafe fn i32x4_shr_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i32x4_shr_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4122,7 +4389,8 @@ pub unsafe fn i32x4_shr_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
     let result: [i32; 4] = lanes.map(|lane| lane.wrapping_shr(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4133,14 +4401,16 @@ define_instruction!(
     fuel_check = flat_fd(I32X4_SHR_U)
 );
 #[inline(always)]
-pub unsafe fn i32x4_shr_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i32x4_shr_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4148,7 +4418,8 @@ pub unsafe fn i32x4_shr_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
     let result: [u32; 4] = lanes.map(|lane| lane.wrapping_shr(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4159,14 +4430,16 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_SHR_S)
 );
 #[inline(always)]
-pub unsafe fn i64x2_shr_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i64x2_shr_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4174,7 +4447,8 @@ pub unsafe fn i64x2_shr_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [i64; 2] = to_lanes(data);
     let result: [i64; 2] = lanes.map(|lane| lane.wrapping_shr(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4185,14 +4459,16 @@ define_instruction!(
     fuel_check = flat_fd(I64X2_SHR_U)
 );
 #[inline(always)]
-pub unsafe fn i64x2_shr_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let shift: u32 = args
+pub unsafe fn i64x2_shr_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let shift: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4200,7 +4476,8 @@ pub unsafe fn i64x2_shr_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let lanes: [u64; 2] = to_lanes(data);
     let result: [u64; 2] = lanes.map(|lane| lane.wrapping_shr(shift));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4214,9 +4491,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_all_true(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4224,7 +4501,8 @@ pub unsafe fn i8x16_all_true(
         .unwrap_validated();
     let lanes: [u8; 16] = to_lanes(data);
     let all_true = lanes.into_iter().all(|lane| lane != 0);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::I32(all_true as u32))?;
     Ok(ControlFlow::Continue(()))
@@ -4236,9 +4514,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_all_true(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4246,7 +4524,8 @@ pub unsafe fn i16x8_all_true(
         .unwrap_validated();
     let lanes: [u16; 8] = to_lanes(data);
     let all_true = lanes.into_iter().all(|lane| lane != 0);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::I32(all_true as u32))?;
     Ok(ControlFlow::Continue(()))
@@ -4258,9 +4537,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_all_true(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4268,7 +4547,8 @@ pub unsafe fn i32x4_all_true(
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
     let all_true = lanes.into_iter().all(|lane| lane != 0);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::I32(all_true as u32))?;
     Ok(ControlFlow::Continue(()))
@@ -4280,9 +4560,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_all_true(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4290,7 +4570,8 @@ pub unsafe fn i64x2_all_true(
         .unwrap_validated();
     let lanes: [u64; 2] = to_lanes(data);
     let all_true = lanes.into_iter().all(|lane| lane != 0);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::I32(all_true as u32))?;
     Ok(ControlFlow::Continue(()))
@@ -4304,9 +4585,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_bitmask(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4318,7 +4599,7 @@ pub unsafe fn i8x16_bitmask(
         .into_iter()
         .enumerate()
         .fold(0u32, |acc, (i, bit)| acc | ((bit as u32) << i));
-    args.resumable.stack.push_value(Value::I32(bitmask))?;
+    state.resumable.stack.push_value(Value::I32(bitmask))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -4328,9 +4609,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_bitmask(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4342,7 +4623,7 @@ pub unsafe fn i16x8_bitmask(
         .into_iter()
         .enumerate()
         .fold(0u32, |acc, (i, bit)| acc | ((bit as u32) << i));
-    args.resumable.stack.push_value(Value::I32(bitmask))?;
+    state.resumable.stack.push_value(Value::I32(bitmask))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -4352,9 +4633,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_bitmask(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4366,7 +4647,7 @@ pub unsafe fn i32x4_bitmask(
         .into_iter()
         .enumerate()
         .fold(0u32, |acc, (i, bit)| acc | ((bit as u32) << i));
-    args.resumable.stack.push_value(Value::I32(bitmask))?;
+    state.resumable.stack.push_value(Value::I32(bitmask))?;
     Ok(ControlFlow::Continue(()))
 }
 define_instruction!(
@@ -4376,9 +4657,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_bitmask(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4390,7 +4671,7 @@ pub unsafe fn i64x2_bitmask(
         .into_iter()
         .enumerate()
         .fold(0u32, |acc, (i, bit)| acc | ((bit as u32) << i));
-    args.resumable.stack.push_value(Value::I32(bitmask))?;
+    state.resumable.stack.push_value(Value::I32(bitmask))?;
     Ok(ControlFlow::Continue(()))
 }
 
@@ -4402,15 +4683,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_narrow_i16x8_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4423,7 +4704,8 @@ pub unsafe fn i8x16_narrow_i16x8_s(
         .chain(lanes2)
         .map(|lane| lane.clamp(i8::MIN as i16, i8::MAX as i16) as i8);
     let result: [i8; 16] = array::from_fn(|_| concatenated_narrowed_lanes.next().unwrap());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4435,15 +4717,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i8x16_narrow_i16x8_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4456,7 +4738,8 @@ pub unsafe fn i8x16_narrow_i16x8_u(
         .chain(lanes2)
         .map(|lane| lane.clamp(u8::MIN as i16, u8::MAX as i16) as u8);
     let result: [u8; 16] = array::from_fn(|_| concatenated_narrowed_lanes.next().unwrap());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4468,15 +4751,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_narrow_i32x4_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4489,7 +4772,8 @@ pub unsafe fn i16x8_narrow_i32x4_s(
         .chain(lanes2)
         .map(|lane| lane.clamp(i16::MIN as i32, i16::MAX as i32) as i16);
     let result: [i16; 8] = array::from_fn(|_| concatenated_narrowed_lanes.next().unwrap());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4501,15 +4785,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_narrow_i32x4_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4522,7 +4806,8 @@ pub unsafe fn i16x8_narrow_i32x4_u(
         .chain(lanes2)
         .map(|lane| lane.clamp(u16::MIN as i32, u16::MAX as i32) as u16);
     let result: [u16; 8] = array::from_fn(|_| concatenated_narrowed_lanes.next().unwrap());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4536,9 +4821,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_trunc_sat_f32x4_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4556,7 +4841,8 @@ pub unsafe fn i32x4_trunc_sat_f32x4_s(
             lane.as_i32()
         }
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4568,9 +4854,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_trunc_sat_f32x4_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4586,7 +4872,8 @@ pub unsafe fn i32x4_trunc_sat_f32x4_u(
             lane.as_u32()
         }
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4598,9 +4885,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_convert_i32x4_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4608,7 +4895,8 @@ pub unsafe fn f32x4_convert_i32x4_s(
         .unwrap_validated();
     let lanes: [i32; 4] = to_lanes(data);
     let result: [F32; 4] = lanes.map(|lane| F32(lane as f32));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4620,9 +4908,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_convert_i32x4_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4630,7 +4918,8 @@ pub unsafe fn f32x4_convert_i32x4_u(
         .unwrap_validated();
     let lanes: [u32; 4] = to_lanes(data);
     let result: [F32; 4] = lanes.map(|lane| F32(lane as f32));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4644,9 +4933,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extend_high_i8x16_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4655,7 +4944,8 @@ pub unsafe fn i16x8_extend_high_i8x16_s(
     let lanes: [i8; 16] = to_lanes(data);
     let high_lanes: [i8; 8] = lanes[8..].try_into().unwrap();
     let result = high_lanes.map(|lane| lane as i16);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4667,9 +4957,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extend_high_i8x16_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4678,7 +4968,8 @@ pub unsafe fn i16x8_extend_high_i8x16_u(
     let lanes: [u8; 16] = to_lanes(data);
     let high_lanes: [u8; 8] = lanes[8..].try_into().unwrap();
     let result = high_lanes.map(|lane| lane as u16);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4690,9 +4981,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extend_low_i8x16_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4701,7 +4992,8 @@ pub unsafe fn i16x8_extend_low_i8x16_s(
     let lanes: [i8; 16] = to_lanes(data);
     let low_lanes: [i8; 8] = lanes[..8].try_into().unwrap();
     let result = low_lanes.map(|lane| lane as i16);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4713,9 +5005,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extend_low_i8x16_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4724,7 +5016,8 @@ pub unsafe fn i16x8_extend_low_i8x16_u(
     let lanes: [u8; 16] = to_lanes(data);
     let low_lanes: [u8; 8] = lanes[..8].try_into().unwrap();
     let result = low_lanes.map(|lane| lane as u16);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4736,9 +5029,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_extend_high_i16x8_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4747,7 +5040,8 @@ pub unsafe fn i32x4_extend_high_i16x8_s(
     let lanes: [i16; 8] = to_lanes(data);
     let high_lanes: [i16; 4] = lanes[4..].try_into().unwrap();
     let result = high_lanes.map(|lane| lane as i32);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4759,9 +5053,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_extend_high_i16x8_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4770,7 +5064,8 @@ pub unsafe fn i32x4_extend_high_i16x8_u(
     let lanes: [u16; 8] = to_lanes(data);
     let high_lanes: [u16; 4] = lanes[4..].try_into().unwrap();
     let result = high_lanes.map(|lane| lane as u32);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4782,9 +5077,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_extend_low_i16x8_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4793,7 +5088,8 @@ pub unsafe fn i32x4_extend_low_i16x8_s(
     let lanes: [i16; 8] = to_lanes(data);
     let low_lanes: [i16; 4] = lanes[..4].try_into().unwrap();
     let result = low_lanes.map(|lane| lane as i32);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4805,9 +5101,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_extend_low_i16x8_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4816,7 +5112,8 @@ pub unsafe fn i32x4_extend_low_i16x8_u(
     let lanes: [u16; 8] = to_lanes(data);
     let low_lanes: [u16; 4] = lanes[..4].try_into().unwrap();
     let result = low_lanes.map(|lane| lane as u32);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4828,9 +5125,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_extend_high_i32x4_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4839,7 +5136,8 @@ pub unsafe fn i64x2_extend_high_i32x4_s(
     let lanes: [i32; 4] = to_lanes(data);
     let high_lanes: [i32; 2] = lanes[2..].try_into().unwrap();
     let result = high_lanes.map(|lane| lane as i64);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4851,9 +5149,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_extend_high_i32x4_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4862,7 +5160,8 @@ pub unsafe fn i64x2_extend_high_i32x4_u(
     let lanes: [u32; 4] = to_lanes(data);
     let high_lanes: [u32; 2] = lanes[2..].try_into().unwrap();
     let result = high_lanes.map(|lane| lane as u64);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4874,9 +5173,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_extend_low_i32x4_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4885,7 +5184,8 @@ pub unsafe fn i64x2_extend_low_i32x4_s(
     let lanes: [i32; 4] = to_lanes(data);
     let low_lanes: [i32; 2] = lanes[..2].try_into().unwrap();
     let result = low_lanes.map(|lane| lane as i64);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4897,9 +5197,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_extend_low_i32x4_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4908,7 +5208,8 @@ pub unsafe fn i64x2_extend_low_i32x4_u(
     let lanes: [u32; 4] = to_lanes(data);
     let low_lanes: [u32; 2] = lanes[..2].try_into().unwrap();
     let result = low_lanes.map(|lane| lane as u64);
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4920,9 +5221,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_convert_low_i32x4_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4931,7 +5232,8 @@ pub unsafe fn f64x2_convert_low_i32x4_s(
     let lanes: [i32; 4] = to_lanes(data);
     let low_lanes: [i32; 2] = lanes[..2].try_into().unwrap();
     let result = low_lanes.map(|lane| F64(lane as f64));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4943,9 +5245,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_convert_low_i32x4_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4954,7 +5256,8 @@ pub unsafe fn f64x2_convert_low_i32x4_u(
     let lanes: [u32; 4] = to_lanes(data);
     let low_lanes: [u32; 2] = lanes[..2].try_into().unwrap();
     let result = low_lanes.map(|lane| F64(lane as f64));
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4966,9 +5269,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f64x2_promote_low_f32x4(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -4977,7 +5280,8 @@ pub unsafe fn f64x2_promote_low_f32x4(
     let lanes: [F32; 4] = to_lanes(data);
     let half_lanes: [F32; 2] = lanes[..2].try_into().unwrap();
     let result = half_lanes.map(|lane| lane.as_f64());
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -4991,9 +5295,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_trunc_sat_f64x2_s_zero(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5011,7 +5315,8 @@ pub unsafe fn i32x4_trunc_sat_f64x2_s_zero(
             lane.as_i32()
         }
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes([result[0], result[1], 0, 0])))?;
     Ok(ControlFlow::Continue(()))
@@ -5023,9 +5328,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_trunc_sat_f64x2_u_zero(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5041,7 +5346,8 @@ pub unsafe fn i32x4_trunc_sat_f64x2_u_zero(
             lane.as_u32()
         }
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes([result[0], result[1], 0, 0])))?;
     Ok(ControlFlow::Continue(()))
@@ -5053,9 +5359,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn f32x4_demote_f64x2_zero(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5064,7 +5370,8 @@ pub unsafe fn f32x4_demote_f64x2_zero(
     let lanes = to_lanes::<8, 2, F64>(data);
     let half_lanes = lanes.map(|lane| lane.as_f32());
     let result = [half_lanes[0], half_lanes[1], F32(0.0), F32(0.0)];
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
@@ -5078,15 +5385,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_dot_i16x8_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5104,7 +5411,8 @@ pub unsafe fn i32x4_dot_i16x8_s(
         let v2 = multiplied[2 * i + 1];
         v1.wrapping_add(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(added)))?;
     Ok(ControlFlow::Continue(()))
@@ -5118,15 +5426,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extmul_high_i8x16_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5141,7 +5449,8 @@ pub unsafe fn i16x8_extmul_high_i8x16_s(
         let v2 = high_lanes2[i] as i16;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5153,15 +5462,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extmul_high_i8x16_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5176,7 +5485,8 @@ pub unsafe fn i16x8_extmul_high_i8x16_u(
         let v2 = high_lanes2[i] as u16;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5188,15 +5498,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extmul_low_i8x16_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5211,7 +5521,8 @@ pub unsafe fn i16x8_extmul_low_i8x16_s(
         let v2 = high_lanes2[i] as i16;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5223,15 +5534,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extmul_low_i8x16_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5246,7 +5557,8 @@ pub unsafe fn i16x8_extmul_low_i8x16_u(
         let v2 = high_lanes2[i] as u16;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5258,15 +5570,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_extmul_high_i16x8_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5281,7 +5593,8 @@ pub unsafe fn i32x4_extmul_high_i16x8_s(
         let v2 = high_lanes2[i] as i32;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5293,15 +5606,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_extmul_high_i16x8_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5316,7 +5629,8 @@ pub unsafe fn i32x4_extmul_high_i16x8_u(
         let v2 = high_lanes2[i] as u32;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5328,15 +5642,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_extmul_low_i16x8_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5351,7 +5665,8 @@ pub unsafe fn i32x4_extmul_low_i16x8_s(
         let v2 = high_lanes2[i] as i32;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5363,15 +5678,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_extmul_low_i16x8_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5386,7 +5701,8 @@ pub unsafe fn i32x4_extmul_low_i16x8_u(
         let v2 = high_lanes2[i] as u32;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5398,15 +5714,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_extmul_high_i32x4_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5421,7 +5737,8 @@ pub unsafe fn i64x2_extmul_high_i32x4_s(
         let v2 = high_lanes2[i] as i64;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5433,15 +5750,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_extmul_high_i32x4_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5456,7 +5773,8 @@ pub unsafe fn i64x2_extmul_high_i32x4_u(
         let v2 = high_lanes2[i] as u64;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5468,15 +5786,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_extmul_low_i32x4_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5491,7 +5809,8 @@ pub unsafe fn i64x2_extmul_low_i32x4_s(
         let v2 = high_lanes2[i] as i64;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5503,15 +5822,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64x2_extmul_low_i32x4_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data1: [u8; 16] = args
+    let data1: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let data2: [u8; 16] = args
+    let data2: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5526,7 +5845,8 @@ pub unsafe fn i64x2_extmul_low_i32x4_u(
         let v2 = high_lanes2[i] as u64;
         v1.wrapping_mul(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
@@ -5540,9 +5860,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extadd_pairwise_i8x16_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5554,7 +5874,8 @@ pub unsafe fn i16x8_extadd_pairwise_i8x16_s(
         let v2 = lanes[2 * i + 1] as i16;
         v1.wrapping_add(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(added_pairwise)))?;
     Ok(ControlFlow::Continue(()))
@@ -5566,9 +5887,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i16x8_extadd_pairwise_i8x16_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5580,7 +5901,8 @@ pub unsafe fn i16x8_extadd_pairwise_i8x16_u(
         let v2 = lanes[2 * i + 1] as u16;
         v1.wrapping_add(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(added_pairwise)))?;
     Ok(ControlFlow::Continue(()))
@@ -5592,9 +5914,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_extadd_pairwise_i16x8_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5606,7 +5928,8 @@ pub unsafe fn i32x4_extadd_pairwise_i16x8_s(
         let v2 = lanes[2 * i + 1] as i32;
         v1.wrapping_add(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(added_pairwise)))?;
     Ok(ControlFlow::Continue(()))
@@ -5618,9 +5941,9 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32x4_extadd_pairwise_i16x8_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
@@ -5632,7 +5955,8 @@ pub unsafe fn i32x4_extadd_pairwise_i16x8_u(
         let v2 = lanes[2 * i + 1] as u32;
         v1.wrapping_add(v2)
     });
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(added_pairwise)))?;
     Ok(ControlFlow::Continue(()))

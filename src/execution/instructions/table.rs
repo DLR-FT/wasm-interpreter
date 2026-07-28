@@ -10,7 +10,7 @@ use crate::{
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
-        instructions::{define_instruction, elem_drop, table_init, Args, InterpreterLoopOutcome},
+        instructions::{define_instruction, elem_drop, table_init, InterpreterLoopOutcome, State},
     },
     trace, Config, Ref, RuntimeError, TrapError, Value,
 };
@@ -21,24 +21,24 @@ define_instruction!(
     fuel_check = flat(TABLE_GET)
 );
 #[inline(always)]
-pub unsafe fn table_get(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn table_get(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid table index
     // next.
-    let table_idx = unsafe { TableIdx::decode_unchecked(args.wasm) };
+    let table_idx = unsafe { TableIdx::decode_unchecked(state.wasm) };
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees the table index to be valid in
     // the current module.
     let table_addr = *unsafe { module.table_addrs.get(table_idx) };
     // SAFETY: This table address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let tab = unsafe { args.store_inner.tables.get(table_addr) };
+    let tab = unsafe { state.store_inner.tables.get(table_addr) };
 
-    let i: i32 = args
+    let i: i32 = state
         .resumable
         .stack
         .pop_value()
@@ -50,7 +50,7 @@ pub unsafe fn table_get(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
         .get(i.cast_unsigned().into_usize())
         .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
-    args.resumable.stack.push_value((*val).into())?;
+    state.resumable.stack.push_value((*val).into())?;
     trace!(
         "Instruction: table.get '{}' [{}] -> [{}]",
         table_idx,
@@ -66,30 +66,30 @@ define_instruction!(
     fuel_check = flat(TABLE_SET)
 );
 #[inline(always)]
-pub unsafe fn table_set(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn table_set(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be valid table index
     // next.
-    let table_idx = unsafe { TableIdx::decode_unchecked(args.wasm) };
+    let table_idx = unsafe { TableIdx::decode_unchecked(state.wasm) };
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees the table index to be valid in
     // the current module.
     let table_addr = *unsafe { module.table_addrs.get(table_idx) };
     // SAFETY: This table address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let tab = unsafe { args.store_inner.tables.get_mut(table_addr) };
+    let tab = unsafe { state.store_inner.tables.get_mut(table_addr) };
 
-    let val: Ref = args
+    let val: Ref = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let i: i32 = args
+    let i: i32 = state
         .resumable
         .stack
         .pop_value()
@@ -115,16 +115,18 @@ define_instruction!(
     fuel_check = flat_fc(TABLE_SIZE)
 );
 #[inline(always)]
-pub unsafe fn table_size(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn table_size(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be valid table
     // index next.
-    let table_idx = unsafe { TableIdx::decode_unchecked(args.wasm) };
+    let table_idx = unsafe { TableIdx::decode_unchecked(state.wasm) };
 
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees the table index to be
     // valid in the current module.
@@ -132,11 +134,11 @@ pub unsafe fn table_size(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     // SAFETY: This table address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let tab = unsafe { args.store_inner.tables.get_mut(table_addr) };
+    let tab = unsafe { state.store_inner.tables.get_mut(table_addr) };
 
     let sz = tab.elem.len() as u32;
 
-    args.resumable.stack.push_value(Value::I32(sz))?;
+    state.resumable.stack.push_value(Value::I32(sz))?;
 
     trace!("Instruction: table.size '{}' [] -> [{}]", table_idx, sz);
     Ok(ControlFlow::Continue(()))
@@ -145,17 +147,17 @@ pub unsafe fn table_size(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
 define_instruction!(super::table_grow::<T>, table_grow_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn table_grow<T: Config>(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid
     // table index next.
-    let table_idx = unsafe { TableIdx::decode_unchecked(args.wasm) };
+    let table_idx = unsafe { TableIdx::decode_unchecked(state.wasm) };
 
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees the table index to be
     // valid in the current module.
@@ -163,11 +165,11 @@ pub unsafe fn table_grow<T: Config>(
     // SAFETY: This table address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let tab = unsafe { args.store_inner.tables.get_mut(table_addr) };
+    let tab = unsafe { state.store_inner.tables.get_mut(table_addr) };
 
     let sz = tab.elem.len() as u32;
 
-    let n: u32 = args
+    let n: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -176,11 +178,12 @@ pub unsafe fn table_grow<T: Config>(
     let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_GROW)
         + u64::from(n)
             * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_GROW);
-    if let Some(fuel) = &mut args.resumable.maybe_fuel {
+    if let Some(fuel) = &mut state.resumable.maybe_fuel {
         if *fuel >= cost {
             *fuel -= cost;
         } else {
-            args.resumable
+            state
+                .resumable
                 .stack
                 .push_value(Value::I32(n))
                 .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -191,7 +194,7 @@ pub unsafe fn table_grow<T: Config>(
         }
     }
 
-    let val: Ref = args
+    let val: Ref = state
         .resumable
         .stack
         .pop_value()
@@ -200,13 +203,13 @@ pub unsafe fn table_grow<T: Config>(
 
     // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
     // for now we execute it always according to the following match expr.
-    // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the args.resumable.stack per spec
+    // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the state.resumable.stack per spec
     let pushed_value = match tab.grow(n, val) {
         Ok(_) => sz,
         Err(RuntimeError::TableGrowOverflowed | RuntimeError::TableGrowExceededLimit) => u32::MAX,
         Err(_) => unreachable!("table grow operation cannot produce any other errors"),
     };
-    args.resumable.stack.push_value(Value::I32(pushed_value))?;
+    state.resumable.stack.push_value(Value::I32(pushed_value))?;
 
     Ok(ControlFlow::Continue(()))
 }
@@ -214,17 +217,17 @@ pub unsafe fn table_grow<T: Config>(
 define_instruction!(super::table_fill::<T>, table_fill_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn table_fill<T: Config>(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid
     // table index next.
-    let table_idx = unsafe { TableIdx::decode_unchecked(args.wasm) };
+    let table_idx = unsafe { TableIdx::decode_unchecked(state.wasm) };
 
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees the table index to be
     // valid in the current module.
@@ -232,9 +235,9 @@ pub unsafe fn table_fill<T: Config>(
     // SAFETY: This table address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let tab = unsafe { args.store_inner.tables.get_mut(table_addr) };
+    let tab = unsafe { state.store_inner.tables.get_mut(table_addr) };
 
-    let len: u32 = args
+    let len: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -243,11 +246,12 @@ pub unsafe fn table_fill<T: Config>(
     let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_FILL)
         + u64::from(len)
             * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_FILL);
-    if let Some(fuel) = &mut args.resumable.maybe_fuel {
+    if let Some(fuel) = &mut state.resumable.maybe_fuel {
         if *fuel >= cost {
             *fuel -= cost;
         } else {
-            args.resumable
+            state
+                .resumable
                 .stack
                 .push_value(Value::I32(len))
                 .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -258,13 +262,13 @@ pub unsafe fn table_fill<T: Config>(
         }
     }
 
-    let val: Ref = args
+    let val: Ref = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let dst: u32 = args
+    let dst: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -294,20 +298,20 @@ pub unsafe fn table_fill<T: Config>(
 define_instruction!(super::table_copy::<T>, table_copy_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn table_copy<T: Config>(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid
     // table index next.
-    let table_x_idx = unsafe { TableIdx::decode_unchecked(args.wasm) };
+    let table_x_idx = unsafe { TableIdx::decode_unchecked(state.wasm) };
     // SAFETY: Validation guarantees there to be a valid
     // table index next.
-    let table_y_idx = unsafe { TableIdx::decode_unchecked(args.wasm) };
+    let table_y_idx = unsafe { TableIdx::decode_unchecked(state.wasm) };
 
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees the table index to be
     // valid in the current module.
@@ -319,17 +323,17 @@ pub unsafe fn table_copy<T: Config>(
     // SAFETY: This table address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let tab_x_elem_len = unsafe { args.store_inner.tables.get(table_addr_x) }
+    let tab_x_elem_len = unsafe { state.store_inner.tables.get(table_addr_x) }
         .elem
         .len();
     // SAFETY: This table address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let tab_y_elem_len = unsafe { args.store_inner.tables.get(table_addr_y) }
+    let tab_y_elem_len = unsafe { state.store_inner.tables.get(table_addr_y) }
         .elem
         .len();
 
-    let n: u32 = args
+    let n: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -338,11 +342,12 @@ pub unsafe fn table_copy<T: Config>(
     let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_COPY)
         + u64::from(n)
             * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_COPY);
-    if let Some(fuel) = &mut args.resumable.maybe_fuel {
+    if let Some(fuel) = &mut state.resumable.maybe_fuel {
         if *fuel >= cost {
             *fuel -= cost;
         } else {
-            args.resumable
+            state
+                .resumable
                 .stack
                 .push_value(Value::I32(n))
                 .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -353,13 +358,13 @@ pub unsafe fn table_copy<T: Config>(
         }
     }
 
-    let s: u32 = args
+    let s: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated(); // source
-    let d: u32 = args
+    let d: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -392,7 +397,7 @@ pub unsafe fn table_copy<T: Config>(
         // SAFETY: This table address was just read from the
         // current store. Therefore, it is valid in the
         // current store.
-        let table = unsafe { args.store_inner.tables.get_mut(table_addr_x) };
+        let table = unsafe { state.store_inner.tables.get_mut(table_addr_x) };
 
         table.elem.copy_within(s as usize..src_res, d as usize);
     } else {
@@ -403,7 +408,7 @@ pub unsafe fn table_copy<T: Config>(
         // the current store. Therefore, they are valid in
         // the current store.
         let (src_table, dst_table) =
-            unsafe { args.store_inner.tables.get_two_mut(src_addr, dst_addr) }
+            unsafe { state.store_inner.tables.get_two_mut(src_addr, dst_addr) }
                 .expect("both addrs to never be equal");
 
         dst_table.elem[d.into_usize()..dst_res]
@@ -432,16 +437,16 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn table_init_fn<T: Config>(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid
     // element index next.
-    let elem_idx = unsafe { ElemIdx::decode_unchecked(args.wasm) };
+    let elem_idx = unsafe { ElemIdx::decode_unchecked(state.wasm) };
     // SAFETY: Validation guarantees there to be a valid
     // table index next.
-    let table_idx = unsafe { TableIdx::decode_unchecked(args.wasm) };
+    let table_idx = unsafe { TableIdx::decode_unchecked(state.wasm) };
 
-    let n: u32 = args
+    let n: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -450,11 +455,12 @@ pub unsafe fn table_init_fn<T: Config>(
     let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::TABLE_INIT)
         + u64::from(n)
             * T::get_fc_extension_cost_per_element(instructions::fc_extensions::TABLE_INIT);
-    if let Some(fuel) = &mut args.resumable.maybe_fuel {
+    if let Some(fuel) = &mut state.resumable.maybe_fuel {
         if *fuel >= cost {
             *fuel -= cost;
         } else {
-            args.resumable
+            state
+                .resumable
                 .stack
                 .push_value(Value::I32(n))
                 .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -465,13 +471,13 @@ pub unsafe fn table_init_fn<T: Config>(
         }
     }
 
-    let s: i32 = args
+    let s: i32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated(); // offset
-    let d: i32 = args
+    let d: i32 = state
         .resumable
         .stack
         .pop_value()
@@ -494,10 +500,10 @@ pub unsafe fn table_init_fn<T: Config>(
     //    valid in the current module instance.
     unsafe {
         table_init(
-            args.modules,
-            &mut args.store_inner.tables,
-            &args.store_inner.elements,
-            *args.current_module,
+            state.modules,
+            &mut state.store_inner.tables,
+            &state.store_inner.elements,
+            *state.current_module,
             elem_idx,
             table_idx,
             n,
@@ -515,11 +521,11 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn elem_drop_fn(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there a valid element
     // index next.
-    let elem_idx = unsafe { ElemIdx::decode_unchecked(args.wasm) };
+    let elem_idx = unsafe { ElemIdx::decode_unchecked(state.wasm) };
 
     // SAFETY: All requirements are met:
     // 1. The current module address must come from the
@@ -535,9 +541,9 @@ pub unsafe fn elem_drop_fn(
     //    current store.
     unsafe {
         elem_drop(
-            args.modules,
-            &mut args.store_inner.elements,
-            *args.current_module,
+            state.modules,
+            &mut state.store_inner.elements,
+            *state.current_module,
             elem_idx,
         );
     }

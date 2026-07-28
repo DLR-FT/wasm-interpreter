@@ -13,7 +13,7 @@ use crate::{
         assert_validated::UnwrapValidatedExt,
         instructions::{
             calculate_mem_address, data_drop, define_instruction, from_lanes, memory_init,
-            to_lanes, Args, InterpreterLoopOutcome,
+            to_lanes, InterpreterLoopOutcome, State,
         },
     },
     trace, warn, Config, RuntimeError, Value, F32, F64,
@@ -22,9 +22,9 @@ use crate::{
 // t.load
 define_instruction!(super::i32_load, i32_load_mod, fuel_check = flat(I32_LOAD));
 #[inline(always)]
-pub unsafe fn i32_load(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+pub unsafe fn i32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -35,27 +35,27 @@ pub unsafe fn i32_load(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem_inst = unsafe { args.store_inner.memories.get(mem_addr) };
+    let mem_inst = unsafe { state.store_inner.memories.get(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data = mem_inst.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I32(data))?;
+    state.resumable.stack.push_value(Value::I32(data))?;
     trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
 define_instruction!(super::i64_load, i64_load_mod, fuel_check = flat(I64_LOAD));
 #[inline(always)]
-pub unsafe fn i64_load(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+pub unsafe fn i64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -66,27 +66,27 @@ pub unsafe fn i64_load(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I64(data))?;
+    state.resumable.stack.push_value(Value::I64(data))?;
     trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
 define_instruction!(super::f32_load, f32_load_mod, fuel_check = flat(F32_LOAD));
 #[inline(always)]
-pub unsafe fn f32_load(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+pub unsafe fn f32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -97,27 +97,27 @@ pub unsafe fn f32_load(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::F32(data))?;
+    state.resumable.stack.push_value(Value::F32(data))?;
     trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
 define_instruction!(super::f64_load, f64_load_mod, fuel_check = flat(F64_LOAD));
 #[inline(always)]
-pub unsafe fn f64_load(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+pub unsafe fn f64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -128,18 +128,18 @@ pub unsafe fn f64_load(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::F64(data))?;
+    state.resumable.stack.push_value(Value::F64(data))?;
     trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
@@ -150,13 +150,13 @@ define_instruction!(
     fuel_check = flat_fd(V128_LOAD)
 );
 #[inline(always)]
-pub unsafe fn v128_load(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+pub unsafe fn v128_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -164,9 +164,9 @@ pub unsafe fn v128_load(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -175,7 +175,10 @@ pub unsafe fn v128_load(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
     let data: u128 = memory.mem.load(idx)?;
-    args.resumable.stack.push_value(data.to_le_bytes().into())?;
+    state
+        .resumable
+        .stack
+        .push_value(data.to_le_bytes().into())?;
     Ok(ControlFlow::Continue(()))
 }
 
@@ -186,9 +189,11 @@ define_instruction!(
     fuel_check = flat(I32_LOAD8_S)
 );
 #[inline(always)]
-pub unsafe fn i32_load8_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+pub unsafe fn i32_load8_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -199,18 +204,18 @@ pub unsafe fn i32_load8_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data: i8 = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I32(data as u32))?;
+    state.resumable.stack.push_value(Value::I32(data as u32))?;
     trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
@@ -221,9 +226,11 @@ define_instruction!(
     fuel_check = flat(I32_LOAD8_U)
 );
 #[inline(always)]
-pub unsafe fn i32_load8_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+pub unsafe fn i32_load8_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -234,18 +241,18 @@ pub unsafe fn i32_load8_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data: u8 = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I32(data as u32))?;
+    state.resumable.stack.push_value(Value::I32(data as u32))?;
     trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
@@ -257,10 +264,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32_load16_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -271,18 +278,18 @@ pub unsafe fn i32_load16_s(
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data: i16 = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I32(data as u32))?;
+    state.resumable.stack.push_value(Value::I32(data as u32))?;
     trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
@@ -294,10 +301,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i32_load16_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -308,18 +315,18 @@ pub unsafe fn i32_load16_u(
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data: u16 = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I32(data as u32))?;
+    state.resumable.stack.push_value(Value::I32(data as u32))?;
     trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
@@ -330,9 +337,11 @@ define_instruction!(
     fuel_check = flat(I64_LOAD8_S)
 );
 #[inline(always)]
-pub unsafe fn i64_load8_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+pub unsafe fn i64_load8_s(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -343,18 +352,18 @@ pub unsafe fn i64_load8_s(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data: i8 = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I64(data as u64))?;
+    state.resumable.stack.push_value(Value::I64(data as u64))?;
     trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
@@ -365,9 +374,11 @@ define_instruction!(
     fuel_check = flat(I64_LOAD8_U)
 );
 #[inline(always)]
-pub unsafe fn i64_load8_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+pub unsafe fn i64_load8_u(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -378,18 +389,18 @@ pub unsafe fn i64_load8_u(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data: u8 = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I64(data as u64))?;
+    state.resumable.stack.push_value(Value::I64(data as u64))?;
     trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
@@ -401,10 +412,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64_load16_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -415,18 +426,18 @@ pub unsafe fn i64_load16_s(
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data: i16 = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I64(data as u64))?;
+    state.resumable.stack.push_value(Value::I64(data as u64))?;
     trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
@@ -438,10 +449,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64_load16_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -452,18 +463,18 @@ pub unsafe fn i64_load16_u(
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data: u16 = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I64(data as u64))?;
+    state.resumable.stack.push_value(Value::I64(data as u64))?;
     trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
@@ -475,10 +486,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64_load32_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -489,18 +500,18 @@ pub unsafe fn i64_load32_s(
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data: i32 = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I64(data as u64))?;
+    state.resumable.stack.push_value(Value::I64(data as u64))?;
     trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
@@ -512,10 +523,10 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn i64_load32_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
-    let relative_address: u32 = args
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -526,18 +537,18 @@ pub unsafe fn i64_load32_u(
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     let data: u32 = mem.mem.load(idx)?;
 
-    args.resumable.stack.push_value(Value::I64(data as u64))?;
+    state.resumable.stack.push_value(Value::I64(data as u64))?;
     trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
@@ -550,14 +561,14 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load8x8_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -565,9 +576,9 @@ pub unsafe fn v128_load8x8_s(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -583,7 +594,8 @@ pub unsafe fn v128_load8x8_s(
 
     let extended_lanes = half_lanes.map(|lane| lane as i16);
 
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(extended_lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -595,14 +607,14 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load8x8_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -610,9 +622,9 @@ pub unsafe fn v128_load8x8_u(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -628,7 +640,8 @@ pub unsafe fn v128_load8x8_u(
 
     let extended_lanes = half_lanes.map(|lane| lane as u16);
 
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(extended_lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -640,14 +653,14 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load16x4_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -655,9 +668,9 @@ pub unsafe fn v128_load16x4_s(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -673,7 +686,8 @@ pub unsafe fn v128_load16x4_s(
 
     let extended_lanes = half_lanes.map(|lane| lane as i32);
 
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(extended_lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -685,14 +699,14 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load16x4_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -700,9 +714,9 @@ pub unsafe fn v128_load16x4_u(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -718,7 +732,8 @@ pub unsafe fn v128_load16x4_u(
 
     let extended_lanes = half_lanes.map(|lane| lane as u32);
 
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(extended_lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -730,14 +745,14 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load32x2_s(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -745,9 +760,9 @@ pub unsafe fn v128_load32x2_s(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -763,7 +778,8 @@ pub unsafe fn v128_load32x2_s(
 
     let extended_lanes = half_lanes.map(|lane| lane as i64);
 
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(extended_lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -775,14 +791,14 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load32x2_u(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -790,9 +806,9 @@ pub unsafe fn v128_load32x2_u(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -808,7 +824,8 @@ pub unsafe fn v128_load32x2_u(
 
     let extended_lanes = half_lanes.map(|lane| lane as u64);
 
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(extended_lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -822,14 +839,14 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load8_splat(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -837,8 +854,8 @@ pub unsafe fn v128_load8_splat(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
-    let relative_address: u32 = args
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -847,7 +864,8 @@ pub unsafe fn v128_load8_splat(
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
     let lane = memory.mem.load::<1, u8>(idx)?;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes([lane; 16])))?;
     Ok(ControlFlow::Continue(()))
@@ -859,14 +877,14 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load16_splat(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -874,8 +892,8 @@ pub unsafe fn v128_load16_splat(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
-    let relative_address: u32 = args
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -884,7 +902,8 @@ pub unsafe fn v128_load16_splat(
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
     let lane = memory.mem.load::<2, u16>(idx)?;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes([lane; 8])))?;
     Ok(ControlFlow::Continue(()))
@@ -896,14 +915,14 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load32_splat(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -911,8 +930,8 @@ pub unsafe fn v128_load32_splat(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
-    let relative_address: u32 = args
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -921,7 +940,8 @@ pub unsafe fn v128_load32_splat(
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
     let lane = memory.mem.load::<4, u32>(idx)?;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes([lane; 4])))?;
     Ok(ControlFlow::Continue(()))
@@ -933,14 +953,14 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load64_splat(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -948,8 +968,8 @@ pub unsafe fn v128_load64_splat(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
-    let relative_address: u32 = args
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -958,7 +978,8 @@ pub unsafe fn v128_load64_splat(
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
     let lane = memory.mem.load::<8, u64>(idx)?;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes([lane; 2])))?;
     Ok(ControlFlow::Continue(()))
@@ -972,15 +993,15 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load32_zero(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -988,9 +1009,9 @@ pub unsafe fn v128_load32_zero(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -999,7 +1020,8 @@ pub unsafe fn v128_load32_zero(
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
     let data = memory.mem.load::<4, u32>(idx)? as u128;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(data.to_le_bytes()))?;
     Ok(ControlFlow::Continue(()))
@@ -1011,14 +1033,14 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load64_zero(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -1026,9 +1048,9 @@ pub unsafe fn v128_load64_zero(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1037,7 +1059,8 @@ pub unsafe fn v128_load64_zero(
     let idx = calculate_mem_address(&memarg, relative_address)?;
 
     let data = memory.mem.load::<8, u64>(idx)? as u128;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(data.to_le_bytes()))?;
     Ok(ControlFlow::Continue(()))
@@ -1051,26 +1074,26 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load8_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -1078,12 +1101,13 @@ pub unsafe fn v128_load8_lane(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
     let mut lanes: [u8; 16] = to_lanes(data);
     *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<1, u8>(idx)?;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -1096,26 +1120,26 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load16_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -1123,12 +1147,13 @@ pub unsafe fn v128_load16_lane(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
     let mut lanes: [u16; 8] = to_lanes(data);
     *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<2, u16>(idx)?;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -1140,26 +1165,26 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load32_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -1167,12 +1192,13 @@ pub unsafe fn v128_load32_lane(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
     let mut lanes: [u32; 4] = to_lanes(data);
     *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<4, u32>(idx)?;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -1184,26 +1210,26 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_load64_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -1211,12 +1237,13 @@ pub unsafe fn v128_load64_lane(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
     let mut lanes: [u64; 2] = to_lanes(data);
     *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<8, u64>(idx)?;
-    args.resumable
+    state
+        .resumable
         .stack
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
@@ -1229,16 +1256,16 @@ define_instruction!(
     fuel_check = flat(I32_STORE)
 );
 #[inline(always)]
-pub unsafe fn i32_store(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+pub unsafe fn i32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: u32 = args
+    let data_to_store: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1249,13 +1276,13 @@ pub unsafe fn i32_store(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, data_to_store)?;
@@ -1270,16 +1297,16 @@ define_instruction!(
     fuel_check = flat(I64_STORE)
 );
 #[inline(always)]
-pub unsafe fn i64_store(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+pub unsafe fn i64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: u64 = args
+    let data_to_store: u64 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1290,13 +1317,13 @@ pub unsafe fn i64_store(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, data_to_store)?;
@@ -1311,16 +1338,16 @@ define_instruction!(
     fuel_check = flat(F32_STORE)
 );
 #[inline(always)]
-pub unsafe fn f32_store(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+pub unsafe fn f32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: F32 = args
+    let data_to_store: F32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1331,13 +1358,13 @@ pub unsafe fn f32_store(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, data_to_store)?;
@@ -1352,16 +1379,16 @@ define_instruction!(
     fuel_check = flat(F64_STORE)
 );
 #[inline(always)]
-pub unsafe fn f64_store(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+pub unsafe fn f64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: F64 = args
+    let data_to_store: F64 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1372,13 +1399,13 @@ pub unsafe fn f64_store(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, data_to_store)?;
@@ -1393,13 +1420,15 @@ define_instruction!(
     fuel_check = flat_fd(V128_STORE)
 );
 #[inline(always)]
-pub unsafe fn v128_store(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+pub unsafe fn v128_store(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -1407,15 +1436,15 @@ pub unsafe fn v128_store(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1434,16 +1463,18 @@ define_instruction!(
     fuel_check = flat(I32_STORE8)
 );
 #[inline(always)]
-pub unsafe fn i32_store8(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+pub unsafe fn i32_store8(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: i32 = args
+    let data_to_store: i32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1456,13 +1487,13 @@ pub unsafe fn i32_store8(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, wrapped_data)?;
@@ -1477,16 +1508,18 @@ define_instruction!(
     fuel_check = flat(I32_STORE16)
 );
 #[inline(always)]
-pub unsafe fn i32_store16(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+pub unsafe fn i32_store16(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: i32 = args
+    let data_to_store: i32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1499,13 +1532,13 @@ pub unsafe fn i32_store16(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, wrapped_data)?;
@@ -1520,16 +1553,18 @@ define_instruction!(
     fuel_check = flat(I64_STORE8)
 );
 #[inline(always)]
-pub unsafe fn i64_store8(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+pub unsafe fn i64_store8(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: i64 = args
+    let data_to_store: i64 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1542,13 +1577,13 @@ pub unsafe fn i64_store8(args: Args) -> Result<ControlFlow<InterpreterLoopOutcom
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, wrapped_data)?;
@@ -1563,16 +1598,18 @@ define_instruction!(
     fuel_check = flat(I64_STORE16)
 );
 #[inline(always)]
-pub unsafe fn i64_store16(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+pub unsafe fn i64_store16(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: i64 = args
+    let data_to_store: i64 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1585,13 +1622,13 @@ pub unsafe fn i64_store16(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, wrapped_data)?;
@@ -1606,16 +1643,18 @@ define_instruction!(
     fuel_check = flat(I64_STORE32)
 );
 #[inline(always)]
-pub unsafe fn i64_store32(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+pub unsafe fn i64_store32(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
-    let data_to_store: i64 = args
+    let data_to_store: i64 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1628,13 +1667,13 @@ pub unsafe fn i64_store32(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, wrapped_data)?;
@@ -1651,26 +1690,26 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_store8_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -1678,9 +1717,9 @@ pub unsafe fn v128_store8_lane(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
 
     let lane = *to_lanes::<1, 16, u8>(data).get(lane_idx).unwrap_validated();
 
@@ -1694,26 +1733,26 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_store16_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -1721,9 +1760,9 @@ pub unsafe fn v128_store16_lane(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
 
     let lane = *to_lanes::<2, 8, u16>(data).get(lane_idx).unwrap_validated();
 
@@ -1737,26 +1776,26 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_store32_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -1764,9 +1803,9 @@ pub unsafe fn v128_store32_lane(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
 
     let lane = *to_lanes::<4, 4, u32>(data).get(lane_idx).unwrap_validated();
 
@@ -1780,26 +1819,26 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn v128_store64_lane(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let data: [u8; 16] = args
+    let data: [u8; 16] = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let relative_address: u32 = args
+    let relative_address: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let memarg = MemArg::decode(args.wasm).unwrap_validated();
+    let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -1807,9 +1846,9 @@ pub unsafe fn v128_store64_lane(
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let memory = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let memory = unsafe { state.store_inner.memories.get_mut(mem_addr) };
     let idx = calculate_mem_address(&memarg, relative_address)?;
-    let lane_idx = usize::from(args.wasm.decode_u8().unwrap_validated());
+    let lane_idx = usize::from(state.wasm.decode_u8().unwrap_validated());
 
     let lane = *to_lanes::<8, 2, u64>(data).get(lane_idx).unwrap_validated();
 
@@ -1824,23 +1863,25 @@ define_instruction!(
     fuel_check = flat(MEMORY_SIZE)
 );
 #[inline(always)]
-pub unsafe fn memory_size(args: Args) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn memory_size(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // Note: This zero byte is reserved for the multiple memories
     // proposal.
-    let _zero = args.wasm.decode_u8().unwrap_validated();
+    let _zero = state.wasm.decode_u8().unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
     let size = mem.size() as u32;
-    args.resumable.stack.push_value(Value::I32(size))?;
+    state.resumable.stack.push_value(Value::I32(size))?;
     trace!("Instruction: memory.size [] -> [{}]", size);
     Ok(ControlFlow::Continue(()))
 }
@@ -1849,26 +1890,26 @@ pub unsafe fn memory_size(args: Args) -> Result<ControlFlow<InterpreterLoopOutco
 define_instruction!(super::memory_grow::<T>, memory_grow_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn memory_grow<T: Config>(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // Note: This zero byte is reserved for the multiple memories
     // proposal.
-    let _zero = args.wasm.decode_u8().unwrap_validated();
+    let _zero = state.wasm.decode_u8().unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
     // store. Therefore, it is valid in the current store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
     let sz: u32 = mem.size() as u32;
 
-    let n: u32 = args
+    let n: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1877,11 +1918,12 @@ pub unsafe fn memory_grow<T: Config>(
     // decrement fuel, but push n back if it fails
     let cost = T::get_flat_cost(instructions::MEMORY_GROW)
         + u64::from(n) * T::get_cost_per_element(instructions::MEMORY_GROW);
-    if let Some(fuel) = &mut args.resumable.maybe_fuel {
+    if let Some(fuel) = &mut state.resumable.maybe_fuel {
         if *fuel >= cost {
             *fuel -= cost;
         } else {
-            args.resumable
+            state
+                .resumable
                 .stack
                 .push_value(Value::I32(n))
                 .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -1901,7 +1943,7 @@ pub unsafe fn memory_grow<T: Config>(
         Err(RuntimeError::MemoryGrowOverflowed | RuntimeError::MemoryGrowExceededLimit) => u32::MAX,
         Err(_) => unreachable!("growing memory cannot return any other errors"),
     };
-    args.resumable.stack.push_value(Value::I32(pushed_value))?;
+    state.resumable.stack.push_value(Value::I32(pushed_value))?;
     trace!("Instruction: memory.grow [{}] -> [{}]", n, pushed_value);
     Ok(ControlFlow::Continue(()))
 }
@@ -1911,7 +1953,7 @@ pub unsafe fn memory_grow<T: Config>(
 define_instruction!(super::memory_fill::<T>, memory_fill_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn memory_fill<T: Config>(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     //  mappings:
     //      n => number of bytes to update
@@ -1920,22 +1962,22 @@ pub unsafe fn memory_fill<T: Config>(
 
     // Note: This zero byte is reserved for the multiple
     // memories proposal.
-    let _zero = args.wasm.decode_u8().unwrap_validated();
+    let _zero = state.wasm.decode_u8().unwrap_validated();
 
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the
     // current store. Therefore, it is valid in the current
     // store.
-    let mem = unsafe { args.store_inner.memories.get_mut(mem_addr) };
+    let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
 
-    let n: u32 = args
+    let n: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -1945,11 +1987,12 @@ pub unsafe fn memory_fill<T: Config>(
     let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_FILL)
         + u64::from(n)
             * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_FILL);
-    if let Some(fuel) = &mut args.resumable.maybe_fuel {
+    if let Some(fuel) = &mut state.resumable.maybe_fuel {
         if *fuel >= cost {
             *fuel -= cost;
         } else {
-            args.resumable
+            state
+                .resumable
                 .stack
                 .push_value(Value::I32(n))
                 .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -1960,7 +2003,7 @@ pub unsafe fn memory_fill<T: Config>(
         }
     }
 
-    let val: i32 = args
+    let val: i32 = state
         .resumable
         .stack
         .pop_value()
@@ -1971,7 +2014,7 @@ pub unsafe fn memory_fill<T: Config>(
         warn!("Value for memory.fill does not fit in a byte ({val})");
     }
 
-    let d: i32 = args
+    let d: i32 = state
         .resumable
         .stack
         .pop_value()
@@ -1990,7 +2033,7 @@ pub unsafe fn memory_fill<T: Config>(
 define_instruction!(super::memory_copy::<T>, memory_copy_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn memory_copy<T: Config>(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     //  mappings:
     //      n => number of bytes to copy
@@ -1998,14 +2041,14 @@ pub unsafe fn memory_copy<T: Config>(
     //      d => destination address to copy to
     // Note: These zero bytes are reserved for the multiple
     // memories proposal.
-    let _zero = args.wasm.decode_u8().unwrap_validated();
-    let _zero = args.wasm.decode_u8().unwrap_validated();
+    let _zero = state.wasm.decode_u8().unwrap_validated();
+    let _zero = state.wasm.decode_u8().unwrap_validated();
 
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
-    let module = unsafe { args.modules.get(*args.current_module) };
+    let module = unsafe { state.modules.get(*state.current_module) };
 
     // SAFETY: Validation guarantees at least one memory to
     // exist.
@@ -2014,7 +2057,7 @@ pub unsafe fn memory_copy<T: Config>(
     // exist.
     let dst_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
 
-    let n: u32 = args
+    let n: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -2024,11 +2067,12 @@ pub unsafe fn memory_copy<T: Config>(
     let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_COPY)
         + u64::from(n)
             * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_COPY);
-    if let Some(fuel) = &mut args.resumable.maybe_fuel {
+    if let Some(fuel) = &mut state.resumable.maybe_fuel {
         if *fuel >= cost {
             *fuel -= cost;
         } else {
-            args.resumable
+            state
+                .resumable
                 .stack
                 .push_value(Value::I32(n))
                 .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -2045,13 +2089,13 @@ pub unsafe fn memory_copy<T: Config>(
     );
     let src_dst_addr = src_addr;
 
-    let s: i32 = args
+    let s: i32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let d: i32 = args
+    let d: i32 = state
         .resumable
         .stack
         .pop_value()
@@ -2060,7 +2104,7 @@ pub unsafe fn memory_copy<T: Config>(
 
     // SAFETY: The source and destination addresses (which must be the same as of now!) were
     // just read from the current store. Therefore, it must also be valid in the current store.
-    let src_dst_memory = unsafe { args.store_inner.memories.get_mut(src_dst_addr) };
+    let src_dst_memory = unsafe { state.store_inner.memories.get_mut(src_dst_addr) };
 
     src_dst_memory.mem.copy_within(
         d.cast_unsigned().into_usize(),
@@ -2082,7 +2126,7 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn memory_init_fn<T: Config>(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     //  mappings:
     //      n => number of bytes to copy
@@ -2090,13 +2134,13 @@ pub unsafe fn memory_init_fn<T: Config>(
     //      d => destination address to copy to
     // SAFETY: Validation guarantees there to be a valid
     // data index next.
-    let data_idx = unsafe { DataIdx::decode_unchecked(args.wasm) };
+    let data_idx = unsafe { DataIdx::decode_unchecked(state.wasm) };
 
     // Note: This zero byte is reserved for the multiple memories
     // proposal.
-    let _zero = args.wasm.decode_u8().unwrap_validated();
+    let _zero = state.wasm.decode_u8().unwrap_validated();
 
-    let n: u32 = args
+    let n: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -2106,11 +2150,12 @@ pub unsafe fn memory_init_fn<T: Config>(
     let cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_INIT)
         + u64::from(n)
             * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_INIT);
-    if let Some(fuel) = &mut args.resumable.maybe_fuel {
+    if let Some(fuel) = &mut state.resumable.maybe_fuel {
         if *fuel >= cost {
             *fuel -= cost;
         } else {
-            args.resumable
+            state
+                .resumable
                 .stack
                 .push_value(Value::I32(n))
                 .unwrap_validated(); // we are pushing back what was just popped, this can't panic.
@@ -2121,13 +2166,13 @@ pub unsafe fn memory_init_fn<T: Config>(
         }
     }
 
-    let s: u32 = args
+    let s: u32 = state
         .resumable
         .stack
         .pop_value()
         .try_into()
         .unwrap_validated();
-    let d: u32 = args
+    let d: u32 = state
         .resumable
         .stack
         .pop_value()
@@ -2149,10 +2194,10 @@ pub unsafe fn memory_init_fn<T: Config>(
     //    for the current module instance.
     unsafe {
         memory_init(
-            args.modules,
-            &mut args.store_inner.memories,
-            &args.store_inner.data,
-            *args.current_module,
+            state.modules,
+            &mut state.store_inner.memories,
+            &state.store_inner.data,
+            *state.current_module,
             data_idx,
             MemIdx::new(0),
             n,
@@ -2171,11 +2216,11 @@ define_instruction!(
 );
 #[inline(always)]
 pub unsafe fn data_drop_fn(
-    args: Args,
+    state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid
     // data index next.
-    let data_idx = unsafe { DataIdx::decode_unchecked(args.wasm) };
+    let data_idx = unsafe { DataIdx::decode_unchecked(state.wasm) };
     // SAFETY: All requirements are met:
     // 1. The current module address must come from the
     //    current store, because it is the only parameter to
@@ -2190,9 +2235,9 @@ pub unsafe fn data_drop_fn(
     //    current store.
     unsafe {
         data_drop(
-            args.modules,
-            &mut args.store_inner.data,
-            *args.current_module,
+            state.modules,
+            &mut state.store_inner.data,
+            *state.current_module,
             data_idx,
         )
     };
