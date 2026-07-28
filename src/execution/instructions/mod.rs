@@ -131,8 +131,6 @@ pub(super) unsafe fn run<T: Config>(
 
     let store_inner = &mut store.inner;
 
-    // local variable for holding where the function code ends (last END instr address + 1) to avoid lookup at every END instr
-
     wasm.pc = pc;
 
     loop {
