@@ -84,7 +84,11 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         index: usize,
         bytes: [u8; N],
     ) -> Result<(), TrapError> {
-        let target_range = index..(index + N);
+        let end_index = index
+            .checked_add(N)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
+
+        let target_range = index..end_index;
 
         let target_bytes = self
             .data
@@ -117,7 +121,11 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     ///
     /// - [`TrapError::MemoryOrDataAccessOutOfBounds`]: The load would have been out of bounds.
     pub fn load_bytes<const N: usize>(&self, index: usize) -> Result<[u8; N], TrapError> {
-        let target_range = index..(index + N);
+        let end_index = index
+            .checked_add(N)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
+
+        let target_range = index..end_index;
 
         let target_bytes = self
             .data
@@ -139,7 +147,11 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// - [`TrapError::MemoryOrDataAccessOutOfBounds`]: The fill operation would have been out of
     ///   bounds. The memory remains unchanged.
     pub fn fill(&mut self, index: usize, data_byte: u8, count: usize) -> Result<(), TrapError> {
-        let target_range = index..(index + count);
+        let end_index = index
+            .checked_add(count)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
+
+        let target_range = index..end_index;
 
         /* check destination for out of bounds access */
         // Specification step 12.
@@ -171,13 +183,22 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         source_index: usize,
         count: usize,
     ) -> Result<(), RuntimeError> {
-        let source_range = source_index..(source_index + count);
-        let destination_range = destination_index..(destination_index + count);
-
         /* check source and destination for out of bounds accesses */
         // Specification step 12.
+        let source_end_index = source_index
+            .checked_add(count)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
+
+        let destination_end_index = destination_index
+            .checked_add(count)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
+
+        let source_range = source_index..source_end_index;
+        let destination_range = destination_index..destination_end_index;
+
         let source_range_is_within_bounds = self.data.get(source_range.clone()).is_some();
         let destination_range_is_within_bounds = self.data.get(destination_range).is_some();
+
         if !source_range_is_within_bounds || !destination_range_is_within_bounds {
             return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
@@ -205,11 +226,19 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         source_index: usize,
         count: usize,
     ) -> Result<(), RuntimeError> {
-        let source_range = source_index..(source_index + count);
-        let destination_range = destination_index..(destination_index + count);
-
         /* check source and destination for out of bounds accesses */
         // Specification step 16.
+        let source_end_index = source_index
+            .checked_add(count)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
+
+        let destination_end_index = destination_index
+            .checked_add(count)
+            .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
+
+        let source_range = source_index..source_end_index;
+        let destination_range = destination_index..destination_end_index;
+
         let source_bytes = source_data
             .get(source_range)
             .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?;
