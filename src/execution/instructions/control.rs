@@ -21,7 +21,7 @@ use crate::{
         },
         runtime_structure::function_instances::FuncInst,
     },
-    trace, unreachable_validated, Config, DecodingError, Ref, RuntimeError, TrapError,
+    trace, unreachable_validated, DecodingError, Ref, RuntimeError, TrapError,
 };
 
 define_instruction!(super::nop, nop_mod, fuel_check = flat(NOP));
@@ -248,11 +248,9 @@ pub unsafe fn r#return(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::call::<T>, call_mod, fuel_check = flat(CALL));
+define_instruction!(super::call, call_mod, fuel_check = flat(CALL));
 #[inline(always)]
-pub unsafe fn call<T: Config>(
-    state: State,
-) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn call(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid function
     // index next.
     let func_idx = unsafe { FuncIdx::decode_unchecked(state.wasm) };
@@ -304,7 +302,7 @@ pub unsafe fn call<T: Config>(
         FuncInst::WasmFunc(wasm_func_to_call_inst) => {
             let remaining_locals = &wasm_func_to_call_inst.locals;
 
-            state.resumable.stack.push_call_frame::<T>(
+            state.resumable.stack.push_call_frame(
                 state.resumable.current_func_addr,
                 &wasm_func_to_call_inst.function_type,
                 remaining_locals,
@@ -339,12 +337,12 @@ pub unsafe fn call<T: Config>(
 }
 
 define_instruction!(
-    super::call_indirect::<T>,
+    super::call_indirect,
     call_indirect_mod,
     fuel_check = flat(CALL_INDIRECT)
 );
 #[inline(always)]
-pub unsafe fn call_indirect<T: Config>(
+pub unsafe fn call_indirect(
     state: State,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid type index
@@ -421,7 +419,7 @@ pub unsafe fn call_indirect<T: Config>(
         FuncInst::WasmFunc(wasm_func_to_call_inst) => {
             let remaining_locals = &wasm_func_to_call_inst.locals;
 
-            state.resumable.stack.push_call_frame::<T>(
+            state.resumable.stack.push_call_frame(
                 state.resumable.current_func_addr,
                 &wasm_func_to_call_inst.function_type,
                 remaining_locals,
