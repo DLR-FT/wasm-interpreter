@@ -78,6 +78,9 @@ rustPlatform.buildRustPackage rec {
   # if using nextest, use the ci profile
   cargoTestFlags = lib.lists.optional useNextest "--profile=ci";
 
+  # run tests in debug mode
+  checkType = "debug";
+
   # if using nextest, it will create a junit.xml
   postCheck = lib.strings.optionalString useNextest ''
     shopt -s globstar
