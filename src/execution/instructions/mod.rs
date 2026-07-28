@@ -31,8 +31,8 @@ use crate::{
             value_stack::Stack,
         },
     },
-    trace, unreachable_validated, AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr,
-    RuntimeError, Store, TableAddr, TrapError, Value, WasmResumable,
+    trace, AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, RuntimeError, Store,
+    TableAddr, TrapError, Value, WasmResumable,
 };
 
 mod control;
@@ -84,9 +84,12 @@ type InstructionHandlerFn =
 // A placeholder instruction for unassigned instruction bytes. This function is by definition dead
 // code!
 define_instruction!(super::unset, unset_mod, fuel_check = omit);
+/// # Safety
+///
+/// This function may not be called.
 #[inline(always)]
 pub unsafe fn unset(_: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    unreachable_validated!()
+    unreachable!("an invalid instruction byte was called. This should never happen, and could become UB in the future.")
 }
 
 /// Interprets wasm native functions. Wasm parameters and Wasm return values are passed on the stack.
@@ -403,6 +406,13 @@ pub(crate) fn from_lanes<const M: usize, const N: usize, T: LittleEndianBytes<M>
     array::from_fn(|_| bytes.next().unwrap())
 }
 
+/// The main execution state interacted with by all instructions.
+///
+/// # Safety
+///
+/// This struct is passed across many different functions. For soundness, all address types
+/// contained in it must be valid in the [`StoreInner`]. Also see [`StoreInner`]s safety
+/// documentation.
 pub(crate) struct State<'a, 'sidetable, 'wasm> {
     wasm: &'a mut WasmDecoder<'wasm>,
     resumable: &'a mut WasmResumable,
@@ -432,6 +442,14 @@ macro_rules! define_instruction {
                 Config, RuntimeError,
             };
 
+            /// # Safety
+            ///
+            /// The given [`WasmResumable`] and all address types contained in the [`State`] must be
+            /// valid in the [`StoreInner`] that is also contained in the [`State`].
+            #[allow(
+                clippy::extra_unused_type_parameters,
+                reason = "T is only used by some instructions"
+            )]
             pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
                 wasm: &mut WasmDecoder<'wasm>,
                 resumable: &mut WasmResumable,
@@ -451,7 +469,9 @@ macro_rules! define_instruction {
                     resumable,
                 };
 
-                // SAFETY: TODO
+                // SAFETY: The instruction implementation requires that the `State` is correct
+                // according to its safety documentation. The caller of the current function
+                // guarantees the same for all fields.
                 unsafe { $name(state) }
             }
         }
@@ -507,7 +527,9 @@ macro_rules! define_instruction {
                     resumable,
                 };
 
-                // SAFETY: TODO
+                // SAFETY: The instruction implementation requires that the `State` is correct
+                // according to its safety documentation. The caller of the current function
+                // guarantees the same for all fields.
                 unsafe { $name(state) }
             }
         }
@@ -537,7 +559,7 @@ macro_rules! define_instruction {
             /// # Safety
             ///
             /// The given [`WasmResumable`] and all address types contained in the [`State`] must be
-            /// valid in the [`StoreInner`] that is also contained in the [`State`].
+            /// valid in the [`StoreInner`].
             pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
                 wasm: &mut WasmDecoder<'wasm>,
                 resumable: &mut WasmResumable,
@@ -564,7 +586,9 @@ macro_rules! define_instruction {
                     resumable,
                 };
 
-                // SAFETY: TODO
+                // SAFETY: The instruction implementation requires that the `State` is correct
+                // according to its safety documentation. The caller of the current function
+                // guarantees the same for all fields.
                 unsafe { $name(state) }
             }
         }
@@ -621,7 +645,9 @@ macro_rules! define_instruction {
                     resumable,
                 };
 
-                // SAFETY: TODO
+                // SAFETY: The instruction implementation requires that the `State` is correct
+                // according to its safety documentation. The caller of the current function
+                // guarantees the same for all fields.
                 unsafe { $name(state) }
             }
         }
@@ -651,6 +677,10 @@ define_instruction!(
     fc_extensions_dispatch_mod,
     fuel_check = omit
 );
+/// # Safety
+///
+/// The given [`WasmResumable`] and all address types contained in the [`State`] must be
+/// valid in the [`StoreInner`] that is also contained in the [`State`].
 #[inline(always)]
 pub unsafe fn fc_extensions_dispatch<T: Config>(
     state: State,
@@ -690,6 +720,9 @@ define_instruction!(
     fd_extensions_dispatch_mod,
     fuel_check = omit
 );
+/// # Safety
+///
+/// See [`State`] for more information.
 #[inline(always)]
 pub unsafe fn fd_extensions_dispatch<T: Config>(
     state: State,
