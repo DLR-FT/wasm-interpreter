@@ -1,3 +1,8 @@
+#![expect(
+    clippy::missing_safety_doc,
+    reason = "see `instructions::State` for more information"
+)]
+
 use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 use crate::{

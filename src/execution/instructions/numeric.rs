@@ -1,4 +1,4 @@
-#![allow(
+#![expect(
     clippy::missing_safety_doc,
     reason = "see `instructions::State` for more information"
 )]
