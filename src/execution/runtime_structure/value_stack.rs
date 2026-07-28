@@ -247,7 +247,7 @@ impl Stack {
     /// Push a call frame to the call stack
     ///
     /// Takes the current [`Self::values`]'s length as [`CallFrame::value_stack_base_idx`].
-    pub fn push_call_frame<C: Config>(
+    pub fn push_call_frame(
         &mut self,
         return_func_addr: FuncAddr,
         func_ty: &FuncType,
@@ -255,15 +255,14 @@ impl Stack {
         return_addr: usize,
         return_stp: usize,
     ) -> Result<(), RuntimeError> {
-        // check for call stack exhaustion
-        if self.call_frame_count() > C::MAX_CALL_STACK_SIZE {
-            return Err(RuntimeError::StackExhaustion);
-        }
-
         debug_assert!(
             self.values.len()>= func_ty.params.valtypes.len(),
             "when pushing a new call frame, at least as many values need to be on the stack as required by the new call frames's function"
         );
+
+        if self.frames.is_full() {
+            return Err(RuntimeError::StackExhaustion);
+        }
 
         // the topmost `param_count` values are transferred into/consumed by this new call frame
         let param_count = func_ty.params.valtypes.len();
@@ -283,14 +282,16 @@ impl Stack {
         // now that the locals are all populated, the actual stack section of this call frame begins
         let value_stack_base_idx = self.values.len();
 
-        self.frames.push(CallFrame {
-            return_func_addr: MaybeUninit::new(return_func_addr),
-            return_addr: MaybeUninit::new(return_addr),
-            value_stack_base_idx,
-            call_frame_base_idx,
-            return_value_count: func_ty.returns.valtypes.len(),
-            return_stp: MaybeUninit::new(return_stp),
-        })?;
+        self.frames
+            .push(CallFrame {
+                return_func_addr: MaybeUninit::new(return_func_addr),
+                return_addr: MaybeUninit::new(return_addr),
+                value_stack_base_idx,
+                call_frame_base_idx,
+                return_value_count: func_ty.returns.valtypes.len(),
+                return_stp: MaybeUninit::new(return_stp),
+            })
+            .expect("the call frame stack is not full as it was checked before");
 
         Ok(())
     }
