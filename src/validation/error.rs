@@ -180,13 +180,6 @@ impl Display for ValidationError {
     }
 }
 
-impl ValidationError {
-    /// Convert this error to a message that is compatible with the error messages used by the official Wasm testsuite.
-    pub fn to_message(&self) -> &'static str {
-        todo!("convert validation error to testsuite message");
-    }
-}
-
 impl From<DecodingError> for ValidationError {
     fn from(error: DecodingError) -> Self {
         Self::Decoding(error)
