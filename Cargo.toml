@@ -58,7 +58,6 @@ exclude.workspace = true
 
 [dependencies]
 libm = "0.2.8"
-log = { workspace = true, optional = true }
 
 [dev-dependencies]
 # Crates defined in this workspace

@@ -31,8 +31,8 @@ use crate::{
             value_stack::Stack,
         },
     },
-    trace, AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, RuntimeError, Store,
-    TableAddr, TrapError, Value, WasmResumable,
+    AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, RuntimeError, Store, TableAddr,
+    TrapError, Value, WasmResumable,
 };
 
 mod control;
@@ -141,12 +141,6 @@ pub(super) unsafe fn run<T: Config>(
 
         let first_instr_byte = wasm.decode_u8().unwrap_validated();
 
-        trace!(
-            "Executing instruction {} at pc={}",
-            crate::core::structure::instructions::instruction_byte_to_str(first_instr_byte),
-            wasm.pc
-        );
-
         let instruction_fn = T::DISPATCH_TABLE
             .get(usize::from(first_instr_byte))
             .expect("the instruction to be valid because the code is validated");
@@ -252,15 +246,6 @@ pub(super) unsafe fn table_init(
     // address vector (5).
     let elem = unsafe { store_elements.get(elem_addr) };
 
-    trace!(
-        "Instruction: table.init '{}' '{}' [{} {} {}] -> []",
-        elem_idx,
-        table_idx,
-        d,
-        s,
-        n
-    );
-
     let final_src_offset = s
         .checked_add(n)
         .filter(|&res| res <= elem.len())
@@ -346,7 +331,6 @@ pub(super) unsafe fn memory_init(
 
     mem.mem.init(d, &data.data, s, n)?;
 
-    trace!("Instruction: memory.init");
     Ok(())
 }
 
@@ -686,12 +670,6 @@ pub unsafe fn fc_extensions_dispatch<T: Config>(
     // should we call instruction hook here as well? multibyte instruction
     let second_instr = state.wasm.decode_var_u32().unwrap_validated();
 
-    trace!(
-        "Executing FC instruction {} at pc={}",
-        crate::core::structure::instructions::fc_extension_instruction_to_str(second_instr),
-        state.wasm.pc
-    );
-
     let instruction_fn = T::FC_DISPATCH_TABLE
         .get(second_instr.into_usize())
         .expect("the instruction to be valid because the code is validated");
@@ -727,12 +705,6 @@ pub unsafe fn fd_extensions_dispatch<T: Config>(
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // Should we call instruction hook here as well? Multibyte instruction
     let second_instr = state.wasm.decode_var_u32().unwrap_validated();
-
-    trace!(
-        "Executing FD instruction {} at pc={}",
-        crate::core::structure::instructions::fd_extension_instruction_to_str(second_instr),
-        state.wasm.pc
-    );
 
     let instruction_fn = T::FD_DISPATCH_TABLE
         .get(second_instr.into_usize())

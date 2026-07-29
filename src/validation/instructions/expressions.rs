@@ -17,7 +17,6 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    trace,
     validation::{
         config::ValidationConfig,
         validation_stack::{LabelInfo, ValidationStack},
@@ -124,11 +123,6 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
             // TODO only do this if EOF
             return Err(ValidationError::ExprMissingEnd);
         };
-
-        trace!(
-            "Validating instruction {first_instr_byte:#x} at pc={}",
-            wasm.pc
-        );
 
         user_data.instruction_hook(wasm.full_wasm_binary, wasm.pc);
 
@@ -468,12 +462,6 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                 let global = unsafe { c_globals.get(global_idx) };
 
                 stack.push_valtype(global.ty.ty);
-                trace!(
-                    "Instruction: global.get '{}' [] -> [{:?}]",
-                    global_idx,
-                    // global,
-                    global.ty.ty
-                );
             }
             // global.set [t] -> []
             GLOBAL_SET => {
@@ -1019,12 +1007,6 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     return Err(ValidationError::ExprMissingEnd);
                 };
 
-                trace!(
-                    "Validating FC instruction {} at pc={}",
-                    fc_extension_instruction_to_str(second_instr),
-                    wasm.pc
-                );
-
                 use crate::core::structure::instructions::fc_extensions::*;
                 match second_instr {
                     I32_TRUNC_SAT_F32_S => {
@@ -1245,12 +1227,6 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     // TODO only do this if EOF
                     return Err(ValidationError::ExprMissingEnd);
                 };
-
-                trace!(
-                    "Validating FD instruction {} at pc={}",
-                    fd_extension_instruction_to_str(second_instr),
-                    wasm.pc
-                );
 
                 use crate::core::structure::instructions::fd_extensions::*;
 

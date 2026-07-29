@@ -27,7 +27,6 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    debug, trace,
     validation::{config::ValidationConfig, modules::functions::decode_and_validate_code_section},
     CustomSection, DecodingError, ValidationError,
 };
@@ -95,18 +94,13 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
 
     let mut validation_context_refs: BTreeSet<FuncIdx> = BTreeSet::new();
 
-    trace!("Starting validation of bytecode");
-
-    trace!("Validating magic value");
     let [0x00, 0x61, 0x73, 0x6d] = wasm.strip_bytes::<4>()? else {
         return Err(DecodingError::InvalidMagic.into());
     };
 
-    trace!("Validating version number");
     let [0x01, 0x00, 0x00, 0x00] = wasm.strip_bytes::<4>()? else {
         return Err(DecodingError::InvalidBinaryFormatVersion.into());
     };
-    debug!("Header ok");
 
     let mut custom_sections = Vec::new();
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
@@ -285,8 +279,6 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
             wasm.decode_var_u32()
         })?;
 
-    trace!("data count: {data_count:?}");
-
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
     let mut sidetable = Sidetable::new();
@@ -345,7 +337,6 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
         return Err(DecodingError::SectionOutOfOrder(remaining_section_ty).into());
     }
 
-    debug!("Validation was successful");
     let module = Module {
         wasm: wasm.into_inner(),
         types,

@@ -17,7 +17,7 @@ use crate::{
         assert_validated::UnwrapValidatedExt,
         instructions::{define_instruction, elem_drop, table_init, InterpreterLoopOutcome, State},
     },
-    trace, Config, Ref, RuntimeError, TrapError, Value,
+    Config, Ref, RuntimeError, TrapError, Value,
 };
 
 define_instruction!(
@@ -54,12 +54,6 @@ pub unsafe fn table_get(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
     state.resumable.stack.push_value((*val).into())?;
-    trace!(
-        "Instruction: table.get '{}' [{}] -> [{}]",
-        table_idx,
-        i,
-        val
-    );
     Ok(ControlFlow::Continue(()))
 }
 
@@ -99,12 +93,6 @@ pub unsafe fn table_set(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .get_mut(i.cast_unsigned().into_usize())
         .ok_or(TrapError::TableOrElementAccessOutOfBounds)
         .map(|r| *r = val)?;
-    trace!(
-        "Instruction: table.set '{}' [{} {}] -> []",
-        table_idx,
-        i,
-        val
-    );
     Ok(ControlFlow::Continue(()))
 }
 
@@ -139,7 +127,6 @@ pub unsafe fn table_size(
 
     state.resumable.stack.push_value(Value::I32(sz))?;
 
-    trace!("Instruction: table.size '{}' [] -> [{}]", table_idx, sz);
     Ok(ControlFlow::Continue(()))
 }
 
@@ -273,13 +260,6 @@ pub unsafe fn table_fill<T: Config>(
         .ok_or(TrapError::TableOrElementAccessOutOfBounds)?
         .fill(val);
 
-    trace!(
-        "Instruction table.fill '{}' [{} {} {}] -> []",
-        table_idx,
-        dst,
-        val,
-        len
-    );
     Ok(ControlFlow::Continue(()))
 }
 
@@ -398,14 +378,6 @@ pub unsafe fn table_copy<T: Config>(
             .copy_from_slice(&src_table.elem[s.into_usize()..src_res]);
     }
 
-    trace!(
-        "Instruction: table.copy '{}' '{}' [{} {} {}] -> []",
-        table_x_idx,
-        table_y_idx,
-        d,
-        s,
-        n
-    );
     Ok(ControlFlow::Continue(()))
 }
 

@@ -21,7 +21,7 @@ use crate::{
         },
         runtime_structure::function_instances::FuncInst,
     },
-    trace, unreachable_validated, DecodingError, Ref, RuntimeError, TrapError,
+    unreachable_validated, DecodingError, Ref, RuntimeError, TrapError,
 };
 
 define_instruction!(super::nop, nop_mod, fuel_check = flat(NOP));
@@ -69,7 +69,6 @@ pub unsafe fn end(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, R
     // If there are one or more call frames, we need to continue
     // from where the callee was called from.
 
-    trace!("end of function reached, returning to previous call frame");
     state.resumable.current_func_addr = maybe_return_func_addr;
 
     // SAFETY: The current function address must come from the given
@@ -103,8 +102,6 @@ pub unsafe fn end(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, R
 
     *state.current_function_end_marker =
         current_wasm_func_inst.code_expr.from() + current_wasm_func_inst.code_expr.len();
-
-    trace!("Instruction: END");
 
     Ok(ControlFlow::Continue(()))
 }
@@ -140,7 +137,6 @@ pub unsafe fn r#if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
             state.current_sidetable,
         )?;
     }
-    trace!("Instruction: IF");
 
     Ok(ControlFlow::Continue(()))
 }
@@ -194,7 +190,6 @@ pub unsafe fn br_if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>,
     } else {
         state.resumable.stp += 1;
     }
-    trace!("Instruction: BR_IF");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -284,8 +279,6 @@ pub unsafe fn call(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
     // store. Therefore, it must be valid in the current store.
     let func_to_call_inst = unsafe { state.store_inner.functions.get(*func_to_call_addr) };
 
-    trace!("Instruction: call [{func_to_call_addr:?}]");
-
     match func_to_call_inst {
         FuncInst::HostFunc(host_func_to_call_inst) => {
             let params = state
@@ -331,7 +324,6 @@ pub unsafe fn call(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
                 wasm_func_to_call_inst.code_expr.from() + wasm_func_to_call_inst.code_expr.len();
         }
     }
-    trace!("Instruction: CALL");
 
     Ok(ControlFlow::Continue(()))
 }
@@ -379,7 +371,6 @@ pub unsafe fn call_indirect(
         .ok_or(TrapError::TableAccessOutOfBounds)
         .and_then(|r| {
             if matches!(r, Ref::Null(_)) {
-                trace!("table_idx ({table_idx}) --- element index in table ({i})");
                 Err(TrapError::UninitializedElement)
             } else {
                 Ok(r)
@@ -400,8 +391,6 @@ pub unsafe fn call_indirect(
     if func_ty != func_to_call_inst.ty() {
         return Err(TrapError::SignatureMismatch.into());
     }
-
-    trace!("Instruction: call [{func_to_call_addr:?}]");
 
     match func_to_call_inst {
         FuncInst::HostFunc(host_func_to_call_inst) => {
@@ -447,6 +436,5 @@ pub unsafe fn call_indirect(
                 wasm_func_to_call_inst.code_expr.from() + wasm_func_to_call_inst.code_expr.len();
         }
     }
-    trace!("Instruction: CALL_INDIRECT");
     Ok(ControlFlow::Continue(()))
 }

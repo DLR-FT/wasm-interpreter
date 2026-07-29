@@ -10,7 +10,7 @@ use crate::{
         assert_validated::UnwrapValidatedExt,
         instructions::{define_instruction, InterpreterLoopOutcome, State},
     },
-    trace, RuntimeError, ValType,
+    RuntimeError, ValType,
 };
 
 define_instruction!(super::drop, drop_mod, fuel_check = flat(DROP));
@@ -18,7 +18,6 @@ define_instruction!(super::drop, drop_mod, fuel_check = flat(DROP));
 pub unsafe fn drop(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let _ = unsafe { state.resumable.stack.pop_value() };
-    trace!("Instruction: DROP");
 
     Ok(ControlFlow::Continue(()))
 }
@@ -39,7 +38,6 @@ pub unsafe fn select(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
     } else {
         state.resumable.stack.push_value(val2)?;
     }
-    trace!("Instruction: SELECT");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -60,6 +58,5 @@ pub unsafe fn select_t(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     } else {
         state.resumable.stack.push_value(val2)?;
     }
-    trace!("Instruction: SELECT_T");
     Ok(ControlFlow::Continue(()))
 }

@@ -3,7 +3,7 @@ use crate::{
         decoding::decoder::{span::Span, WasmDecoder},
         utils::ToUsizeExt,
     },
-    trace, DecodingError,
+    DecodingError,
 };
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
@@ -81,7 +81,6 @@ where
     let size: u32 = wasm.decode_var_u32()?;
     let contents_span = wasm.make_span(size.into_usize())?;
 
-    trace!("Handling section {:?}", section_ty);
     let t = section_consumer(wasm, contents_span)?;
 
     if wasm.pc != contents_span.from() + contents_span.len() {

@@ -21,7 +21,7 @@ use crate::{
             to_lanes, InterpreterLoopOutcome, State,
         },
     },
-    trace, warn, Config, RuntimeError, Value, F32, F64,
+    Config, RuntimeError, Value, F32, F64,
 };
 
 // t.load
@@ -50,7 +50,6 @@ pub unsafe fn i32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     let data = mem_inst.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I32(data))?;
-    trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -79,7 +78,6 @@ pub unsafe fn i64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     let data = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I64(data))?;
-    trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -108,7 +106,6 @@ pub unsafe fn f32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     let data = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::F32(data))?;
-    trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -137,7 +134,6 @@ pub unsafe fn f64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     let data = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::F64(data))?;
-    trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -209,7 +205,6 @@ pub unsafe fn i32_load8_s(
     let data: i8 = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I32(data as u32))?;
-    trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -244,7 +239,6 @@ pub unsafe fn i32_load8_u(
     let data: u8 = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I32(data as u32))?;
-    trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -279,7 +273,6 @@ pub unsafe fn i32_load16_s(
     let data: i16 = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I32(data as u32))?;
-    trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -314,7 +307,6 @@ pub unsafe fn i32_load16_u(
     let data: u16 = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I32(data as u32))?;
-    trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -349,7 +341,6 @@ pub unsafe fn i64_load8_s(
     let data: i8 = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
-    trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -384,7 +375,6 @@ pub unsafe fn i64_load8_u(
     let data: u8 = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
-    trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -419,7 +409,6 @@ pub unsafe fn i64_load16_s(
     let data: i16 = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
-    trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -454,7 +443,6 @@ pub unsafe fn i64_load16_u(
     let data: u16 = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
-    trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -489,7 +477,6 @@ pub unsafe fn i64_load32_s(
     let data: i32 = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
-    trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -524,7 +511,6 @@ pub unsafe fn i64_load32_u(
     let data: u32 = mem.mem.load(idx)?;
 
     state.resumable.stack.push_value(Value::I64(data as u64))?;
-    trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1218,7 +1204,6 @@ pub unsafe fn i32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, data_to_store)?;
 
-    trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1255,7 +1240,6 @@ pub unsafe fn i64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, data_to_store)?;
 
-    trace!("Instruction: i64.store [{relative_address} {data_to_store}] -> []");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1292,7 +1276,6 @@ pub unsafe fn f32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, data_to_store)?;
 
-    trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1329,7 +1312,6 @@ pub unsafe fn f64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, data_to_store)?;
 
-    trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1409,7 +1391,6 @@ pub unsafe fn i32_store8(
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, wrapped_data)?;
 
-    trace!("Instruction: i32.store8 [{relative_address} {wrapped_data}] -> []");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1450,7 +1431,6 @@ pub unsafe fn i32_store16(
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, wrapped_data)?;
 
-    trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1491,7 +1471,6 @@ pub unsafe fn i64_store8(
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, wrapped_data)?;
 
-    trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1532,7 +1511,6 @@ pub unsafe fn i64_store16(
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, wrapped_data)?;
 
-    trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1573,7 +1551,6 @@ pub unsafe fn i64_store32(
     let idx = calculate_mem_address(&memarg, relative_address)?;
     mem.mem.store(idx, wrapped_data)?;
 
-    trace!("Instruction: i64.store32 [{relative_address} {data_to_store}] -> []");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1761,7 +1738,6 @@ pub unsafe fn memory_size(
     let mem = unsafe { state.store_inner.memories.get_mut(mem_addr) };
     let size = u32::from(mem.len_pages());
     state.resumable.stack.push_value(Value::I32(size))?;
-    trace!("Instruction: memory.size [] -> [{}]", size);
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1824,7 +1800,6 @@ pub unsafe fn memory_grow<T: Config>(
         Err(_) => unreachable!("growing memory cannot return any other errors"),
     };
     state.resumable.stack.push_value(Value::I32(pushed_value))?;
-    trace!("Instruction: memory.grow [{}] -> [{}]", n, pushed_value);
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1886,9 +1861,7 @@ pub unsafe fn memory_fill<T: Config>(
         .try_into()
         .unwrap_validated();
 
-    if !(0..=255).contains(&val) {
-        warn!("Value for memory.fill does not fit in a byte ({val})");
-    }
+    if !(0..=255).contains(&val) {}
 
     // SAFETY: Validation guarantees that there is a value on the stack.
     let d: i32 = unsafe { state.resumable.stack.pop_value() }
@@ -1898,7 +1871,6 @@ pub unsafe fn memory_fill<T: Config>(
     mem.mem
         .fill(d.cast_unsigned().into_usize(), val as u8, n.into_usize())?;
 
-    trace!("Instruction: memory.fill");
     Ok(ControlFlow::Continue(()))
 }
 
@@ -1980,7 +1952,6 @@ pub unsafe fn memory_copy<T: Config>(
         n.into_usize(),
     )?;
 
-    trace!("Instruction: memory.copy");
     Ok(ControlFlow::Continue(()))
 }
 

@@ -9,7 +9,6 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    trace,
     validation::validation_stack::ValidationStack,
     NumType, RefType, ValType, ValidationError,
 };
@@ -112,12 +111,6 @@ pub fn decode_and_validate_constant_expression(
             return Err(ValidationError::ExprMissingEnd);
         };
 
-        trace!(
-            "Validating const instruction {} at pc={}",
-            instruction_byte_to_str(first_instr_byte),
-            wasm.pc
-        );
-
         use crate::core::structure::instructions::*;
         match first_instr_byte {
             END => {
@@ -176,12 +169,6 @@ pub fn decode_and_validate_constant_expression(
                     return Err(ValidationError::ExprMissingEnd);
                 };
 
-                trace!(
-                    "Validating const FD instruction {} at pc={}",
-                    fd_extension_instruction_to_str(second_instr),
-                    wasm.pc
-                );
-
                 match second_instr {
                     V128_CONST => {
                         for _ in 0..16 {
@@ -190,7 +177,6 @@ pub fn decode_and_validate_constant_expression(
                         stack.push_valtype(ValType::VecType);
                     }
                     0x00..=0x0B | 0x0D.. => {
-                        trace!("Encountered unknown multi-byte instruction in validation - constant expression - {first_instr_byte:x?} {second_instr}");
                         return Err(ValidationError::InvalidInstr(first_instr_byte));
                     }
                 }
@@ -204,7 +190,6 @@ pub fn decode_and_validate_constant_expression(
             | 0xD1
             | 0xD3..=0xFC
             | 0xFE..=0xFF => {
-                trace!("Encountered unknown instruction in validation - constant expression - {first_instr_byte:x?}");
                 return Err(ValidationError::InvalidInstr(first_instr_byte));
             }
         }
