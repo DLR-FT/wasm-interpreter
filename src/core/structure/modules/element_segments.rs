@@ -1,5 +1,4 @@
 use alloc::vec::Vec;
-use core::fmt;
 
 use crate::{
     core::{
@@ -9,22 +8,10 @@ use crate::{
     RefType,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ElemType {
     pub init: ElemItems,
     pub mode: ElemMode,
-}
-
-impl fmt::Debug for ElemType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "ElemType {{\n\tinit: {:?},\n\tmode: {:?},\n\t#ty: {:?}\n}}",
-            self.init,
-            self.mode,
-            self.init.ty()
-        )
-    }
 }
 
 impl ElemType {

@@ -47,6 +47,7 @@ pub trait Idx: Copy + core::fmt::Debug + core::fmt::Display + Eq {
 /// An immutable vector that can only be indexed by type-safe 32-bit indices.
 ///
 /// Use [`IdxVec::new`] or [`IdxVec::default`] to create a new instance.
+#[derive(Debug)]
 pub struct IdxVec<I: Idx, T> {
     inner: Box<[T]>,
     _phantom: PhantomData<I>,
@@ -67,12 +68,6 @@ impl<I: Idx, T: Clone> Clone for IdxVec<I, T> {
             inner: self.inner.clone(),
             _phantom: PhantomData,
         }
-    }
-}
-
-impl<I: Idx, T: core::fmt::Debug> core::fmt::Debug for IdxVec<I, T> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_list().entries(&*self.inner).finish()
     }
 }
 
