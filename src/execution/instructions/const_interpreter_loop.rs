@@ -9,8 +9,7 @@ use crate::{
         },
     },
     execution::{assert_validated::UnwrapValidatedExt, runtime_structure::value_stack::Stack},
-    trace, unreachable_validated, Config, ModuleAddr, Ref, RefType, RuntimeError, Store, Value,
-    F32, F64,
+    unreachable_validated, Config, ModuleAddr, Ref, RefType, RuntimeError, Store, Value, F32, F64,
 };
 
 // TODO update this documentation
@@ -35,12 +34,6 @@ pub(crate) unsafe fn run_const<'wasm, T: Config>(
     use crate::core::structure::instructions::*;
     loop {
         let first_instr_byte = wasm.decode_u8().unwrap_validated();
-
-        trace!(
-            "Executing const instruction {} at pc={}",
-            instruction_byte_to_str(first_instr_byte),
-            wasm.pc
-        );
 
         let instruction_fn = match first_instr_byte {
             END => end::<T>,
@@ -137,10 +130,7 @@ macro_rules! define_instruction {
     };
 }
 
-define_instruction!(end, instructions::END, |State { .. }| {
-    trace!("Constant instruction: END");
-    Ok(true)
-});
+define_instruction!(end, instructions::END, |State { .. }| { Ok(true) });
 
 define_instruction!(
     global_get,
@@ -167,10 +157,6 @@ define_instruction!(
         // Therefore, it must be valid in this store.
         let global = unsafe { store.inner.globals.get(global_addr) };
 
-        trace!(
-            "Constant instruction: global.get [{global_idx}] -> [{:?}]",
-            global
-        );
         stack.push_value(global.value)?;
         Ok(false)
     }
@@ -181,7 +167,6 @@ define_instruction!(
     instructions::I32_CONST,
     |State { wasm, stack, .. }| {
         let constant = wasm.decode_var_i32().unwrap_validated();
-        trace!("Constant instruction: i32.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
         Ok(false)
     }
@@ -192,7 +177,6 @@ define_instruction!(
     instructions::F32_CONST,
     |State { wasm, stack, .. }| {
         let constant = F32::from_bits(wasm.decode_f32().unwrap_validated());
-        trace!("Constanting instruction: f32.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
         Ok(false)
     }
@@ -203,7 +187,6 @@ define_instruction!(
     instructions::F64_CONST,
     |State { wasm, stack, .. }| {
         let constant = F64::from_bits(wasm.decode_f64().unwrap_validated());
-        trace!("Constanting instruction: f64.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
         Ok(false)
     }
@@ -214,7 +197,6 @@ define_instruction!(
     instructions::I64_CONST,
     |State { wasm, stack, .. }| {
         let constant = wasm.decode_var_i64().unwrap_validated();
-        trace!("Constant instruction: i64.const [] -> [{constant}]");
         stack.push_value(constant.into())?;
         Ok(false)
     }
@@ -227,7 +209,6 @@ define_instruction!(
         let reftype = RefType::decode(wasm).unwrap_validated();
 
         stack.push_value(Value::Ref(Ref::Null(reftype)))?;
-        trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
         Ok(false)
     }
 );
@@ -258,14 +239,6 @@ define_instruction!(
     |State { wasm, stack, .. }| {
         use crate::core::structure::instructions::fd_extensions::*;
         let second_instruction_part = wasm.decode_var_u32().unwrap_validated();
-
-        trace!(
-            "Executing const FD instruction {} at pc={}",
-            crate::core::structure::instructions::fd_extension_instruction_to_str(
-                second_instruction_part
-            ),
-            wasm.pc
-        );
 
         match second_instruction_part {
             V128_CONST => {

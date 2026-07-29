@@ -9,7 +9,6 @@ use crate::{
             types::GlobalType,
         },
     },
-    trace,
     validation::{
         instructions::constant_expressions::decode_and_validate_constant_expression,
         validation_stack::ValidationStack,
@@ -29,7 +28,6 @@ impl DataSegment {
         let data_sec: DataSegment = match mode {
             0 => {
                 // active { memory 0, offset e }
-                trace!("Data section: active {{ memory 0, offset e }}");
 
                 let _mem_idx = MemIdx::validate(0, c_mems)?;
 
@@ -59,14 +57,12 @@ impl DataSegment {
             1 => {
                 // passive
                 // A passive data segment's contents can be copied into a memory using the `memory.init` instruction
-                trace!("Data section: passive");
                 DataSegment {
                     mode: DataMode::Passive,
                     init: wasm.decode_vec(|el| el.decode_u8())?,
                 }
             }
             2 => {
-                trace!("Data section: active {{ memory x, offset e }}");
                 let mem_idx = MemIdx::decode_and_validate(wasm, c_mems)?;
 
                 let mut valid_stack = ValidationStack::new();
@@ -103,7 +99,6 @@ impl DataSegment {
             }
         };
 
-        trace!("{:?}", data_sec.init);
         Ok(data_sec)
     }
 }

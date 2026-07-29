@@ -11,7 +11,7 @@ use crate::{
         assert_validated::UnwrapValidatedExt,
         instructions::{define_instruction, InterpreterLoopOutcome, State},
     },
-    trace, Ref, RefType, RuntimeError, Value,
+    Ref, RefType, RuntimeError, Value,
 };
 
 define_instruction!(super::ref_null, ref_null_mod, fuel_check = flat(REF_NULL));
@@ -23,7 +23,6 @@ pub unsafe fn ref_null(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .resumable
         .stack
         .push_value(Value::Ref(Ref::Null(reftype)))?;
-    trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
     Ok(ControlFlow::Continue(()))
 }
 
@@ -43,7 +42,6 @@ pub unsafe fn ref_is_null(
     let is_null = matches!(rref, Ref::Null(_));
 
     let res = if is_null { 1 } else { 0 };
-    trace!("Instruction: ref.is_null [{}] -> [{}]", rref, res);
     state.resumable.stack.push_value(Value::I32(res))?;
     Ok(ControlFlow::Continue(()))
 }

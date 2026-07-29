@@ -10,7 +10,7 @@ use crate::{
         assert_validated::UnwrapValidatedExt,
         instructions::{define_instruction, InterpreterLoopOutcome, State},
     },
-    trace, RuntimeError, TrapError, F32, F64,
+    RuntimeError, TrapError, F32, F64,
 };
 
 // t.const
@@ -22,7 +22,6 @@ define_instruction!(
 #[inline(always)]
 pub unsafe fn i32_const(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let constant = state.wasm.decode_var_i32().unwrap_validated();
-    trace!("Instruction: i32.const [] -> [{constant}]");
     state.resumable.stack.push_value(constant.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -35,7 +34,6 @@ define_instruction!(
 #[inline(always)]
 pub unsafe fn i64_const(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let constant = state.wasm.decode_var_i64().unwrap_validated();
-    trace!("Instruction: i64.const [] -> [{constant}]");
     state.resumable.stack.push_value(constant.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -48,7 +46,6 @@ define_instruction!(
 #[inline(always)]
 pub unsafe fn f32_const(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let constant = F32::from_bits(state.wasm.decode_f32().unwrap_validated());
-    trace!("Instruction: f32.const [] -> [{constant:.7}]");
     state.resumable.stack.push_value(constant.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -61,7 +58,6 @@ define_instruction!(
 #[inline(always)]
 pub unsafe fn f64_const(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let constant = F64::from_bits(state.wasm.decode_f64().unwrap_validated());
-    trace!("Instruction: f64.const [] -> [{constant}]");
     state.resumable.stack.push_value(constant.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -76,7 +72,6 @@ pub unsafe fn i32_clz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1.leading_zeros() as i32;
 
-    trace!("Instruction: i32.clz [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -90,7 +85,6 @@ pub unsafe fn i32_ctz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1.trailing_zeros() as i32;
 
-    trace!("Instruction: i32.ctz [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -110,7 +104,6 @@ pub unsafe fn i32_popcnt(
         .unwrap_validated();
     let res = v1.count_ones() as i32;
 
-    trace!("Instruction: i32.popcnt [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -125,7 +118,6 @@ pub unsafe fn i64_clz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1.leading_zeros() as i64;
 
-    trace!("Instruction: i64.clz [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -139,7 +131,6 @@ pub unsafe fn i64_ctz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1.trailing_zeros() as i64;
 
-    trace!("Instruction: i64.ctz [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -159,7 +150,6 @@ pub unsafe fn i64_popcnt(
         .unwrap_validated();
     let res = v1.count_ones() as i64;
 
-    trace!("Instruction: i64.popcnt [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -174,7 +164,6 @@ pub unsafe fn f32_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F32 = v1.abs();
 
-    trace!("Instruction: f32.abs [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -188,7 +177,6 @@ pub unsafe fn f32_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F32 = v1.neg();
 
-    trace!("Instruction: f32.neg [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -202,7 +190,6 @@ pub unsafe fn f32_ceil(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .unwrap_validated();
     let res: F32 = v1.ceil();
 
-    trace!("Instruction: f32.ceil [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -220,7 +207,6 @@ pub unsafe fn f32_floor(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let res: F32 = v1.floor();
 
-    trace!("Instruction: f32.floor [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -238,7 +224,6 @@ pub unsafe fn f32_trunc(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let res: F32 = v1.trunc();
 
-    trace!("Instruction: f32.trunc [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -258,7 +243,6 @@ pub unsafe fn f32_nearest(
         .unwrap_validated();
     let res: F32 = v1.nearest();
 
-    trace!("Instruction: f32.nearest [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -272,7 +256,6 @@ pub unsafe fn f32_sqrt(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .unwrap_validated();
     let res: F32 = v1.sqrt();
 
-    trace!("Instruction: f32.sqrt [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -287,7 +270,6 @@ pub unsafe fn f64_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F64 = v1.abs();
 
-    trace!("Instruction: f64.abs [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -301,7 +283,6 @@ pub unsafe fn f64_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F64 = v1.neg();
 
-    trace!("Instruction: f64.neg [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -315,7 +296,6 @@ pub unsafe fn f64_ceil(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .unwrap_validated();
     let res: F64 = v1.ceil();
 
-    trace!("Instruction: f64.ceil [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -333,7 +313,6 @@ pub unsafe fn f64_floor(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let res: F64 = v1.floor();
 
-    trace!("Instruction: f64.floor [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -351,7 +330,6 @@ pub unsafe fn f64_trunc(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .unwrap_validated();
     let res: F64 = v1.trunc();
 
-    trace!("Instruction: f64.trunc [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -371,7 +349,6 @@ pub unsafe fn f64_nearest(
         .unwrap_validated();
     let res: F64 = v1.nearest();
 
-    trace!("Instruction: f64.nearest [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -385,7 +362,6 @@ pub unsafe fn f64_sqrt(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .unwrap_validated();
     let res: F64 = v1.sqrt();
 
-    trace!("Instruction: f64.sqrt [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -404,7 +380,6 @@ pub unsafe fn i32_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1.wrapping_add(v2);
 
-    trace!("Instruction: i32.add [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -422,7 +397,6 @@ pub unsafe fn i32_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1.wrapping_sub(v2);
 
-    trace!("Instruction: i32.sub [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -440,7 +414,6 @@ pub unsafe fn i32_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1.wrapping_mul(v2);
 
-    trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -470,7 +443,6 @@ pub unsafe fn i32_div_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 
     let res = divisor / dividend;
 
-    trace!("Instruction: i32.div_s [{divisor} {dividend}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -500,7 +472,6 @@ pub unsafe fn i32_div_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 
     let res = (divisor / dividend) as i32;
 
-    trace!("Instruction: i32.div_u [{divisor} {dividend}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -528,7 +499,6 @@ pub unsafe fn i32_rem_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     let res = divisor.checked_rem(dividend);
     let res = res.unwrap_or_default();
 
-    trace!("Instruction: i32.rem_s [{divisor} {dividend}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -559,7 +529,6 @@ pub unsafe fn i32_rem_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     let res = divisor.checked_rem(dividend);
     let res = res.unwrap_or_default() as i32;
 
-    trace!("Instruction: i32.rem_u [{divisor} {dividend}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -577,7 +546,6 @@ pub unsafe fn i32_and(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1 & v2;
 
-    trace!("Instruction: i32.and [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -595,7 +563,6 @@ pub unsafe fn i32_or(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
         .unwrap_validated();
     let res = v1 | v2;
 
-    trace!("Instruction: i32.or [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -613,7 +580,6 @@ pub unsafe fn i32_xor(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1 ^ v2;
 
-    trace!("Instruction: i32.xor [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -631,7 +597,6 @@ pub unsafe fn i32_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v2.wrapping_shl(v1 as u32);
 
-    trace!("Instruction: i32.shl [{v2} {v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -654,7 +619,6 @@ pub unsafe fn i32_shr_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 
     let res = v2.wrapping_shr(v1 as u32);
 
-    trace!("Instruction: i32.shr_s [{v2} {v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -677,7 +641,6 @@ pub unsafe fn i32_shr_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 
     let res = (v2 as u32).wrapping_shr(v1 as u32) as i32;
 
-    trace!("Instruction: i32.shr_u [{v2} {v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -696,7 +659,6 @@ pub unsafe fn i32_rotl(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = v2.rotate_left(v1 as u32);
 
-    trace!("Instruction: i32.rotl [{v2} {v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -715,7 +677,6 @@ pub unsafe fn i32_rotr(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = v2.rotate_right(v1 as u32);
 
-    trace!("Instruction: i32.rotr [{v2} {v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -734,7 +695,6 @@ pub unsafe fn i64_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1.wrapping_add(v2);
 
-    trace!("Instruction: i64.add [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -752,7 +712,6 @@ pub unsafe fn i64_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1.wrapping_sub(v2);
 
-    trace!("Instruction: i64.sub [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -770,7 +729,6 @@ pub unsafe fn i64_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res = v1.wrapping_mul(v2);
 
-    trace!("Instruction: i64.mul [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -800,7 +758,6 @@ pub unsafe fn i64_div_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 
     let res = divisor / dividend;
 
-    trace!("Instruction: i64.div_s [{divisor} {dividend}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -830,7 +787,6 @@ pub unsafe fn i64_div_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 
     let res = (divisor / dividend) as i64;
 
-    trace!("Instruction: i64.div_u [{divisor} {dividend}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -858,7 +814,6 @@ pub unsafe fn i64_rem_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     let res = divisor.checked_rem(dividend);
     let res = res.unwrap_or_default();
 
-    trace!("Instruction: i64.rem_s [{divisor} {dividend}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -888,7 +843,6 @@ pub unsafe fn i64_rem_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 
     let res = (divisor % dividend) as i64;
 
-    trace!("Instruction: i64.rem_u [{divisor} {dividend}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -907,7 +861,6 @@ pub unsafe fn i64_and(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 
     let res = v1 & v2;
 
-    trace!("Instruction: i64.and [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -926,7 +879,6 @@ pub unsafe fn i64_or(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = v1 | v2;
 
-    trace!("Instruction: i64.or [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -945,7 +897,6 @@ pub unsafe fn i64_xor(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 
     let res = v1 ^ v2;
 
-    trace!("Instruction: i64.xor [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -964,7 +915,6 @@ pub unsafe fn i64_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 
     let res = v1.wrapping_shl((v2 & 63) as u32);
 
-    trace!("Instruction: i64.shl [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -987,7 +937,6 @@ pub unsafe fn i64_shr_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 
     let res = v1.wrapping_shr((v2 & 63) as u32);
 
-    trace!("Instruction: i64.shr_s [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1010,7 +959,6 @@ pub unsafe fn i64_shr_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 
     let res = (v1 as u64).wrapping_shr((v2 & 63) as u32);
 
-    trace!("Instruction: i64.shr_u [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1029,7 +977,6 @@ pub unsafe fn i64_rotl(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = v1.rotate_left((v2 & 63) as u32);
 
-    trace!("Instruction: i64.rotl [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1048,7 +995,6 @@ pub unsafe fn i64_rotr(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = v1.rotate_right((v2 & 63) as u32);
 
-    trace!("Instruction: i64.rotr [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1067,7 +1013,6 @@ pub unsafe fn f32_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F32 = v1 + v2;
 
-    trace!("Instruction: f32.add [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1085,7 +1030,6 @@ pub unsafe fn f32_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F32 = v1 - v2;
 
-    trace!("Instruction: f32.sub [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1103,7 +1047,6 @@ pub unsafe fn f32_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F32 = v1 * v2;
 
-    trace!("Instruction: f32.mul [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1121,7 +1064,6 @@ pub unsafe fn f32_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F32 = v1 / v2;
 
-    trace!("Instruction: f32.div [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1139,7 +1081,6 @@ pub unsafe fn f32_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F32 = v1.min(v2);
 
-    trace!("Instruction: f32.min [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1157,7 +1098,6 @@ pub unsafe fn f32_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F32 = v1.max(v2);
 
-    trace!("Instruction: f32.max [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1181,7 +1121,6 @@ pub unsafe fn f32_copysign(
         .unwrap_validated();
     let res: F32 = v1.copysign(v2);
 
-    trace!("Instruction: f32.copysign [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1200,7 +1139,6 @@ pub unsafe fn f64_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F64 = v1 + v2;
 
-    trace!("Instruction: f64.add [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1218,7 +1156,6 @@ pub unsafe fn f64_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F64 = v1 - v2;
 
-    trace!("Instruction: f64.sub [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1236,7 +1173,6 @@ pub unsafe fn f64_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F64 = v1 * v2;
 
-    trace!("Instruction: f64.mul [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1254,7 +1190,6 @@ pub unsafe fn f64_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F64 = v1 / v2;
 
-    trace!("Instruction: f64.div [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1272,7 +1207,6 @@ pub unsafe fn f64_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F64 = v1.min(v2);
 
-    trace!("Instruction: f64.min [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1290,7 +1224,6 @@ pub unsafe fn f64_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
         .unwrap_validated();
     let res: F64 = v1.max(v2);
 
-    trace!("Instruction: f64.max [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1314,7 +1247,6 @@ pub unsafe fn f64_copysign(
         .unwrap_validated();
     let res: F64 = v1.copysign(v2);
 
-    trace!("Instruction: f64.copysign [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1330,7 +1262,6 @@ pub unsafe fn i32_eqz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 
     let res = if v1 == 0 { 1 } else { 0 };
 
-    trace!("Instruction: i32.eqz [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1346,7 +1277,6 @@ pub unsafe fn i64_eqz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 
     let res = if v1 == 0 { 1 } else { 0 };
 
-    trace!("Instruction: i64.eqz [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1366,7 +1296,6 @@ pub unsafe fn i32_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 == v2 { 1 } else { 0 };
 
-    trace!("Instruction: i32.eq [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1385,7 +1314,6 @@ pub unsafe fn i32_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 != v2 { 1 } else { 0 };
 
-    trace!("Instruction: i32.ne [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1404,7 +1332,6 @@ pub unsafe fn i32_lt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if v1 < v2 { 1 } else { 0 };
 
-    trace!("Instruction: i32.lt_s [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1423,7 +1350,6 @@ pub unsafe fn i32_lt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if (v1 as u32) < (v2 as u32) { 1 } else { 0 };
 
-    trace!("Instruction: i32.lt_u [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1442,7 +1368,6 @@ pub unsafe fn i32_gt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if v1 > v2 { 1 } else { 0 };
 
-    trace!("Instruction: i32.gt_s [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1461,7 +1386,6 @@ pub unsafe fn i32_gt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if (v1 as u32) > (v2 as u32) { 1 } else { 0 };
 
-    trace!("Instruction: i32.gt_u [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1480,7 +1404,6 @@ pub unsafe fn i32_le_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if v1 <= v2 { 1 } else { 0 };
 
-    trace!("Instruction: i32.le_s [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1499,7 +1422,6 @@ pub unsafe fn i32_le_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if (v1 as u32) <= (v2 as u32) { 1 } else { 0 };
 
-    trace!("Instruction: i32.le_u [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1518,7 +1440,6 @@ pub unsafe fn i32_ge_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if v1 >= v2 { 1 } else { 0 };
 
-    trace!("Instruction: i32.ge_s [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1537,7 +1458,6 @@ pub unsafe fn i32_ge_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if (v1 as u32) >= (v2 as u32) { 1 } else { 0 };
 
-    trace!("Instruction: i32.ge_u [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1557,7 +1477,6 @@ pub unsafe fn i64_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 == v2 { 1 } else { 0 };
 
-    trace!("Instruction: i64.eq [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1576,7 +1495,6 @@ pub unsafe fn i64_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 != v2 { 1 } else { 0 };
 
-    trace!("Instruction: i64.ne [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1595,7 +1513,6 @@ pub unsafe fn i64_lt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if v1 < v2 { 1 } else { 0 };
 
-    trace!("Instruction: i64.lt_s [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1614,7 +1531,6 @@ pub unsafe fn i64_lt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if (v1 as u64) < (v2 as u64) { 1 } else { 0 };
 
-    trace!("Instruction: i64.lt_u [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1633,7 +1549,6 @@ pub unsafe fn i64_gt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if v1 > v2 { 1 } else { 0 };
 
-    trace!("Instruction: i64.gt_s [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1652,7 +1567,6 @@ pub unsafe fn i64_gt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if (v1 as u64) > (v2 as u64) { 1 } else { 0 };
 
-    trace!("Instruction: i64.gt_u [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1671,7 +1585,6 @@ pub unsafe fn i64_le_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if v1 <= v2 { 1 } else { 0 };
 
-    trace!("Instruction: i64.le_s [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1690,7 +1603,6 @@ pub unsafe fn i64_le_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if (v1 as u64) <= (v2 as u64) { 1 } else { 0 };
 
-    trace!("Instruction: i64.le_u [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1709,7 +1621,6 @@ pub unsafe fn i64_ge_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if v1 >= v2 { 1 } else { 0 };
 
-    trace!("Instruction: i64.ge_s [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1728,7 +1639,6 @@ pub unsafe fn i64_ge_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
     let res = if (v1 as u64) >= (v2 as u64) { 1 } else { 0 };
 
-    trace!("Instruction: i64.ge_u [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1748,7 +1658,6 @@ pub unsafe fn f32_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 == v2 { 1 } else { 0 };
 
-    trace!("Instruction: f32.eq [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1767,7 +1676,6 @@ pub unsafe fn f32_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 != v2 { 1 } else { 0 };
 
-    trace!("Instruction: f32.ne [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1786,7 +1694,6 @@ pub unsafe fn f32_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 < v2 { 1 } else { 0 };
 
-    trace!("Instruction: f32.lt [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1805,7 +1712,6 @@ pub unsafe fn f32_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 > v2 { 1 } else { 0 };
 
-    trace!("Instruction: f32.gt [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1824,7 +1730,6 @@ pub unsafe fn f32_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 <= v2 { 1 } else { 0 };
 
-    trace!("Instruction: f32.le [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1843,7 +1748,6 @@ pub unsafe fn f32_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 >= v2 { 1 } else { 0 };
 
-    trace!("Instruction: f32.ge [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1863,7 +1767,6 @@ pub unsafe fn f64_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 == v2 { 1 } else { 0 };
 
-    trace!("Instruction: f64.eq [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1882,7 +1785,6 @@ pub unsafe fn f64_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 != v2 { 1 } else { 0 };
 
-    trace!("Instruction: f64.ne [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1901,7 +1803,6 @@ pub unsafe fn f64_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 < v2 { 1 } else { 0 };
 
-    trace!("Instruction: f64.lt [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1920,7 +1821,6 @@ pub unsafe fn f64_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 > v2 { 1 } else { 0 };
 
-    trace!("Instruction: f64.gt [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1939,7 +1839,6 @@ pub unsafe fn f64_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 <= v2 { 1 } else { 0 };
 
-    trace!("Instruction: f64.le [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1958,7 +1857,6 @@ pub unsafe fn f64_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
     let res = if v1 >= v2 { 1 } else { 0 };
 
-    trace!("Instruction: f64.ge [{v1} {v2}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -1979,7 +1877,6 @@ pub unsafe fn i32_wrap_i64(
         .unwrap_validated();
     let res: i32 = v as i32;
 
-    trace!("Instruction: i32.wrap_i64 [{v}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2009,7 +1906,6 @@ pub unsafe fn i32_trunc_f32_s(
 
     let res: i32 = v.as_i32();
 
-    trace!("Instruction: i32.trunc_f32_s [{v:.7}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2039,7 +1935,6 @@ pub unsafe fn i32_trunc_f32_u(
 
     let res: i32 = v.as_u32() as i32;
 
-    trace!("Instruction: i32.trunc_f32_u [{v:.7}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2069,7 +1964,6 @@ pub unsafe fn i32_trunc_f64_s(
 
     let res: i32 = v.as_i32();
 
-    trace!("Instruction: i32.trunc_f64_s [{v:.7}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2099,7 +1993,6 @@ pub unsafe fn i32_trunc_f64_u(
 
     let res: i32 = v.as_u32() as i32;
 
-    trace!("Instruction: i32.trunc_f32_u [{v:.7}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2119,7 +2012,6 @@ pub unsafe fn i32_reinterpret_f32(
         .unwrap_validated();
     let res: i32 = v.reinterpret_as_i32();
 
-    trace!("Instruction: i32.reinterpret_f32 [{v:.7}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2139,7 +2031,6 @@ pub unsafe fn i32_extend8_s(
         .unwrap_validated();
 
     if v | 0xFF != 0xFF {
-        trace!("Number v ({}) not contained in 8 bits, truncating", v);
         v &= 0xFF;
     }
 
@@ -2147,7 +2038,6 @@ pub unsafe fn i32_extend8_s(
 
     state.resumable.stack.push_value(res.into())?;
 
-    trace!("Instruction i32.extend8_s [{}] -> [{}]", v, res);
     Ok(ControlFlow::Continue(()))
 }
 
@@ -2166,7 +2056,6 @@ pub unsafe fn i32_extend16_s(
         .unwrap_validated();
 
     if v | 0xFFFF != 0xFFFF {
-        trace!("Number v ({}) not contained in 16 bits, truncating", v);
         v &= 0xFFFF;
     }
 
@@ -2178,7 +2067,6 @@ pub unsafe fn i32_extend16_s(
 
     state.resumable.stack.push_value(res.into())?;
 
-    trace!("Instruction i32.extend16_s [{}] -> [{}]", v, res);
     Ok(ControlFlow::Continue(()))
 }
 
@@ -2207,7 +2095,6 @@ pub unsafe fn i32_trunc_sat_f32_s(
         }
     };
 
-    trace!("Instruction: i32.trunc_sat_f32_s [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2235,7 +2122,6 @@ pub unsafe fn i32_trunc_sat_f32_u(
         }
     };
 
-    trace!("Instruction: i32.trunc_sat_f32_u [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2265,7 +2151,6 @@ pub unsafe fn i32_trunc_sat_f64_s(
         }
     };
 
-    trace!("Instruction: i32.trunc_sat_f64_s [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2293,7 +2178,6 @@ pub unsafe fn i32_trunc_sat_f64_u(
         }
     };
 
-    trace!("Instruction: i32.trunc_sat_f64_u [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2315,7 +2199,6 @@ pub unsafe fn i64_extend_i32_s(
 
     let res: i64 = v as i64;
 
-    trace!("Instruction: i64.extend_i32_s [{v}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2336,7 +2219,6 @@ pub unsafe fn i64_extend_i32_u(
 
     let res: i64 = v as u32 as i64;
 
-    trace!("Instruction: i64.extend_i32_u [{v}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2366,7 +2248,6 @@ pub unsafe fn i64_trunc_f32_s(
 
     let res: i64 = v.as_i64();
 
-    trace!("Instruction: i64.trunc_f32_s [{v:.7}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2396,7 +2277,6 @@ pub unsafe fn i64_trunc_f32_u(
 
     let res: i64 = v.as_u64() as i64;
 
-    trace!("Instruction: i64.trunc_f32_u [{v:.7}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2426,7 +2306,6 @@ pub unsafe fn i64_trunc_f64_s(
 
     let res: i64 = v.as_i64();
 
-    trace!("Instruction: i64.trunc_f64_s [{v:.17}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2456,7 +2335,6 @@ pub unsafe fn i64_trunc_f64_u(
 
     let res: i64 = v.as_u64() as i64;
 
-    trace!("Instruction: i64.trunc_f64_u [{v:.17}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2476,7 +2354,6 @@ pub unsafe fn i64_reinterpret_f64(
         .unwrap_validated();
     let res: i64 = v.reinterpret_as_i64();
 
-    trace!("Instruction: i64.reinterpret_f64 [{v:.17}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2496,7 +2373,6 @@ pub unsafe fn i64_extend8_s(
         .unwrap_validated();
 
     if v | 0xFF != 0xFF {
-        trace!("Number v ({}) not contained in 8 bits, truncating", v);
         v &= 0xFF;
     }
 
@@ -2508,7 +2384,6 @@ pub unsafe fn i64_extend8_s(
 
     state.resumable.stack.push_value(res.into())?;
 
-    trace!("Instruction i64.extend8_s [{}] -> [{}]", v, res);
     Ok(ControlFlow::Continue(()))
 }
 
@@ -2527,7 +2402,6 @@ pub unsafe fn i64_extend16_s(
         .unwrap_validated();
 
     if v | 0xFFFF != 0xFFFF {
-        trace!("Number v ({}) not contained in 16 bits, truncating", v);
         v &= 0xFFFF;
     }
 
@@ -2539,7 +2413,6 @@ pub unsafe fn i64_extend16_s(
 
     state.resumable.stack.push_value(res.into())?;
 
-    trace!("Instruction i64.extend16_s [{}] -> [{}]", v, res);
     Ok(ControlFlow::Continue(()))
 }
 
@@ -2558,7 +2431,6 @@ pub unsafe fn i64_extend32_s(
         .unwrap_validated();
 
     if v | 0xFFFF_FFFF != 0xFFFF_FFFF {
-        trace!("Number v ({}) not contained in 32 bits, truncating", v);
         v &= 0xFFFF_FFFF;
     }
 
@@ -2570,7 +2442,6 @@ pub unsafe fn i64_extend32_s(
 
     state.resumable.stack.push_value(res.into())?;
 
-    trace!("Instruction i64.extend32_s [{}] -> [{}]", v, res);
     Ok(ControlFlow::Continue(()))
 }
 
@@ -2599,7 +2470,6 @@ pub unsafe fn i64_trunc_sat_f32_s(
         }
     };
 
-    trace!("Instruction: i64.trunc_sat_f32_s [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2627,7 +2497,6 @@ pub unsafe fn i64_trunc_sat_f32_u(
         }
     };
 
-    trace!("Instruction: i64.trunc_sat_f32_u [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2657,7 +2526,6 @@ pub unsafe fn i64_trunc_sat_f64_s(
         }
     };
 
-    trace!("Instruction: i64.trunc_sat_f64_s [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2685,7 +2553,6 @@ pub unsafe fn i64_trunc_sat_f64_u(
         }
     };
 
-    trace!("Instruction: i64.trunc_sat_f64_u [{v1}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2706,7 +2573,6 @@ pub unsafe fn f32_convert_i32_s(
         .unwrap_validated();
     let res: F32 = F32(v as f32);
 
-    trace!("Instruction: f32.convert_i32_s [{v}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2726,7 +2592,6 @@ pub unsafe fn f32_convert_i32_u(
         .unwrap_validated();
     let res: F32 = F32(v as u32 as f32);
 
-    trace!("Instruction: f32.convert_i32_u [{v}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2746,7 +2611,6 @@ pub unsafe fn f32_convert_i64_s(
         .unwrap_validated();
     let res: F32 = F32(v as f32);
 
-    trace!("Instruction: f32.convert_i64_s [{v}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2766,7 +2630,6 @@ pub unsafe fn f32_convert_i64_u(
         .unwrap_validated();
     let res: F32 = F32(v as u64 as f32);
 
-    trace!("Instruction: f32.convert_i64_u [{v}] -> [{res}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2786,7 +2649,6 @@ pub unsafe fn f32_demote_f64(
         .unwrap_validated();
     let res: F32 = v.as_f32();
 
-    trace!("Instruction: f32.demote_f64 [{v:.17}] -> [{res:.7}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2806,7 +2668,6 @@ pub unsafe fn f32_reinterpret_i32(
         .unwrap_validated();
     let res: F32 = F32::from_bits(v1 as u32);
 
-    trace!("Instruction: f32.reinterpret_i32 [{v1}] -> [{res:.7}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2827,7 +2688,6 @@ pub unsafe fn f64_convert_i32_s(
         .unwrap_validated();
     let res: F64 = F64(v as f64);
 
-    trace!("Instruction: f64.convert_i32_s [{v}] -> [{res:.17}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2847,7 +2707,6 @@ pub unsafe fn f64_convert_i32_u(
         .unwrap_validated();
     let res: F64 = F64(v as u32 as f64);
 
-    trace!("Instruction: f64.convert_i32_u [{v}] -> [{res:.17}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2867,7 +2726,6 @@ pub unsafe fn f64_convert_i64_s(
         .unwrap_validated();
     let res: F64 = F64(v as f64);
 
-    trace!("Instruction: f64.convert_i64_s [{v}] -> [{res:.17}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2887,7 +2745,6 @@ pub unsafe fn f64_convert_i64_u(
         .unwrap_validated();
     let res: F64 = F64(v as u64 as f64);
 
-    trace!("Instruction: f64.convert_i64_u [{v}] -> [{res:.17}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2907,7 +2764,6 @@ pub unsafe fn f64_promote_f32(
         .unwrap_validated();
     let res: F64 = v.as_f64();
 
-    trace!("Instruction: f64.promote_f32 [{v:.7}] -> [{res:.17}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }
@@ -2927,7 +2783,6 @@ pub unsafe fn f64_reinterpret_i64(
         .unwrap_validated();
     let res: F64 = F64::from_bits(v1 as u64);
 
-    trace!("Instruction: f64.reinterpret_i64 [{v1}] -> [{res:.17}]");
     state.resumable.stack.push_value(res.into())?;
     Ok(ControlFlow::Continue(()))
 }

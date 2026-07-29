@@ -19,7 +19,6 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    trace,
     validation::{
         config::ValidationConfig, instructions::expressions::decode_and_validate_expr,
         validation_stack::ValidationStack,
@@ -110,11 +109,6 @@ pub unsafe fn decode_and_validate_code_section<T2: ValidationConfig>(
 
         Ok((func_block, stp))
     })?;
-
-    trace!(
-        "Read code section. Found {} code blocks",
-        code_block_spans_stps.len()
-    );
 
     Ok(code_block_spans_stps)
 }

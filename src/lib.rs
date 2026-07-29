@@ -54,10 +54,6 @@
 //! # Ok(())
 //! # }
 //! ```
-//!
-//! # Optional Features
-//!
-//! - `log`: Enables logging (enables `log` dependency).
 
 #![no_std]
 
