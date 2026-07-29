@@ -1331,7 +1331,6 @@ impl<'b, T: Config> Store<'b, T> {
                     hostcode: host_func_inst.hostcode,
                 },
                 host_resumable: HostResumable {
-                    host_func_addr: func_addr,
                     inner_resumable: None,
                     maybe_fuel: Some(maybe_fuel),
                 },
@@ -1386,18 +1385,13 @@ impl<'b, T: Config> Store<'b, T> {
                 values: resumable.stack.into_values(),
                 maybe_remaining_fuel: resumable.maybe_fuel,
             },
-            InterpreterLoopOutcome::OutOfFuel { required_fuel } => RunState::Resumable {
+            InterpreterLoopOutcome::OutOfFuel {} => RunState::Resumable {
                 resumable,
-                required_fuel: Some(required_fuel),
+                required_fuel: None,
             },
-            InterpreterLoopOutcome::HostCalled {
-                func_addr,
-                params,
-                hostcode,
-            } => RunState::HostCalled {
-                host_call: HostCall { params, hostcode },
+            InterpreterLoopOutcome::HostCalled {} => RunState::HostCalled {
+                host_call: HostCall { params: Vec::new(), hostcode: 0},
                 resumable: HostResumable {
-                    host_func_addr: func_addr,
                     inner_resumable: Some(resumable),
                     maybe_fuel: None,
                 },
@@ -1421,22 +1415,11 @@ impl<'b, T: Config> Store<'b, T> {
         // Verify that the return parameters match the host function parameters
         // since we have no validation guarantees for host functions
 
-        // SAFETY: The caller ensures that the `HostResumable`, and thus also
-        // the function address in it, is valid in the current store.
-        let function = unsafe { self.inner.functions.get(host_resumable.host_func_addr) };
-
-        let FuncInst::HostFunc(host_func_inst) = function else {
-            unreachable!("expected function to be a host function instance")
-        };
-
         let return_types = host_call_return_values
             .iter()
             .map(|v| v.to_ty())
             .collect::<Vec<_>>();
 
-        if host_func_inst.function_type.returns.valtypes != return_types {
-            return Err(RuntimeError::HostFunctionSignatureMismatch);
-        }
 
         if let Some(mut wasm_resumable) = host_resumable.inner_resumable {
             for return_value in host_call_return_values {

@@ -1756,9 +1756,6 @@ define_instruction_fn! {
                 resumable.stack.push_value(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
 
                 return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
-                    required_fuel: NonZeroU64::new(cost - *fuel).expect(
-                        "the last check guarantees that the current fuel is smaller than cost",
-                    ),
                 }));
             }
         }
@@ -1825,9 +1822,6 @@ define_instruction_fn! {
             } else {
                 resumable.stack.push_value(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
                 return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
-                    required_fuel: NonZeroU64::new(cost - *fuel).expect(
-                        "the last check guarantees that the current fuel is smaller than cost",
-                    ),
                 }));
             }
         }
@@ -1894,9 +1888,6 @@ define_instruction_fn! {
             } else {
                 resumable.stack.push_value(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
                 return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
-                    required_fuel: NonZeroU64::new(cost - *fuel).expect(
-                        "the last check guarantees that the current fuel is smaller than cost",
-                    ),
                 }));
             }
         }
@@ -1955,9 +1946,6 @@ define_instruction_fn! {
             } else {
                 resumable.stack.push_value(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
                 return Ok(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
-                    required_fuel: NonZeroU64::new(cost - *fuel).expect(
-                        "the last check guarantees that the current fuel is smaller than cost",
-                    ),
                 }));
             }
         }

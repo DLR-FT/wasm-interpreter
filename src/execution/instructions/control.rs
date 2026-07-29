@@ -334,9 +334,6 @@ define_instruction_fn! {
                     .pop_tail_iter(host_func_to_call_inst.function_type.params.valtypes.len());
 
                 return Ok(ControlFlow::Break(InterpreterLoopOutcome::HostCalled {
-                    params,
-                    func_addr: *func_to_call_addr,
-                    hostcode: host_func_to_call_inst.hostcode,
                 }));
             }
             FuncInst::WasmFunc(wasm_func_to_call_inst) => {
@@ -450,9 +447,6 @@ define_instruction_fn! {
                     .pop_tail_iter(host_func_to_call_inst.function_type.params.valtypes.len());
 
                 return Ok(ControlFlow::Break(InterpreterLoopOutcome::HostCalled {
-                    params,
-                    func_addr: func_to_call_addr,
-                    hostcode: host_func_to_call_inst.hostcode,
                 }));
             }
             FuncInst::WasmFunc(wasm_func_to_call_inst) => {

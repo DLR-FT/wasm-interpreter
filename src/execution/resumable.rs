@@ -56,7 +56,6 @@ pub struct HostCall {
 /// to resume execution.
 #[derive(Debug)]
 pub struct HostResumable {
-    pub(crate) host_func_addr: FuncAddr,
     pub(crate) inner_resumable: Option<WasmResumable>,
     /// Hack: This is `Some` only if `inner_resumable` is `None`. In that case
     /// it is used to store the maybe_fuel, so it can be returned in

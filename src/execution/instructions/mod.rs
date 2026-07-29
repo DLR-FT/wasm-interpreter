@@ -55,18 +55,8 @@ pub enum InterpreterLoopOutcome {
     /// Execution was preempted because there was not enough fuel in the
     /// [`WasmResumable`] object.
     ///
-    OutOfFuel {
-        /// The amount of fuel required to continue execution at least the next
-        /// instruction.
-        required_fuel: NonZeroU64,
-    },
-    HostCalled {
-        func_addr: FuncAddr,
-        // TODO this allocation might be preventable. mutably borrow the stack
-        // instead
-        params: Vec<Value>,
-        hostcode: Hostcode,
-    },
+    OutOfFuel {},
+    HostCalled {},
 }
 
 type InstructionHandlerFn<T> = for<'wasm, 'modules> unsafe extern "rust-preserve-none" fn(
@@ -597,10 +587,7 @@ fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> ControlFlow<Interp
         if *fuel >= cost {
             *fuel -= cost;
         } else {
-            return ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
-                required_fuel: NonZeroU64::new(cost - *fuel)
-                    .expect("the last check guarantees that the current fuel is smaller than cost"),
-            });
+            return ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {});
         }
     }
 
