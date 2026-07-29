@@ -11,7 +11,7 @@
 use std::{collections::HashMap, error::Error, fmt};
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, instructions, Config, FuncAddr, Module, ModuleAddr, Store, Value,
+    decode_and_validate, Config, FuncAddr, Module, ModuleAddr, Store, Value,
 };
 
 // This is the same Wasm code as in the fuel example
@@ -95,8 +95,7 @@ impl fmt::Display for MyHookConfig {
         writeln!(f, "----------------------------")?;
 
         for (instruction, count) in &self.count_per_instruction {
-            let instruction_as_str = instructions::instruction_byte_to_str(*instruction);
-            writeln!(f, "{instruction_as_str}({instruction:#x}): {count}")?;
+            writeln!(f, "{instruction:#X}: {count}")?;
         }
 
         Ok(())
@@ -107,12 +106,7 @@ impl Config for MyHookConfig {
     fn instruction_hook(&mut self, bytecode: &[u8], pc: usize) {
         let instruction_byte: u8 = bytecode[pc];
 
-        println!(
-            "{}({:#x}) @ {}",
-            instructions::instruction_byte_to_str(instruction_byte),
-            instruction_byte,
-            pc,
-        );
+        println!("{:#X} @ {}", instruction_byte, pc,);
 
         self.count_per_instruction
             .entry(instruction_byte)

@@ -1861,8 +1861,6 @@ pub unsafe fn memory_fill<T: Config>(
         .try_into()
         .unwrap_validated();
 
-    if !(0..=255).contains(&val) {}
-
     // SAFETY: Validation guarantees that there is a value on the stack.
     let d: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
