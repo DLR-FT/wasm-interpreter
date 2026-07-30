@@ -1050,7 +1050,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn mem_size(&self, mem_addr: MemAddr) -> u16 {
+    pub unsafe fn mem_size(&self, mem_addr: MemAddr) -> u32 {
         // 1. Return the length of `store.mems[memaddr].data` divided by the page size.
         // SAFETY: The caller ensures that the given memory address is valid in the current store.
         let memory = unsafe { self.inner.memories.get(mem_addr) };
@@ -1065,7 +1065,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn mem_grow(&mut self, mem_addr: MemAddr, n: u16) -> Result<(), RuntimeError> {
+    pub unsafe fn mem_grow(&mut self, mem_addr: MemAddr, n: u32) -> Result<(), RuntimeError> {
         // 1. Try growing the memory instance `store.mems[memaddr]` by `n` pages:
         //   a. If it succeeds, then return the updated store.
         //   b. Else, return `error`.
@@ -1074,7 +1074,8 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
         let memory = unsafe { self.inner.memories.get_mut(mem_addr) };
-        memory.grow(n)
+        let _previous_length = memory.grow(n)?;
+        Ok(())
     }
 
     /// Allocates a new global and returns its global address.
