@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["block","br","br_if","br_table","call","call_indirect","else","end","if","loop","nop","return","unreachable"]};
+window.SIDEBAR_ITEMS = {"fn":["block","br","br_if","br_table","call","call_indirect","else","end","if","loop","nop","return","unreachable"],"mod":["block_mod","br_if_mod","br_mod","br_table_mod","call_indirect_mod","call_mod","else_mod","end_mod","if_mod","loop_mod","nop_mod","return_mod","unreachable_mod"]};

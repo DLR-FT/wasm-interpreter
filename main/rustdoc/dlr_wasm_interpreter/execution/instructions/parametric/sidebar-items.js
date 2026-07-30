@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["drop","select","select_t"]};
+window.SIDEBAR_ITEMS = {"fn":["drop","select","select_t"],"mod":["drop_mod","select_mod","select_t_mod"]};

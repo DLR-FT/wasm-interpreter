@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["global_get","global_set","local_get","local_set","local_tee"]};
+window.SIDEBAR_ITEMS = {"fn":["global_get","global_set","local_get","local_set","local_tee"],"mod":["global_get_mod","global_set_mod","local_get_mod","local_set_mod","local_tee_mod"]};

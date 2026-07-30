@@ -65,7 +65,7 @@
 <a href=#65 id=65 data-nosnippet>65</a>            }
 <a href=#66 id=66 data-nosnippet>66</a>        };
 <a href=#67 id=67 data-nosnippet>67</a>
-<a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>args = Args {
+<a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>state = State {
 <a href=#69 id=69 data-nosnippet>69</a>            wasm,
 <a href=#70 id=70 data-nosnippet>70</a>            stack,
 <a href=#71 id=71 data-nosnippet>71</a>            module,
@@ -75,7 +75,7 @@
 <a href=#75 id=75 data-nosnippet>75</a>        <span class="comment">// SAFETY: All possible instruction handler functions use the same safety requirements, as
 <a href=#76 id=76 data-nosnippet>76</a>        // they are defined through the same macro. These are the same requirements defined by the
 <a href=#77 id=77 data-nosnippet>77</a>        // current function, which must be fulfilled.
-<a href=#78 id=78 data-nosnippet>78</a>        </span><span class="kw">let </span>should_break = <span class="kw">unsafe </span>{ instruction_fn(args) }<span class="question-mark">?</span>;
+<a href=#78 id=78 data-nosnippet>78</a>        </span><span class="kw">let </span>should_break = <span class="kw">unsafe </span>{ instruction_fn(state) }<span class="question-mark">?</span>;
 <a href=#79 id=79 data-nosnippet>79</a>        <span class="kw">if </span>should_break {
 <a href=#80 id=80 data-nosnippet>80</a>            <span class="kw">break</span>;
 <a href=#81 id=81 data-nosnippet>81</a>        }
@@ -116,11 +116,11 @@
 <a href=#116 id=116 data-nosnippet>116</a>    <span class="prelude-val">Ok</span>(stack.peek_value())
 <a href=#117 id=117 data-nosnippet>117</a>}
 <a href=#118 id=118 data-nosnippet>118</a>
-<a href=#119 id=119 data-nosnippet>119</a><span class="kw">struct </span>Args&lt;<span class="lifetime">'decoder</span>, <span class="lifetime">'resumable</span>, <span class="lifetime">'store</span>, <span class="lifetime">'wasm</span>, T: Config&gt; {
-<a href=#120 id=120 data-nosnippet>120</a>    wasm: <span class="kw-2">&amp;</span><span class="lifetime">'decoder </span><span class="kw-2">mut </span>WasmDecoder&lt;<span class="lifetime">'wasm</span>&gt;,
-<a href=#121 id=121 data-nosnippet>121</a>    stack: <span class="kw-2">&amp;</span><span class="lifetime">'resumable </span><span class="kw-2">mut </span>Stack,
+<a href=#119 id=119 data-nosnippet>119</a><span class="kw">struct </span>State&lt;<span class="lifetime">'a</span>, <span class="lifetime">'wasm</span>, T: Config&gt; {
+<a href=#120 id=120 data-nosnippet>120</a>    wasm: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>WasmDecoder&lt;<span class="lifetime">'wasm</span>&gt;,
+<a href=#121 id=121 data-nosnippet>121</a>    stack: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Stack,
 <a href=#122 id=122 data-nosnippet>122</a>    module: ModuleAddr,
-<a href=#123 id=123 data-nosnippet>123</a>    store: <span class="kw-2">&amp;</span><span class="lifetime">'store </span>Store&lt;<span class="lifetime">'wasm</span>, T&gt;,
+<a href=#123 id=123 data-nosnippet>123</a>    store: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Store&lt;<span class="lifetime">'wasm</span>, T&gt;,
 <a href=#124 id=124 data-nosnippet>124</a>}
 <a href=#125 id=125 data-nosnippet>125</a>
 <a href=#126 id=126 data-nosnippet>126</a><span class="macro">macro_rules!</span> define_instruction {
@@ -131,13 +131,13 @@
 <a href=#131 id=131 data-nosnippet>131</a>        /// 2. the module address must be valid in the given store
 <a href=#132 id=132 data-nosnippet>132</a>        </span><span class="comment">// Disable inlining to inspect the emitted code of individual instruction handlers
 <a href=#133 id=133 data-nosnippet>133</a>        // #[inline(never)]
-<a href=#134 id=134 data-nosnippet>134</a>        </span><span class="kw">unsafe fn </span><span class="macro-nonterminal">$name</span>&lt;T: Config&gt;(args: Args&lt;T&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;bool, RuntimeError&gt; {
-<a href=#135 id=135 data-nosnippet>135</a>            <span class="macro-nonterminal">$contents</span>(args)
+<a href=#134 id=134 data-nosnippet>134</a>        </span><span class="kw">unsafe fn </span><span class="macro-nonterminal">$name</span>&lt;T: Config&gt;(state: State&lt;T&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;bool, RuntimeError&gt; {
+<a href=#135 id=135 data-nosnippet>135</a>            <span class="macro-nonterminal">$contents</span>(state)
 <a href=#136 id=136 data-nosnippet>136</a>        }
 <a href=#137 id=137 data-nosnippet>137</a>    };
 <a href=#138 id=138 data-nosnippet>138</a>}
 <a href=#139 id=139 data-nosnippet>139</a>
-<a href=#140 id=140 data-nosnippet>140</a><span class="macro">define_instruction!</span>(end, instructions::END, |Args { .. }| {
+<a href=#140 id=140 data-nosnippet>140</a><span class="macro">define_instruction!</span>(end, instructions::END, |State { .. }| {
 <a href=#141 id=141 data-nosnippet>141</a>    <span class="macro">trace!</span>(<span class="string">"Constant instruction: END"</span>);
 <a href=#142 id=142 data-nosnippet>142</a>    <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
 <a href=#143 id=143 data-nosnippet>143</a>});
@@ -145,7 +145,7 @@
 <a href=#145 id=145 data-nosnippet>145</a><span class="macro">define_instruction!</span>(
 <a href=#146 id=146 data-nosnippet>146</a>    global_get,
 <a href=#147 id=147 data-nosnippet>147</a>    instructions::GLOBAL_GET,
-<a href=#148 id=148 data-nosnippet>148</a>    |Args {
+<a href=#148 id=148 data-nosnippet>148</a>    |State {
 <a href=#149 id=149 data-nosnippet>149</a>         wasm,
 <a href=#150 id=150 data-nosnippet>150</a>         module,
 <a href=#151 id=151 data-nosnippet>151</a>         store,
@@ -179,7 +179,7 @@
 <a href=#179 id=179 data-nosnippet>179</a><span class="macro">define_instruction!</span>(
 <a href=#180 id=180 data-nosnippet>180</a>    i32_const,
 <a href=#181 id=181 data-nosnippet>181</a>    instructions::I32_CONST,
-<a href=#182 id=182 data-nosnippet>182</a>    |Args { wasm, stack, .. }| {
+<a href=#182 id=182 data-nosnippet>182</a>    |State { wasm, stack, .. }| {
 <a href=#183 id=183 data-nosnippet>183</a>        <span class="kw">let </span>constant = wasm.decode_var_i32().unwrap_validated();
 <a href=#184 id=184 data-nosnippet>184</a>        <span class="macro">trace!</span>(<span class="string">"Constant instruction: i32.const [] -&gt; [{constant}]"</span>);
 <a href=#185 id=185 data-nosnippet>185</a>        stack.push_value(constant.into())<span class="question-mark">?</span>;
@@ -190,7 +190,7 @@
 <a href=#190 id=190 data-nosnippet>190</a><span class="macro">define_instruction!</span>(
 <a href=#191 id=191 data-nosnippet>191</a>    f32_const,
 <a href=#192 id=192 data-nosnippet>192</a>    instructions::F32_CONST,
-<a href=#193 id=193 data-nosnippet>193</a>    |Args { wasm, stack, .. }| {
+<a href=#193 id=193 data-nosnippet>193</a>    |State { wasm, stack, .. }| {
 <a href=#194 id=194 data-nosnippet>194</a>        <span class="kw">let </span>constant = F32::from_bits(wasm.decode_f32().unwrap_validated());
 <a href=#195 id=195 data-nosnippet>195</a>        <span class="macro">trace!</span>(<span class="string">"Constanting instruction: f32.const [] -&gt; [{constant}]"</span>);
 <a href=#196 id=196 data-nosnippet>196</a>        stack.push_value(constant.into())<span class="question-mark">?</span>;
@@ -201,7 +201,7 @@
 <a href=#201 id=201 data-nosnippet>201</a><span class="macro">define_instruction!</span>(
 <a href=#202 id=202 data-nosnippet>202</a>    f64_const,
 <a href=#203 id=203 data-nosnippet>203</a>    instructions::F64_CONST,
-<a href=#204 id=204 data-nosnippet>204</a>    |Args { wasm, stack, .. }| {
+<a href=#204 id=204 data-nosnippet>204</a>    |State { wasm, stack, .. }| {
 <a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">let </span>constant = F64::from_bits(wasm.decode_f64().unwrap_validated());
 <a href=#206 id=206 data-nosnippet>206</a>        <span class="macro">trace!</span>(<span class="string">"Constanting instruction: f64.const [] -&gt; [{constant}]"</span>);
 <a href=#207 id=207 data-nosnippet>207</a>        stack.push_value(constant.into())<span class="question-mark">?</span>;
@@ -212,7 +212,7 @@
 <a href=#212 id=212 data-nosnippet>212</a><span class="macro">define_instruction!</span>(
 <a href=#213 id=213 data-nosnippet>213</a>    i64_const,
 <a href=#214 id=214 data-nosnippet>214</a>    instructions::I64_CONST,
-<a href=#215 id=215 data-nosnippet>215</a>    |Args { wasm, stack, .. }| {
+<a href=#215 id=215 data-nosnippet>215</a>    |State { wasm, stack, .. }| {
 <a href=#216 id=216 data-nosnippet>216</a>        <span class="kw">let </span>constant = wasm.decode_var_i64().unwrap_validated();
 <a href=#217 id=217 data-nosnippet>217</a>        <span class="macro">trace!</span>(<span class="string">"Constant instruction: i64.const [] -&gt; [{constant}]"</span>);
 <a href=#218 id=218 data-nosnippet>218</a>        stack.push_value(constant.into())<span class="question-mark">?</span>;
@@ -223,7 +223,7 @@
 <a href=#223 id=223 data-nosnippet>223</a><span class="macro">define_instruction!</span>(
 <a href=#224 id=224 data-nosnippet>224</a>    ref_null,
 <a href=#225 id=225 data-nosnippet>225</a>    instructions::REF_NULL,
-<a href=#226 id=226 data-nosnippet>226</a>    |Args { wasm, stack, .. }| {
+<a href=#226 id=226 data-nosnippet>226</a>    |State { wasm, stack, .. }| {
 <a href=#227 id=227 data-nosnippet>227</a>        <span class="kw">let </span>reftype = RefType::decode(wasm).unwrap_validated();
 <a href=#228 id=228 data-nosnippet>228</a>
 <a href=#229 id=229 data-nosnippet>229</a>        stack.push_value(Value::Ref(Ref::Null(reftype)))<span class="question-mark">?</span>;
@@ -235,7 +235,7 @@
 <a href=#235 id=235 data-nosnippet>235</a><span class="macro">define_instruction!</span>(
 <a href=#236 id=236 data-nosnippet>236</a>    ref_func,
 <a href=#237 id=237 data-nosnippet>237</a>    instructions::REF_FUNC,
-<a href=#238 id=238 data-nosnippet>238</a>    |Args {
+<a href=#238 id=238 data-nosnippet>238</a>    |State {
 <a href=#239 id=239 data-nosnippet>239</a>         wasm,
 <a href=#240 id=240 data-nosnippet>240</a>         module,
 <a href=#241 id=241 data-nosnippet>241</a>         store,
@@ -255,7 +255,7 @@
 <a href=#255 id=255 data-nosnippet>255</a><span class="macro">define_instruction!</span>(
 <a href=#256 id=256 data-nosnippet>256</a>    fd_extensions,
 <a href=#257 id=257 data-nosnippet>257</a>    instructions::FD_EXTENSIONS,
-<a href=#258 id=258 data-nosnippet>258</a>    |Args { wasm, stack, .. }| {
+<a href=#258 id=258 data-nosnippet>258</a>    |State { wasm, stack, .. }| {
 <a href=#259 id=259 data-nosnippet>259</a>        <span class="kw">use </span><span class="kw">crate</span>::core::structure::instructions::fd_extensions::<span class="kw-2">*</span>;
 <a href=#260 id=260 data-nosnippet>260</a>        <span class="kw">let </span>second_instruction_part = wasm.decode_var_u32().unwrap_validated();
 <a href=#261 id=261 data-nosnippet>261</a>
