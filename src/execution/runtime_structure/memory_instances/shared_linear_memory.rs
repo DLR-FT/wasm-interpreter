@@ -26,6 +26,8 @@ use crate::{
 ///
 /// - `rd`: Reads the length or data of the memory. ([`Self::rd_len`], [`Self::rd_data`])
 /// - `wr`: Writes data into the memory. ([`Self::wr_data`])
+/// - `rmw`: Reads something from, modifies it and writes it back into the memory. This can be
+///   either data or the length of the memory. ([Self:TODO], ...)
 ///
 /// These actions act as a base for implementing the execution of memory instructions as described
 /// in the threads proposal[^threads-proposal].
@@ -750,6 +752,32 @@ impl SharedLinearMemory {
             *dst.get_mut() = byte;
         }
     }
+
+    pub unsafe fn rmw_data_u32_add(&self, properly_aligned_index: usize, a: u32) -> u32 {
+        unsafe { self.rmw_data_action(properly_aligned_index, |x| x + a) }
+    }
+
+    #[inline(always)]
+    unsafe fn rmw_data_action<const N: usize, T: LittleEndianBytes<N> + Copy>(
+        &self,
+        properly_aligned_index: usize,
+        f: impl FnOnce(T) -> T,
+    ) -> T {
+        let mut lock_guard = self.inner_data.write();
+
+        let atomic_bytes = unsafe {
+            lock_guard.get_unchecked_mut(properly_aligned_index..(properly_aligned_index + N))
+        };
+        let bytes = atomic_u8_get_mut_slice(atomic_bytes);
+        let bytes_array: &mut [u8; N] = bytes.try_into().unwrap();
+
+        let value = T::from_le_bytes(*bytes_array);
+        let new_value = f(value);
+        *bytes_array = new_value.to_le_bytes();
+
+        value
+    }
+
     /// Allows a given closure to temporarily access the entire memory as a `&mut [u8]`.
     ///
     /// # Note on locking
