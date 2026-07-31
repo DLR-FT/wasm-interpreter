@@ -256,6 +256,12 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
 
     /// Returns the data in this memory as a byte slice. The length of this slice is always a
     /// multiple of `PAGE_SIZE`.
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    /// Returns the data in this memory as a mutable byte slice. The length of this slice is always
+    /// a multiple of `PAGE_SIZE`.
     pub fn data_mut(&mut self) -> &mut [u8] {
         &mut self.data
     }

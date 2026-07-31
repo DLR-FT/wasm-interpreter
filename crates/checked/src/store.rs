@@ -509,6 +509,14 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_return_values)
     }
 
+    /// This is a safe variant of [`Store::mem_data`](dlr_wasm_interpreter::Store::mem_data).
+    pub fn mem_data(&self, memory: Stored<MemAddr>) -> &[u8] {
+        let memory = memory.try_unwrap_into_bare(self.id);
+        // SAFETY: It was just checked that the `MemAddr` came from the current
+        // store through its store id.
+        unsafe { self.inner.mem_data(memory) }
+    }
+
     /// This is a safe variant of [`Store::mem_data_mut`](dlr_wasm_interpreter::Store::mem_data_mut).
     pub fn mem_data_mut(&mut self, memory: Stored<MemAddr>) -> &mut [u8] {
         // 1. try unwrap

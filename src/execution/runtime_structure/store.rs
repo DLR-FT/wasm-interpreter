@@ -1492,6 +1492,19 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the current [`Store`]
     /// object.
+    pub unsafe fn mem_data(&self, memory: MemAddr) -> &[u8] {
+        // SAFETY: The caller ensures that the given memory address is valid in
+        // the current store.
+        let memory = unsafe { self.inner.memories.get(memory) };
+        memory.mem.data()
+    }
+
+    /// Returns the inner data of a specific memory instance as a mutable byte slice.
+    ///
+    /// # Safety
+    ///
+    /// The caller has to guarantee that the given [`MemAddr`] came from the current [`Store`]
+    /// object.
     pub unsafe fn mem_data_mut(&mut self, memory: MemAddr) -> &mut [u8] {
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.

@@ -32,7 +32,7 @@ fn interpret_as_str() {
     let bytes_written = mem_as_slice.write(STR_TO_WRITE.as_bytes()).unwrap();
     assert_eq!(bytes_written, 12);
 
-    let mem_as_slice = store.mem_data_mut(mem);
+    let mem_as_slice = store.mem_data(mem);
     // Read the string again and check if it is equal to the original one
     let bytes = &mem_as_slice[0..STR_TO_WRITE.len()];
     let as_str = std::str::from_utf8(bytes).unwrap();
