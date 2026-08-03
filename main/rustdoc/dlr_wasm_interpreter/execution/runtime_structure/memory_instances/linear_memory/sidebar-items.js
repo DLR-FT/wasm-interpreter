@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["LinearMemory"],"type":["PageCountTy"]};
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_PAGE_SIZE"],"struct":["LinearMemory"]};

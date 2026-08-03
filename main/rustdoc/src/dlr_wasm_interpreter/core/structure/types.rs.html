@@ -98,77 +98,64 @@
 <a href=#98 id=98 data-nosnippet>98</a>    </span><span class="kw">pub </span>max: <span class="prelude-ty">Option</span>&lt;u32&gt;,
 <a href=#99 id=99 data-nosnippet>99</a>}
 <a href=#100 id=100 data-nosnippet>100</a>
-<a href=#101 id=101 data-nosnippet>101</a><span class="comment">// TODO Find out where these consts come from and document it properly
-<a href=#102 id=102 data-nosnippet>102</a></span><span class="kw">impl </span>Limits {
-<a href=#103 id=103 data-nosnippet>103</a>    <span class="comment">// since the maximum amount of bytes is u32::MAX, the page size is 1 &lt;&lt; 16
-<a href=#104 id=104 data-nosnippet>104</a>    // the max no. of pages = max bytes / page size = u32::MAX / (1 &lt;&lt; 16) = 1 &lt;&lt; 16
-<a href=#105 id=105 data-nosnippet>105</a>    </span><span class="kw">pub const </span>MAX_MEM_PAGES: u32 = <span class="number">1 </span>&lt;&lt; <span class="number">16</span>;
-<a href=#106 id=106 data-nosnippet>106</a>    <span class="comment">// https://webassembly.github.io/reference-types/core/syntax/types.html#limits
-<a href=#107 id=107 data-nosnippet>107</a>    // memtype is defined in terms of limits, which go from 0 to u32::MAX
-<a href=#108 id=108 data-nosnippet>108</a>    </span><span class="kw">pub const </span>MAX_MEM_BYTES: u32 = u32::MAX;
-<a href=#109 id=109 data-nosnippet>109</a>    <span class="comment">// https://webassembly.github.io/reference-types/core/exec/runtime.html#memory-instances
-<a href=#110 id=110 data-nosnippet>110</a>    // memory size is 65536 (1 &lt;&lt; 16)
-<a href=#111 id=111 data-nosnippet>111</a>    </span><span class="kw">pub const </span>MEM_PAGE_SIZE: u32 = <span class="number">1 </span>&lt;&lt; <span class="number">16</span>;
-<a href=#112 id=112 data-nosnippet>112</a>}
-<a href=#113 id=113 data-nosnippet>113</a>
-<a href=#114 id=114 data-nosnippet>114</a><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>Limits {
-<a href=#115 id=115 data-nosnippet>115</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
-<a href=#116 id=116 data-nosnippet>116</a>        <span class="kw">match </span><span class="self">self</span>.max {
-<a href=#117 id=117 data-nosnippet>117</a>            <span class="prelude-val">Some</span>(max) =&gt; f.write_fmt(<span class="macro">format_args!</span>(<span class="string">"{}..{}"</span>, <span class="self">self</span>.min, max)),
-<a href=#118 id=118 data-nosnippet>118</a>            <span class="prelude-val">None </span>=&gt; f.write_fmt(<span class="macro">format_args!</span>(<span class="string">"{}.."</span>, <span class="self">self</span>.min)),
-<a href=#119 id=119 data-nosnippet>119</a>        }
-<a href=#120 id=120 data-nosnippet>120</a>    }
-<a href=#121 id=121 data-nosnippet>121</a>}
-<a href=#122 id=122 data-nosnippet>122</a>
-<a href=#123 id=123 data-nosnippet>123</a><span class="doccomment">/// A table type
-<a href=#124 id=124 data-nosnippet>124</a>///
-<a href=#125 id=125 data-nosnippet>125</a>/// See: [WebAssembly Specification 2.0 - 2.3.9. Table Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-tabletype).
-<a href=#126 id=126 data-nosnippet>126</a></span><span class="attr">#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-<a href=#127 id=127 data-nosnippet>127</a></span><span class="kw">pub struct </span>TableType {
-<a href=#128 id=128 data-nosnippet>128</a>    <span class="kw">pub </span>et: RefType,
-<a href=#129 id=129 data-nosnippet>129</a>    <span class="doccomment">/// These limits must always be valid within range 2^32 - 1.
-<a href=#130 id=130 data-nosnippet>130</a>    ///
-<a href=#131 id=131 data-nosnippet>131</a>    /// See: [WebAssembly Specification 2.0 - 3.2.4. Table Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#table-types%E2%91%A2).
-<a href=#132 id=132 data-nosnippet>132</a>    </span><span class="kw">pub </span>lim: Limits,
-<a href=#133 id=133 data-nosnippet>133</a>}
-<a href=#134 id=134 data-nosnippet>134</a>
-<a href=#135 id=135 data-nosnippet>135</a><span class="doccomment">/// A memory type
-<a href=#136 id=136 data-nosnippet>136</a>///
-<a href=#137 id=137 data-nosnippet>137</a>/// See: [WebAssembly Specification 2.0 - 2.3.8. Memory Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-memtype).
-<a href=#138 id=138 data-nosnippet>138</a></span><span class="attr">#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-<a href=#139 id=139 data-nosnippet>139</a></span><span class="kw">pub struct </span>MemType {
-<a href=#140 id=140 data-nosnippet>140</a>    <span class="doccomment">/// These limits must always be valid within range 2^16.
-<a href=#141 id=141 data-nosnippet>141</a>    ///
-<a href=#142 id=142 data-nosnippet>142</a>    /// See: [WebAssembly Specification 2.0 - 3.2.5. Memory Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-types%E2%91%A2).
-<a href=#143 id=143 data-nosnippet>143</a>    </span><span class="kw">pub </span>limits: Limits,
-<a href=#144 id=144 data-nosnippet>144</a>}
-<a href=#145 id=145 data-nosnippet>145</a>
-<a href=#146 id=146 data-nosnippet>146</a><span class="doccomment">/// A global type
-<a href=#147 id=147 data-nosnippet>147</a>///
-<a href=#148 id=148 data-nosnippet>148</a>/// See: [WebAssembly Specification 2.0 - 2.3.10](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-globaltype).
-<a href=#149 id=149 data-nosnippet>149</a></span><span class="attr">#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-<a href=#150 id=150 data-nosnippet>150</a></span><span class="kw">pub struct </span>GlobalType {
-<a href=#151 id=151 data-nosnippet>151</a>    <span class="kw">pub </span>ty: ValType,
-<a href=#152 id=152 data-nosnippet>152</a>    <span class="kw">pub </span>is_mut: bool,
-<a href=#153 id=153 data-nosnippet>153</a>}
-<a href=#154 id=154 data-nosnippet>154</a>
-<a href=#155 id=155 data-nosnippet>155</a><span class="doccomment">/// An external type
-<a href=#156 id=156 data-nosnippet>156</a>///
-<a href=#157 id=157 data-nosnippet>157</a>/// See: [WebAssembly Specification 2.0 - 2.3.11. External Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-externtype).
-<a href=#158 id=158 data-nosnippet>158</a></span><span class="attr">#[derive(Debug, Clone, Eq, PartialEq)]
-<a href=#159 id=159 data-nosnippet>159</a></span><span class="kw">pub enum </span>ExternType {
-<a href=#160 id=160 data-nosnippet>160</a>    Func(FuncType),
-<a href=#161 id=161 data-nosnippet>161</a>    Table(TableType),
-<a href=#162 id=162 data-nosnippet>162</a>    Mem(MemType),
-<a href=#163 id=163 data-nosnippet>163</a>    Global(GlobalType),
-<a href=#164 id=164 data-nosnippet>164</a>}
-<a href=#165 id=165 data-nosnippet>165</a>
-<a href=#166 id=166 data-nosnippet>166</a><span class="doccomment">/// A memarg
-<a href=#167 id=167 data-nosnippet>167</a>///
-<a href=#168 id=168 data-nosnippet>168</a>/// See: [WebAssembly Specification 2.0 - 2.4.7. Memory Instructions](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-memarg).
-<a href=#169 id=169 data-nosnippet>169</a></span><span class="attr">#[derive(Debug)]
-<a href=#170 id=170 data-nosnippet>170</a></span><span class="kw">pub struct </span>MemArg {
-<a href=#171 id=171 data-nosnippet>171</a>    <span class="kw">pub </span>offset: u32,
-<a href=#172 id=172 data-nosnippet>172</a>    <span class="kw">pub </span>align: u32,
-<a href=#173 id=173 data-nosnippet>173</a>}
+<a href=#101 id=101 data-nosnippet>101</a><span class="kw">impl </span>fmt::Debug <span class="kw">for </span>Limits {
+<a href=#102 id=102 data-nosnippet>102</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
+<a href=#103 id=103 data-nosnippet>103</a>        <span class="kw">match </span><span class="self">self</span>.max {
+<a href=#104 id=104 data-nosnippet>104</a>            <span class="prelude-val">Some</span>(max) =&gt; f.write_fmt(<span class="macro">format_args!</span>(<span class="string">"{}..{}"</span>, <span class="self">self</span>.min, max)),
+<a href=#105 id=105 data-nosnippet>105</a>            <span class="prelude-val">None </span>=&gt; f.write_fmt(<span class="macro">format_args!</span>(<span class="string">"{}.."</span>, <span class="self">self</span>.min)),
+<a href=#106 id=106 data-nosnippet>106</a>        }
+<a href=#107 id=107 data-nosnippet>107</a>    }
+<a href=#108 id=108 data-nosnippet>108</a>}
+<a href=#109 id=109 data-nosnippet>109</a>
+<a href=#110 id=110 data-nosnippet>110</a><span class="doccomment">/// A table type
+<a href=#111 id=111 data-nosnippet>111</a>///
+<a href=#112 id=112 data-nosnippet>112</a>/// See: [WebAssembly Specification 2.0 - 2.3.9. Table Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-tabletype).
+<a href=#113 id=113 data-nosnippet>113</a></span><span class="attr">#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+<a href=#114 id=114 data-nosnippet>114</a></span><span class="kw">pub struct </span>TableType {
+<a href=#115 id=115 data-nosnippet>115</a>    <span class="kw">pub </span>et: RefType,
+<a href=#116 id=116 data-nosnippet>116</a>    <span class="doccomment">/// These limits must always be valid within range 2^32 - 1.
+<a href=#117 id=117 data-nosnippet>117</a>    ///
+<a href=#118 id=118 data-nosnippet>118</a>    /// See: [WebAssembly Specification 2.0 - 3.2.4. Table Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#table-types%E2%91%A2).
+<a href=#119 id=119 data-nosnippet>119</a>    </span><span class="kw">pub </span>lim: Limits,
+<a href=#120 id=120 data-nosnippet>120</a>}
+<a href=#121 id=121 data-nosnippet>121</a>
+<a href=#122 id=122 data-nosnippet>122</a><span class="doccomment">/// A memory type
+<a href=#123 id=123 data-nosnippet>123</a>///
+<a href=#124 id=124 data-nosnippet>124</a>/// See: [WebAssembly Specification 2.0 - 2.3.8. Memory Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-memtype).
+<a href=#125 id=125 data-nosnippet>125</a></span><span class="attr">#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+<a href=#126 id=126 data-nosnippet>126</a></span><span class="kw">pub struct </span>MemType {
+<a href=#127 id=127 data-nosnippet>127</a>    <span class="doccomment">/// These limits must always be valid within range 2^16.
+<a href=#128 id=128 data-nosnippet>128</a>    ///
+<a href=#129 id=129 data-nosnippet>129</a>    /// See: [WebAssembly Specification 2.0 - 3.2.5. Memory Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-types%E2%91%A2).
+<a href=#130 id=130 data-nosnippet>130</a>    </span><span class="kw">pub </span>limits: Limits,
+<a href=#131 id=131 data-nosnippet>131</a>}
+<a href=#132 id=132 data-nosnippet>132</a>
+<a href=#133 id=133 data-nosnippet>133</a><span class="doccomment">/// A global type
+<a href=#134 id=134 data-nosnippet>134</a>///
+<a href=#135 id=135 data-nosnippet>135</a>/// See: [WebAssembly Specification 2.0 - 2.3.10](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-globaltype).
+<a href=#136 id=136 data-nosnippet>136</a></span><span class="attr">#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+<a href=#137 id=137 data-nosnippet>137</a></span><span class="kw">pub struct </span>GlobalType {
+<a href=#138 id=138 data-nosnippet>138</a>    <span class="kw">pub </span>ty: ValType,
+<a href=#139 id=139 data-nosnippet>139</a>    <span class="kw">pub </span>is_mut: bool,
+<a href=#140 id=140 data-nosnippet>140</a>}
+<a href=#141 id=141 data-nosnippet>141</a>
+<a href=#142 id=142 data-nosnippet>142</a><span class="doccomment">/// An external type
+<a href=#143 id=143 data-nosnippet>143</a>///
+<a href=#144 id=144 data-nosnippet>144</a>/// See: [WebAssembly Specification 2.0 - 2.3.11. External Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-externtype).
+<a href=#145 id=145 data-nosnippet>145</a></span><span class="attr">#[derive(Debug, Clone, Eq, PartialEq)]
+<a href=#146 id=146 data-nosnippet>146</a></span><span class="kw">pub enum </span>ExternType {
+<a href=#147 id=147 data-nosnippet>147</a>    Func(FuncType),
+<a href=#148 id=148 data-nosnippet>148</a>    Table(TableType),
+<a href=#149 id=149 data-nosnippet>149</a>    Mem(MemType),
+<a href=#150 id=150 data-nosnippet>150</a>    Global(GlobalType),
+<a href=#151 id=151 data-nosnippet>151</a>}
+<a href=#152 id=152 data-nosnippet>152</a>
+<a href=#153 id=153 data-nosnippet>153</a><span class="doccomment">/// A memarg
+<a href=#154 id=154 data-nosnippet>154</a>///
+<a href=#155 id=155 data-nosnippet>155</a>/// See: [WebAssembly Specification 2.0 - 2.4.7. Memory Instructions](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-memarg).
+<a href=#156 id=156 data-nosnippet>156</a></span><span class="attr">#[derive(Debug)]
+<a href=#157 id=157 data-nosnippet>157</a></span><span class="kw">pub struct </span>MemArg {
+<a href=#158 id=158 data-nosnippet>158</a>    <span class="kw">pub </span>offset: u32,
+<a href=#159 id=159 data-nosnippet>159</a>    <span class="kw">pub </span>align: u32,
+<a href=#160 id=160 data-nosnippet>160</a>}
 </code></pre></div></section></main></body></html>

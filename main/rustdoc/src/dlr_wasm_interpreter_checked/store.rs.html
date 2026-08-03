@@ -312,7 +312,7 @@
 <a href=#312 id=312 data-nosnippet>312</a>    }
 <a href=#313 id=313 data-nosnippet>313</a>
 <a href=#314 id=314 data-nosnippet>314</a>    <span class="doccomment">/// This is a safe variant of [`Store::mem_size`](dlr_wasm_interpreter::Store::mem_size).
-<a href=#315 id=315 data-nosnippet>315</a>    </span><span class="kw">pub fn </span>mem_size(<span class="kw-2">&amp;</span><span class="self">self</span>, mem_addr: Stored&lt;MemAddr&gt;) -&gt; u32 {
+<a href=#315 id=315 data-nosnippet>315</a>    </span><span class="kw">pub fn </span>mem_size(<span class="kw-2">&amp;</span><span class="self">self</span>, mem_addr: Stored&lt;MemAddr&gt;) -&gt; u16 {
 <a href=#316 id=316 data-nosnippet>316</a>        <span class="comment">// 1. try unwrap
 <a href=#317 id=317 data-nosnippet>317</a>        </span><span class="kw">let </span>mem_addr = mem_addr.try_unwrap_into_bare(<span class="self">self</span>.id);
 <a href=#318 id=318 data-nosnippet>318</a>        <span class="comment">// 2. call
@@ -325,7 +325,7 @@
 <a href=#325 id=325 data-nosnippet>325</a>    }
 <a href=#326 id=326 data-nosnippet>326</a>
 <a href=#327 id=327 data-nosnippet>327</a>    <span class="doccomment">/// This is a safe variant of [`Store::mem_grow`](dlr_wasm_interpreter::Store::mem_grow).
-<a href=#328 id=328 data-nosnippet>328</a>    </span><span class="kw">pub fn </span>mem_grow(<span class="kw-2">&amp;mut </span><span class="self">self</span>, mem_addr: Stored&lt;MemAddr&gt;, n: u32) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+<a href=#328 id=328 data-nosnippet>328</a>    </span><span class="kw">pub fn </span>mem_grow(<span class="kw-2">&amp;mut </span><span class="self">self</span>, mem_addr: Stored&lt;MemAddr&gt;, n: u16) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
 <a href=#329 id=329 data-nosnippet>329</a>        <span class="comment">// 1. try unwrap
 <a href=#330 id=330 data-nosnippet>330</a>        </span><span class="kw">let </span>mem_addr = mem_addr.try_unwrap_into_bare(<span class="self">self</span>.id);
 <a href=#331 id=331 data-nosnippet>331</a>        <span class="comment">// 2. call
