@@ -6,9 +6,11 @@ use dlr_wasm_interpreter_checked::Store;
 #[test_log::test]
 fn simple_byte_writes() {
     let mut store = Store::new(());
-    let mem = store.mem_alloc(MemType {
-        limits: Limits { min: 1, max: None },
-    });
+    let mem = store
+        .mem_alloc(MemType {
+            limits: Limits { min: 1, max: None },
+        })
+        .unwrap();
 
     let mem_as_slice = store.mem_data_mut(mem);
 
@@ -20,9 +22,11 @@ fn simple_byte_writes() {
 #[test_log::test]
 fn interpret_as_str() {
     let mut store = Store::new(());
-    let mem = store.mem_alloc(MemType {
-        limits: Limits { min: 1, max: None },
-    });
+    let mem = store
+        .mem_alloc(MemType {
+            limits: Limits { min: 1, max: None },
+        })
+        .unwrap();
 
     const STR_TO_WRITE: &str = "Hello World!";
 

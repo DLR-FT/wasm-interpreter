@@ -32,7 +32,7 @@ use crate::{
             function_instances::{FuncInst, HostFuncInst, WasmFuncInst},
             global_instances::GlobalInst,
             memory_instances::{
-                linear_memory::{self, LinearMemory},
+                linear_memory::{self, LinearMemory, MemorySizeOverflow},
                 MemInst,
             },
             module_instances::ModuleInst,
@@ -319,7 +319,7 @@ impl<'b, T: Config> Store<'b, T> {
             .memories
             .iter_local_definitions()
             .map(|mem_type| self.alloc_mem(*mem_type))
-            .collect();
+            .collect::<Result<Vec<MemAddr>, RuntimeError>>()?;
         // allocation: step 5, 11
         let global_addrs_local: Vec<GlobalAddr> = module
             .globals
@@ -967,7 +967,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// Allocates a new linear memory and returns its memory address.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.9 - mem_alloc
-    pub fn mem_alloc(&mut self, mem_type: MemType) -> MemAddr {
+    pub fn mem_alloc(&mut self, mem_type: MemType) -> Result<MemAddr, RuntimeError> {
         // 1. Pre-condition: `memtype` is valid.
 
         // 2. Let `memaddr` be the result of allocating a memory in `store` with memory type `memtype`.
@@ -1004,9 +1004,6 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
     pub unsafe fn mem_read(&self, mem_addr: MemAddr, i: u32) -> Result<u8, RuntimeError> {
-        // Convert the index type
-        let i = i.into_usize();
-
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
@@ -1014,7 +1011,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         // 2. If `i` is larger than or equal to the length of `mi.data`, then return `error`.
         // 3. Else, return the byte `mi.data[i]`.
-        mi.mem.load(i).map_err(Into::into)
+        mi.mem.load(i.into_usize()).map_err(Into::into)
     }
 
     /// Writes a byte into some memory by its memory address and an index into the memory
@@ -1031,15 +1028,12 @@ impl<'b, T: Config> Store<'b, T> {
         i: u32,
         byte: u8,
     ) -> Result<(), RuntimeError> {
-        // Convert the index type
-        let i = i.into_usize();
-
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
         let mi = unsafe { self.inner.memories.get_mut(mem_addr) };
 
-        mi.mem.store(i, byte).map_err(Into::into)
+        mi.mem.store(i.into_usize(), byte).map_err(Into::into)
     }
 
     /// Gets the size of some memory by its memory address in pages.
@@ -1054,7 +1048,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Return the length of `store.mems[memaddr].data` divided by the page size.
         // SAFETY: The caller ensures that the given memory address is valid in the current store.
         let memory = unsafe { self.inner.memories.get(mem_addr) };
-        memory.len_pages()
+        memory.len_pages().into()
     }
 
     /// Grows some memory by its memory address by `n` pages.
@@ -1074,7 +1068,7 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
         let memory = unsafe { self.inner.memories.get_mut(mem_addr) };
-        let _previous_length = memory.grow(n)?;
+        let _previous_length = memory.grow::<T>(n)?;
         Ok(())
     }
 
@@ -1246,6 +1240,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that any [`FuncAddr`] or [`ExternAddr`](crate::ExternAddr)
     /// values contained in the [`Ref`] came from the current [`Store`] object.
     unsafe fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> TableAddr {
+        // TODO assert that table_type is valid
         let table_inst = TableInst {
             ty: table_type,
             elem: vec![reff; table_type.lim.min.into_usize()],
@@ -1255,16 +1250,15 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
-    fn alloc_mem(&mut self, mem_type: MemType) -> MemAddr {
-        let mem_inst = MemInst {
-            ty: mem_type,
-            mem: LinearMemory::new_with_initial_pages(
-                linear_memory::DEFAULT_PAGE_SIZE,
-                mem_type.limits.min.try_into().unwrap_validated(),
-            ),
-        };
-
-        self.inner.memories.insert(mem_inst)
+    fn alloc_mem(&mut self, mem_type: MemType) -> Result<MemAddr, RuntimeError> {
+        let mem = LinearMemory::new_with_initial_pages::<T>(
+            linear_memory::DEFAULT_PAGE_SIZE,
+            mem_type.limits.min.into_usize(),
+        )
+        .map_err(|MemorySizeOverflow| RuntimeError::MemoryOverflowed)?;
+        let mem_inst = MemInst { ty: mem_type, mem };
+        let mem_addr = self.inner.memories.insert(mem_inst);
+        Ok(mem_addr)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
@@ -1524,6 +1518,8 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// Returns the inner data of a specific memory instance as a byte slice.
     ///
+    /// The length of the slice can never exceed 2^32 - 1.
+    ///
     /// # Safety
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the current [`Store`]
@@ -1536,6 +1532,8 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// Returns the inner data of a specific memory instance as a mutable byte slice.
+    ///
+    /// The length of the slice can never exceed 2^32 - 1.
     ///
     /// # Safety
     ///

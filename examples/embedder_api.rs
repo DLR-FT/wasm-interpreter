@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             min: 1,    // minimum size is one page
             max: None, // no upper limit
         },
-    });
+    })?;
     // SAFETY: The memory address just came from the same store.
     unsafe {
         store.mem_write(my_memory, 128, 0x50)?;

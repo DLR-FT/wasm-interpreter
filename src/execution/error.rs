@@ -38,9 +38,9 @@ pub enum RuntimeError {
     /// A host function was called from a start function during module
     /// instantiation.
     UnsupportedHostCallDuringInstantiation,
-    /// A memory grow operation failed because its new size would have
-    /// overflowed by being over 2^16
-    MemoryGrowOverflowed,
+    /// A memory allocation or grow operation failed because its new size would have overflowed by
+    /// being over 2^16 - 1
+    MemoryOverflowed,
     /// A memory grow operation failed because the new size would have exceeded
     /// its upper limit.
     MemoryGrowExceededLimit,
@@ -99,7 +99,7 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::UnexpectedHostCall => f.write_str(" The Store::invoke_simple method was used to execute some Wasm code but this resulted a host call, which is not supported in this mode"),
             RuntimeError::UnsupportedHostCallDuringInstantiation => f.write_str("A host function was called from a start function during module instantiation"),
-            RuntimeError::MemoryGrowOverflowed => f.write_str("A memory grow operation failed with an overflow"),
+            RuntimeError::MemoryOverflowed => f.write_str("A memory allocation or grow operation failed with an overflow"),
             RuntimeError::MemoryGrowExceededLimit => f.write_str("A memory grow operation failed due to exceeding its upper limit"),
             RuntimeError::TableGrowOverflowed => f.write_str("A table grow operation failed with an overflow"),
             RuntimeError::TableGrowExceededLimit => f.write_str("A table grow operation failed due to exceeding its upper limit"),
