@@ -1,4 +1,8 @@
-use crate::{core::utils::ToUsizeExt, Limits, MemType, RuntimeError};
+use crate::{
+    core::utils::ToUsizeExt,
+    execution::runtime_structure::memory_instances::linear_memory::MemorySizeOverflow, Config,
+    Limits, MemType, RuntimeError,
+};
 
 pub mod linear_memory;
 
@@ -17,45 +21,60 @@ impl core::fmt::Debug for MemInst {
 impl MemInst {
     /// If the grow is successful, the previous length of the memory is returned in pages.
     ///
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-memories>
-    pub fn grow(&mut self, n: u32) -> Result<u32, RuntimeError> {
-        // step 2
-        let len_pages = self.len_pages();
+    /// See: [WebAssembly Specification 2.0 - 4.5.3.9 Growing Memories](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#growing-memories%E2%91%A0)
+    pub fn grow<T: Config>(&mut self, n: u32) -> Result<u32, RuntimeError> {
+        // 1. Let meminst be the memory instance to grow and n the number of pages by which to grow
+        //    it.
+        //
+        // `self` is the meminst and `n` the number of pages by which to grow it.
 
-        // step 3,4
-        let Some(new_len_pages) = len_pages.checked_add(n) else {
-            return Err(RuntimeError::MemoryGrowOverflowed);
+        // 2. Assert: The length of meminst.data is divisible by the page size 64Ki.
+        // 3. Let len be n added to the length of meminst.data divided by the page size 64Ki.
+        let previous_len = self.len_pages();
+        let len = u32::from(previous_len).checked_add(n);
+
+        // 4. If len is larger than 2^16, then fail.
+        //
+        // Checks if it would have been larger than 2^64
+        let Some(len) = len else {
+            return Err(RuntimeError::MemoryOverflowed);
+        };
+        // Check if it is larger than 2^16
+        let len = u16::try_from(len).map_err(|_| RuntimeError::MemoryOverflowed)?;
+
+        // 5. Let limits be the structure of memory type meminst.type.
+        let limits = self.ty.limits;
+
+        // 6. Let limits' be limits with min updated to len.
+        let limits_prime = Limits {
+            min: u32::from(len),
+            ..limits
         };
 
-        // We limit the number of pages to 2^16 because otherwise addresses for the next page's
-        // contents would exceed 2^32 - 1.
-        if new_len_pages >= 2u32.pow(16) {
-            return Err(RuntimeError::MemoryGrowOverflowed);
-        }
-
-        // roughly matches step 5, 6, 7
-        // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
-        // https://webassembly.github.io/spec/core/valid/types.html#limits
-        if self.ty.limits.max.is_some_and(|max| new_len_pages > max) {
+        // 7. If limits' is not valid, then fail.
+        if limits_prime.max.is_some_and(|max| limits_prime.min > max) {
             return Err(RuntimeError::MemoryGrowExceededLimit);
         }
 
-        let limits_prime = Limits {
-            min: new_len_pages,
-            max: self.ty.limits.max,
-        };
+        // 8. Append n times 64Ki bytes with value 0x00 to meminst.data.
+        //
+        // For us this operation is fallible, as a custom upper size limit can be set through
+        // `Config`.
+        self.mem
+            .grow::<T>(n.into_usize())
+            .map_err(|MemorySizeOverflow| RuntimeError::MemoryOverflowed)?;
 
-        // step 8
-        self.mem.grow(n.into_usize());
-
-        // step 9
+        // 9. Set meminst.type to the memory type limits'.
         self.ty.limits = limits_prime;
 
-        Ok(len_pages)
+        // Additionally, return the previous length
+        Ok(u32::from(previous_len))
     }
 
-    /// The length of this memory in pages.
-    pub fn len_pages(&self) -> u32 {
-        u32::try_from(self.mem.len_pages()).expect("num pages is not greater or equal to 2^32 because that would exceed even the amount of bytes in the memory")
+    pub fn len_pages(&self) -> u16 {
+        self.mem
+            .len_pages()
+            .try_into()
+            .expect("memory length is pages is never 2^16 or larger")
     }
 }

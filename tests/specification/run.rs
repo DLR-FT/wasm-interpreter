@@ -722,7 +722,7 @@ fn init_spectest(
             min: 1,
             max: Some(2),
         },
-    });
+    })?;
 
     let table = store.table_alloc(
         TableType {

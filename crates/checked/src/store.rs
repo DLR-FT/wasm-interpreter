@@ -254,15 +254,16 @@ impl<'b, T: Config> Store<'b, T> {
     /// This is a variant of [`Store::mem_alloc`](dlr_wasm_interpreter::Store::mem_alloc) that
     /// returns a stored object.
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
-    pub fn mem_alloc(&mut self, mem_type: MemType) -> Stored<MemAddr> {
+    pub fn mem_alloc(&mut self, mem_type: MemType) -> Result<Stored<MemAddr>, RuntimeError> {
         // 1. try unwrap
         // no stored parameters
         // 2. call
-        let mem_addr = self.inner.mem_alloc(mem_type);
+        let mem_addr = self.inner.mem_alloc(mem_type)?;
         // 3. rewrap
-        // 4. return
         // SAFETY: The `MemAddr` just came from the current store.
-        unsafe { Stored::from_bare(mem_addr, self.id) }
+        let stored_mem_addr = unsafe { Stored::from_bare(mem_addr, self.id) };
+        // 4. return
+        Ok(stored_mem_addr)
     }
 
     /// This is a safe variant of [`Store::mem_type`](dlr_wasm_interpreter::Store::mem_type).

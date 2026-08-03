@@ -1,3 +1,5 @@
+use core::num::NonZeroU16;
+
 /// Trait that allows user specified configuration for various items during interpretation. Additionally, the types
 /// implementing this trait can act as custom user data within an interpreter instance, passed along to each method of
 /// this trait and host functions whenever they are invoked.
@@ -10,6 +12,11 @@ pub trait Config {
 
     /// Maximum number of cascading function invocations
     const MAX_CALL_STACK_SIZE: usize = 0x1000; // 4 Kibi-Functions
+
+    /// An optional limit for the number of pages a memory's size can grow to.
+    // TODO(memory64): Use Option<NonZeroUsize> with limit of 2^48 pages
+    // TODO(custom-page-sizes): Use Option<NonZeroU32>
+    const MAX_NUMBER_OF_MEMORY_PAGES: Option<NonZeroU16> = None;
 
     /// A hook which is called before every wasm instruction
     ///
