@@ -251,7 +251,10 @@ pub(super) unsafe fn table_init(
         .filter(|&res| res <= elem.len())
         .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
-    if d.checked_add(n).filter(|&res| res <= tab.len()).is_none() {
+    if d.checked_add(n)
+        .filter(|&res| res <= tab.len().into_usize())
+        .is_none()
+    {
         return Err(TrapError::TableOrElementAccessOutOfBounds.into());
     }
 
