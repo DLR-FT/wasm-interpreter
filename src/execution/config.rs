@@ -1,4 +1,4 @@
-use core::num::NonZeroU16;
+use core::num::{NonZeroU16, NonZeroUsize};
 
 /// Trait that allows user specified configuration for various items during interpretation. Additionally, the types
 /// implementing this trait can act as custom user data within an interpreter instance, passed along to each method of
@@ -17,6 +17,9 @@ pub trait Config {
     // TODO(memory64): Use Option<NonZeroUsize> with limit of 2^48 pages
     // TODO(custom-page-sizes): Use Option<NonZeroU32>
     const MAX_NUMBER_OF_MEMORY_PAGES: Option<NonZeroU16> = None;
+
+    /// An optional limit for the number of elements a table's size can grow to.
+    const MAX_NUMBER_OF_TABLE_ELEMENTS: Option<NonZeroUsize> = None;
 
     /// A hook which is called before every wasm instruction
     ///

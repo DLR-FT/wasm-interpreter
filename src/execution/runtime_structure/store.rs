@@ -961,7 +961,7 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that the given table address is valid in
         // the current store.
         let table = unsafe { self.inner.tables.get_mut(table_addr) };
-        table.grow(n, r#ref)
+        table.grow::<T>(n, r#ref)
     }
 
     /// Allocates a new linear memory and returns its memory address.
