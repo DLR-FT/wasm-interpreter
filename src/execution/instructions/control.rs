@@ -16,31 +16,22 @@ use crate::{
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
-        instructions::{
-            define_instruction, do_sidetable_control_transfer, InterpreterLoopOutcome, State,
-        },
+        instructions::{do_sidetable_control_transfer, InterpreterLoopOutcome, State},
         runtime_structure::function_instances::FuncInst,
     },
     unreachable_validated, DecodingError, Ref, RuntimeError, TrapError,
 };
 
-define_instruction!(super::nop, nop_mod, fuel_check = flat(NOP));
 #[inline(always)]
 pub unsafe fn nop(_: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::unreachable,
-    unreachable_mod,
-    fuel_check = flat(UNREACHABLE)
-);
 #[inline(always)]
 pub unsafe fn unreachable(_: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     Err(TrapError::ReachedUnreachable.into())
 }
 
-define_instruction!(super::block, block_mod, fuel_check = flat(BLOCK));
 #[inline(always)]
 pub unsafe fn block(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantess there to be a valid block type
@@ -49,7 +40,6 @@ pub unsafe fn block(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>,
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::end, end_mod, fuel_check = flat(END));
 #[inline(always)]
 pub unsafe fn end(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // There might be multiple ENDs in a single function. We want to
@@ -106,7 +96,6 @@ pub unsafe fn end(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, R
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::r#loop, r#loop_mod, fuel_check = flat(LOOP));
 #[inline(always)]
 pub unsafe fn r#loop(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid block type
@@ -115,7 +104,6 @@ pub unsafe fn r#loop(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::r#if, r#if_mod, fuel_check = flat(IF));
 #[inline(always)]
 pub unsafe fn r#if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid block type
@@ -141,7 +129,6 @@ pub unsafe fn r#if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::r#else, r#else_mod, fuel_check = flat(ELSE));
 #[inline(always)]
 pub unsafe fn r#else(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     do_sidetable_control_transfer(
@@ -153,7 +140,6 @@ pub unsafe fn r#else(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::br, br_mod, fuel_check = flat(BR));
 #[inline(always)]
 pub unsafe fn br(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid label index
@@ -168,7 +154,6 @@ pub unsafe fn br(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, Ru
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::br_if, br_if_mod, fuel_check = flat(BR_IF));
 #[inline(always)]
 pub unsafe fn br_if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid label index
@@ -193,7 +178,6 @@ pub unsafe fn br_if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>,
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::br_table, br_table_mod, fuel_check = flat(BR_TABLE));
 #[inline(always)]
 pub unsafe fn br_table(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let label_vec_len = state
@@ -231,7 +215,6 @@ pub unsafe fn br_table(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::r#return, r#return_mod, fuel_check = flat(RETURN));
 #[inline(always)]
 pub unsafe fn r#return(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // same as BR
@@ -244,7 +227,6 @@ pub unsafe fn r#return(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::call, call_mod, fuel_check = flat(CALL));
 #[inline(always)]
 pub unsafe fn call(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid function
@@ -329,11 +311,6 @@ pub unsafe fn call(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::call_indirect,
-    call_indirect_mod,
-    fuel_check = flat(CALL_INDIRECT)
-);
 #[inline(always)]
 pub unsafe fn call_indirect(
     state: State,

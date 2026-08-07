@@ -17,8 +17,8 @@ use crate::{
     execution::{
         assert_validated::UnwrapValidatedExt,
         instructions::{
-            calculate_mem_address, data_drop, define_instruction, from_lanes, memory_init,
-            to_lanes, InterpreterLoopOutcome, State,
+            calculate_mem_address, data_drop, from_lanes, memory_init, to_lanes,
+            InterpreterLoopOutcome, State,
         },
         runtime_structure::memory_instances::MemInst,
     },
@@ -26,7 +26,6 @@ use crate::{
 };
 
 // t.load
-define_instruction!(super::i32_load, i32_load_mod, fuel_check = flat(I32_LOAD));
 #[inline(always)]
 pub unsafe fn i32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -44,7 +43,7 @@ pub unsafe fn i32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     // SAFETY: Validation guarantees at least one memory to exist.
     let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
     // SAFETY: This memory address was just read from the current
-    // store. Therefore, it is valid in the current store.
+    // store. Therefore, it is valid in the current store);.
     let mem_inst = unsafe { state.store_inner.memories.get(mem_addr) };
 
     let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -57,7 +56,6 @@ pub unsafe fn i32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::i64_load, i64_load_mod, fuel_check = flat(I64_LOAD));
 #[inline(always)]
 pub unsafe fn i64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -88,7 +86,6 @@ pub unsafe fn i64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::f32_load, f32_load_mod, fuel_check = flat(F32_LOAD));
 #[inline(always)]
 pub unsafe fn f32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -119,7 +116,6 @@ pub unsafe fn f32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::f64_load, f64_load_mod, fuel_check = flat(F64_LOAD));
 #[inline(always)]
 pub unsafe fn f64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -150,11 +146,6 @@ pub unsafe fn f64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::v128_load,
-    v128_load_mod,
-    fuel_check = flat_fd(V128_LOAD)
-);
 #[inline(always)]
 pub unsafe fn v128_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -190,11 +181,7 @@ pub unsafe fn v128_load(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 // t.loadN_sx
-define_instruction!(
-    super::i32_load8_s,
-    i32_load8_s_mod,
-    fuel_check = flat(I32_LOAD8_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32_load8_s(
     state: State,
@@ -227,11 +214,6 @@ pub unsafe fn i32_load8_s(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i32_load8_u,
-    i32_load8_u_mod,
-    fuel_check = flat(I32_LOAD8_U)
-);
 #[inline(always)]
 pub unsafe fn i32_load8_u(
     state: State,
@@ -264,11 +246,6 @@ pub unsafe fn i32_load8_u(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i32_load16_s,
-    i32_load16_s_mod,
-    fuel_check = flat(I32_LOAD16_S)
-);
 #[inline(always)]
 pub unsafe fn i32_load16_s(
     state: State,
@@ -301,11 +278,6 @@ pub unsafe fn i32_load16_s(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i32_load16_u,
-    i32_load16_u_mod,
-    fuel_check = flat(I32_LOAD16_U)
-);
 #[inline(always)]
 pub unsafe fn i32_load16_u(
     state: State,
@@ -338,11 +310,6 @@ pub unsafe fn i32_load16_u(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i64_load8_s,
-    i64_load8_s_mod,
-    fuel_check = flat(I64_LOAD8_S)
-);
 #[inline(always)]
 pub unsafe fn i64_load8_s(
     state: State,
@@ -375,11 +342,6 @@ pub unsafe fn i64_load8_s(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i64_load8_u,
-    i64_load8_u_mod,
-    fuel_check = flat(I64_LOAD8_U)
-);
 #[inline(always)]
 pub unsafe fn i64_load8_u(
     state: State,
@@ -412,11 +374,6 @@ pub unsafe fn i64_load8_u(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i64_load16_s,
-    i64_load16_s_mod,
-    fuel_check = flat(I64_LOAD16_S)
-);
 #[inline(always)]
 pub unsafe fn i64_load16_s(
     state: State,
@@ -449,11 +406,6 @@ pub unsafe fn i64_load16_s(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i64_load16_u,
-    i64_load16_u_mod,
-    fuel_check = flat(I64_LOAD16_U)
-);
 #[inline(always)]
 pub unsafe fn i64_load16_u(
     state: State,
@@ -486,11 +438,6 @@ pub unsafe fn i64_load16_u(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i64_load32_s,
-    i64_load32_s_mod,
-    fuel_check = flat(I64_LOAD32_S)
-);
 #[inline(always)]
 pub unsafe fn i64_load32_s(
     state: State,
@@ -523,11 +470,6 @@ pub unsafe fn i64_load32_s(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i64_load32_u,
-    i64_load32_u_mod,
-    fuel_check = flat(I64_LOAD32_U)
-);
 #[inline(always)]
 pub unsafe fn i64_load32_u(
     state: State,
@@ -561,11 +503,7 @@ pub unsafe fn i64_load32_u(
 }
 
 // v128.loadNxM_sx
-define_instruction!(
-    super::v128_load8x8_s,
-    v128_load8x8_s_mod,
-    fuel_check = flat_fd(V128_LOAD8X8_S)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load8x8_s(
     state: State,
@@ -612,11 +550,7 @@ pub unsafe fn v128_load8x8_s(
         .push_value(Value::V128(from_lanes(extended_lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_load8x8_u,
-    v128_load8x8_u_mod,
-    fuel_check = flat_fd(V128_LOAD8X8_U)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load8x8_u(
     state: State,
@@ -662,11 +596,7 @@ pub unsafe fn v128_load8x8_u(
         .push_value(Value::V128(from_lanes(extended_lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_load16x4_s,
-    v128_load16x4_s_mod,
-    fuel_check = flat_fd(V128_LOAD16X4_S)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load16x4_s(
     state: State,
@@ -712,11 +642,7 @@ pub unsafe fn v128_load16x4_s(
         .push_value(Value::V128(from_lanes(extended_lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_load16x4_u,
-    v128_load16x4_u_mod,
-    fuel_check = flat_fd(V128_LOAD16X4_U)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load16x4_u(
     state: State,
@@ -762,11 +688,7 @@ pub unsafe fn v128_load16x4_u(
         .push_value(Value::V128(from_lanes(extended_lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_load32x2_s,
-    v128_load32x2_s_mod,
-    fuel_check = flat_fd(V128_LOAD32X2_S)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load32x2_s(
     state: State,
@@ -812,11 +734,7 @@ pub unsafe fn v128_load32x2_s(
         .push_value(Value::V128(from_lanes(extended_lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_load32x2_u,
-    v128_load32x2_u_mod,
-    fuel_check = flat_fd(V128_LOAD32X2_U)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load32x2_u(
     state: State,
@@ -864,11 +782,7 @@ pub unsafe fn v128_load32x2_u(
 }
 
 // v128.loadN_splat
-define_instruction!(
-    super::v128_load8_splat,
-    v128_load8_splat_mod,
-    fuel_check = flat_fd(V128_LOAD8_SPLAT)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load8_splat(
     state: State,
@@ -905,11 +819,7 @@ pub unsafe fn v128_load8_splat(
         .push_value(Value::V128(from_lanes([lane; 16])))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_load16_splat,
-    v128_load16_splat_mod,
-    fuel_check = flat_fd(V128_LOAD16_SPLAT)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load16_splat(
     state: State,
@@ -946,11 +856,7 @@ pub unsafe fn v128_load16_splat(
         .push_value(Value::V128(from_lanes([lane; 8])))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_load32_splat,
-    v128_load32_splat_mod,
-    fuel_check = flat_fd(V128_LOAD32_SPLAT)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load32_splat(
     state: State,
@@ -987,11 +893,7 @@ pub unsafe fn v128_load32_splat(
         .push_value(Value::V128(from_lanes([lane; 4])))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_load64_splat,
-    v128_load64_splat_mod,
-    fuel_check = flat_fd(V128_LOAD64_SPLAT)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load64_splat(
     state: State,
@@ -1030,11 +932,7 @@ pub unsafe fn v128_load64_splat(
 }
 
 // v128.loadN_zero
-define_instruction!(
-    super::v128_load32_zero,
-    v128_load32_zero_mod,
-    fuel_check = flat_fd(V128_LOAD32_ZERO)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load32_zero(
     state: State,
@@ -1073,11 +971,7 @@ pub unsafe fn v128_load32_zero(
         .push_value(Value::V128(data.to_le_bytes()))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_load64_zero,
-    v128_load64_zero_mod,
-    fuel_check = flat_fd(V128_LOAD64_ZERO)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load64_zero(
     state: State,
@@ -1117,11 +1011,7 @@ pub unsafe fn v128_load64_zero(
 }
 
 // v128.loadN_lane
-define_instruction!(
-    super::v128_load8_lane,
-    v128_load8_lane_mod,
-    fuel_check = flat_fd(V128_LOAD8_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load8_lane(
     state: State,
@@ -1165,11 +1055,6 @@ pub unsafe fn v128_load8_lane(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::v128_load16_lane,
-    v128_load16_lane_mod,
-    fuel_check = flat_fd(V128_LOAD16_LANE)
-);
 #[inline(always)]
 pub unsafe fn v128_load16_lane(
     state: State,
@@ -1212,11 +1097,7 @@ pub unsafe fn v128_load16_lane(
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_load32_lane,
-    v128_load32_lane_mod,
-    fuel_check = flat_fd(V128_LOAD32_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load32_lane(
     state: State,
@@ -1259,11 +1140,7 @@ pub unsafe fn v128_load32_lane(
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_load64_lane,
-    v128_load64_lane_mod,
-    fuel_check = flat_fd(V128_LOAD64_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn v128_load64_lane(
     state: State,
@@ -1308,11 +1185,7 @@ pub unsafe fn v128_load64_lane(
 }
 
 // t.store
-define_instruction!(
-    super::i32_store,
-    i32_store_mod,
-    fuel_check = flat(I32_STORE)
-);
+
 #[inline(always)]
 pub unsafe fn i32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1351,11 +1224,6 @@ pub unsafe fn i32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i64_store,
-    i64_store_mod,
-    fuel_check = flat(I64_STORE)
-);
 #[inline(always)]
 pub unsafe fn i64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1394,11 +1262,6 @@ pub unsafe fn i64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::f32_store,
-    f32_store_mod,
-    fuel_check = flat(F32_STORE)
-);
 #[inline(always)]
 pub unsafe fn f32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1437,11 +1300,6 @@ pub unsafe fn f32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::f64_store,
-    f64_store_mod,
-    fuel_check = flat(F64_STORE)
-);
 #[inline(always)]
 pub unsafe fn f64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
@@ -1480,11 +1338,6 @@ pub unsafe fn f64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::v128_store,
-    v128_store_mod,
-    fuel_check = flat_fd(V128_STORE)
-);
 #[inline(always)]
 pub unsafe fn v128_store(
     state: State,
@@ -1528,11 +1381,7 @@ pub unsafe fn v128_store(
 }
 
 // t.storeN
-define_instruction!(
-    super::i32_store8,
-    i32_store8_mod,
-    fuel_check = flat(I32_STORE8)
-);
+
 #[inline(always)]
 pub unsafe fn i32_store8(
     state: State,
@@ -1575,11 +1424,6 @@ pub unsafe fn i32_store8(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i32_store16,
-    i32_store16_mod,
-    fuel_check = flat(I32_STORE16)
-);
 #[inline(always)]
 pub unsafe fn i32_store16(
     state: State,
@@ -1622,11 +1466,6 @@ pub unsafe fn i32_store16(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i64_store8,
-    i64_store8_mod,
-    fuel_check = flat(I64_STORE8)
-);
 #[inline(always)]
 pub unsafe fn i64_store8(
     state: State,
@@ -1669,11 +1508,6 @@ pub unsafe fn i64_store8(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i64_store16,
-    i64_store16_mod,
-    fuel_check = flat(I64_STORE16)
-);
 #[inline(always)]
 pub unsafe fn i64_store16(
     state: State,
@@ -1716,11 +1550,6 @@ pub unsafe fn i64_store16(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i64_store32,
-    i64_store32_mod,
-    fuel_check = flat(I64_STORE32)
-);
 #[inline(always)]
 pub unsafe fn i64_store32(
     state: State,
@@ -1764,11 +1593,7 @@ pub unsafe fn i64_store32(
 }
 
 // v128.storeN_lane
-define_instruction!(
-    super::v128_store8_lane,
-    v128_store8_lane_mod,
-    fuel_check = flat_fd(V128_STORE8_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn v128_store8_lane(
     state: State,
@@ -1811,11 +1636,6 @@ pub unsafe fn v128_store8_lane(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::v128_store16_lane,
-    v128_store16_lane_mod,
-    fuel_check = flat_fd(V128_STORE16_LANE)
-);
 #[inline(always)]
 pub unsafe fn v128_store16_lane(
     state: State,
@@ -1858,11 +1678,6 @@ pub unsafe fn v128_store16_lane(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::v128_store32_lane,
-    v128_store32_lane_mod,
-    fuel_check = flat_fd(V128_STORE32_LANE)
-);
 #[inline(always)]
 pub unsafe fn v128_store32_lane(
     state: State,
@@ -1905,11 +1720,6 @@ pub unsafe fn v128_store32_lane(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::v128_store64_lane,
-    v128_store64_lane_mod,
-    fuel_check = flat_fd(V128_STORE64_LANE)
-);
 #[inline(always)]
 pub unsafe fn v128_store64_lane(
     state: State,
@@ -1953,11 +1763,7 @@ pub unsafe fn v128_store64_lane(
 }
 
 // memory.size
-define_instruction!(
-    super::memory_size,
-    memory_size_mod,
-    fuel_check = flat(MEMORY_SIZE)
-);
+
 #[inline(always)]
 pub unsafe fn memory_size(
     state: State,
@@ -1988,7 +1794,6 @@ pub unsafe fn memory_size(
 }
 
 // memory.grow
-define_instruction!(super::memory_grow::<T>, memory_grow_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn memory_grow<T: Config>(
     state: State,
@@ -2050,7 +1855,6 @@ pub unsafe fn memory_grow<T: Config>(
 
 // memory.fill
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
-define_instruction!(super::memory_fill::<T>, memory_fill_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn memory_fill<T: Config>(
     state: State,
@@ -2129,7 +1933,6 @@ pub unsafe fn memory_fill<T: Config>(
 
 // memory.copy
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
-define_instruction!(super::memory_copy::<T>, memory_copy_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn memory_copy<T: Config>(
     state: State,
@@ -2223,11 +2026,6 @@ pub unsafe fn memory_copy<T: Config>(
 // memory.init
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
 // Copy a region from a data segment into memory
-define_instruction!(
-    super::memory_init_fn::<T>,
-    memory_init_fn_mod,
-    fuel_check = omit
-);
 #[inline(always)]
 pub unsafe fn memory_init_fn<T: Config>(
     state: State,
@@ -2307,11 +2105,6 @@ pub unsafe fn memory_init_fn<T: Config>(
 }
 
 // data.drop
-define_instruction!(
-    super::data_drop_fn,
-    data_drop_fn_mod,
-    fuel_check = flat_fc(DATA_DROP)
-);
 #[inline(always)]
 pub unsafe fn data_drop_fn(
     state: State,

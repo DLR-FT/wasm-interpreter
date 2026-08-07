@@ -365,7 +365,8 @@
                   ];
                   env.RUSTFLAGS = "-Dwarnings";
                   postConfigure = ''
-                    cargo clippy --workspace --frozen --locked --offline --all-targets --all-features |& tee "$out"
+                    # TODO: also include the nightly feature in this check
+                    cargo clippy --workspace --frozen --locked --offline --all-targets |& tee "$out"
                   '';
                 })
               );

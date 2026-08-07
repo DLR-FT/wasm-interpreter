@@ -1,4 +1,4 @@
-mod instructions;
+pub mod instructions;
 pub mod numerics;
 pub mod resumable;
 pub mod runtime_structure;

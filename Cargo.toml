@@ -59,6 +59,9 @@ exclude.workspace = true
 [dependencies]
 libm = "0.2.8"
 
+[features]
+nightly = []
+
 [dev-dependencies]
 # Crates defined in this workspace
 #

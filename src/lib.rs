@@ -56,6 +56,12 @@
 //! ```
 
 #![no_std]
+#![cfg_attr(
+    feature = "nightly",
+    expect(incomplete_features),
+    feature(explicit_tail_calls),
+    feature(rust_preserve_none_cc)
+)]
 
 extern crate alloc;
 
@@ -72,6 +78,7 @@ pub use crate::{
     execution::{
         config::Config,
         error::{RuntimeError, TrapError},
+        instructions::dispatch::DispatchMechanism,
         resumable::*,
         runtime_structure::{
             addresses::*,

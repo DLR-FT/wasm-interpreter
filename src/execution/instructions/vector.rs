@@ -11,17 +11,13 @@ use core::{
 use crate::{
     execution::{
         assert_validated::UnwrapValidatedExt,
-        instructions::{define_instruction, from_lanes, to_lanes, InterpreterLoopOutcome, State},
+        instructions::{from_lanes, to_lanes, InterpreterLoopOutcome, State},
     },
     RuntimeError, Value, F32, F64,
 };
 
 // v128.const
-define_instruction!(
-    super::v128_const,
-    v128_const_mod,
-    fuel_check = flat_fd(V128_CONST)
-);
+
 #[inline(always)]
 pub unsafe fn v128_const(
     state: State,
@@ -36,11 +32,7 @@ pub unsafe fn v128_const(
 }
 
 // v128.vvunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvunop>
-define_instruction!(
-    super::v128_not,
-    v128_not_mod,
-    fuel_check = flat_fd(V128_NOT)
-);
+
 #[inline(always)]
 pub unsafe fn v128_not(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -55,11 +47,7 @@ pub unsafe fn v128_not(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 // v128.vvbinop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvbinop>
-define_instruction!(
-    super::v128_and,
-    v128_and_mod,
-    fuel_check = flat_fd(V128_AND)
-);
+
 #[inline(always)]
 pub unsafe fn v128_and(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -74,11 +62,7 @@ pub unsafe fn v128_and(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     state.resumable.stack.push_value(Value::V128(result))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_andnot,
-    v128_andnot_mod,
-    fuel_check = flat_fd(V128_ANDNOT)
-);
+
 #[inline(always)]
 pub unsafe fn v128_andnot(
     state: State,
@@ -95,7 +79,6 @@ pub unsafe fn v128_andnot(
     state.resumable.stack.push_value(Value::V128(result))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(super::v128_or, v128_or_mod, fuel_check = flat_fd(V128_OR));
 #[inline(always)]
 pub unsafe fn v128_or(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -110,11 +93,7 @@ pub unsafe fn v128_or(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
     state.resumable.stack.push_value(Value::V128(result))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::v128_xor,
-    v128_xor_mod,
-    fuel_check = flat_fd(V128_XOR)
-);
+
 #[inline(always)]
 pub unsafe fn v128_xor(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -131,11 +110,7 @@ pub unsafe fn v128_xor(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 // v128.vvternop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvternop>
-define_instruction!(
-    super::v128_bitselect,
-    v128_bitselect_mod,
-    fuel_check = flat_fd(V128_BITSELECT)
-);
+
 #[inline(always)]
 pub unsafe fn v128_bitselect(
     state: State,
@@ -158,11 +133,7 @@ pub unsafe fn v128_bitselect(
 }
 
 // v128.vvtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvtestop>
-define_instruction!(
-    super::v128_any_true,
-    v128_any_true_mod,
-    fuel_check = flat_fd(V128_ANY_TRUE)
-);
+
 #[inline(always)]
 pub unsafe fn v128_any_true(
     state: State,
@@ -180,11 +151,7 @@ pub unsafe fn v128_any_true(
 }
 
 // i8x16.swizzle
-define_instruction!(
-    super::i8x16_swizzle,
-    i8x16_swizzle_mod,
-    fuel_check = flat_fd(I8X16_SWIZZLE)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_swizzle(
     state: State,
@@ -203,11 +170,7 @@ pub unsafe fn i8x16_swizzle(
 }
 
 // i8x16.shuffle
-define_instruction!(
-    super::i8x16_shuffle,
-    i8x16_shuffle_mod,
-    fuel_check = flat_fd(I8X16_SHUFFLE)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_shuffle(
     state: State,
@@ -236,11 +199,7 @@ pub unsafe fn i8x16_shuffle(
 }
 
 // shape.splat
-define_instruction!(
-    super::i8x16_splat,
-    i8x16_splat_mod,
-    fuel_check = flat_fd(I8X16_SPLAT)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_splat(
     state: State,
@@ -254,11 +213,7 @@ pub unsafe fn i8x16_splat(
     state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_splat,
-    i16x8_splat_mod,
-    fuel_check = flat_fd(I16X8_SPLAT)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_splat(
     state: State,
@@ -272,11 +227,7 @@ pub unsafe fn i16x8_splat(
     state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_splat,
-    i32x4_splat_mod,
-    fuel_check = flat_fd(I32X4_SPLAT)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_splat(
     state: State,
@@ -289,11 +240,7 @@ pub unsafe fn i32x4_splat(
     state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_splat,
-    i64x2_splat_mod,
-    fuel_check = flat_fd(I64X2_SPLAT)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_splat(
     state: State,
@@ -306,11 +253,7 @@ pub unsafe fn i64x2_splat(
     state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_splat,
-    f32x4_splat_mod,
-    fuel_check = flat_fd(F32X4_SPLAT)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_splat(
     state: State,
@@ -323,11 +266,7 @@ pub unsafe fn f32x4_splat(
     state.resumable.stack.push_value(Value::V128(data))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_splat,
-    f64x2_splat_mod,
-    fuel_check = flat_fd(F64X2_SPLAT)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_splat(
     state: State,
@@ -342,11 +281,7 @@ pub unsafe fn f64x2_splat(
 }
 
 // shape.extract_lane
-define_instruction!(
-    super::i8x16_extract_lane_s,
-    i8x16_extract_lane_s_mod,
-    fuel_check = flat_fd(I8X16_EXTRACT_LANE_S)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_extract_lane_s(
     state: State,
@@ -361,11 +296,7 @@ pub unsafe fn i8x16_extract_lane_s(
     state.resumable.stack.push_value(Value::I32(lane as u32))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_extract_lane_u,
-    i8x16_extract_lane_u_mod,
-    fuel_check = flat_fd(I8X16_EXTRACT_LANE_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_extract_lane_u(
     state: State,
@@ -380,11 +311,7 @@ pub unsafe fn i8x16_extract_lane_u(
     state.resumable.stack.push_value(Value::I32(lane as u32))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_extract_lane_s,
-    i16x8_extract_lane_s_mod,
-    fuel_check = flat_fd(I16X8_EXTRACT_LANE_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extract_lane_s(
     state: State,
@@ -399,11 +326,7 @@ pub unsafe fn i16x8_extract_lane_s(
     state.resumable.stack.push_value(Value::I32(lane as u32))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_extract_lane_u,
-    i16x8_extract_lane_u_mod,
-    fuel_check = flat_fd(I16X8_EXTRACT_LANE_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extract_lane_u(
     state: State,
@@ -418,11 +341,7 @@ pub unsafe fn i16x8_extract_lane_u(
     state.resumable.stack.push_value(Value::I32(lane as u32))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_extract_lane,
-    i32x4_extract_lane_mod,
-    fuel_check = flat_fd(I32X4_EXTRACT_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_extract_lane(
     state: State,
@@ -437,11 +356,7 @@ pub unsafe fn i32x4_extract_lane(
     state.resumable.stack.push_value(Value::I32(lane))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_extract_lane,
-    i64x2_extract_lane_mod,
-    fuel_check = flat_fd(I64X2_EXTRACT_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_extract_lane(
     state: State,
@@ -456,11 +371,7 @@ pub unsafe fn i64x2_extract_lane(
     state.resumable.stack.push_value(Value::I64(lane))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_extract_lane,
-    f32x4_extract_lane_mod,
-    fuel_check = flat_fd(F32X4_EXTRACT_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_extract_lane(
     state: State,
@@ -475,11 +386,7 @@ pub unsafe fn f32x4_extract_lane(
     state.resumable.stack.push_value(Value::F32(lane))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_extract_lane,
-    f64x2_extract_lane_mod,
-    fuel_check = flat_fd(F64X2_EXTRACT_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_extract_lane(
     state: State,
@@ -496,11 +403,7 @@ pub unsafe fn f64x2_extract_lane(
 }
 
 // shape.replace_lane
-define_instruction!(
-    super::i8x16_replace_lane,
-    i8x16_replace_lane_mod,
-    fuel_check = flat_fd(I8X16_REPLACE_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_replace_lane(
     state: State,
@@ -523,11 +426,7 @@ pub unsafe fn i8x16_replace_lane(
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_replace_lane,
-    i16x8_replace_lane_mod,
-    fuel_check = flat_fd(I16X8_REPLACE_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_replace_lane(
     state: State,
@@ -550,11 +449,7 @@ pub unsafe fn i16x8_replace_lane(
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_replace_lane,
-    i32x4_replace_lane_mod,
-    fuel_check = flat_fd(I32X4_REPLACE_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_replace_lane(
     state: State,
@@ -576,11 +471,7 @@ pub unsafe fn i32x4_replace_lane(
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_replace_lane,
-    i64x2_replace_lane_mod,
-    fuel_check = flat_fd(I64X2_REPLACE_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_replace_lane(
     state: State,
@@ -602,11 +493,7 @@ pub unsafe fn i64x2_replace_lane(
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_replace_lane,
-    f32x4_replace_lane_mod,
-    fuel_check = flat_fd(F32X4_REPLACE_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_replace_lane(
     state: State,
@@ -628,11 +515,7 @@ pub unsafe fn f32x4_replace_lane(
         .push_value(Value::V128(from_lanes(lanes)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_replace_lane,
-    f64x2_replace_lane_mod,
-    fuel_check = flat_fd(F64X2_REPLACE_LANE)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_replace_lane(
     state: State,
@@ -656,11 +539,7 @@ pub unsafe fn f64x2_replace_lane(
 }
 
 // shape.vunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vunop>
-define_instruction!(
-    super::i8x16_abs,
-    i8x16_abs_mod,
-    fuel_check = flat_fd(I8X16_ABS)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -675,11 +554,7 @@ pub unsafe fn i8x16_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_abs,
-    i16x8_abs_mod,
-    fuel_check = flat_fd(I16X8_ABS)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -694,11 +569,7 @@ pub unsafe fn i16x8_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_abs,
-    i32x4_abs_mod,
-    fuel_check = flat_fd(I32X4_ABS)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -713,11 +584,7 @@ pub unsafe fn i32x4_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_abs,
-    i64x2_abs_mod,
-    fuel_check = flat_fd(I64X2_ABS)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -732,11 +599,7 @@ pub unsafe fn i64x2_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_neg,
-    i8x16_neg_mod,
-    fuel_check = flat_fd(I8X16_NEG)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -751,11 +614,7 @@ pub unsafe fn i8x16_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_neg,
-    i16x8_neg_mod,
-    fuel_check = flat_fd(I16X8_NEG)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -770,11 +629,7 @@ pub unsafe fn i16x8_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_neg,
-    i32x4_neg_mod,
-    fuel_check = flat_fd(I32X4_NEG)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -789,11 +644,7 @@ pub unsafe fn i32x4_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_neg,
-    i64x2_neg_mod,
-    fuel_check = flat_fd(I64X2_NEG)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -808,11 +659,7 @@ pub unsafe fn i64x2_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_abs,
-    f32x4_abs_mod,
-    fuel_check = flat_fd(F32X4_ABS)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -827,11 +674,7 @@ pub unsafe fn f32x4_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_abs,
-    f64x2_abs_mod,
-    fuel_check = flat_fd(F64X2_ABS)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -846,11 +689,7 @@ pub unsafe fn f64x2_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_neg,
-    f32x4_neg_mod,
-    fuel_check = flat_fd(F32X4_NEG)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -865,11 +704,7 @@ pub unsafe fn f32x4_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_neg,
-    f64x2_neg_mod,
-    fuel_check = flat_fd(F64X2_NEG)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -884,11 +719,7 @@ pub unsafe fn f64x2_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_sqrt,
-    f32x4_sqrt_mod,
-    fuel_check = flat_fd(F32X4_SQRT)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_sqrt(
     state: State,
@@ -905,11 +736,7 @@ pub unsafe fn f32x4_sqrt(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_sqrt,
-    f64x2_sqrt_mod,
-    fuel_check = flat_fd(F64X2_SQRT)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_sqrt(
     state: State,
@@ -926,11 +753,7 @@ pub unsafe fn f64x2_sqrt(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_ceil,
-    f32x4_ceil_mod,
-    fuel_check = flat_fd(F32X4_CEIL)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_ceil(
     state: State,
@@ -947,11 +770,7 @@ pub unsafe fn f32x4_ceil(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_ceil,
-    f64x2_ceil_mod,
-    fuel_check = flat_fd(F64X2_CEIL)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_ceil(
     state: State,
@@ -968,11 +787,7 @@ pub unsafe fn f64x2_ceil(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_floor,
-    f32x4_floor_mod,
-    fuel_check = flat_fd(F32X4_FLOOR)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_floor(
     state: State,
@@ -989,11 +804,7 @@ pub unsafe fn f32x4_floor(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_floor,
-    f64x2_floor_mod,
-    fuel_check = flat_fd(F64X2_FLOOR)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_floor(
     state: State,
@@ -1010,11 +821,7 @@ pub unsafe fn f64x2_floor(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_trunc,
-    f32x4_trunc_mod,
-    fuel_check = flat_fd(F32X4_TRUNC)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_trunc(
     state: State,
@@ -1031,11 +838,7 @@ pub unsafe fn f32x4_trunc(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_trunc,
-    f64x2_trunc_mod,
-    fuel_check = flat_fd(F64X2_TRUNC)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_trunc(
     state: State,
@@ -1052,11 +855,7 @@ pub unsafe fn f64x2_trunc(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_nearest,
-    f32x4_nearest_mod,
-    fuel_check = flat_fd(F32X4_NEAREST)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_nearest(
     state: State,
@@ -1073,11 +872,7 @@ pub unsafe fn f32x4_nearest(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_nearest,
-    f64x2_nearest_mod,
-    fuel_check = flat_fd(F64X2_NEAREST)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_nearest(
     state: State,
@@ -1094,11 +889,7 @@ pub unsafe fn f64x2_nearest(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_popcnt,
-    i8x16_popcnt_mod,
-    fuel_check = flat_fd(I8X16_POPCNT)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_popcnt(
     state: State,
@@ -1117,11 +908,7 @@ pub unsafe fn i8x16_popcnt(
 }
 
 // shape.vbinop  <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vbinop>
-define_instruction!(
-    super::i8x16_add,
-    i8x16_add_mod,
-    fuel_check = flat_fd(I8X16_ADD)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1141,11 +928,7 @@ pub unsafe fn i8x16_add(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_add,
-    i16x8_add_mod,
-    fuel_check = flat_fd(I16X8_ADD)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1165,11 +948,7 @@ pub unsafe fn i16x8_add(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_add,
-    i32x4_add_mod,
-    fuel_check = flat_fd(I32X4_ADD)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1189,11 +968,7 @@ pub unsafe fn i32x4_add(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_add,
-    i64x2_add_mod,
-    fuel_check = flat_fd(I64X2_ADD)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1213,11 +988,7 @@ pub unsafe fn i64x2_add(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_sub,
-    i8x16_sub_mod,
-    fuel_check = flat_fd(I8X16_SUB)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1237,11 +1008,7 @@ pub unsafe fn i8x16_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_sub,
-    i16x8_sub_mod,
-    fuel_check = flat_fd(I16X8_SUB)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1261,11 +1028,7 @@ pub unsafe fn i16x8_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_sub,
-    i32x4_sub_mod,
-    fuel_check = flat_fd(I32X4_SUB)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1285,11 +1048,7 @@ pub unsafe fn i32x4_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_sub,
-    i64x2_sub_mod,
-    fuel_check = flat_fd(I64X2_SUB)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1309,11 +1068,7 @@ pub unsafe fn i64x2_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_add,
-    f32x4_add_mod,
-    fuel_check = flat_fd(F32X4_ADD)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1333,11 +1088,7 @@ pub unsafe fn f32x4_add(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_add,
-    f64x2_add_mod,
-    fuel_check = flat_fd(F64X2_ADD)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1357,11 +1108,7 @@ pub unsafe fn f64x2_add(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_sub,
-    f32x4_sub_mod,
-    fuel_check = flat_fd(F32X4_SUB)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1381,11 +1128,7 @@ pub unsafe fn f32x4_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_sub,
-    f64x2_sub_mod,
-    fuel_check = flat_fd(F64X2_SUB)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1405,11 +1148,7 @@ pub unsafe fn f64x2_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_mul,
-    f32x4_mul_mod,
-    fuel_check = flat_fd(F32X4_MUL)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1429,11 +1168,7 @@ pub unsafe fn f32x4_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_mul,
-    f64x2_mul_mod,
-    fuel_check = flat_fd(F64X2_MUL)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1453,11 +1188,7 @@ pub unsafe fn f64x2_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_div,
-    f32x4_div_mod,
-    fuel_check = flat_fd(F32X4_DIV)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1477,11 +1208,7 @@ pub unsafe fn f32x4_div(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_div,
-    f64x2_div_mod,
-    fuel_check = flat_fd(F64X2_DIV)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1501,11 +1228,7 @@ pub unsafe fn f64x2_div(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_min,
-    f32x4_min_mod,
-    fuel_check = flat_fd(F32X4_MIN)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1525,11 +1248,7 @@ pub unsafe fn f32x4_min(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_min,
-    f64x2_min_mod,
-    fuel_check = flat_fd(F64X2_MIN)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1549,11 +1268,7 @@ pub unsafe fn f64x2_min(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_max,
-    f32x4_max_mod,
-    fuel_check = flat_fd(F32X4_MAX)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1573,11 +1288,7 @@ pub unsafe fn f32x4_max(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_max,
-    f64x2_max_mod,
-    fuel_check = flat_fd(F64X2_MAX)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1597,11 +1308,7 @@ pub unsafe fn f64x2_max(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_pmin,
-    f32x4_pmin_mod,
-    fuel_check = flat_fd(F32X4_PMIN)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_pmin(
     state: State,
@@ -1631,11 +1338,7 @@ pub unsafe fn f32x4_pmin(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_pmin,
-    f64x2_pmin_mod,
-    fuel_check = flat_fd(F64X2_PMIN)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_pmin(
     state: State,
@@ -1665,11 +1368,7 @@ pub unsafe fn f64x2_pmin(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_pmax,
-    f32x4_pmax_mod,
-    fuel_check = flat_fd(F32X4_PMAX)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_pmax(
     state: State,
@@ -1699,11 +1398,7 @@ pub unsafe fn f32x4_pmax(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_pmax,
-    f64x2_pmax_mod,
-    fuel_check = flat_fd(F64X2_PMAX)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_pmax(
     state: State,
@@ -1733,11 +1428,7 @@ pub unsafe fn f64x2_pmax(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_min_s,
-    i8x16_min_s_mod,
-    fuel_check = flat_fd(I8X16_MIN_S)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_min_s(
     state: State,
@@ -1759,11 +1450,7 @@ pub unsafe fn i8x16_min_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_min_s,
-    i16x8_min_s_mod,
-    fuel_check = flat_fd(I16X8_MIN_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_min_s(
     state: State,
@@ -1785,11 +1472,7 @@ pub unsafe fn i16x8_min_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_min_s,
-    i32x4_min_s_mod,
-    fuel_check = flat_fd(I32X4_MIN_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_min_s(
     state: State,
@@ -1811,11 +1494,7 @@ pub unsafe fn i32x4_min_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_min_u,
-    i8x16_min_u_mod,
-    fuel_check = flat_fd(I8X16_MIN_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_min_u(
     state: State,
@@ -1837,11 +1516,7 @@ pub unsafe fn i8x16_min_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_min_u,
-    i16x8_min_u_mod,
-    fuel_check = flat_fd(I16X8_MIN_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_min_u(
     state: State,
@@ -1863,11 +1538,7 @@ pub unsafe fn i16x8_min_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_min_u,
-    i32x4_min_u_mod,
-    fuel_check = flat_fd(I32X4_MIN_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_min_u(
     state: State,
@@ -1889,11 +1560,7 @@ pub unsafe fn i32x4_min_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_max_s,
-    i8x16_max_s_mod,
-    fuel_check = flat_fd(I8X16_MAX_S)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_max_s(
     state: State,
@@ -1915,11 +1582,7 @@ pub unsafe fn i8x16_max_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_max_s,
-    i16x8_max_s_mod,
-    fuel_check = flat_fd(I16X8_MAX_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_max_s(
     state: State,
@@ -1941,11 +1604,7 @@ pub unsafe fn i16x8_max_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_max_s,
-    i32x4_max_s_mod,
-    fuel_check = flat_fd(I32X4_MAX_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_max_s(
     state: State,
@@ -1967,11 +1626,7 @@ pub unsafe fn i32x4_max_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_max_u,
-    i8x16_max_u_mod,
-    fuel_check = flat_fd(I8X16_MAX_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_max_u(
     state: State,
@@ -1993,11 +1648,7 @@ pub unsafe fn i8x16_max_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_max_u,
-    i16x8_max_u_mod,
-    fuel_check = flat_fd(I16X8_MAX_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_max_u(
     state: State,
@@ -2019,11 +1670,7 @@ pub unsafe fn i16x8_max_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_max_u,
-    i32x4_max_u_mod,
-    fuel_check = flat_fd(I32X4_MAX_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_max_u(
     state: State,
@@ -2046,11 +1693,6 @@ pub unsafe fn i32x4_max_u(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i8x16_add_sat_s,
-    i8x16_add_sat_s_mod,
-    fuel_check = flat_fd(I8X16_ADD_SAT_S)
-);
 #[inline(always)]
 pub unsafe fn i8x16_add_sat_s(
     state: State,
@@ -2072,11 +1714,7 @@ pub unsafe fn i8x16_add_sat_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_add_sat_s,
-    i16x8_add_sat_s_mod,
-    fuel_check = flat_fd(I16X8_ADD_SAT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_add_sat_s(
     state: State,
@@ -2098,11 +1736,7 @@ pub unsafe fn i16x8_add_sat_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_add_sat_u,
-    i8x16_add_sat_u_mod,
-    fuel_check = flat_fd(I8X16_ADD_SAT_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_add_sat_u(
     state: State,
@@ -2124,11 +1758,7 @@ pub unsafe fn i8x16_add_sat_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_add_sat_u,
-    i16x8_add_sat_u_mod,
-    fuel_check = flat_fd(I16X8_ADD_SAT_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_add_sat_u(
     state: State,
@@ -2150,11 +1780,7 @@ pub unsafe fn i16x8_add_sat_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_sub_sat_s,
-    i8x16_sub_sat_s_mod,
-    fuel_check = flat_fd(I8X16_SUB_SAT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_sub_sat_s(
     state: State,
@@ -2176,11 +1802,7 @@ pub unsafe fn i8x16_sub_sat_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_sub_sat_s,
-    i16x8_sub_sat_s_mod,
-    fuel_check = flat_fd(I16X8_SUB_SAT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_sub_sat_s(
     state: State,
@@ -2202,11 +1824,7 @@ pub unsafe fn i16x8_sub_sat_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_sub_sat_u,
-    i8x16_sub_sat_u_mod,
-    fuel_check = flat_fd(I8X16_SUB_SAT_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_sub_sat_u(
     state: State,
@@ -2228,11 +1846,7 @@ pub unsafe fn i8x16_sub_sat_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_sub_sat_u,
-    i16x8_sub_sat_u_mod,
-    fuel_check = flat_fd(I16X8_SUB_SAT_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_sub_sat_u(
     state: State,
@@ -2254,11 +1868,7 @@ pub unsafe fn i16x8_sub_sat_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_mul,
-    i16x8_mul_mod,
-    fuel_check = flat_fd(I16X8_MUL)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -2278,11 +1888,7 @@ pub unsafe fn i16x8_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_mul,
-    i32x4_mul_mod,
-    fuel_check = flat_fd(I32X4_MUL)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -2302,11 +1908,7 @@ pub unsafe fn i32x4_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_mul,
-    i64x2_mul_mod,
-    fuel_check = flat_fd(I64X2_MUL)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -2326,11 +1928,7 @@ pub unsafe fn i64x2_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_avgr_u,
-    i8x16_avgr_u_mod,
-    fuel_check = flat_fd(I8X16_AVGR_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_avgr_u(
     state: State,
@@ -2353,11 +1951,7 @@ pub unsafe fn i8x16_avgr_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_avgr_u,
-    i16x8_avgr_u_mod,
-    fuel_check = flat_fd(I16X8_AVGR_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_avgr_u(
     state: State,
@@ -2380,11 +1974,7 @@ pub unsafe fn i16x8_avgr_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_q15mulrsat_s,
-    i16x8_q15mulrsat_s_mod,
-    fuel_check = flat_fd(I16X8_Q15MULRSAT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_q15mulrsat_s(
     state: State,
@@ -2411,11 +2001,7 @@ pub unsafe fn i16x8_q15mulrsat_s(
 }
 
 // txN.vrelop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vrelop>
-define_instruction!(
-    super::i8x16_eq,
-    i8x16_eq_mod,
-    fuel_check = flat_fd(I8X16_EQ)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -2435,11 +2021,7 @@ pub unsafe fn i8x16_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_eq,
-    i16x8_eq_mod,
-    fuel_check = flat_fd(I16X8_EQ)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -2459,11 +2041,7 @@ pub unsafe fn i16x8_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_eq,
-    i32x4_eq_mod,
-    fuel_check = flat_fd(I32X4_EQ)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -2483,11 +2061,7 @@ pub unsafe fn i32x4_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_eq,
-    i64x2_eq_mod,
-    fuel_check = flat_fd(I64X2_EQ)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -2507,11 +2081,7 @@ pub unsafe fn i64x2_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_ne,
-    i8x16_ne_mod,
-    fuel_check = flat_fd(I8X16_NE)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -2531,11 +2101,7 @@ pub unsafe fn i8x16_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_ne,
-    i16x8_ne_mod,
-    fuel_check = flat_fd(I16X8_NE)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -2555,11 +2121,7 @@ pub unsafe fn i16x8_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_ne,
-    i32x4_ne_mod,
-    fuel_check = flat_fd(I32X4_NE)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -2579,11 +2141,7 @@ pub unsafe fn i32x4_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_ne,
-    i64x2_ne_mod,
-    fuel_check = flat_fd(I64X2_NE)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -2603,11 +2161,7 @@ pub unsafe fn i64x2_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_lt_s,
-    i8x16_lt_s_mod,
-    fuel_check = flat_fd(I8X16_LT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_lt_s(
     state: State,
@@ -2629,11 +2183,7 @@ pub unsafe fn i8x16_lt_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_lt_s,
-    i16x8_lt_s_mod,
-    fuel_check = flat_fd(I16X8_LT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_lt_s(
     state: State,
@@ -2655,11 +2205,7 @@ pub unsafe fn i16x8_lt_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_lt_s,
-    i32x4_lt_s_mod,
-    fuel_check = flat_fd(I32X4_LT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_lt_s(
     state: State,
@@ -2681,11 +2227,7 @@ pub unsafe fn i32x4_lt_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_lt_s,
-    i64x2_lt_s_mod,
-    fuel_check = flat_fd(I64X2_LT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_lt_s(
     state: State,
@@ -2707,11 +2249,7 @@ pub unsafe fn i64x2_lt_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_lt_u,
-    i8x16_lt_u_mod,
-    fuel_check = flat_fd(I8X16_LT_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_lt_u(
     state: State,
@@ -2733,11 +2271,7 @@ pub unsafe fn i8x16_lt_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_lt_u,
-    i16x8_lt_u_mod,
-    fuel_check = flat_fd(I16X8_LT_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_lt_u(
     state: State,
@@ -2759,11 +2293,7 @@ pub unsafe fn i16x8_lt_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_lt_u,
-    i32x4_lt_u_mod,
-    fuel_check = flat_fd(I32X4_LT_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_lt_u(
     state: State,
@@ -2785,11 +2315,7 @@ pub unsafe fn i32x4_lt_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_gt_s,
-    i8x16_gt_s_mod,
-    fuel_check = flat_fd(I8X16_GT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_gt_s(
     state: State,
@@ -2811,11 +2337,7 @@ pub unsafe fn i8x16_gt_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_gt_s,
-    i16x8_gt_s_mod,
-    fuel_check = flat_fd(I16X8_GT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_gt_s(
     state: State,
@@ -2837,11 +2359,7 @@ pub unsafe fn i16x8_gt_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_gt_s,
-    i32x4_gt_s_mod,
-    fuel_check = flat_fd(I32X4_GT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_gt_s(
     state: State,
@@ -2863,11 +2381,7 @@ pub unsafe fn i32x4_gt_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_gt_s,
-    i64x2_gt_s_mod,
-    fuel_check = flat_fd(I64X2_GT_S)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_gt_s(
     state: State,
@@ -2889,11 +2403,7 @@ pub unsafe fn i64x2_gt_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_gt_u,
-    i8x16_gt_u_mod,
-    fuel_check = flat_fd(I8X16_GT_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_gt_u(
     state: State,
@@ -2915,11 +2425,7 @@ pub unsafe fn i8x16_gt_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_gt_u,
-    i16x8_gt_u_mod,
-    fuel_check = flat_fd(I16X8_GT_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_gt_u(
     state: State,
@@ -2941,11 +2447,7 @@ pub unsafe fn i16x8_gt_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_gt_u,
-    i32x4_gt_u_mod,
-    fuel_check = flat_fd(I32X4_GT_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_gt_u(
     state: State,
@@ -2967,11 +2469,7 @@ pub unsafe fn i32x4_gt_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_le_s,
-    i8x16_le_s_mod,
-    fuel_check = flat_fd(I8X16_LE_S)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_le_s(
     state: State,
@@ -2993,11 +2491,7 @@ pub unsafe fn i8x16_le_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_le_s,
-    i16x8_le_s_mod,
-    fuel_check = flat_fd(I16X8_LE_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_le_s(
     state: State,
@@ -3019,11 +2513,7 @@ pub unsafe fn i16x8_le_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_le_s,
-    i32x4_le_s_mod,
-    fuel_check = flat_fd(I32X4_LE_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_le_s(
     state: State,
@@ -3045,11 +2535,7 @@ pub unsafe fn i32x4_le_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_le_s,
-    i64x2_le_s_mod,
-    fuel_check = flat_fd(I64X2_LE_S)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_le_s(
     state: State,
@@ -3071,11 +2557,7 @@ pub unsafe fn i64x2_le_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_le_u,
-    i8x16_le_u_mod,
-    fuel_check = flat_fd(I8X16_LE_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_le_u(
     state: State,
@@ -3097,11 +2579,7 @@ pub unsafe fn i8x16_le_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_le_u,
-    i16x8_le_u_mod,
-    fuel_check = flat_fd(I16X8_LE_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_le_u(
     state: State,
@@ -3123,11 +2601,7 @@ pub unsafe fn i16x8_le_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_le_u,
-    i32x4_le_u_mod,
-    fuel_check = flat_fd(I32X4_LE_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_le_u(
     state: State,
@@ -3150,11 +2624,6 @@ pub unsafe fn i32x4_le_u(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::i8x16_ge_s,
-    i8x16_ge_s_mod,
-    fuel_check = flat_fd(I8X16_GE_S)
-);
 #[inline(always)]
 pub unsafe fn i8x16_ge_s(
     state: State,
@@ -3176,11 +2645,7 @@ pub unsafe fn i8x16_ge_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_ge_s,
-    i16x8_ge_s_mod,
-    fuel_check = flat_fd(I16X8_GE_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_ge_s(
     state: State,
@@ -3202,11 +2667,7 @@ pub unsafe fn i16x8_ge_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_ge_s,
-    i32x4_ge_s_mod,
-    fuel_check = flat_fd(I32X4_GE_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_ge_s(
     state: State,
@@ -3228,11 +2689,7 @@ pub unsafe fn i32x4_ge_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_ge_s,
-    i64x2_ge_s_mod,
-    fuel_check = flat_fd(I64X2_GE_S)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_ge_s(
     state: State,
@@ -3254,11 +2711,7 @@ pub unsafe fn i64x2_ge_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_ge_u,
-    i8x16_ge_u_mod,
-    fuel_check = flat_fd(I8X16_GE_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_ge_u(
     state: State,
@@ -3280,11 +2733,7 @@ pub unsafe fn i8x16_ge_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_ge_u,
-    i16x8_ge_u_mod,
-    fuel_check = flat_fd(I16X8_GE_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_ge_u(
     state: State,
@@ -3306,11 +2755,7 @@ pub unsafe fn i16x8_ge_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_ge_u,
-    i32x4_ge_u_mod,
-    fuel_check = flat_fd(I32X4_GE_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_ge_u(
     state: State,
@@ -3333,11 +2778,7 @@ pub unsafe fn i32x4_ge_u(
     Ok(ControlFlow::Continue(()))
 }
 // vfrelop
-define_instruction!(
-    super::f32x4_eq,
-    f32x4_eq_mod,
-    fuel_check = flat_fd(F32X4_EQ)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3357,11 +2798,7 @@ pub unsafe fn f32x4_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_eq,
-    f64x2_eq_mod,
-    fuel_check = flat_fd(F64X2_EQ)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3381,11 +2818,7 @@ pub unsafe fn f64x2_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_ne,
-    f32x4_ne_mod,
-    fuel_check = flat_fd(F32X4_NE)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3405,11 +2838,7 @@ pub unsafe fn f32x4_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_ne,
-    f64x2_ne_mod,
-    fuel_check = flat_fd(F64X2_NE)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3429,11 +2858,7 @@ pub unsafe fn f64x2_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_lt,
-    f32x4_lt_mod,
-    fuel_check = flat_fd(F32X4_LT)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3453,11 +2878,7 @@ pub unsafe fn f32x4_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_lt,
-    f64x2_lt_mod,
-    fuel_check = flat_fd(F64X2_LT)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3477,11 +2898,7 @@ pub unsafe fn f64x2_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_gt,
-    f32x4_gt_mod,
-    fuel_check = flat_fd(F32X4_GT)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3501,11 +2918,7 @@ pub unsafe fn f32x4_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_gt,
-    f64x2_gt_mod,
-    fuel_check = flat_fd(F64X2_GT)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3525,11 +2938,7 @@ pub unsafe fn f64x2_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_le,
-    f32x4_le_mod,
-    fuel_check = flat_fd(F32X4_LE)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3549,11 +2958,7 @@ pub unsafe fn f32x4_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_le,
-    f64x2_le_mod,
-    fuel_check = flat_fd(F64X2_LE)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3573,11 +2978,7 @@ pub unsafe fn f64x2_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_ge,
-    f32x4_ge_mod,
-    fuel_check = flat_fd(F32X4_GE)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3597,11 +2998,7 @@ pub unsafe fn f32x4_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_ge,
-    f64x2_ge_mod,
-    fuel_check = flat_fd(F64X2_GE)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3623,11 +3020,7 @@ pub unsafe fn f64x2_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 // txN.vishiftop
-define_instruction!(
-    super::i8x16_shl,
-    i8x16_shl_mod,
-    fuel_check = flat_fd(I8X16_SHL)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3646,11 +3039,7 @@ pub unsafe fn i8x16_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_shl,
-    i16x8_shl_mod,
-    fuel_check = flat_fd(I16X8_SHL)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3669,11 +3058,7 @@ pub unsafe fn i16x8_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_shl,
-    i32x4_shl_mod,
-    fuel_check = flat_fd(I32X4_SHL)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3692,11 +3077,7 @@ pub unsafe fn i32x4_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_shl,
-    i64x2_shl_mod,
-    fuel_check = flat_fd(I64X2_SHL)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -3715,11 +3096,7 @@ pub unsafe fn i64x2_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutco
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_shr_s,
-    i8x16_shr_s_mod,
-    fuel_check = flat_fd(I8X16_SHR_S)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_shr_s(
     state: State,
@@ -3740,11 +3117,7 @@ pub unsafe fn i8x16_shr_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_shr_u,
-    i8x16_shr_u_mod,
-    fuel_check = flat_fd(I8X16_SHR_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_shr_u(
     state: State,
@@ -3765,11 +3138,7 @@ pub unsafe fn i8x16_shr_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_shr_s,
-    i16x8_shr_s_mod,
-    fuel_check = flat_fd(I16X8_SHR_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_shr_s(
     state: State,
@@ -3790,11 +3159,7 @@ pub unsafe fn i16x8_shr_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_shr_u,
-    i16x8_shr_u_mod,
-    fuel_check = flat_fd(I16X8_SHR_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_shr_u(
     state: State,
@@ -3815,11 +3180,7 @@ pub unsafe fn i16x8_shr_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_shr_s,
-    i32x4_shr_s_mod,
-    fuel_check = flat_fd(I32X4_SHR_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_shr_s(
     state: State,
@@ -3840,11 +3201,7 @@ pub unsafe fn i32x4_shr_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_shr_u,
-    i32x4_shr_u_mod,
-    fuel_check = flat_fd(I32X4_SHR_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_shr_u(
     state: State,
@@ -3865,11 +3222,7 @@ pub unsafe fn i32x4_shr_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_shr_s,
-    i64x2_shr_s_mod,
-    fuel_check = flat_fd(I64X2_SHR_S)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_shr_s(
     state: State,
@@ -3890,11 +3243,7 @@ pub unsafe fn i64x2_shr_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_shr_u,
-    i64x2_shr_u_mod,
-    fuel_check = flat_fd(I64X2_SHR_U)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_shr_u(
     state: State,
@@ -3917,11 +3266,7 @@ pub unsafe fn i64x2_shr_u(
 }
 
 // shape.vtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vtestop>
-define_instruction!(
-    super::i8x16_all_true,
-    i8x16_all_true_mod,
-    fuel_check = flat_fd(I8X16_ALL_TRUE)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_all_true(
     state: State,
@@ -3938,11 +3283,7 @@ pub unsafe fn i8x16_all_true(
         .push_value(Value::I32(all_true as u32))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_all_true,
-    i16x8_all_true_mod,
-    fuel_check = flat_fd(I16X8_ALL_TRUE)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_all_true(
     state: State,
@@ -3959,11 +3300,7 @@ pub unsafe fn i16x8_all_true(
         .push_value(Value::I32(all_true as u32))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_all_true,
-    i32x4_all_true_mod,
-    fuel_check = flat_fd(I32X4_ALL_TRUE)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_all_true(
     state: State,
@@ -3980,11 +3317,7 @@ pub unsafe fn i32x4_all_true(
         .push_value(Value::I32(all_true as u32))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_all_true,
-    i64x2_all_true_mod,
-    fuel_check = flat_fd(I64X2_ALL_TRUE)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_all_true(
     state: State,
@@ -4003,11 +3336,7 @@ pub unsafe fn i64x2_all_true(
 }
 
 // ishape.bitmask
-define_instruction!(
-    super::i8x16_bitmask,
-    i8x16_bitmask_mod,
-    fuel_check = flat_fd(I8X16_BITMASK)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_bitmask(
     state: State,
@@ -4025,11 +3354,7 @@ pub unsafe fn i8x16_bitmask(
     state.resumable.stack.push_value(Value::I32(bitmask))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_bitmask,
-    i16x8_bitmask_mod,
-    fuel_check = flat_fd(I16X8_BITMASK)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_bitmask(
     state: State,
@@ -4047,11 +3372,7 @@ pub unsafe fn i16x8_bitmask(
     state.resumable.stack.push_value(Value::I32(bitmask))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_bitmask,
-    i32x4_bitmask_mod,
-    fuel_check = flat_fd(I32X4_BITMASK)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_bitmask(
     state: State,
@@ -4069,11 +3390,7 @@ pub unsafe fn i32x4_bitmask(
     state.resumable.stack.push_value(Value::I32(bitmask))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_bitmask,
-    i64x2_bitmask_mod,
-    fuel_check = flat_fd(I64X2_BITMASK)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_bitmask(
     state: State,
@@ -4093,11 +3410,7 @@ pub unsafe fn i64x2_bitmask(
 }
 
 // ishape.narrow_ishape_sx
-define_instruction!(
-    super::i8x16_narrow_i16x8_s,
-    i8x16_narrow_i16x8_s_mod,
-    fuel_check = flat_fd(I8X16_NARROW_I16X8_S)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_narrow_i16x8_s(
     state: State,
@@ -4123,11 +3436,7 @@ pub unsafe fn i8x16_narrow_i16x8_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i8x16_narrow_i16x8_u,
-    i8x16_narrow_i16x8_u_mod,
-    fuel_check = flat_fd(I8X16_NARROW_I16X8_U)
-);
+
 #[inline(always)]
 pub unsafe fn i8x16_narrow_i16x8_u(
     state: State,
@@ -4153,11 +3462,7 @@ pub unsafe fn i8x16_narrow_i16x8_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_narrow_i32x4_s,
-    i16x8_narrow_i32x4_s_mod,
-    fuel_check = flat_fd(I16X8_NARROW_I32X4_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_narrow_i32x4_s(
     state: State,
@@ -4183,11 +3488,7 @@ pub unsafe fn i16x8_narrow_i32x4_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_narrow_i32x4_u,
-    i16x8_narrow_i32x4_u_mod,
-    fuel_check = flat_fd(I16X8_NARROW_I32X4_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_narrow_i32x4_u(
     state: State,
@@ -4215,11 +3516,7 @@ pub unsafe fn i16x8_narrow_i32x4_u(
 }
 
 // t_2xN.vcvtop_t_1xM_sx
-define_instruction!(
-    super::i32x4_trunc_sat_f32x4_s,
-    i32x4_trunc_sat_f32x4_s_mod,
-    fuel_check = flat_fd(I32X4_TRUNC_SAT_F32X4_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_trunc_sat_f32x4_s(
     state: State,
@@ -4246,11 +3543,7 @@ pub unsafe fn i32x4_trunc_sat_f32x4_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_trunc_sat_f32x4_u,
-    i32x4_trunc_sat_f32x4_u_mod,
-    fuel_check = flat_fd(I32X4_TRUNC_SAT_F32X4_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_trunc_sat_f32x4_u(
     state: State,
@@ -4275,11 +3568,7 @@ pub unsafe fn i32x4_trunc_sat_f32x4_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_convert_i32x4_s,
-    f32x4_convert_i32x4_s_mod,
-    fuel_check = flat_fd(F32X4_CONVERT_I32X4_S)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_convert_i32x4_s(
     state: State,
@@ -4296,11 +3585,7 @@ pub unsafe fn f32x4_convert_i32x4_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_convert_i32x4_u,
-    f32x4_convert_i32x4_u_mod,
-    fuel_check = flat_fd(F32X4_CONVERT_I32X4_U)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_convert_i32x4_u(
     state: State,
@@ -4319,11 +3604,7 @@ pub unsafe fn f32x4_convert_i32x4_u(
 }
 
 // t_2xN.vcvtop_half_t_1xM_sx? <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vcvtop>
-define_instruction!(
-    super::i16x8_extend_high_i8x16_s,
-    i16x8_extend_high_i8x16_s_mod,
-    fuel_check = flat_fd(I16X8_EXTEND_HIGH_I8X16_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extend_high_i8x16_s(
     state: State,
@@ -4341,11 +3622,7 @@ pub unsafe fn i16x8_extend_high_i8x16_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_extend_high_i8x16_u,
-    i16x8_extend_high_i8x16_u_mod,
-    fuel_check = flat_fd(I16X8_EXTEND_HIGH_I8X16_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extend_high_i8x16_u(
     state: State,
@@ -4363,11 +3640,7 @@ pub unsafe fn i16x8_extend_high_i8x16_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_extend_low_i8x16_s,
-    i16x8_extend_low_i8x16_s_mod,
-    fuel_check = flat_fd(I16X8_EXTEND_LOW_I8X16_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extend_low_i8x16_s(
     state: State,
@@ -4385,11 +3658,7 @@ pub unsafe fn i16x8_extend_low_i8x16_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_extend_low_i8x16_u,
-    i16x8_extend_low_i8x16_u_mod,
-    fuel_check = flat_fd(I16X8_EXTEND_LOW_I8X16_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extend_low_i8x16_u(
     state: State,
@@ -4407,11 +3676,7 @@ pub unsafe fn i16x8_extend_low_i8x16_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_extend_high_i16x8_s,
-    i32x4_extend_high_i16x8_s_mod,
-    fuel_check = flat_fd(I32X4_EXTEND_HIGH_I16X8_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_extend_high_i16x8_s(
     state: State,
@@ -4429,11 +3694,7 @@ pub unsafe fn i32x4_extend_high_i16x8_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_extend_high_i16x8_u,
-    i32x4_extend_high_i16x8_u_mod,
-    fuel_check = flat_fd(I32X4_EXTEND_HIGH_I16X8_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_extend_high_i16x8_u(
     state: State,
@@ -4451,11 +3712,7 @@ pub unsafe fn i32x4_extend_high_i16x8_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_extend_low_i16x8_s,
-    i32x4_extend_low_i16x8_s_mod,
-    fuel_check = flat_fd(I32X4_EXTEND_LOW_I16X8_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_extend_low_i16x8_s(
     state: State,
@@ -4473,11 +3730,7 @@ pub unsafe fn i32x4_extend_low_i16x8_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_extend_low_i16x8_u,
-    i32x4_extend_low_i16x8_u_mod,
-    fuel_check = flat_fd(I32X4_EXTEND_LOW_I16X8_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_extend_low_i16x8_u(
     state: State,
@@ -4495,11 +3748,7 @@ pub unsafe fn i32x4_extend_low_i16x8_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_extend_high_i32x4_s,
-    i64x2_extend_high_i32x4_s_mod,
-    fuel_check = flat_fd(I64X2_EXTEND_HIGH_I32X4_S)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_extend_high_i32x4_s(
     state: State,
@@ -4517,11 +3766,7 @@ pub unsafe fn i64x2_extend_high_i32x4_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_extend_high_i32x4_u,
-    i64x2_extend_high_i32x4_u_mod,
-    fuel_check = flat_fd(I64X2_EXTEND_HIGH_I32X4_U)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_extend_high_i32x4_u(
     state: State,
@@ -4539,11 +3784,7 @@ pub unsafe fn i64x2_extend_high_i32x4_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_extend_low_i32x4_s,
-    i64x2_extend_low_i32x4_s_mod,
-    fuel_check = flat_fd(I64X2_EXTEND_LOW_I32X4_S)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_extend_low_i32x4_s(
     state: State,
@@ -4561,11 +3802,7 @@ pub unsafe fn i64x2_extend_low_i32x4_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_extend_low_i32x4_u,
-    i64x2_extend_low_i32x4_u_mod,
-    fuel_check = flat_fd(I64X2_EXTEND_LOW_I32X4_U)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_extend_low_i32x4_u(
     state: State,
@@ -4583,11 +3820,7 @@ pub unsafe fn i64x2_extend_low_i32x4_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_convert_low_i32x4_s,
-    f64x2_convert_low_i32x4_s_mod,
-    fuel_check = flat_fd(F64X2_CONVERT_LOW_I32X4_S)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_convert_low_i32x4_s(
     state: State,
@@ -4605,11 +3838,7 @@ pub unsafe fn f64x2_convert_low_i32x4_s(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_convert_low_i32x4_u,
-    f64x2_convert_low_i32x4_u_mod,
-    fuel_check = flat_fd(F64X2_CONVERT_LOW_I32X4_U)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_convert_low_i32x4_u(
     state: State,
@@ -4627,11 +3856,7 @@ pub unsafe fn f64x2_convert_low_i32x4_u(
         .push_value(Value::V128(from_lanes(result)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f64x2_promote_low_f32x4,
-    f64x2_promote_low_f32x4_mod,
-    fuel_check = flat_fd(F64X2_PROMOTE_LOW_F32X4)
-);
+
 #[inline(always)]
 pub unsafe fn f64x2_promote_low_f32x4(
     state: State,
@@ -4651,11 +3876,7 @@ pub unsafe fn f64x2_promote_low_f32x4(
 }
 
 // t_2xN.vcvtop_t_1xM_sx?_zero
-define_instruction!(
-    super::i32x4_trunc_sat_f64x2_s_zero,
-    i32x4_trunc_sat_f64x2_s_zero_mod,
-    fuel_check = flat_fd(I32X4_TRUNC_SAT_F64X2_S_ZERO)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_trunc_sat_f64x2_s_zero(
     state: State,
@@ -4682,11 +3903,7 @@ pub unsafe fn i32x4_trunc_sat_f64x2_s_zero(
         .push_value(Value::V128(from_lanes([result[0], result[1], 0, 0])))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_trunc_sat_f64x2_u_zero,
-    i32x4_trunc_sat_f64x2_u_zero_mod,
-    fuel_check = flat_fd(I32X4_TRUNC_SAT_F64X2_U_ZERO)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_trunc_sat_f64x2_u_zero(
     state: State,
@@ -4711,11 +3928,7 @@ pub unsafe fn i32x4_trunc_sat_f64x2_u_zero(
         .push_value(Value::V128(from_lanes([result[0], result[1], 0, 0])))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::f32x4_demote_f64x2_zero,
-    f32x4_demote_f64x2_zero_mod,
-    fuel_check = flat_fd(F32X4_DEMOTE_F64X2_ZERO)
-);
+
 #[inline(always)]
 pub unsafe fn f32x4_demote_f64x2_zero(
     state: State,
@@ -4735,11 +3948,7 @@ pub unsafe fn f32x4_demote_f64x2_zero(
 }
 
 // i32x4.dot_i16x8_s
-define_instruction!(
-    super::i32x4_dot_i16x8_s,
-    i32x4_dot_i16x8_s_mod,
-    fuel_check = flat_fd(I32X4_DOT_I16X8_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_dot_i16x8_s(
     state: State,
@@ -4772,11 +3981,7 @@ pub unsafe fn i32x4_dot_i16x8_s(
 }
 
 // ishape.extmul_half_ishape_sx
-define_instruction!(
-    super::i16x8_extmul_high_i8x16_s,
-    i16x8_extmul_high_i8x16_s_mod,
-    fuel_check = flat_fd(I16X8_EXTMUL_HIGH_I8X16_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extmul_high_i8x16_s(
     state: State,
@@ -4804,11 +4009,7 @@ pub unsafe fn i16x8_extmul_high_i8x16_s(
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_extmul_high_i8x16_u,
-    i16x8_extmul_high_i8x16_u_mod,
-    fuel_check = flat_fd(I16X8_EXTMUL_HIGH_I8X16_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extmul_high_i8x16_u(
     state: State,
@@ -4836,11 +4037,7 @@ pub unsafe fn i16x8_extmul_high_i8x16_u(
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_extmul_low_i8x16_s,
-    i16x8_extmul_low_i8x16_s_mod,
-    fuel_check = flat_fd(I16X8_EXTMUL_LOW_I8X16_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extmul_low_i8x16_s(
     state: State,
@@ -4868,11 +4065,7 @@ pub unsafe fn i16x8_extmul_low_i8x16_s(
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_extmul_low_i8x16_u,
-    i16x8_extmul_low_i8x16_u_mod,
-    fuel_check = flat_fd(I16X8_EXTMUL_LOW_I8X16_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extmul_low_i8x16_u(
     state: State,
@@ -4900,11 +4093,7 @@ pub unsafe fn i16x8_extmul_low_i8x16_u(
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_extmul_high_i16x8_s,
-    i32x4_extmul_high_i16x8_s_mod,
-    fuel_check = flat_fd(I32X4_EXTMUL_HIGH_I16X8_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_extmul_high_i16x8_s(
     state: State,
@@ -4932,11 +4121,7 @@ pub unsafe fn i32x4_extmul_high_i16x8_s(
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_extmul_high_i16x8_u,
-    i32x4_extmul_high_i16x8_u_mod,
-    fuel_check = flat_fd(I32X4_EXTMUL_HIGH_I16X8_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_extmul_high_i16x8_u(
     state: State,
@@ -4964,11 +4149,7 @@ pub unsafe fn i32x4_extmul_high_i16x8_u(
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_extmul_low_i16x8_s,
-    i32x4_extmul_low_i16x8_s_mod,
-    fuel_check = flat_fd(I32X4_EXTMUL_LOW_I16X8_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_extmul_low_i16x8_s(
     state: State,
@@ -4996,11 +4177,7 @@ pub unsafe fn i32x4_extmul_low_i16x8_s(
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_extmul_low_i16x8_u,
-    i32x4_extmul_low_i16x8_u_mod,
-    fuel_check = flat_fd(I32X4_EXTMUL_LOW_I16X8_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_extmul_low_i16x8_u(
     state: State,
@@ -5028,11 +4205,7 @@ pub unsafe fn i32x4_extmul_low_i16x8_u(
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_extmul_high_i32x4_s,
-    i64x2_extmul_high_i32x4_s_mod,
-    fuel_check = flat_fd(I64X2_EXTMUL_HIGH_I32X4_S)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_extmul_high_i32x4_s(
     state: State,
@@ -5060,11 +4233,7 @@ pub unsafe fn i64x2_extmul_high_i32x4_s(
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_extmul_high_i32x4_u,
-    i64x2_extmul_high_i32x4_u_mod,
-    fuel_check = flat_fd(I64X2_EXTMUL_HIGH_I32X4_U)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_extmul_high_i32x4_u(
     state: State,
@@ -5092,11 +4261,7 @@ pub unsafe fn i64x2_extmul_high_i32x4_u(
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_extmul_low_i32x4_s,
-    i64x2_extmul_low_i32x4_s_mod,
-    fuel_check = flat_fd(I64X2_EXTMUL_LOW_I32X4_S)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_extmul_low_i32x4_s(
     state: State,
@@ -5124,11 +4289,7 @@ pub unsafe fn i64x2_extmul_low_i32x4_s(
         .push_value(Value::V128(from_lanes(multiplied)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i64x2_extmul_low_i32x4_u,
-    i64x2_extmul_low_i32x4_u_mod,
-    fuel_check = flat_fd(I64X2_EXTMUL_LOW_I32X4_U)
-);
+
 #[inline(always)]
 pub unsafe fn i64x2_extmul_low_i32x4_u(
     state: State,
@@ -5158,11 +4319,7 @@ pub unsafe fn i64x2_extmul_low_i32x4_u(
 }
 
 // ishape.extadd_pairwise_ishape_sx
-define_instruction!(
-    super::i16x8_extadd_pairwise_i8x16_s,
-    i16x8_extadd_pairwise_i8x16_s_mod,
-    fuel_check = flat_fd(I16X8_EXTADD_PAIRWISE_I8X16_S)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extadd_pairwise_i8x16_s(
     state: State,
@@ -5183,11 +4340,7 @@ pub unsafe fn i16x8_extadd_pairwise_i8x16_s(
         .push_value(Value::V128(from_lanes(added_pairwise)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i16x8_extadd_pairwise_i8x16_u,
-    i16x8_extadd_pairwise_i8x16_u_mod,
-    fuel_check = flat_fd(I16X8_EXTADD_PAIRWISE_I8X16_U)
-);
+
 #[inline(always)]
 pub unsafe fn i16x8_extadd_pairwise_i8x16_u(
     state: State,
@@ -5208,11 +4361,7 @@ pub unsafe fn i16x8_extadd_pairwise_i8x16_u(
         .push_value(Value::V128(from_lanes(added_pairwise)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_extadd_pairwise_i16x8_s,
-    i32x4_extadd_pairwise_i16x8_s_mod,
-    fuel_check = flat_fd(I32X4_EXTADD_PAIRWISE_I16X8_S)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_extadd_pairwise_i16x8_s(
     state: State,
@@ -5233,11 +4382,7 @@ pub unsafe fn i32x4_extadd_pairwise_i16x8_s(
         .push_value(Value::V128(from_lanes(added_pairwise)))?;
     Ok(ControlFlow::Continue(()))
 }
-define_instruction!(
-    super::i32x4_extadd_pairwise_i16x8_u,
-    i32x4_extadd_pairwise_i16x8_u_mod,
-    fuel_check = flat_fd(I32X4_EXTADD_PAIRWISE_I16X8_U)
-);
+
 #[inline(always)]
 pub unsafe fn i32x4_extadd_pairwise_i16x8_u(
     state: State,
