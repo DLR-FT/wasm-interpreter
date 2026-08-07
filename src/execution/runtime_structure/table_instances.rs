@@ -18,7 +18,7 @@ impl TableInst {
             .expect("table length can not be larger than or equal to 2^32")
     }
 
-    /// See: [WebAssembly Specification 2.0 - 4.5.3.8 Growing Tables](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#growing-memories%E2%91%A0)
+    /// See: [WebAssembly Specification 2.0 - 4.5.3.8 Growing Tables](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#growing-tables%E2%91%A0).
     pub fn grow<T: Config>(&mut self, n: u32, reff: Ref) -> Result<(), RuntimeError> {
         // 1. Let tableinst be the table instance to grow, n the number of elements by which to grow
         //    it, and ref the initialization value.
