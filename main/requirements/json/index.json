@@ -226,9 +226,11 @@
                                     "_TOC": "1.7.5",
                                     "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-15",
+                                    "STATUS": "Deleted",
                                     "TITLE": "Allow log dependency",
                                     "STATEMENT": "The interpreter shall have an optional dependency on the ``log`` version ``0.4.22`` or later.\n",
                                     "RATIONALE": "Logging is an essential tool to make a system observable, and aid in debugging. Bespoke crate is widely used in the Rust ecosystem and can be attached to any (or no) logging backend. Using conditional compilation, all of the ``log`` crate's footprint in the WASM interpreter (foremost the ``debug``, ``error``, ``info``, ``trace`` and ``warn`` macro) can be expanded to empty statements to avoid **any** run-time impact when opting out of the dependency on ``log``.\n",
+                                    "COMMENT": "This requirement was marked as deleted on 2026-08-03 because the advantages of logging as a feature do not outweigh its disadvantages (e.g. coverage gaps and excess string formatting code).\n",
                                     "RELATIONS": [
                                         {
                                             "TYPE": "Parent",

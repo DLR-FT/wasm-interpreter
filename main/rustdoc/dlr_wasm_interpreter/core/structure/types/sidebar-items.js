@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["BlockType","ExternType","NumType","RefType","ValType"],"struct":["FuncType","GlobalType","Limits","MemArg","MemType","ResultType","TableType","VecType"]};
+window.SIDEBAR_ITEMS = {"enum":["BlockType","ExternType","ExternTypeRef","NumType","RefType","ValType"],"struct":["FuncType","GlobalType","Limits","MemArg","MemType","ResultType","TableType","VecType"]};

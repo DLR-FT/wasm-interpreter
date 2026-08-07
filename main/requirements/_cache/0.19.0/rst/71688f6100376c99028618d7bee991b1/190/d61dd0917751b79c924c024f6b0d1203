@@ -1,0 +1,3 @@
+<div class="document">
+<p>This requirement was marked as deleted on 2026-08-03 because the advantages of logging as a feature do not outweigh its disadvantages (e.g. coverage gaps and excess string formatting code).</p>
+</div>

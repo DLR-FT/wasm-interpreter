@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["decode_locals"]};
+window.SIDEBAR_ITEMS = {"fn":["decode_locals"],"struct":["WithExactSize"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["DataMode"],"struct":["DataModeActive","DataSegment","_PassiveData"]};
+window.SIDEBAR_ITEMS = {"enum":["DataMode"],"struct":["DataModeActive","DataSegment"]};

@@ -119,98 +119,96 @@
 <a href=#119 id=119 data-nosnippet>119</a>    </span>LimitsNotWithinRange(u32),
 <a href=#120 id=120 data-nosnippet>120</a>    <span class="doccomment">/// A mutable global was referenced in some global.get instruction in a constant expression.
 <a href=#121 id=121 data-nosnippet>121</a>    </span>MutGlobalInConstGlobalGet,
-<a href=#122 id=122 data-nosnippet>122</a>}
-<a href=#123 id=123 data-nosnippet>123</a>
-<a href=#124 id=124 data-nosnippet>124</a><span class="kw">impl </span>core::error::Error <span class="kw">for </span>ValidationError {}
-<a href=#125 id=125 data-nosnippet>125</a>
-<a href=#126 id=126 data-nosnippet>126</a><span class="kw">impl </span>Display <span class="kw">for </span>ValidationError {
-<a href=#127 id=127 data-nosnippet>127</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
-<a href=#128 id=128 data-nosnippet>128</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#129 id=129 data-nosnippet>129</a>            ValidationError::Decoding(err) =&gt; <span class="macro">write!</span>(f, <span class="string">"Decoding failed: {err}"</span>),
-<a href=#130 id=130 data-nosnippet>130</a>
-<a href=#131 id=131 data-nosnippet>131</a>            ValidationError::InvalidTypeIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The type index {idx} is invalid"</span>),
-<a href=#132 id=132 data-nosnippet>132</a>            ValidationError::InvalidFuncIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The function index {idx} is invalid"</span>),
-<a href=#133 id=133 data-nosnippet>133</a>            ValidationError::InvalidTableIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The table index {idx} is invalid"</span>),
-<a href=#134 id=134 data-nosnippet>134</a>            ValidationError::InvalidMemIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The memory index {idx} is invalid"</span>),
-<a href=#135 id=135 data-nosnippet>135</a>            ValidationError::InvalidGlobalIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The global index {idx} is invalid"</span>),
-<a href=#136 id=136 data-nosnippet>136</a>            ValidationError::InvalidElemIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The element segment index {idx} is invalid"</span>),
-<a href=#137 id=137 data-nosnippet>137</a>            ValidationError::InvalidDataIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The data segment index {idx} is invalid"</span>),
-<a href=#138 id=138 data-nosnippet>138</a>            ValidationError::InvalidLocalIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The local index {idx} is invalid"</span>),
-<a href=#139 id=139 data-nosnippet>139</a>            ValidationError::InvalidLabelIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The label index {idx} is invalid"</span>),
-<a href=#140 id=140 data-nosnippet>140</a>            ValidationError::InvalidLaneIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The lane index {idx} is invalid"</span>),
-<a href=#141 id=141 data-nosnippet>141</a>
-<a href=#142 id=142 data-nosnippet>142</a>            ValidationError::ExprMissingEnd =&gt; <span class="macro">write!</span>(f, <span class="string">"An expr type is missing an end byte"</span>),
-<a href=#143 id=143 data-nosnippet>143</a>            ValidationError::InvalidInstr(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"The instruction {byte:#x} is invalid"</span>),
-<a href=#144 id=144 data-nosnippet>144</a>            ValidationError::InvalidMultiByteInstr(first_byte, second_instr) =&gt; <span class="macro">write!</span>(f, <span class="string">"The multi-byte instruction {first_byte:#x} {second_instr} is invalid"</span>),
-<a href=#145 id=145 data-nosnippet>145</a>            ValidationError::ActiveElementSegmentTypeMismatch =&gt; <span class="macro">write!</span>(f, <span class="string">"an element segment's type and its table's type are different"</span>),
-<a href=#146 id=146 data-nosnippet>146</a>            ValidationError::EndInvalidValueStack =&gt; <span class="macro">write!</span>(f, <span class="string">"Different value stack types were expected at the end of a block/function"</span>),
-<a href=#147 id=147 data-nosnippet>147</a>            ValidationError::InvalidValidationStackValType(ty) =&gt; <span class="macro">write!</span>(f, <span class="string">"An unexpected type `{ty:?}` was found on the stack when trying to pop another"</span>),
-<a href=#148 id=148 data-nosnippet>148</a>            ValidationError::InvalidValidationStackType(ty) =&gt; <span class="macro">write!</span>(f, <span class="string">"An unexpected type `{ty:?}` was found on the stack"</span>),
-<a href=#149 id=149 data-nosnippet>149</a>            ValidationError::ExpectedAnOperand =&gt; <span class="macro">write!</span>(f, <span class="string">"Expected a value type operand on the stack"</span>),
-<a href=#150 id=150 data-nosnippet>150</a>            ValidationError::MutationOfConstGlobal =&gt; <span class="macro">write!</span>(f, <span class="string">"An attempt has been made to mutate a const global"</span>),
-<a href=#151 id=151 data-nosnippet>151</a>            ValidationError::ErroneousAlignment {alignment , minimum_required_alignment} =&gt; <span class="macro">write!</span>(f, <span class="string">"The alignment 2^{alignment} is not less or equal to the required alignment 2^{minimum_required_alignment}"</span>),
-<a href=#152 id=152 data-nosnippet>152</a>            ValidationError::ValidationCtrlStackEmpty =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to retrieve last ctrl block because validation ctrl stack is empty"</span>),
-<a href=#153 id=153 data-nosnippet>153</a>            ValidationError::ElseWithoutMatchingIf =&gt; <span class="macro">write!</span>(f, <span class="string">"Found `else` without a previous matching `if` instruction"</span>),
-<a href=#154 id=154 data-nosnippet>154</a>            ValidationError::IfWithoutMatchingElse =&gt; <span class="macro">write!</span>(f, <span class="string">"Found `end` without a previous matching `else` to an `if` instruction"</span>),
-<a href=#155 id=155 data-nosnippet>155</a>            ValidationError::MismatchedRefTypesDuringTableInit { table_ty, elem_ty } =&gt; <span class="macro">write!</span>(f, <span class="string">"Mismatch of table type `{table_ty:?}` and element segment type `{elem_ty:?}` for `table.init` instruction"</span>),
-<a href=#156 id=156 data-nosnippet>156</a>            ValidationError::MismatchedRefTypesDuringTableCopy { source_table_ty, destination_table_ty } =&gt; <span class="macro">write!</span>(f, <span class="string">"Mismatch of source table type `{source_table_ty:?}` and destination table type `{destination_table_ty:?}` for `table.copy` instruction"</span>),
-<a href=#157 id=157 data-nosnippet>157</a>            ValidationError::MismatchedRefTypesOnValidationStack { expected, actual } =&gt; <span class="macro">write!</span>(f, <span class="string">"Mismatch of reference types on the value stack: Expected `{expected:?}` but got `{actual:?}`"</span>),
-<a href=#158 id=158 data-nosnippet>158</a>            ValidationError::IndirectCallToNonFuncRefTable(table_ty) =&gt; <span class="macro">write!</span>(f, <span class="string">"An indirect call to a table which does not store function references but instead `{table_ty:?}` was made"</span>),
-<a href=#159 id=159 data-nosnippet>159</a>            ValidationError::ExpectedReferenceTypeOnStack(found_valtype) =&gt; <span class="macro">write!</span>(f, <span class="string">"Expected a reference type but instead found a `{found_valtype:?}` on the stack"</span>),
-<a href=#160 id=160 data-nosnippet>160</a>            ValidationError::ReferencingAnUnreferencedFunction(func_idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"Referenced a function with index {func_idx} that was not referenced in prior validation"</span>),
-<a href=#161 id=161 data-nosnippet>161</a>            ValidationError::InvalidSelectTypeVectorLength(len) =&gt; <span class="macro">write!</span>(f, <span class="string">"The type vector of a `select` instruction must be of length 1 as of now but it is of length {len} instead"</span>),
-<a href=#162 id=162 data-nosnippet>162</a>            ValidationError::DuplicateExportName =&gt; <span class="macro">write!</span>(f,<span class="string">"Multiple exports share the same name"</span>),
-<a href=#163 id=163 data-nosnippet>163</a>            ValidationError::UnsupportedMultipleMemoriesProposal =&gt; <span class="macro">write!</span>(f,<span class="string">"A memory index other than 1 was used, but the proposal for multiple memories is not yet supported"</span>),
-<a href=#164 id=164 data-nosnippet>164</a>            ValidationError::CodeExprHasTrailingInstructions =&gt; <span class="macro">write!</span>(f,<span class="string">"A code expression has invalid trailing instructions following its `end` instruction"</span>),
-<a href=#165 id=165 data-nosnippet>165</a>            ValidationError::FunctionAndCodeSectionsHaveDifferentLengths =&gt; <span class="macro">write!</span>(f,<span class="string">"The function and code sections have different lengths"</span>),
-<a href=#166 id=166 data-nosnippet>166</a>            ValidationError::DataCountAndDataSectionsLengthAreDifferent =&gt; <span class="macro">write!</span>(f,<span class="string">"The data count section specifies a different length than there are data segments in the data section"</span>),
-<a href=#167 id=167 data-nosnippet>167</a>            ValidationError::InvalidImportType =&gt; f.write_str(<span class="string">"Invalid import type"</span>),
-<a href=#168 id=168 data-nosnippet>168</a>            ValidationError::InvalidStartFunctionSignature =&gt; <span class="macro">write!</span>(f,<span class="string">"The start function has parameters or return types which it is not allowed to have"</span>),
-<a href=#169 id=169 data-nosnippet>169</a>            ValidationError::MissingDataCountSection =&gt; f.write_str(<span class="string">"Some instructions could not be validated because the data count section is missing"</span>),
-<a href=#170 id=170 data-nosnippet>170</a>            ValidationError::InvalidDataSegmentMode(mode) =&gt; <span class="macro">write!</span>(f, <span class="string">"The mode of a data segment was invalid (only 0..=2 is allowed): {mode}"</span>),
-<a href=#171 id=171 data-nosnippet>171</a>            ValidationError::InvalidElementMode(mode) =&gt; <span class="macro">write!</span>(f, <span class="string">"The mode of an element was invalid (only 0..=7 is allowed): {mode}"</span>),
-<a href=#172 id=172 data-nosnippet>172</a>            ValidationError::TooManyFunctions =&gt; f.write_str(<span class="string">"The module contains too many functions. The maximum number of functions (either imported or locally-defined) is 2^32 - 1"</span>),
-<a href=#173 id=173 data-nosnippet>173</a>            ValidationError::TooManyTables =&gt; f.write_str(<span class="string">"The module contains too many tables. The maximum number of tables (either imported or locally-defined) is 2^32 - 1"</span>),
-<a href=#174 id=174 data-nosnippet>174</a>            ValidationError::TooManyMemories =&gt; f.write_str(<span class="string">"The module contains too many memories. The maximum number of memories (either imported or locally-defined) is 2^32 - 1"</span>),
-<a href=#175 id=175 data-nosnippet>175</a>            ValidationError::TooManyGlobals =&gt; f.write_str(<span class="string">"The module contains too many globals. The maximum number of globals (either imported or locally-defined) is 2^32 - 1"</span>),
-<a href=#176 id=176 data-nosnippet>176</a>            ValidationError::LimitsMinLargerThanMax { min, max } =&gt; <span class="macro">write!</span>(f, <span class="string">"Limits are invalid because min={min} is larger than max={max}"</span>),
-<a href=#177 id=177 data-nosnippet>177</a>            ValidationError::LimitsNotWithinRange(range) =&gt; <span class="macro">write!</span>(f, <span class="string">"The min or max field of a limits type is not within the expected range of {range}"</span>),
-<a href=#178 id=178 data-nosnippet>178</a>            ValidationError::MutGlobalInConstGlobalGet =&gt; f.write_str(<span class="string">"A mutable global was referenced in some global.get instruction in a constant expression"</span>),
-<a href=#179 id=179 data-nosnippet>179</a>        }
-<a href=#180 id=180 data-nosnippet>180</a>    }
-<a href=#181 id=181 data-nosnippet>181</a>}
-<a href=#182 id=182 data-nosnippet>182</a>
-<a href=#183 id=183 data-nosnippet>183</a><span class="kw">impl </span>ValidationError {
-<a href=#184 id=184 data-nosnippet>184</a>    <span class="doccomment">/// Convert this error to a message that is compatible with the error messages used by the official Wasm testsuite.
-<a href=#185 id=185 data-nosnippet>185</a>    </span><span class="kw">pub fn </span>to_message(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
-<a href=#186 id=186 data-nosnippet>186</a>        <span class="macro">todo!</span>(<span class="string">"convert validation error to testsuite message"</span>);
-<a href=#187 id=187 data-nosnippet>187</a>    }
-<a href=#188 id=188 data-nosnippet>188</a>}
-<a href=#189 id=189 data-nosnippet>189</a>
-<a href=#190 id=190 data-nosnippet>190</a><span class="kw">impl </span>From&lt;DecodingError&gt; <span class="kw">for </span>ValidationError {
-<a href=#191 id=191 data-nosnippet>191</a>    <span class="kw">fn </span>from(error: DecodingError) -&gt; <span class="self">Self </span>{
-<a href=#192 id=192 data-nosnippet>192</a>        <span class="self">Self</span>::Decoding(error)
-<a href=#193 id=193 data-nosnippet>193</a>    }
-<a href=#194 id=194 data-nosnippet>194</a>}
-<a href=#195 id=195 data-nosnippet>195</a>
-<a href=#196 id=196 data-nosnippet>196</a><span class="attr">#[cfg(test)]
-<a href=#197 id=197 data-nosnippet>197</a></span><span class="kw">mod </span>test {
-<a href=#198 id=198 data-nosnippet>198</a>    <span class="kw">use </span>alloc::string::ToString;
+<a href=#122 id=122 data-nosnippet>122</a>    <span class="doccomment">/// A function specifies a number of parameters and locals which exceed 2^32-1 when added
+<a href=#123 id=123 data-nosnippet>123</a>    /// together. This is not defined as a validation error by the specification, but very likely to
+<a href=#124 id=124 data-nosnippet>124</a>    /// be incorrect, as this makes some locals un-addressable.
+<a href=#125 id=125 data-nosnippet>125</a>    </span>TooManyParamsAndLocals,
+<a href=#126 id=126 data-nosnippet>126</a>}
+<a href=#127 id=127 data-nosnippet>127</a>
+<a href=#128 id=128 data-nosnippet>128</a><span class="kw">impl </span>core::error::Error <span class="kw">for </span>ValidationError {}
+<a href=#129 id=129 data-nosnippet>129</a>
+<a href=#130 id=130 data-nosnippet>130</a><span class="kw">impl </span>Display <span class="kw">for </span>ValidationError {
+<a href=#131 id=131 data-nosnippet>131</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
+<a href=#132 id=132 data-nosnippet>132</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#133 id=133 data-nosnippet>133</a>            ValidationError::Decoding(err) =&gt; <span class="macro">write!</span>(f, <span class="string">"Decoding failed: {err}"</span>),
+<a href=#134 id=134 data-nosnippet>134</a>
+<a href=#135 id=135 data-nosnippet>135</a>            ValidationError::InvalidTypeIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The type index {idx} is invalid"</span>),
+<a href=#136 id=136 data-nosnippet>136</a>            ValidationError::InvalidFuncIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The function index {idx} is invalid"</span>),
+<a href=#137 id=137 data-nosnippet>137</a>            ValidationError::InvalidTableIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The table index {idx} is invalid"</span>),
+<a href=#138 id=138 data-nosnippet>138</a>            ValidationError::InvalidMemIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The memory index {idx} is invalid"</span>),
+<a href=#139 id=139 data-nosnippet>139</a>            ValidationError::InvalidGlobalIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The global index {idx} is invalid"</span>),
+<a href=#140 id=140 data-nosnippet>140</a>            ValidationError::InvalidElemIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The element segment index {idx} is invalid"</span>),
+<a href=#141 id=141 data-nosnippet>141</a>            ValidationError::InvalidDataIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The data segment index {idx} is invalid"</span>),
+<a href=#142 id=142 data-nosnippet>142</a>            ValidationError::InvalidLocalIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The local index {idx} is invalid"</span>),
+<a href=#143 id=143 data-nosnippet>143</a>            ValidationError::InvalidLabelIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The label index {idx} is invalid"</span>),
+<a href=#144 id=144 data-nosnippet>144</a>            ValidationError::InvalidLaneIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The lane index {idx} is invalid"</span>),
+<a href=#145 id=145 data-nosnippet>145</a>
+<a href=#146 id=146 data-nosnippet>146</a>            ValidationError::ExprMissingEnd =&gt; <span class="macro">write!</span>(f, <span class="string">"An expr type is missing an end byte"</span>),
+<a href=#147 id=147 data-nosnippet>147</a>            ValidationError::InvalidInstr(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"The instruction {byte:#x} is invalid"</span>),
+<a href=#148 id=148 data-nosnippet>148</a>            ValidationError::InvalidMultiByteInstr(first_byte, second_instr) =&gt; <span class="macro">write!</span>(f, <span class="string">"The multi-byte instruction {first_byte:#x} {second_instr} is invalid"</span>),
+<a href=#149 id=149 data-nosnippet>149</a>            ValidationError::ActiveElementSegmentTypeMismatch =&gt; <span class="macro">write!</span>(f, <span class="string">"an element segment's type and its table's type are different"</span>),
+<a href=#150 id=150 data-nosnippet>150</a>            ValidationError::EndInvalidValueStack =&gt; <span class="macro">write!</span>(f, <span class="string">"Different value stack types were expected at the end of a block/function"</span>),
+<a href=#151 id=151 data-nosnippet>151</a>            ValidationError::InvalidValidationStackValType(ty) =&gt; <span class="macro">write!</span>(f, <span class="string">"An unexpected type `{ty:?}` was found on the stack when trying to pop another"</span>),
+<a href=#152 id=152 data-nosnippet>152</a>            ValidationError::InvalidValidationStackType(ty) =&gt; <span class="macro">write!</span>(f, <span class="string">"An unexpected type `{ty:?}` was found on the stack"</span>),
+<a href=#153 id=153 data-nosnippet>153</a>            ValidationError::ExpectedAnOperand =&gt; <span class="macro">write!</span>(f, <span class="string">"Expected a value type operand on the stack"</span>),
+<a href=#154 id=154 data-nosnippet>154</a>            ValidationError::MutationOfConstGlobal =&gt; <span class="macro">write!</span>(f, <span class="string">"An attempt has been made to mutate a const global"</span>),
+<a href=#155 id=155 data-nosnippet>155</a>            ValidationError::ErroneousAlignment {alignment , minimum_required_alignment} =&gt; <span class="macro">write!</span>(f, <span class="string">"The alignment 2^{alignment} is not less or equal to the required alignment 2^{minimum_required_alignment}"</span>),
+<a href=#156 id=156 data-nosnippet>156</a>            ValidationError::ValidationCtrlStackEmpty =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to retrieve last ctrl block because validation ctrl stack is empty"</span>),
+<a href=#157 id=157 data-nosnippet>157</a>            ValidationError::ElseWithoutMatchingIf =&gt; <span class="macro">write!</span>(f, <span class="string">"Found `else` without a previous matching `if` instruction"</span>),
+<a href=#158 id=158 data-nosnippet>158</a>            ValidationError::IfWithoutMatchingElse =&gt; <span class="macro">write!</span>(f, <span class="string">"Found `end` without a previous matching `else` to an `if` instruction"</span>),
+<a href=#159 id=159 data-nosnippet>159</a>            ValidationError::MismatchedRefTypesDuringTableInit { table_ty, elem_ty } =&gt; <span class="macro">write!</span>(f, <span class="string">"Mismatch of table type `{table_ty:?}` and element segment type `{elem_ty:?}` for `table.init` instruction"</span>),
+<a href=#160 id=160 data-nosnippet>160</a>            ValidationError::MismatchedRefTypesDuringTableCopy { source_table_ty, destination_table_ty } =&gt; <span class="macro">write!</span>(f, <span class="string">"Mismatch of source table type `{source_table_ty:?}` and destination table type `{destination_table_ty:?}` for `table.copy` instruction"</span>),
+<a href=#161 id=161 data-nosnippet>161</a>            ValidationError::MismatchedRefTypesOnValidationStack { expected, actual } =&gt; <span class="macro">write!</span>(f, <span class="string">"Mismatch of reference types on the value stack: Expected `{expected:?}` but got `{actual:?}`"</span>),
+<a href=#162 id=162 data-nosnippet>162</a>            ValidationError::IndirectCallToNonFuncRefTable(table_ty) =&gt; <span class="macro">write!</span>(f, <span class="string">"An indirect call to a table which does not store function references but instead `{table_ty:?}` was made"</span>),
+<a href=#163 id=163 data-nosnippet>163</a>            ValidationError::ExpectedReferenceTypeOnStack(found_valtype) =&gt; <span class="macro">write!</span>(f, <span class="string">"Expected a reference type but instead found a `{found_valtype:?}` on the stack"</span>),
+<a href=#164 id=164 data-nosnippet>164</a>            ValidationError::ReferencingAnUnreferencedFunction(func_idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"Referenced a function with index {func_idx} that was not referenced in prior validation"</span>),
+<a href=#165 id=165 data-nosnippet>165</a>            ValidationError::InvalidSelectTypeVectorLength(len) =&gt; <span class="macro">write!</span>(f, <span class="string">"The type vector of a `select` instruction must be of length 1 as of now but it is of length {len} instead"</span>),
+<a href=#166 id=166 data-nosnippet>166</a>            ValidationError::DuplicateExportName =&gt; <span class="macro">write!</span>(f,<span class="string">"Multiple exports share the same name"</span>),
+<a href=#167 id=167 data-nosnippet>167</a>            ValidationError::UnsupportedMultipleMemoriesProposal =&gt; <span class="macro">write!</span>(f,<span class="string">"A memory index other than 1 was used, but the proposal for multiple memories is not yet supported"</span>),
+<a href=#168 id=168 data-nosnippet>168</a>            ValidationError::CodeExprHasTrailingInstructions =&gt; <span class="macro">write!</span>(f,<span class="string">"A code expression has invalid trailing instructions following its `end` instruction"</span>),
+<a href=#169 id=169 data-nosnippet>169</a>            ValidationError::FunctionAndCodeSectionsHaveDifferentLengths =&gt; <span class="macro">write!</span>(f,<span class="string">"The function and code sections have different lengths"</span>),
+<a href=#170 id=170 data-nosnippet>170</a>            ValidationError::DataCountAndDataSectionsLengthAreDifferent =&gt; <span class="macro">write!</span>(f,<span class="string">"The data count section specifies a different length than there are data segments in the data section"</span>),
+<a href=#171 id=171 data-nosnippet>171</a>            ValidationError::InvalidImportType =&gt; f.write_str(<span class="string">"Invalid import type"</span>),
+<a href=#172 id=172 data-nosnippet>172</a>            ValidationError::InvalidStartFunctionSignature =&gt; <span class="macro">write!</span>(f,<span class="string">"The start function has parameters or return types which it is not allowed to have"</span>),
+<a href=#173 id=173 data-nosnippet>173</a>            ValidationError::MissingDataCountSection =&gt; f.write_str(<span class="string">"Some instructions could not be validated because the data count section is missing"</span>),
+<a href=#174 id=174 data-nosnippet>174</a>            ValidationError::InvalidDataSegmentMode(mode) =&gt; <span class="macro">write!</span>(f, <span class="string">"The mode of a data segment was invalid (only 0..=2 is allowed): {mode}"</span>),
+<a href=#175 id=175 data-nosnippet>175</a>            ValidationError::InvalidElementMode(mode) =&gt; <span class="macro">write!</span>(f, <span class="string">"The mode of an element was invalid (only 0..=7 is allowed): {mode}"</span>),
+<a href=#176 id=176 data-nosnippet>176</a>            ValidationError::TooManyFunctions =&gt; f.write_str(<span class="string">"The module contains too many functions. The maximum number of functions (either imported or locally-defined) is 2^32 - 1"</span>),
+<a href=#177 id=177 data-nosnippet>177</a>            ValidationError::TooManyTables =&gt; f.write_str(<span class="string">"The module contains too many tables. The maximum number of tables (either imported or locally-defined) is 2^32 - 1"</span>),
+<a href=#178 id=178 data-nosnippet>178</a>            ValidationError::TooManyMemories =&gt; f.write_str(<span class="string">"The module contains too many memories. The maximum number of memories (either imported or locally-defined) is 2^32 - 1"</span>),
+<a href=#179 id=179 data-nosnippet>179</a>            ValidationError::TooManyGlobals =&gt; f.write_str(<span class="string">"The module contains too many globals. The maximum number of globals (either imported or locally-defined) is 2^32 - 1"</span>),
+<a href=#180 id=180 data-nosnippet>180</a>            ValidationError::LimitsMinLargerThanMax { min, max } =&gt; <span class="macro">write!</span>(f, <span class="string">"Limits are invalid because min={min} is larger than max={max}"</span>),
+<a href=#181 id=181 data-nosnippet>181</a>            ValidationError::LimitsNotWithinRange(range) =&gt; <span class="macro">write!</span>(f, <span class="string">"The min or max field of a limits type is not within the expected range of {range}"</span>),
+<a href=#182 id=182 data-nosnippet>182</a>            ValidationError::MutGlobalInConstGlobalGet =&gt; f.write_str(<span class="string">"A mutable global was referenced in some global.get instruction in a constant expression"</span>),
+<a href=#183 id=183 data-nosnippet>183</a>            ValidationError::TooManyParamsAndLocals =&gt; f.write_str(<span class="string">"A function specifies a number of parameters and locals which exceed 2^32-1 when added together. This is not defined as a validation error by the specification, but very likely to be incorrect, as this makes some locals un-addressable."</span>),
+<a href=#184 id=184 data-nosnippet>184</a>        }
+<a href=#185 id=185 data-nosnippet>185</a>    }
+<a href=#186 id=186 data-nosnippet>186</a>}
+<a href=#187 id=187 data-nosnippet>187</a>
+<a href=#188 id=188 data-nosnippet>188</a><span class="kw">impl </span>From&lt;DecodingError&gt; <span class="kw">for </span>ValidationError {
+<a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">fn </span>from(error: DecodingError) -&gt; <span class="self">Self </span>{
+<a href=#190 id=190 data-nosnippet>190</a>        <span class="self">Self</span>::Decoding(error)
+<a href=#191 id=191 data-nosnippet>191</a>    }
+<a href=#192 id=192 data-nosnippet>192</a>}
+<a href=#193 id=193 data-nosnippet>193</a>
+<a href=#194 id=194 data-nosnippet>194</a><span class="attr">#[cfg(test)]
+<a href=#195 id=195 data-nosnippet>195</a></span><span class="kw">mod </span>test {
+<a href=#196 id=196 data-nosnippet>196</a>    <span class="kw">use </span>alloc::string::ToString;
+<a href=#197 id=197 data-nosnippet>197</a>
+<a href=#198 id=198 data-nosnippet>198</a>    <span class="kw">use </span><span class="kw">crate</span>::core::decoding::error::DecodingError;
 <a href=#199 id=199 data-nosnippet>199</a>
-<a href=#200 id=200 data-nosnippet>200</a>    <span class="kw">use </span><span class="kw">crate</span>::core::decoding::error::DecodingError;
-<a href=#201 id=201 data-nosnippet>201</a>
-<a href=#202 id=202 data-nosnippet>202</a>    <span class="attr">#[test]
-<a href=#203 id=203 data-nosnippet>203</a>    </span><span class="kw">fn </span>fmt_invalid_magic() {
-<a href=#204 id=204 data-nosnippet>204</a>        <span class="macro">assert!</span>(DecodingError::InvalidMagic
-<a href=#205 id=205 data-nosnippet>205</a>            .to_string()
-<a href=#206 id=206 data-nosnippet>206</a>            .contains(<span class="string">"magic number"</span>));
-<a href=#207 id=207 data-nosnippet>207</a>    }
-<a href=#208 id=208 data-nosnippet>208</a>
-<a href=#209 id=209 data-nosnippet>209</a>    <span class="attr">#[test]
-<a href=#210 id=210 data-nosnippet>210</a>    </span><span class="kw">fn </span>fmt_invalid_version() {
-<a href=#211 id=211 data-nosnippet>211</a>        <span class="macro">assert!</span>(DecodingError::InvalidBinaryFormatVersion
-<a href=#212 id=212 data-nosnippet>212</a>            .to_string()
-<a href=#213 id=213 data-nosnippet>213</a>            .contains(<span class="string">"version"</span>));
-<a href=#214 id=214 data-nosnippet>214</a>    }
-<a href=#215 id=215 data-nosnippet>215</a>}
+<a href=#200 id=200 data-nosnippet>200</a>    <span class="attr">#[test]
+<a href=#201 id=201 data-nosnippet>201</a>    </span><span class="kw">fn </span>fmt_invalid_magic() {
+<a href=#202 id=202 data-nosnippet>202</a>        <span class="macro">assert!</span>(DecodingError::InvalidMagic
+<a href=#203 id=203 data-nosnippet>203</a>            .to_string()
+<a href=#204 id=204 data-nosnippet>204</a>            .contains(<span class="string">"magic number"</span>));
+<a href=#205 id=205 data-nosnippet>205</a>    }
+<a href=#206 id=206 data-nosnippet>206</a>
+<a href=#207 id=207 data-nosnippet>207</a>    <span class="attr">#[test]
+<a href=#208 id=208 data-nosnippet>208</a>    </span><span class="kw">fn </span>fmt_invalid_version() {
+<a href=#209 id=209 data-nosnippet>209</a>        <span class="macro">assert!</span>(DecodingError::InvalidBinaryFormatVersion
+<a href=#210 id=210 data-nosnippet>210</a>            .to_string()
+<a href=#211 id=211 data-nosnippet>211</a>            .contains(<span class="string">"version"</span>));
+<a href=#212 id=212 data-nosnippet>212</a>    }
+<a href=#213 id=213 data-nosnippet>213</a>}
 </code></pre></div></section></main></body></html>

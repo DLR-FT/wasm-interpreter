@@ -242,144 +242,160 @@
 <a href=#242 id=242 data-nosnippet>242</a>        // at this index is guaranteed to be initialized.
 <a href=#243 id=243 data-nosnippet>243</a>        </span><span class="kw">unsafe </span>{ element.assume_init_mut() }
 <a href=#244 id=244 data-nosnippet>244</a>    }
-<a href=#245 id=245 data-nosnippet>245</a>}
-<a href=#246 id=246 data-nosnippet>246</a>
-<a href=#247 id=247 data-nosnippet>247</a><span class="kw">impl</span>&lt;T: Clone&gt; FixedCapacityVec&lt;T&gt; {
-<a href=#248 id=248 data-nosnippet>248</a>    <span class="doccomment">/// Push from a slice into [`Self`], appending after the last/topmost element
-<a href=#249 id=249 data-nosnippet>249</a>    </span><span class="kw">pub fn </span>push_from_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, values: <span class="kw-2">&amp;</span>[T]) -&gt; <span class="prelude-ty">Result</span>&lt;(), FullContainerError&gt; {
-<a href=#250 id=250 data-nosnippet>250</a>        <span class="comment">// verify `values` fits into the new self
-<a href=#251 id=251 data-nosnippet>251</a>        </span><span class="kw">if </span>values.len() &gt; (<span class="self">self</span>.capacity() - <span class="self">self</span>.len) {
-<a href=#252 id=252 data-nosnippet>252</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(FullContainerError);
-<a href=#253 id=253 data-nosnippet>253</a>        }
-<a href=#254 id=254 data-nosnippet>254</a>
-<a href=#255 id=255 data-nosnippet>255</a>        <span class="kw">for </span>e <span class="kw">in </span>values {
-<a href=#256 id=256 data-nosnippet>256</a>            <span class="comment">// SAFETY: this is safe, as the previous if statement verifies that there is enough
-<a href=#257 id=257 data-nosnippet>257</a>            // space for all elements from `values` in `stack`
-<a href=#258 id=258 data-nosnippet>258</a>            </span><span class="kw">unsafe </span>{ <span class="self">self</span>.push_unchecked(e.clone()) };
-<a href=#259 id=259 data-nosnippet>259</a>        }
-<a href=#260 id=260 data-nosnippet>260</a>
-<a href=#261 id=261 data-nosnippet>261</a>        <span class="prelude-val">Ok</span>(())
-<a href=#262 id=262 data-nosnippet>262</a>    }
-<a href=#263 id=263 data-nosnippet>263</a>
-<a href=#264 id=264 data-nosnippet>264</a>    <span class="doccomment">/// Pop `n` elements from [`Self`] into a slice. The topmost/last element of [`Self`] will
-<a href=#265 id=265 data-nosnippet>265</a>    /// become the slice's last element.
-<a href=#266 id=266 data-nosnippet>266</a>    </span><span class="kw">pub fn </span>pop_into_slice(
-<a href=#267 id=267 data-nosnippet>267</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#268 id=268 data-nosnippet>268</a>        n: usize,
-<a href=#269 id=269 data-nosnippet>269</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl </span>core::ops::Deref&lt;Target = [T]&gt; + <span class="lifetime">'_</span>, EmptyContainerError&gt; {
-<a href=#270 id=270 data-nosnippet>270</a>        <span class="comment">// verify at least `n` elements are still one the stack
-<a href=#271 id=271 data-nosnippet>271</a>        </span><span class="kw">if </span>n &gt; <span class="self">self</span>.len() {
-<a href=#272 id=272 data-nosnippet>272</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(EmptyContainerError);
-<a href=#273 id=273 data-nosnippet>273</a>        }
-<a href=#274 id=274 data-nosnippet>274</a>
-<a href=#275 id=275 data-nosnippet>275</a>        <span class="kw">let </span>old_len = <span class="self">self</span>.len();
+<a href=#245 id=245 data-nosnippet>245</a>
+<a href=#246 id=246 data-nosnippet>246</a>    <span class="doccomment">/// Drops all elements in this vector and sets its length to zero. The capacity of this vector
+<a href=#247 id=247 data-nosnippet>247</a>    /// remains unaltered.
+<a href=#248 id=248 data-nosnippet>248</a>    </span><span class="kw">pub fn </span>clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#249 id=249 data-nosnippet>249</a>        <span class="comment">// SAFETY: self.len is always less or equal to the capacity, i.e. the length of
+<a href=#250 id=250 data-nosnippet>250</a>        // self.elements. Therefore, this must always return a valid slice.
+<a href=#251 id=251 data-nosnippet>251</a>        </span><span class="kw">let </span>elements_to_drop = <span class="kw">unsafe </span>{ <span class="self">self</span>.elements.get_unchecked_mut(<span class="number">0</span>..<span class="self">self</span>.len) };
+<a href=#252 id=252 data-nosnippet>252</a>        <span class="kw">for </span>element <span class="kw">in </span>elements_to_drop {
+<a href=#253 id=253 data-nosnippet>253</a>            <span class="comment">// SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
+<a href=#254 id=254 data-nosnippet>254</a>            // number of initialized values and elements_to_drop is exactly the slice starting at
+<a href=#255 id=255 data-nosnippet>255</a>            // index 0 and ending at index `self.len` (exclusively).
+<a href=#256 id=256 data-nosnippet>256</a>            </span><span class="kw">unsafe </span>{ element.assume_init_drop() };
+<a href=#257 id=257 data-nosnippet>257</a>        }
+<a href=#258 id=258 data-nosnippet>258</a>
+<a href=#259 id=259 data-nosnippet>259</a>        <span class="self">self</span>.len = <span class="number">0</span>;
+<a href=#260 id=260 data-nosnippet>260</a>    }
+<a href=#261 id=261 data-nosnippet>261</a>}
+<a href=#262 id=262 data-nosnippet>262</a>
+<a href=#263 id=263 data-nosnippet>263</a><span class="kw">impl</span>&lt;T: Clone&gt; FixedCapacityVec&lt;T&gt; {
+<a href=#264 id=264 data-nosnippet>264</a>    <span class="doccomment">/// Push from a slice into [`Self`], appending after the last/topmost element
+<a href=#265 id=265 data-nosnippet>265</a>    </span><span class="kw">pub fn </span>push_from_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, values: <span class="kw-2">&amp;</span>[T]) -&gt; <span class="prelude-ty">Result</span>&lt;(), FullContainerError&gt; {
+<a href=#266 id=266 data-nosnippet>266</a>        <span class="comment">// verify `values` fits into the new self
+<a href=#267 id=267 data-nosnippet>267</a>        </span><span class="kw">if </span>values.len() &gt; (<span class="self">self</span>.capacity() - <span class="self">self</span>.len) {
+<a href=#268 id=268 data-nosnippet>268</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(FullContainerError);
+<a href=#269 id=269 data-nosnippet>269</a>        }
+<a href=#270 id=270 data-nosnippet>270</a>
+<a href=#271 id=271 data-nosnippet>271</a>        <span class="kw">for </span>e <span class="kw">in </span>values {
+<a href=#272 id=272 data-nosnippet>272</a>            <span class="comment">// SAFETY: this is safe, as the previous if statement verifies that there is enough
+<a href=#273 id=273 data-nosnippet>273</a>            // space for all elements from `values` in `stack`
+<a href=#274 id=274 data-nosnippet>274</a>            </span><span class="kw">unsafe </span>{ <span class="self">self</span>.push_unchecked(e.clone()) };
+<a href=#275 id=275 data-nosnippet>275</a>        }
 <a href=#276 id=276 data-nosnippet>276</a>
-<a href=#277 id=277 data-nosnippet>277</a>        <span class="comment">// SAFETY: the previous if statement ensure that `n` is smaller than or equal to
-<a href=#278 id=278 data-nosnippet>278</a>        // `self.len()`, hence this subtraction is guaranteed to not underflow
-<a href=#279 id=279 data-nosnippet>279</a>        </span><span class="self">self</span>.len = <span class="kw">unsafe </span>{ <span class="self">self</span>.len.unchecked_sub(n) };
-<a href=#280 id=280 data-nosnippet>280</a>
-<a href=#281 id=281 data-nosnippet>281</a>        <span class="comment">// SAFETY: the prior if statement checks that `stack_height - n` wont underflow. And the
-<a href=#282 id=282 data-nosnippet>282</a>        // rest of the module ensures that stack_height never gets bigger than `self.stack.len()`.
-<a href=#283 id=283 data-nosnippet>283</a>        // Thus the index range is always in-bounds.
-<a href=#284 id=284 data-nosnippet>284</a>        </span><span class="prelude-val">Ok</span>(SliceDropGuard(<span class="kw">unsafe </span>{
-<a href=#285 id=285 data-nosnippet>285</a>            <span class="self">self</span>.elements.get_unchecked_mut(<span class="self">self</span>.len..old_len)
-<a href=#286 id=286 data-nosnippet>286</a>        }))
-<a href=#287 id=287 data-nosnippet>287</a>    }
-<a href=#288 id=288 data-nosnippet>288</a>}
-<a href=#289 id=289 data-nosnippet>289</a>
-<a href=#290 id=290 data-nosnippet>290</a><span class="kw">pub struct </span>SliceDropGuard&lt;<span class="lifetime">'a</span>, T&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[MaybeUninit&lt;T&gt;]);
-<a href=#291 id=291 data-nosnippet>291</a>
-<a href=#292 id=292 data-nosnippet>292</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; core::ops::Deref <span class="kw">for </span>SliceDropGuard&lt;<span class="lifetime">'a</span>, T&gt; {
-<a href=#293 id=293 data-nosnippet>293</a>    <span class="kw">type </span>Target = [T];
-<a href=#294 id=294 data-nosnippet>294</a>
-<a href=#295 id=295 data-nosnippet>295</a>    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Target {
-<a href=#296 id=296 data-nosnippet>296</a>        <span class="comment">// SAFETY: The rest of the module ensures that stack_height never gets bigger than
-<a href=#297 id=297 data-nosnippet>297</a>        // `self.stack.len()`. Thus the index range is always in-bounds.
-<a href=#298 id=298 data-nosnippet>298</a>        </span><span class="kw">unsafe </span>{ slice_assume_init(<span class="self">self</span>.<span class="number">0</span>) }
-<a href=#299 id=299 data-nosnippet>299</a>    }
-<a href=#300 id=300 data-nosnippet>300</a>}
-<a href=#301 id=301 data-nosnippet>301</a>
-<a href=#302 id=302 data-nosnippet>302</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Drop <span class="kw">for </span>SliceDropGuard&lt;<span class="lifetime">'a</span>, T&gt; {
-<a href=#303 id=303 data-nosnippet>303</a>    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#304 id=304 data-nosnippet>304</a>        <span class="kw">for </span>e <span class="kw">in </span><span class="kw-2">&amp;mut *</span><span class="self">self</span>.<span class="number">0 </span>{
-<a href=#305 id=305 data-nosnippet>305</a>            <span class="comment">// SAFETY: The rest of the module ensures that stack_height never gets bigger than
-<a href=#306 id=306 data-nosnippet>306</a>            // `self.stack.len()`. Thus the index range is always in-bounds.
-<a href=#307 id=307 data-nosnippet>307</a>            </span><span class="kw">unsafe </span>{ e.assume_init_drop() };
-<a href=#308 id=308 data-nosnippet>308</a>        }
-<a href=#309 id=309 data-nosnippet>309</a>    }
-<a href=#310 id=310 data-nosnippet>310</a>}
-<a href=#311 id=311 data-nosnippet>311</a>
-<a href=#312 id=312 data-nosnippet>312</a><span class="kw">impl</span>&lt;T: Copy&gt; FixedCapacityVec&lt;T&gt; {
-<a href=#313 id=313 data-nosnippet>313</a>    <span class="doccomment">/// Remove `remove_count` values from [`Self`], keeping the topmost `keep_count` values
-<a href=#314 id=314 data-nosnippet>314</a>    ///
-<a href=#315 id=315 data-nosnippet>315</a>    /// From the [`Self`], remove `remove_count` elements, by sliding down the `keep_count` last/topmost
-<a href=#316 id=316 data-nosnippet>316</a>    /// values `remove_count` positions forward/towards the bottom.
-<a href=#317 id=317 data-nosnippet>317</a>    ///
-<a href=#318 id=318 data-nosnippet>318</a>    /// **Effects**
-<a href=#319 id=319 data-nosnippet>319</a>    ///
-<a href=#320 id=320 data-nosnippet>320</a>    /// - after the operation, [`Self`] will contain `remove_count` fewer elements
-<a href=#321 id=321 data-nosnippet>321</a>    /// - `keep_count` topmost elements will be identical before and after the operation
-<a href=#322 id=322 data-nosnippet>322</a>    /// - all elements below the `remove_count + keep_count` topmost stack entry remain
-<a href=#323 id=323 data-nosnippet>323</a>    </span><span class="kw">pub fn </span>remove_in_between(<span class="kw-2">&amp;mut </span><span class="self">self</span>, remove_count: usize, keep_count: usize) {
-<a href=#324 id=324 data-nosnippet>324</a>        <span class="comment">// TODO make unchecked version, remove overflowing arithmetic in safe version
-<a href=#325 id=325 data-nosnippet>325</a>        </span><span class="kw">let </span>len = <span class="self">self</span>.len();
-<a href=#326 id=326 data-nosnippet>326</a>        <span class="self">self</span>.elements
-<a href=#327 id=327 data-nosnippet>327</a>            .copy_within(len - keep_count..len, len - keep_count - remove_count);
-<a href=#328 id=328 data-nosnippet>328</a>        <span class="self">self</span>.len -= remove_count;
-<a href=#329 id=329 data-nosnippet>329</a>    }
-<a href=#330 id=330 data-nosnippet>330</a>}
-<a href=#331 id=331 data-nosnippet>331</a>
-<a href=#332 id=332 data-nosnippet>332</a><span class="kw">impl</span>&lt;T: core::fmt::Debug&gt; core::fmt::Debug <span class="kw">for </span>FixedCapacityVec&lt;T&gt; {
-<a href=#333 id=333 data-nosnippet>333</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
-<a href=#334 id=334 data-nosnippet>334</a>        <span class="comment">// SAFETY: per the guarantees of push/pop/etc., `0..self.stack_height` is always a range to
-<a href=#335 id=335 data-nosnippet>335</a>        // initalized values.
-<a href=#336 id=336 data-nosnippet>336</a>        </span><span class="kw">let </span>stack_elements_slice = <span class="kw">unsafe </span>{ slice_assume_init(<span class="kw-2">&amp;</span><span class="self">self</span>.elements[..<span class="self">self</span>.len]) };
-<a href=#337 id=337 data-nosnippet>337</a>
-<a href=#338 id=338 data-nosnippet>338</a>        f.debug_struct(<span class="string">"Stack"</span>)
-<a href=#339 id=339 data-nosnippet>339</a>            .field(<span class="string">"stack"</span>, <span class="kw-2">&amp;</span>stack_elements_slice)
-<a href=#340 id=340 data-nosnippet>340</a>            .field(<span class="string">"stack_height"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.len)
-<a href=#341 id=341 data-nosnippet>341</a>            .finish()
-<a href=#342 id=342 data-nosnippet>342</a>    }
-<a href=#343 id=343 data-nosnippet>343</a>}
-<a href=#344 id=344 data-nosnippet>344</a>
-<a href=#345 id=345 data-nosnippet>345</a><span class="kw">impl</span>&lt;T&gt; Drop <span class="kw">for </span>FixedCapacityVec&lt;T&gt; {
-<a href=#346 id=346 data-nosnippet>346</a>    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#347 id=347 data-nosnippet>347</a>        <span class="comment">// SAFETY: self is guaranteed to have at least `self.len` elements, because `sel.len` can
-<a href=#348 id=348 data-nosnippet>348</a>        // not grow past `self.elements.len` (aka `self.capacity()`).
-<a href=#349 id=349 data-nosnippet>349</a>        </span><span class="kw">for </span>e <span class="kw">in unsafe </span>{ <span class="self">self</span>.elements.get_unchecked_mut(<span class="number">0</span>..<span class="self">self</span>.len) } {
-<a href=#350 id=350 data-nosnippet>350</a>            <span class="comment">// SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
-<a href=#351 id=351 data-nosnippet>351</a>            // number of initialized values starting from `self.element`'s beginning.
-<a href=#352 id=352 data-nosnippet>352</a>            </span><span class="kw">unsafe </span>{ e.assume_init_drop() }
-<a href=#353 id=353 data-nosnippet>353</a>        }
-<a href=#354 id=354 data-nosnippet>354</a>    }
-<a href=#355 id=355 data-nosnippet>355</a>}
-<a href=#356 id=356 data-nosnippet>356</a>
-<a href=#357 id=357 data-nosnippet>357</a><span class="comment">// TODO use assume_init_ref, once we get the MSRV to 1.93.0
-<a href=#358 id=358 data-nosnippet>358</a></span><span class="doccomment">/// # Safety
-<a href=#359 id=359 data-nosnippet>359</a>///
-<a href=#360 id=360 data-nosnippet>360</a>/// Use this to assume a range of a slice to be initialized. This is provided starting with Rust
-<a href=#361 id=361 data-nosnippet>361</a>/// 1.93.0.
-<a href=#362 id=362 data-nosnippet>362</a></span><span class="attr">#[inline(always)]
-<a href=#363 id=363 data-nosnippet>363</a></span><span class="kw">unsafe fn </span>slice_assume_init&lt;T&gt;(slice: <span class="kw-2">&amp;</span>[MaybeUninit&lt;T&gt;]) -&gt; <span class="kw-2">&amp;</span>[T] {
-<a href=#364 id=364 data-nosnippet>364</a>    <span class="comment">// SAFETY: casting `slice` to a `*const [T]` is safe since the caller guarantees that
-<a href=#365 id=365 data-nosnippet>365</a>    // `slice` is initialized, and `MaybeUninit` is guaranteed to have the same layout as `T`.
-<a href=#366 id=366 data-nosnippet>366</a>    // The pointer obtained is valid since it refers to memory owned by `slice` which is a
-<a href=#367 id=367 data-nosnippet>367</a>    // reference and thus guaranteed to be valid for reads.
-<a href=#368 id=368 data-nosnippet>368</a>    </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>(slice <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_ as </span><span class="kw-2">*const </span>[T]) }
-<a href=#369 id=369 data-nosnippet>369</a>}
-<a href=#370 id=370 data-nosnippet>370</a>
-<a href=#371 id=371 data-nosnippet>371</a><span class="attr">#[cfg(test)]
-<a href=#372 id=372 data-nosnippet>372</a></span><span class="kw">mod </span>test {
-<a href=#373 id=373 data-nosnippet>373</a>    <span class="kw">use </span>super::<span class="kw-2">*</span>;
-<a href=#374 id=374 data-nosnippet>374</a>
-<a href=#375 id=375 data-nosnippet>375</a>    <span class="attr">#[test]
-<a href=#376 id=376 data-nosnippet>376</a>    </span><span class="kw">fn </span>pop_into_slice_rejects_more_than_len() {
-<a href=#377 id=377 data-nosnippet>377</a>        <span class="kw">let </span><span class="kw-2">mut </span>vec = FixedCapacityVec::&lt;u32&gt;::with_capacity(<span class="number">4</span>);
-<a href=#378 id=378 data-nosnippet>378</a>        vec.push_from_slice(<span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">2</span>]).unwrap();
-<a href=#379 id=379 data-nosnippet>379</a>
-<a href=#380 id=380 data-nosnippet>380</a>        <span class="comment">// requesting more elements than present must fail, even while within capacity
-<a href=#381 id=381 data-nosnippet>381</a>        </span><span class="macro">assert!</span>(vec.pop_into_slice(<span class="number">3</span>).is_err());
-<a href=#382 id=382 data-nosnippet>382</a>        <span class="macro">assert_eq!</span>(vec.len(), <span class="number">2</span>);
-<a href=#383 id=383 data-nosnippet>383</a>    }
-<a href=#384 id=384 data-nosnippet>384</a>}
+<a href=#277 id=277 data-nosnippet>277</a>        <span class="prelude-val">Ok</span>(())
+<a href=#278 id=278 data-nosnippet>278</a>    }
+<a href=#279 id=279 data-nosnippet>279</a>
+<a href=#280 id=280 data-nosnippet>280</a>    <span class="doccomment">/// Pop `n` elements from [`Self`] into a slice. The topmost/last element of [`Self`] will
+<a href=#281 id=281 data-nosnippet>281</a>    /// become the slice's last element.
+<a href=#282 id=282 data-nosnippet>282</a>    </span><span class="kw">pub fn </span>pop_into_slice(
+<a href=#283 id=283 data-nosnippet>283</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#284 id=284 data-nosnippet>284</a>        n: usize,
+<a href=#285 id=285 data-nosnippet>285</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl </span>core::ops::Deref&lt;Target = [T]&gt; + <span class="lifetime">'_</span>, EmptyContainerError&gt; {
+<a href=#286 id=286 data-nosnippet>286</a>        <span class="comment">// verify at least `n` elements are still one the stack
+<a href=#287 id=287 data-nosnippet>287</a>        </span><span class="kw">if </span>n &gt; <span class="self">self</span>.len() {
+<a href=#288 id=288 data-nosnippet>288</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(EmptyContainerError);
+<a href=#289 id=289 data-nosnippet>289</a>        }
+<a href=#290 id=290 data-nosnippet>290</a>
+<a href=#291 id=291 data-nosnippet>291</a>        <span class="kw">let </span>old_len = <span class="self">self</span>.len();
+<a href=#292 id=292 data-nosnippet>292</a>
+<a href=#293 id=293 data-nosnippet>293</a>        <span class="comment">// SAFETY: the previous if statement ensure that `n` is smaller than or equal to
+<a href=#294 id=294 data-nosnippet>294</a>        // `self.len()`, hence this subtraction is guaranteed to not underflow
+<a href=#295 id=295 data-nosnippet>295</a>        </span><span class="self">self</span>.len = <span class="kw">unsafe </span>{ <span class="self">self</span>.len.unchecked_sub(n) };
+<a href=#296 id=296 data-nosnippet>296</a>
+<a href=#297 id=297 data-nosnippet>297</a>        <span class="comment">// SAFETY: the prior if statement checks that `stack_height - n` wont underflow. And the
+<a href=#298 id=298 data-nosnippet>298</a>        // rest of the module ensures that stack_height never gets bigger than `self.stack.len()`.
+<a href=#299 id=299 data-nosnippet>299</a>        // Thus the index range is always in-bounds.
+<a href=#300 id=300 data-nosnippet>300</a>        </span><span class="prelude-val">Ok</span>(SliceDropGuard(<span class="kw">unsafe </span>{
+<a href=#301 id=301 data-nosnippet>301</a>            <span class="self">self</span>.elements.get_unchecked_mut(<span class="self">self</span>.len..old_len)
+<a href=#302 id=302 data-nosnippet>302</a>        }))
+<a href=#303 id=303 data-nosnippet>303</a>    }
+<a href=#304 id=304 data-nosnippet>304</a>}
+<a href=#305 id=305 data-nosnippet>305</a>
+<a href=#306 id=306 data-nosnippet>306</a><span class="kw">pub struct </span>SliceDropGuard&lt;<span class="lifetime">'a</span>, T&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[MaybeUninit&lt;T&gt;]);
+<a href=#307 id=307 data-nosnippet>307</a>
+<a href=#308 id=308 data-nosnippet>308</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; core::ops::Deref <span class="kw">for </span>SliceDropGuard&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#309 id=309 data-nosnippet>309</a>    <span class="kw">type </span>Target = [T];
+<a href=#310 id=310 data-nosnippet>310</a>
+<a href=#311 id=311 data-nosnippet>311</a>    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Target {
+<a href=#312 id=312 data-nosnippet>312</a>        <span class="comment">// SAFETY: The rest of the module ensures that stack_height never gets bigger than
+<a href=#313 id=313 data-nosnippet>313</a>        // `self.stack.len()`. Thus the index range is always in-bounds.
+<a href=#314 id=314 data-nosnippet>314</a>        </span><span class="kw">unsafe </span>{ slice_assume_init(<span class="self">self</span>.<span class="number">0</span>) }
+<a href=#315 id=315 data-nosnippet>315</a>    }
+<a href=#316 id=316 data-nosnippet>316</a>}
+<a href=#317 id=317 data-nosnippet>317</a>
+<a href=#318 id=318 data-nosnippet>318</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Drop <span class="kw">for </span>SliceDropGuard&lt;<span class="lifetime">'a</span>, T&gt; {
+<a href=#319 id=319 data-nosnippet>319</a>    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#320 id=320 data-nosnippet>320</a>        <span class="kw">for </span>e <span class="kw">in </span><span class="kw-2">&amp;mut *</span><span class="self">self</span>.<span class="number">0 </span>{
+<a href=#321 id=321 data-nosnippet>321</a>            <span class="comment">// SAFETY: The rest of the module ensures that stack_height never gets bigger than
+<a href=#322 id=322 data-nosnippet>322</a>            // `self.stack.len()`. Thus the index range is always in-bounds.
+<a href=#323 id=323 data-nosnippet>323</a>            </span><span class="kw">unsafe </span>{ e.assume_init_drop() };
+<a href=#324 id=324 data-nosnippet>324</a>        }
+<a href=#325 id=325 data-nosnippet>325</a>    }
+<a href=#326 id=326 data-nosnippet>326</a>}
+<a href=#327 id=327 data-nosnippet>327</a>
+<a href=#328 id=328 data-nosnippet>328</a><span class="kw">impl</span>&lt;T: Copy&gt; FixedCapacityVec&lt;T&gt; {
+<a href=#329 id=329 data-nosnippet>329</a>    <span class="doccomment">/// Remove `remove_count` values from [`Self`], keeping the topmost `keep_count` values
+<a href=#330 id=330 data-nosnippet>330</a>    ///
+<a href=#331 id=331 data-nosnippet>331</a>    /// From the [`Self`], remove `remove_count` elements, by sliding down the `keep_count` last/topmost
+<a href=#332 id=332 data-nosnippet>332</a>    /// values `remove_count` positions forward/towards the bottom.
+<a href=#333 id=333 data-nosnippet>333</a>    ///
+<a href=#334 id=334 data-nosnippet>334</a>    /// **Effects**
+<a href=#335 id=335 data-nosnippet>335</a>    ///
+<a href=#336 id=336 data-nosnippet>336</a>    /// - after the operation, [`Self`] will contain `remove_count` fewer elements
+<a href=#337 id=337 data-nosnippet>337</a>    /// - `keep_count` topmost elements will be identical before and after the operation
+<a href=#338 id=338 data-nosnippet>338</a>    /// - all elements below the `remove_count + keep_count` topmost stack entry remain
+<a href=#339 id=339 data-nosnippet>339</a>    </span><span class="kw">pub fn </span>remove_in_between(<span class="kw-2">&amp;mut </span><span class="self">self</span>, remove_count: usize, keep_count: usize) {
+<a href=#340 id=340 data-nosnippet>340</a>        <span class="comment">// TODO make unchecked version, remove overflowing arithmetic in safe version
+<a href=#341 id=341 data-nosnippet>341</a>        </span><span class="kw">let </span>len = <span class="self">self</span>.len();
+<a href=#342 id=342 data-nosnippet>342</a>        <span class="self">self</span>.elements
+<a href=#343 id=343 data-nosnippet>343</a>            .copy_within(len - keep_count..len, len - keep_count - remove_count);
+<a href=#344 id=344 data-nosnippet>344</a>        <span class="self">self</span>.len -= remove_count;
+<a href=#345 id=345 data-nosnippet>345</a>    }
+<a href=#346 id=346 data-nosnippet>346</a>}
+<a href=#347 id=347 data-nosnippet>347</a>
+<a href=#348 id=348 data-nosnippet>348</a><span class="kw">impl</span>&lt;T: core::fmt::Debug&gt; core::fmt::Debug <span class="kw">for </span>FixedCapacityVec&lt;T&gt; {
+<a href=#349 id=349 data-nosnippet>349</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
+<a href=#350 id=350 data-nosnippet>350</a>        <span class="comment">// SAFETY: per the guarantees of push/pop/etc., `0..self.stack_height` is always a range to
+<a href=#351 id=351 data-nosnippet>351</a>        // initalized values.
+<a href=#352 id=352 data-nosnippet>352</a>        </span><span class="kw">let </span>stack_elements_slice = <span class="kw">unsafe </span>{ slice_assume_init(<span class="kw-2">&amp;</span><span class="self">self</span>.elements[..<span class="self">self</span>.len]) };
+<a href=#353 id=353 data-nosnippet>353</a>
+<a href=#354 id=354 data-nosnippet>354</a>        f.debug_struct(<span class="string">"Stack"</span>)
+<a href=#355 id=355 data-nosnippet>355</a>            .field(<span class="string">"stack"</span>, <span class="kw-2">&amp;</span>stack_elements_slice)
+<a href=#356 id=356 data-nosnippet>356</a>            .field(<span class="string">"stack_height"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.len)
+<a href=#357 id=357 data-nosnippet>357</a>            .finish()
+<a href=#358 id=358 data-nosnippet>358</a>    }
+<a href=#359 id=359 data-nosnippet>359</a>}
+<a href=#360 id=360 data-nosnippet>360</a>
+<a href=#361 id=361 data-nosnippet>361</a><span class="kw">impl</span>&lt;T&gt; Drop <span class="kw">for </span>FixedCapacityVec&lt;T&gt; {
+<a href=#362 id=362 data-nosnippet>362</a>    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#363 id=363 data-nosnippet>363</a>        <span class="comment">// SAFETY: self is guaranteed to have at least `self.len` elements, because `sel.len` can
+<a href=#364 id=364 data-nosnippet>364</a>        // not grow past `self.elements.len` (aka `self.capacity()`).
+<a href=#365 id=365 data-nosnippet>365</a>        </span><span class="kw">for </span>e <span class="kw">in unsafe </span>{ <span class="self">self</span>.elements.get_unchecked_mut(<span class="number">0</span>..<span class="self">self</span>.len) } {
+<a href=#366 id=366 data-nosnippet>366</a>            <span class="comment">// SAFETY: This is guaranteed to be initialized, as `self.len` accurately tracks the
+<a href=#367 id=367 data-nosnippet>367</a>            // number of initialized values starting from `self.element`'s beginning.
+<a href=#368 id=368 data-nosnippet>368</a>            </span><span class="kw">unsafe </span>{ e.assume_init_drop() }
+<a href=#369 id=369 data-nosnippet>369</a>        }
+<a href=#370 id=370 data-nosnippet>370</a>    }
+<a href=#371 id=371 data-nosnippet>371</a>}
+<a href=#372 id=372 data-nosnippet>372</a>
+<a href=#373 id=373 data-nosnippet>373</a><span class="comment">// TODO use assume_init_ref, once we get the MSRV to 1.93.0
+<a href=#374 id=374 data-nosnippet>374</a></span><span class="doccomment">/// # Safety
+<a href=#375 id=375 data-nosnippet>375</a>///
+<a href=#376 id=376 data-nosnippet>376</a>/// Use this to assume a range of a slice to be initialized. This is provided starting with Rust
+<a href=#377 id=377 data-nosnippet>377</a>/// 1.93.0.
+<a href=#378 id=378 data-nosnippet>378</a></span><span class="attr">#[inline(always)]
+<a href=#379 id=379 data-nosnippet>379</a></span><span class="kw">unsafe fn </span>slice_assume_init&lt;T&gt;(slice: <span class="kw-2">&amp;</span>[MaybeUninit&lt;T&gt;]) -&gt; <span class="kw-2">&amp;</span>[T] {
+<a href=#380 id=380 data-nosnippet>380</a>    <span class="comment">// SAFETY: casting `slice` to a `*const [T]` is safe since the caller guarantees that
+<a href=#381 id=381 data-nosnippet>381</a>    // `slice` is initialized, and `MaybeUninit` is guaranteed to have the same layout as `T`.
+<a href=#382 id=382 data-nosnippet>382</a>    // The pointer obtained is valid since it refers to memory owned by `slice` which is a
+<a href=#383 id=383 data-nosnippet>383</a>    // reference and thus guaranteed to be valid for reads.
+<a href=#384 id=384 data-nosnippet>384</a>    </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>(slice <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_ as </span><span class="kw-2">*const </span>[T]) }
+<a href=#385 id=385 data-nosnippet>385</a>}
+<a href=#386 id=386 data-nosnippet>386</a>
+<a href=#387 id=387 data-nosnippet>387</a><span class="attr">#[cfg(test)]
+<a href=#388 id=388 data-nosnippet>388</a></span><span class="kw">mod </span>test {
+<a href=#389 id=389 data-nosnippet>389</a>    <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#390 id=390 data-nosnippet>390</a>
+<a href=#391 id=391 data-nosnippet>391</a>    <span class="attr">#[test]
+<a href=#392 id=392 data-nosnippet>392</a>    </span><span class="kw">fn </span>pop_into_slice_rejects_more_than_len() {
+<a href=#393 id=393 data-nosnippet>393</a>        <span class="kw">let </span><span class="kw-2">mut </span>vec = FixedCapacityVec::&lt;u32&gt;::with_capacity(<span class="number">4</span>);
+<a href=#394 id=394 data-nosnippet>394</a>        vec.push_from_slice(<span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">2</span>]).unwrap();
+<a href=#395 id=395 data-nosnippet>395</a>
+<a href=#396 id=396 data-nosnippet>396</a>        <span class="comment">// requesting more elements than present must fail, even while within capacity
+<a href=#397 id=397 data-nosnippet>397</a>        </span><span class="macro">assert!</span>(vec.pop_into_slice(<span class="number">3</span>).is_err());
+<a href=#398 id=398 data-nosnippet>398</a>        <span class="macro">assert_eq!</span>(vec.len(), <span class="number">2</span>);
+<a href=#399 id=399 data-nosnippet>399</a>    }
+<a href=#400 id=400 data-nosnippet>400</a>}
 </code></pre></div></section></main></body></html>

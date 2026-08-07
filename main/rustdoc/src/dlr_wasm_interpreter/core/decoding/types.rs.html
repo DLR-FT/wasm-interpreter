@@ -7,173 +7,177 @@
 <a href=#7 id=7 data-nosnippet>7</a>//! [^validation]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
 <a href=#8 id=8 data-nosnippet>8</a>//! [^binary-format]: [WebAssembly Specification 2.0 - 5.3. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A6).
 <a href=#9 id=9 data-nosnippet>9</a>
-<a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">use </span>crate::{
-<a href=#11 id=11 data-nosnippet>11</a>    core::{
-<a href=#12 id=12 data-nosnippet>12</a>        decoding::decoder::WasmDecoder,
-<a href=#13 id=13 data-nosnippet>13</a>        structure::{
-<a href=#14 id=14 data-nosnippet>14</a>            modules::indices::TypeIdx,
-<a href=#15 id=15 data-nosnippet>15</a>            types::{
-<a href=#16 id=16 data-nosnippet>16</a>                BlockType, FuncType, GlobalType, MemArg, NumType, RefType, ResultType, ValType,
-<a href=#17 id=17 data-nosnippet>17</a>                VecType,
-<a href=#18 id=18 data-nosnippet>18</a>            },
-<a href=#19 id=19 data-nosnippet>19</a>        },
-<a href=#20 id=20 data-nosnippet>20</a>    },
-<a href=#21 id=21 data-nosnippet>21</a>    DecodingError,
-<a href=#22 id=22 data-nosnippet>22</a>};
-<a href=#23 id=23 data-nosnippet>23</a>
-<a href=#24 id=24 data-nosnippet>24</a><span class="kw">impl </span>NumType {
-<a href=#25 id=25 data-nosnippet>25</a>    <span class="doccomment">/// Decodes a number type[^binary-format] which is always valid[^always-valid].
-<a href=#26 id=26 data-nosnippet>26</a>    ///
-<a href=#27 id=27 data-nosnippet>27</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.1. Number Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-numtype).
-<a href=#28 id=28 data-nosnippet>28</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
-<a href=#29 id=29 data-nosnippet>29</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
-<a href=#30 id=30 data-nosnippet>30</a>        <span class="kw">use </span>NumType::<span class="kw-2">*</span>;
-<a href=#31 id=31 data-nosnippet>31</a>
-<a href=#32 id=32 data-nosnippet>32</a>        <span class="kw">let </span>ty = <span class="kw">match </span>wasm.peek_u8()<span class="question-mark">? </span>{
-<a href=#33 id=33 data-nosnippet>33</a>            <span class="number">0x7F </span>=&gt; I32,
-<a href=#34 id=34 data-nosnippet>34</a>            <span class="number">0x7E </span>=&gt; I64,
-<a href=#35 id=35 data-nosnippet>35</a>            <span class="number">0x7D </span>=&gt; F32,
-<a href=#36 id=36 data-nosnippet>36</a>            <span class="number">0x7C </span>=&gt; F64,
-<a href=#37 id=37 data-nosnippet>37</a>            other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(DecodingError::MalformedNumTypeDiscriminator(other)),
-<a href=#38 id=38 data-nosnippet>38</a>        };
-<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let _ </span>= wasm.decode_u8();
-<a href=#40 id=40 data-nosnippet>40</a>
-<a href=#41 id=41 data-nosnippet>41</a>        <span class="prelude-val">Ok</span>(ty)
-<a href=#42 id=42 data-nosnippet>42</a>    }
-<a href=#43 id=43 data-nosnippet>43</a>}
-<a href=#44 id=44 data-nosnippet>44</a>
-<a href=#45 id=45 data-nosnippet>45</a><span class="kw">impl </span>VecType {
-<a href=#46 id=46 data-nosnippet>46</a>    <span class="doccomment">/// Decodes a vector type[^binary-format] which is always valid[^always-valid].
-<a href=#47 id=47 data-nosnippet>47</a>    ///
-<a href=#48 id=48 data-nosnippet>48</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.2. Vector Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-vectype).
-<a href=#49 id=49 data-nosnippet>49</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
-<a href=#50 id=50 data-nosnippet>50</a>    </span><span class="kw">fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
-<a href=#51 id=51 data-nosnippet>51</a>        <span class="kw">match </span>wasm.peek_u8()<span class="question-mark">? </span>{
-<a href=#52 id=52 data-nosnippet>52</a>            <span class="number">0x7b </span>=&gt; {
-<a href=#53 id=53 data-nosnippet>53</a>                <span class="kw">let _ </span>= wasm.decode_u8();
-<a href=#54 id=54 data-nosnippet>54</a>                <span class="prelude-val">Ok</span>(VecType)
-<a href=#55 id=55 data-nosnippet>55</a>            }
-<a href=#56 id=56 data-nosnippet>56</a>            other =&gt; <span class="prelude-val">Err</span>(DecodingError::MalformedVecTypeDiscriminator(other)),
-<a href=#57 id=57 data-nosnippet>57</a>        }
-<a href=#58 id=58 data-nosnippet>58</a>    }
-<a href=#59 id=59 data-nosnippet>59</a>}
-<a href=#60 id=60 data-nosnippet>60</a>
-<a href=#61 id=61 data-nosnippet>61</a><span class="kw">impl </span>RefType {
-<a href=#62 id=62 data-nosnippet>62</a>    <span class="doccomment">/// Decodes a reference type[^binary-format] which is always valid[^always-valid].
-<a href=#63 id=63 data-nosnippet>63</a>    ///
-<a href=#64 id=64 data-nosnippet>64</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.3. Reference Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-reftype).
-<a href=#65 id=65 data-nosnippet>65</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
-<a href=#66 id=66 data-nosnippet>66</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;RefType, DecodingError&gt; {
-<a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">let </span>ty = <span class="kw">match </span>wasm.peek_u8()<span class="question-mark">? </span>{
-<a href=#68 id=68 data-nosnippet>68</a>            <span class="number">0x70 </span>=&gt; RefType::FuncRef,
-<a href=#69 id=69 data-nosnippet>69</a>            <span class="number">0x6F </span>=&gt; RefType::ExternRef,
-<a href=#70 id=70 data-nosnippet>70</a>            other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(DecodingError::MalformedRefTypeDiscriminator(other)),
-<a href=#71 id=71 data-nosnippet>71</a>        };
-<a href=#72 id=72 data-nosnippet>72</a>        <span class="kw">let _ </span>= wasm.decode_u8();
-<a href=#73 id=73 data-nosnippet>73</a>
-<a href=#74 id=74 data-nosnippet>74</a>        <span class="prelude-val">Ok</span>(ty)
-<a href=#75 id=75 data-nosnippet>75</a>    }
-<a href=#76 id=76 data-nosnippet>76</a>}
-<a href=#77 id=77 data-nosnippet>77</a>
-<a href=#78 id=78 data-nosnippet>78</a><span class="kw">impl </span>ValType {
-<a href=#79 id=79 data-nosnippet>79</a>    <span class="doccomment">/// Decodes a value type[^binary-format] which is always valid[^always-valid].
-<a href=#80 id=80 data-nosnippet>80</a>    ///
-<a href=#81 id=81 data-nosnippet>81</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.4. Value Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-valtype).
-<a href=#82 id=82 data-nosnippet>82</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
-<a href=#83 id=83 data-nosnippet>83</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
-<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">if let </span><span class="prelude-val">Ok</span>(numtype) = NumType::decode(wasm).map(ValType::NumType) {
-<a href=#85 id=85 data-nosnippet>85</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(numtype);
-<a href=#86 id=86 data-nosnippet>86</a>        };
-<a href=#87 id=87 data-nosnippet>87</a>        <span class="kw">if let </span><span class="prelude-val">Ok</span>(vectype) = VecType::decode(wasm).map(|_ty| ValType::VecType) {
-<a href=#88 id=88 data-nosnippet>88</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(vectype);
-<a href=#89 id=89 data-nosnippet>89</a>        };
-<a href=#90 id=90 data-nosnippet>90</a>        <span class="kw">if let </span><span class="prelude-val">Ok</span>(reftype) = RefType::decode(wasm).map(ValType::RefType) {
-<a href=#91 id=91 data-nosnippet>91</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(reftype);
-<a href=#92 id=92 data-nosnippet>92</a>        }
-<a href=#93 id=93 data-nosnippet>93</a>
-<a href=#94 id=94 data-nosnippet>94</a>        <span class="prelude-val">Err</span>(DecodingError::MalformedValType)
-<a href=#95 id=95 data-nosnippet>95</a>    }
-<a href=#96 id=96 data-nosnippet>96</a>}
-<a href=#97 id=97 data-nosnippet>97</a>
-<a href=#98 id=98 data-nosnippet>98</a><span class="kw">impl </span>ResultType {
-<a href=#99 id=99 data-nosnippet>99</a>    <span class="doccomment">/// Decodes a result type[^binary-format] which is always valid[^always-valid].
-<a href=#100 id=100 data-nosnippet>100</a>    ///
-<a href=#101 id=101 data-nosnippet>101</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.5. Result Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-resulttype).
-<a href=#102 id=102 data-nosnippet>102</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
-<a href=#103 id=103 data-nosnippet>103</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
-<a href=#104 id=104 data-nosnippet>104</a>        <span class="kw">let </span>valtypes = wasm.decode_vec(ValType::decode)<span class="question-mark">?</span>;
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a>        <span class="prelude-val">Ok</span>(ResultType { valtypes })
-<a href=#107 id=107 data-nosnippet>107</a>    }
-<a href=#108 id=108 data-nosnippet>108</a>}
+<a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">use </span>alloc::vec::Vec;
+<a href=#11 id=11 data-nosnippet>11</a>
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>crate::{
+<a href=#13 id=13 data-nosnippet>13</a>    core::{
+<a href=#14 id=14 data-nosnippet>14</a>        decoding::decoder::WasmDecoder,
+<a href=#15 id=15 data-nosnippet>15</a>        structure::{
+<a href=#16 id=16 data-nosnippet>16</a>            modules::indices::TypeIdx,
+<a href=#17 id=17 data-nosnippet>17</a>            types::{
+<a href=#18 id=18 data-nosnippet>18</a>                BlockType, FuncType, GlobalType, MemArg, NumType, RefType, ResultType, ValType,
+<a href=#19 id=19 data-nosnippet>19</a>                VecType,
+<a href=#20 id=20 data-nosnippet>20</a>            },
+<a href=#21 id=21 data-nosnippet>21</a>        },
+<a href=#22 id=22 data-nosnippet>22</a>    },
+<a href=#23 id=23 data-nosnippet>23</a>    DecodingError,
+<a href=#24 id=24 data-nosnippet>24</a>};
+<a href=#25 id=25 data-nosnippet>25</a>
+<a href=#26 id=26 data-nosnippet>26</a><span class="kw">impl </span>NumType {
+<a href=#27 id=27 data-nosnippet>27</a>    <span class="doccomment">/// Decodes a number type[^binary-format] which is always valid[^always-valid].
+<a href=#28 id=28 data-nosnippet>28</a>    ///
+<a href=#29 id=29 data-nosnippet>29</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.1. Number Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-numtype).
+<a href=#30 id=30 data-nosnippet>30</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
+<a href=#31 id=31 data-nosnippet>31</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
+<a href=#32 id=32 data-nosnippet>32</a>        <span class="kw">use </span>NumType::<span class="kw-2">*</span>;
+<a href=#33 id=33 data-nosnippet>33</a>
+<a href=#34 id=34 data-nosnippet>34</a>        <span class="kw">let </span>ty = <span class="kw">match </span>wasm.peek_u8()<span class="question-mark">? </span>{
+<a href=#35 id=35 data-nosnippet>35</a>            <span class="number">0x7F </span>=&gt; I32,
+<a href=#36 id=36 data-nosnippet>36</a>            <span class="number">0x7E </span>=&gt; I64,
+<a href=#37 id=37 data-nosnippet>37</a>            <span class="number">0x7D </span>=&gt; F32,
+<a href=#38 id=38 data-nosnippet>38</a>            <span class="number">0x7C </span>=&gt; F64,
+<a href=#39 id=39 data-nosnippet>39</a>            other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(DecodingError::MalformedNumTypeDiscriminator(other)),
+<a href=#40 id=40 data-nosnippet>40</a>        };
+<a href=#41 id=41 data-nosnippet>41</a>        <span class="kw">let _ </span>= wasm.decode_u8();
+<a href=#42 id=42 data-nosnippet>42</a>
+<a href=#43 id=43 data-nosnippet>43</a>        <span class="prelude-val">Ok</span>(ty)
+<a href=#44 id=44 data-nosnippet>44</a>    }
+<a href=#45 id=45 data-nosnippet>45</a>}
+<a href=#46 id=46 data-nosnippet>46</a>
+<a href=#47 id=47 data-nosnippet>47</a><span class="kw">impl </span>VecType {
+<a href=#48 id=48 data-nosnippet>48</a>    <span class="doccomment">/// Decodes a vector type[^binary-format] which is always valid[^always-valid].
+<a href=#49 id=49 data-nosnippet>49</a>    ///
+<a href=#50 id=50 data-nosnippet>50</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.2. Vector Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-vectype).
+<a href=#51 id=51 data-nosnippet>51</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
+<a href=#52 id=52 data-nosnippet>52</a>    </span><span class="kw">fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
+<a href=#53 id=53 data-nosnippet>53</a>        <span class="kw">match </span>wasm.peek_u8()<span class="question-mark">? </span>{
+<a href=#54 id=54 data-nosnippet>54</a>            <span class="number">0x7b </span>=&gt; {
+<a href=#55 id=55 data-nosnippet>55</a>                <span class="kw">let _ </span>= wasm.decode_u8();
+<a href=#56 id=56 data-nosnippet>56</a>                <span class="prelude-val">Ok</span>(VecType)
+<a href=#57 id=57 data-nosnippet>57</a>            }
+<a href=#58 id=58 data-nosnippet>58</a>            other =&gt; <span class="prelude-val">Err</span>(DecodingError::MalformedVecTypeDiscriminator(other)),
+<a href=#59 id=59 data-nosnippet>59</a>        }
+<a href=#60 id=60 data-nosnippet>60</a>    }
+<a href=#61 id=61 data-nosnippet>61</a>}
+<a href=#62 id=62 data-nosnippet>62</a>
+<a href=#63 id=63 data-nosnippet>63</a><span class="kw">impl </span>RefType {
+<a href=#64 id=64 data-nosnippet>64</a>    <span class="doccomment">/// Decodes a reference type[^binary-format] which is always valid[^always-valid].
+<a href=#65 id=65 data-nosnippet>65</a>    ///
+<a href=#66 id=66 data-nosnippet>66</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.3. Reference Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-reftype).
+<a href=#67 id=67 data-nosnippet>67</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
+<a href=#68 id=68 data-nosnippet>68</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;RefType, DecodingError&gt; {
+<a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">let </span>ty = <span class="kw">match </span>wasm.peek_u8()<span class="question-mark">? </span>{
+<a href=#70 id=70 data-nosnippet>70</a>            <span class="number">0x70 </span>=&gt; RefType::FuncRef,
+<a href=#71 id=71 data-nosnippet>71</a>            <span class="number">0x6F </span>=&gt; RefType::ExternRef,
+<a href=#72 id=72 data-nosnippet>72</a>            other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(DecodingError::MalformedRefTypeDiscriminator(other)),
+<a href=#73 id=73 data-nosnippet>73</a>        };
+<a href=#74 id=74 data-nosnippet>74</a>        <span class="kw">let _ </span>= wasm.decode_u8();
+<a href=#75 id=75 data-nosnippet>75</a>
+<a href=#76 id=76 data-nosnippet>76</a>        <span class="prelude-val">Ok</span>(ty)
+<a href=#77 id=77 data-nosnippet>77</a>    }
+<a href=#78 id=78 data-nosnippet>78</a>}
+<a href=#79 id=79 data-nosnippet>79</a>
+<a href=#80 id=80 data-nosnippet>80</a><span class="kw">impl </span>ValType {
+<a href=#81 id=81 data-nosnippet>81</a>    <span class="doccomment">/// Decodes a value type[^binary-format] which is always valid[^always-valid].
+<a href=#82 id=82 data-nosnippet>82</a>    ///
+<a href=#83 id=83 data-nosnippet>83</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.4. Value Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-valtype).
+<a href=#84 id=84 data-nosnippet>84</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
+<a href=#85 id=85 data-nosnippet>85</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
+<a href=#86 id=86 data-nosnippet>86</a>        <span class="kw">if let </span><span class="prelude-val">Ok</span>(numtype) = NumType::decode(wasm).map(ValType::NumType) {
+<a href=#87 id=87 data-nosnippet>87</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(numtype);
+<a href=#88 id=88 data-nosnippet>88</a>        };
+<a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">if let </span><span class="prelude-val">Ok</span>(vectype) = VecType::decode(wasm).map(|_ty| ValType::VecType) {
+<a href=#90 id=90 data-nosnippet>90</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(vectype);
+<a href=#91 id=91 data-nosnippet>91</a>        };
+<a href=#92 id=92 data-nosnippet>92</a>        <span class="kw">if let </span><span class="prelude-val">Ok</span>(reftype) = RefType::decode(wasm).map(ValType::RefType) {
+<a href=#93 id=93 data-nosnippet>93</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(reftype);
+<a href=#94 id=94 data-nosnippet>94</a>        }
+<a href=#95 id=95 data-nosnippet>95</a>
+<a href=#96 id=96 data-nosnippet>96</a>        <span class="prelude-val">Err</span>(DecodingError::MalformedValType)
+<a href=#97 id=97 data-nosnippet>97</a>    }
+<a href=#98 id=98 data-nosnippet>98</a>}
+<a href=#99 id=99 data-nosnippet>99</a>
+<a href=#100 id=100 data-nosnippet>100</a><span class="kw">impl </span>ResultType {
+<a href=#101 id=101 data-nosnippet>101</a>    <span class="doccomment">/// Decodes a result type[^binary-format] which is always valid[^always-valid].
+<a href=#102 id=102 data-nosnippet>102</a>    ///
+<a href=#103 id=103 data-nosnippet>103</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.5. Result Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-resulttype).
+<a href=#104 id=104 data-nosnippet>104</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
+<a href=#105 id=105 data-nosnippet>105</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
+<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>valtypes = wasm
+<a href=#107 id=107 data-nosnippet>107</a>            .decode_vec_map(ValType::decode)<span class="question-mark">?
+<a href=#108 id=108 data-nosnippet>108</a>            </span>.collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, DecodingError&gt;&gt;()<span class="question-mark">?</span>;
 <a href=#109 id=109 data-nosnippet>109</a>
-<a href=#110 id=110 data-nosnippet>110</a><span class="kw">impl </span>FuncType {
-<a href=#111 id=111 data-nosnippet>111</a>    <span class="doccomment">/// Decodes a function type[^binary-format] which is always valid[^always-valid].
-<a href=#112 id=112 data-nosnippet>112</a>    ///
-<a href=#113 id=113 data-nosnippet>113</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.6. Function Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-functype).
-<a href=#114 id=114 data-nosnippet>114</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
-<a href=#115 id=115 data-nosnippet>115</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;FuncType, DecodingError&gt; {
-<a href=#116 id=116 data-nosnippet>116</a>        <span class="kw">match </span>wasm.decode_u8()<span class="question-mark">? </span>{
-<a href=#117 id=117 data-nosnippet>117</a>            <span class="number">0x60 </span>=&gt; {}
-<a href=#118 id=118 data-nosnippet>118</a>            other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(DecodingError::MalformedFuncTypeDiscriminator(other)),
-<a href=#119 id=119 data-nosnippet>119</a>        };
-<a href=#120 id=120 data-nosnippet>120</a>
-<a href=#121 id=121 data-nosnippet>121</a>        <span class="kw">let </span>params = ResultType::decode(wasm)<span class="question-mark">?</span>;
-<a href=#122 id=122 data-nosnippet>122</a>        <span class="kw">let </span>returns = ResultType::decode(wasm)<span class="question-mark">?</span>;
-<a href=#123 id=123 data-nosnippet>123</a>
-<a href=#124 id=124 data-nosnippet>124</a>        <span class="prelude-val">Ok</span>(FuncType { params, returns })
-<a href=#125 id=125 data-nosnippet>125</a>    }
-<a href=#126 id=126 data-nosnippet>126</a>}
+<a href=#110 id=110 data-nosnippet>110</a>        <span class="prelude-val">Ok</span>(ResultType { valtypes })
+<a href=#111 id=111 data-nosnippet>111</a>    }
+<a href=#112 id=112 data-nosnippet>112</a>}
+<a href=#113 id=113 data-nosnippet>113</a>
+<a href=#114 id=114 data-nosnippet>114</a><span class="kw">impl </span>FuncType {
+<a href=#115 id=115 data-nosnippet>115</a>    <span class="doccomment">/// Decodes a function type[^binary-format] which is always valid[^always-valid].
+<a href=#116 id=116 data-nosnippet>116</a>    ///
+<a href=#117 id=117 data-nosnippet>117</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.6. Function Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-functype).
+<a href=#118 id=118 data-nosnippet>118</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
+<a href=#119 id=119 data-nosnippet>119</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;FuncType, DecodingError&gt; {
+<a href=#120 id=120 data-nosnippet>120</a>        <span class="kw">match </span>wasm.decode_u8()<span class="question-mark">? </span>{
+<a href=#121 id=121 data-nosnippet>121</a>            <span class="number">0x60 </span>=&gt; {}
+<a href=#122 id=122 data-nosnippet>122</a>            other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(DecodingError::MalformedFuncTypeDiscriminator(other)),
+<a href=#123 id=123 data-nosnippet>123</a>        };
+<a href=#124 id=124 data-nosnippet>124</a>
+<a href=#125 id=125 data-nosnippet>125</a>        <span class="kw">let </span>params = ResultType::decode(wasm)<span class="question-mark">?</span>;
+<a href=#126 id=126 data-nosnippet>126</a>        <span class="kw">let </span>returns = ResultType::decode(wasm)<span class="question-mark">?</span>;
 <a href=#127 id=127 data-nosnippet>127</a>
-<a href=#128 id=128 data-nosnippet>128</a><span class="kw">impl </span>BlockType {
-<a href=#129 id=129 data-nosnippet>129</a>    <span class="doccomment">/// Decodes a block type that is assumed to be valid.
-<a href=#130 id=130 data-nosnippet>130</a>    ///
-<a href=#131 id=131 data-nosnippet>131</a>    /// See: [WebAssembly Specification 2.0 - 5.4.1. Control Instructions](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#control-instructions%E2%91%A6).
-<a href=#132 id=132 data-nosnippet>132</a>    ///
-<a href=#133 id=133 data-nosnippet>133</a>    /// # Safety
+<a href=#128 id=128 data-nosnippet>128</a>        <span class="prelude-val">Ok</span>(FuncType { params, returns })
+<a href=#129 id=129 data-nosnippet>129</a>    }
+<a href=#130 id=130 data-nosnippet>130</a>}
+<a href=#131 id=131 data-nosnippet>131</a>
+<a href=#132 id=132 data-nosnippet>132</a><span class="kw">impl </span>BlockType {
+<a href=#133 id=133 data-nosnippet>133</a>    <span class="doccomment">/// Decodes a block type that is assumed to be valid.
 <a href=#134 id=134 data-nosnippet>134</a>    ///
-<a href=#135 id=135 data-nosnippet>135</a>    /// The caller must ensure that there is a valid block type to be read in
-<a href=#136 id=136 data-nosnippet>136</a>    /// the given [`WasmDecoder`].
-<a href=#137 id=137 data-nosnippet>137</a>    </span><span class="kw">pub unsafe fn </span>decode_unchecked(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="self">Self </span>{
-<a href=#138 id=138 data-nosnippet>138</a>        <span class="kw">if </span>wasm.peek_u8().unwrap() <span class="kw">as </span>i8 == <span class="number">0x40 </span>{
-<a href=#139 id=139 data-nosnippet>139</a>            <span class="comment">// Empty block type
-<a href=#140 id=140 data-nosnippet>140</a>            </span><span class="kw">let _ </span>= wasm.decode_u8().unwrap();
-<a href=#141 id=141 data-nosnippet>141</a>            BlockType::Empty
-<a href=#142 id=142 data-nosnippet>142</a>        } <span class="kw">else if let </span><span class="prelude-val">Ok</span>(val_ty) = wasm.handle_transaction(|wasm| ValType::decode(wasm)) {
-<a href=#143 id=143 data-nosnippet>143</a>            <span class="comment">// No parameters and given valtype as the result
-<a href=#144 id=144 data-nosnippet>144</a>            </span>BlockType::Returns(val_ty)
-<a href=#145 id=145 data-nosnippet>145</a>        } <span class="kw">else </span>{
-<a href=#146 id=146 data-nosnippet>146</a>            <span class="comment">// An index to a function type
-<a href=#147 id=147 data-nosnippet>147</a>            </span><span class="kw">let </span>index = wasm.decode_var_i33_as_u32().unwrap();
-<a href=#148 id=148 data-nosnippet>148</a>            BlockType::Type(TypeIdx::new(index))
-<a href=#149 id=149 data-nosnippet>149</a>        }
-<a href=#150 id=150 data-nosnippet>150</a>    }
-<a href=#151 id=151 data-nosnippet>151</a>}
-<a href=#152 id=152 data-nosnippet>152</a>
-<a href=#153 id=153 data-nosnippet>153</a><span class="kw">impl </span>GlobalType {
-<a href=#154 id=154 data-nosnippet>154</a>    <span class="doccomment">/// Decodes a global type[^binary-format] which is always valid[^always-valid].
-<a href=#155 id=155 data-nosnippet>155</a>    ///
-<a href=#156 id=156 data-nosnippet>156</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.10. Global Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-globaltype).
-<a href=#157 id=157 data-nosnippet>157</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
-<a href=#158 id=158 data-nosnippet>158</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
-<a href=#159 id=159 data-nosnippet>159</a>        <span class="kw">let </span>ty = ValType::decode(wasm)<span class="question-mark">?</span>;
-<a href=#160 id=160 data-nosnippet>160</a>        <span class="kw">let </span>is_mut = <span class="kw">match </span>wasm.decode_u8()<span class="question-mark">? </span>{
-<a href=#161 id=161 data-nosnippet>161</a>            <span class="number">0x00 </span>=&gt; <span class="bool-val">false</span>,
-<a href=#162 id=162 data-nosnippet>162</a>            <span class="number">0x01 </span>=&gt; <span class="bool-val">true</span>,
-<a href=#163 id=163 data-nosnippet>163</a>            other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(DecodingError::MalformedMutDiscriminator(other)),
-<a href=#164 id=164 data-nosnippet>164</a>        };
-<a href=#165 id=165 data-nosnippet>165</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ ty, is_mut })
-<a href=#166 id=166 data-nosnippet>166</a>    }
-<a href=#167 id=167 data-nosnippet>167</a>}
-<a href=#168 id=168 data-nosnippet>168</a>
-<a href=#169 id=169 data-nosnippet>169</a><span class="kw">impl </span>MemArg {
-<a href=#170 id=170 data-nosnippet>170</a>    <span class="doccomment">/// Decodes a memarg
-<a href=#171 id=171 data-nosnippet>171</a>    ///
-<a href=#172 id=172 data-nosnippet>172</a>    /// See: WebAssembly Specification 2.0 - 5.4.6 - Memory Instructions
-<a href=#173 id=173 data-nosnippet>173</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
-<a href=#174 id=174 data-nosnippet>174</a>        <span class="kw">let </span>align = wasm.decode_var_u32()<span class="question-mark">?</span>;
-<a href=#175 id=175 data-nosnippet>175</a>        <span class="kw">let </span>offset = wasm.decode_var_u32()<span class="question-mark">?</span>;
-<a href=#176 id=176 data-nosnippet>176</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ offset, align })
-<a href=#177 id=177 data-nosnippet>177</a>    }
-<a href=#178 id=178 data-nosnippet>178</a>}
+<a href=#135 id=135 data-nosnippet>135</a>    /// See: [WebAssembly Specification 2.0 - 5.4.1. Control Instructions](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#control-instructions%E2%91%A6).
+<a href=#136 id=136 data-nosnippet>136</a>    ///
+<a href=#137 id=137 data-nosnippet>137</a>    /// # Safety
+<a href=#138 id=138 data-nosnippet>138</a>    ///
+<a href=#139 id=139 data-nosnippet>139</a>    /// The caller must ensure that there is a valid block type to be read in
+<a href=#140 id=140 data-nosnippet>140</a>    /// the given [`WasmDecoder`].
+<a href=#141 id=141 data-nosnippet>141</a>    </span><span class="kw">pub unsafe fn </span>decode_unchecked(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="self">Self </span>{
+<a href=#142 id=142 data-nosnippet>142</a>        <span class="kw">if </span>wasm.peek_u8().unwrap() <span class="kw">as </span>i8 == <span class="number">0x40 </span>{
+<a href=#143 id=143 data-nosnippet>143</a>            <span class="comment">// Empty block type
+<a href=#144 id=144 data-nosnippet>144</a>            </span><span class="kw">let _ </span>= wasm.decode_u8().unwrap();
+<a href=#145 id=145 data-nosnippet>145</a>            BlockType::Empty
+<a href=#146 id=146 data-nosnippet>146</a>        } <span class="kw">else if let </span><span class="prelude-val">Ok</span>(val_ty) = wasm.handle_transaction(|wasm| ValType::decode(wasm)) {
+<a href=#147 id=147 data-nosnippet>147</a>            <span class="comment">// No parameters and given valtype as the result
+<a href=#148 id=148 data-nosnippet>148</a>            </span>BlockType::Returns(val_ty)
+<a href=#149 id=149 data-nosnippet>149</a>        } <span class="kw">else </span>{
+<a href=#150 id=150 data-nosnippet>150</a>            <span class="comment">// An index to a function type
+<a href=#151 id=151 data-nosnippet>151</a>            </span><span class="kw">let </span>index = wasm.decode_var_i33_as_u32().unwrap();
+<a href=#152 id=152 data-nosnippet>152</a>            BlockType::Type(TypeIdx::new(index))
+<a href=#153 id=153 data-nosnippet>153</a>        }
+<a href=#154 id=154 data-nosnippet>154</a>    }
+<a href=#155 id=155 data-nosnippet>155</a>}
+<a href=#156 id=156 data-nosnippet>156</a>
+<a href=#157 id=157 data-nosnippet>157</a><span class="kw">impl </span>GlobalType {
+<a href=#158 id=158 data-nosnippet>158</a>    <span class="doccomment">/// Decodes a global type[^binary-format] which is always valid[^always-valid].
+<a href=#159 id=159 data-nosnippet>159</a>    ///
+<a href=#160 id=160 data-nosnippet>160</a>    /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.10. Global Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-globaltype).
+<a href=#161 id=161 data-nosnippet>161</a>    /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
+<a href=#162 id=162 data-nosnippet>162</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
+<a href=#163 id=163 data-nosnippet>163</a>        <span class="kw">let </span>ty = ValType::decode(wasm)<span class="question-mark">?</span>;
+<a href=#164 id=164 data-nosnippet>164</a>        <span class="kw">let </span>is_mut = <span class="kw">match </span>wasm.decode_u8()<span class="question-mark">? </span>{
+<a href=#165 id=165 data-nosnippet>165</a>            <span class="number">0x00 </span>=&gt; <span class="bool-val">false</span>,
+<a href=#166 id=166 data-nosnippet>166</a>            <span class="number">0x01 </span>=&gt; <span class="bool-val">true</span>,
+<a href=#167 id=167 data-nosnippet>167</a>            other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(DecodingError::MalformedMutDiscriminator(other)),
+<a href=#168 id=168 data-nosnippet>168</a>        };
+<a href=#169 id=169 data-nosnippet>169</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ ty, is_mut })
+<a href=#170 id=170 data-nosnippet>170</a>    }
+<a href=#171 id=171 data-nosnippet>171</a>}
+<a href=#172 id=172 data-nosnippet>172</a>
+<a href=#173 id=173 data-nosnippet>173</a><span class="kw">impl </span>MemArg {
+<a href=#174 id=174 data-nosnippet>174</a>    <span class="doccomment">/// Decodes a memarg
+<a href=#175 id=175 data-nosnippet>175</a>    ///
+<a href=#176 id=176 data-nosnippet>176</a>    /// See: WebAssembly Specification 2.0 - 5.4.6 - Memory Instructions
+<a href=#177 id=177 data-nosnippet>177</a>    </span><span class="kw">pub fn </span>decode(wasm: <span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodingError&gt; {
+<a href=#178 id=178 data-nosnippet>178</a>        <span class="kw">let </span>align = wasm.decode_var_u32()<span class="question-mark">?</span>;
+<a href=#179 id=179 data-nosnippet>179</a>        <span class="kw">let </span>offset = wasm.decode_var_u32()<span class="question-mark">?</span>;
+<a href=#180 id=180 data-nosnippet>180</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ offset, align })
+<a href=#181 id=181 data-nosnippet>181</a>    }
+<a href=#182 id=182 data-nosnippet>182</a>}
 </code></pre></div></section></main></body></html>

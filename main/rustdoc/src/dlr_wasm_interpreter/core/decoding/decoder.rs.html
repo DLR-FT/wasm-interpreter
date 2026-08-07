@@ -106,9 +106,9 @@
 <a href=#106 id=106 data-nosnippet>106</a>    ///
 <a href=#107 id=107 data-nosnippet>107</a>    /// May panic if the closure moved the [`pc`](Self::pc) backwards, e.g. when
 <a href=#108 id=108 data-nosnippet>108</a>    /// [move_start_to](Self::move_start_to) is called.
-<a href=#109 id=109 data-nosnippet>109</a>    </span><span class="kw">pub fn </span>measure_num_read_bytes&lt;T, E&gt;(
+<a href=#109 id=109 data-nosnippet>109</a>    </span><span class="kw">pub fn </span>measure_num_read_bytes&lt;T: <span class="lifetime">'a</span>, E&gt;(
 <a href=#110 id=110 data-nosnippet>110</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#111 id=111 data-nosnippet>111</a>        f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>WasmDecoder) -&gt; <span class="prelude-ty">Result</span>&lt;T, E&gt;,
+<a href=#111 id=111 data-nosnippet>111</a>        f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>WasmDecoder&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T, E&gt;,
 <a href=#112 id=112 data-nosnippet>112</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(T, usize), E&gt; {
 <a href=#113 id=113 data-nosnippet>113</a>        <span class="kw">let </span>before = <span class="self">self</span>.pc;
 <a href=#114 id=114 data-nosnippet>114</a>        <span class="kw">let </span>ret = f(<span class="self">self</span>)<span class="question-mark">?</span>;

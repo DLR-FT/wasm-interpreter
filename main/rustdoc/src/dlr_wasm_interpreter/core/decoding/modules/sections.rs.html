@@ -3,7 +3,7 @@
 <a href=#3 id=3 data-nosnippet>3</a>        decoding::decoder::{span::Span, WasmDecoder},
 <a href=#4 id=4 data-nosnippet>4</a>        utils::ToUsizeExt,
 <a href=#5 id=5 data-nosnippet>5</a>    },
-<a href=#6 id=6 data-nosnippet>6</a>    trace, DecodingError,
+<a href=#6 id=6 data-nosnippet>6</a>    DecodingError,
 <a href=#7 id=7 data-nosnippet>7</a>};
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="attr">#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
@@ -81,13 +81,12 @@
 <a href=#81 id=81 data-nosnippet>81</a>    <span class="kw">let </span>size: u32 = wasm.decode_var_u32()<span class="question-mark">?</span>;
 <a href=#82 id=82 data-nosnippet>82</a>    <span class="kw">let </span>contents_span = wasm.make_span(size.into_usize())<span class="question-mark">?</span>;
 <a href=#83 id=83 data-nosnippet>83</a>
-<a href=#84 id=84 data-nosnippet>84</a>    <span class="macro">trace!</span>(<span class="string">"Handling section {:?}"</span>, section_ty);
-<a href=#85 id=85 data-nosnippet>85</a>    <span class="kw">let </span>t = section_consumer(wasm, contents_span)<span class="question-mark">?</span>;
-<a href=#86 id=86 data-nosnippet>86</a>
-<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">if </span>wasm.pc != contents_span.from() + contents_span.len() {
-<a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(DecodingError::SectionSizeMismatch.into());
-<a href=#89 id=89 data-nosnippet>89</a>    }
-<a href=#90 id=90 data-nosnippet>90</a>
-<a href=#91 id=91 data-nosnippet>91</a>    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(t))
-<a href=#92 id=92 data-nosnippet>92</a>}
+<a href=#84 id=84 data-nosnippet>84</a>    <span class="kw">let </span>t = section_consumer(wasm, contents_span)<span class="question-mark">?</span>;
+<a href=#85 id=85 data-nosnippet>85</a>
+<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">if </span>wasm.pc != contents_span.from() + contents_span.len() {
+<a href=#87 id=87 data-nosnippet>87</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(DecodingError::SectionSizeMismatch.into());
+<a href=#88 id=88 data-nosnippet>88</a>    }
+<a href=#89 id=89 data-nosnippet>89</a>
+<a href=#90 id=90 data-nosnippet>90</a>    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(t))
+<a href=#91 id=91 data-nosnippet>91</a>}
 </code></pre></div></section></main></body></html>
