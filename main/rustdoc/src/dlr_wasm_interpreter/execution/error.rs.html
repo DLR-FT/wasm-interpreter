@@ -38,9 +38,9 @@
 <a href=#38 id=38 data-nosnippet>38</a>    <span class="doccomment">/// A host function was called from a start function during module
 <a href=#39 id=39 data-nosnippet>39</a>    /// instantiation.
 <a href=#40 id=40 data-nosnippet>40</a>    </span>UnsupportedHostCallDuringInstantiation,
-<a href=#41 id=41 data-nosnippet>41</a>    <span class="doccomment">/// A memory grow operation failed because its new size would have
-<a href=#42 id=42 data-nosnippet>42</a>    /// overflowed by being over 2^16
-<a href=#43 id=43 data-nosnippet>43</a>    </span>MemoryGrowOverflowed,
+<a href=#41 id=41 data-nosnippet>41</a>    <span class="doccomment">/// A memory allocation or grow operation failed because its new size would have overflowed by
+<a href=#42 id=42 data-nosnippet>42</a>    /// being over 2^16 - 1
+<a href=#43 id=43 data-nosnippet>43</a>    </span>MemoryOverflowed,
 <a href=#44 id=44 data-nosnippet>44</a>    <span class="doccomment">/// A memory grow operation failed because the new size would have exceeded
 <a href=#45 id=45 data-nosnippet>45</a>    /// its upper limit.
 <a href=#46 id=46 data-nosnippet>46</a>    </span>MemoryGrowExceededLimit,
@@ -99,7 +99,7 @@
 <a href=#99 id=99 data-nosnippet>99</a>            }
 <a href=#100 id=100 data-nosnippet>100</a>            RuntimeError::UnexpectedHostCall =&gt; f.write_str(<span class="string">" The Store::invoke_simple method was used to execute some Wasm code but this resulted a host call, which is not supported in this mode"</span>),
 <a href=#101 id=101 data-nosnippet>101</a>            RuntimeError::UnsupportedHostCallDuringInstantiation =&gt; f.write_str(<span class="string">"A host function was called from a start function during module instantiation"</span>),
-<a href=#102 id=102 data-nosnippet>102</a>            RuntimeError::MemoryGrowOverflowed =&gt; f.write_str(<span class="string">"A memory grow operation failed with an overflow"</span>),
+<a href=#102 id=102 data-nosnippet>102</a>            RuntimeError::MemoryOverflowed =&gt; f.write_str(<span class="string">"A memory allocation or grow operation failed with an overflow"</span>),
 <a href=#103 id=103 data-nosnippet>103</a>            RuntimeError::MemoryGrowExceededLimit =&gt; f.write_str(<span class="string">"A memory grow operation failed due to exceeding its upper limit"</span>),
 <a href=#104 id=104 data-nosnippet>104</a>            RuntimeError::TableGrowOverflowed =&gt; f.write_str(<span class="string">"A table grow operation failed with an overflow"</span>),
 <a href=#105 id=105 data-nosnippet>105</a>            RuntimeError::TableGrowExceededLimit =&gt; f.write_str(<span class="string">"A table grow operation failed due to exceeding its upper limit"</span>),

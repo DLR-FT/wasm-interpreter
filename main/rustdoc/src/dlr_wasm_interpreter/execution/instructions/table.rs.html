@@ -186,7 +186,7 @@
 <a href=#186 id=186 data-nosnippet>186</a>    <span class="comment">// TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
 <a href=#187 id=187 data-nosnippet>187</a>    // for now we execute it always according to the following match expr.
 <a href=#188 id=188 data-nosnippet>188</a>    // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the state.resumable.stack per spec
-<a href=#189 id=189 data-nosnippet>189</a>    </span><span class="kw">let </span>pushed_value = <span class="kw">match </span>tab.grow(n, val) {
+<a href=#189 id=189 data-nosnippet>189</a>    </span><span class="kw">let </span>pushed_value = <span class="kw">match </span>tab.grow::&lt;T&gt;(n, val) {
 <a href=#190 id=190 data-nosnippet>190</a>        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; sz,
 <a href=#191 id=191 data-nosnippet>191</a>        <span class="prelude-val">Err</span>(RuntimeError::TableGrowOverflowed | RuntimeError::TableGrowExceededLimit) =&gt; u32::MAX,
 <a href=#192 id=192 data-nosnippet>192</a>        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(<span class="string">"table grow operation cannot produce any other errors"</span>),

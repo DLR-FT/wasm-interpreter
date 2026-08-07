@@ -1737,337 +1737,340 @@
 <a href=#1737 id=1737 data-nosnippet>1737</a>    // store. Therefore, it is valid in the current store.
 <a href=#1738 id=1738 data-nosnippet>1738</a>    </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ state.store_inner.memories.get_mut(mem_addr) };
 <a href=#1739 id=1739 data-nosnippet>1739</a>    <span class="kw">let </span>size = mem.len_pages();
-<a href=#1740 id=1740 data-nosnippet>1740</a>    state.resumable.stack.push_value(Value::I32(size))<span class="question-mark">?</span>;
-<a href=#1741 id=1741 data-nosnippet>1741</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
-<a href=#1742 id=1742 data-nosnippet>1742</a>}
-<a href=#1743 id=1743 data-nosnippet>1743</a>
-<a href=#1744 id=1744 data-nosnippet>1744</a><span class="comment">// memory.grow
-<a href=#1745 id=1745 data-nosnippet>1745</a></span><span class="macro">define_instruction!</span>(<span class="kw">super</span>::memory_grow::&lt;T&gt;, memory_grow_mod, fuel_check = omit);
-<a href=#1746 id=1746 data-nosnippet>1746</a><span class="attr">#[inline(always)]
-<a href=#1747 id=1747 data-nosnippet>1747</a></span><span class="kw">pub unsafe fn </span>memory_grow&lt;T: Config&gt;(
-<a href=#1748 id=1748 data-nosnippet>1748</a>    state: State,
-<a href=#1749 id=1749 data-nosnippet>1749</a>) -&gt; <span class="prelude-ty">Result</span>&lt;ControlFlow&lt;InterpreterLoopOutcome&gt;, RuntimeError&gt; {
-<a href=#1750 id=1750 data-nosnippet>1750</a>    <span class="comment">// Note: This zero byte is reserved for the multiple memories
-<a href=#1751 id=1751 data-nosnippet>1751</a>    // proposal.
-<a href=#1752 id=1752 data-nosnippet>1752</a>    </span><span class="kw">let </span>_zero = state.wasm.decode_u8().unwrap_validated();
-<a href=#1753 id=1753 data-nosnippet>1753</a>    <span class="comment">// SAFETY: The current module address must come from the current
-<a href=#1754 id=1754 data-nosnippet>1754</a>    // store, because it is the only parameter to this function that
-<a href=#1755 id=1755 data-nosnippet>1755</a>    // can contain module addresses. All stores guarantee all
-<a href=#1756 id=1756 data-nosnippet>1756</a>    // addresses in them to be valid within themselves.
-<a href=#1757 id=1757 data-nosnippet>1757</a>    </span><span class="kw">let </span>module = <span class="kw">unsafe </span>{ state.modules.get(<span class="kw-2">*</span>state.current_module) };
-<a href=#1758 id=1758 data-nosnippet>1758</a>
-<a href=#1759 id=1759 data-nosnippet>1759</a>    <span class="comment">// SAFETY: Validation guarantees at least one memory to exist.
-<a href=#1760 id=1760 data-nosnippet>1760</a>    </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
-<a href=#1761 id=1761 data-nosnippet>1761</a>    <span class="comment">// SAFETY: This memory address was just read from the current
-<a href=#1762 id=1762 data-nosnippet>1762</a>    // store. Therefore, it is valid in the current store.
-<a href=#1763 id=1763 data-nosnippet>1763</a>    </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ state.store_inner.memories.get_mut(mem_addr) };
-<a href=#1764 id=1764 data-nosnippet>1764</a>
-<a href=#1765 id=1765 data-nosnippet>1765</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
-<a href=#1766 id=1766 data-nosnippet>1766</a>    </span><span class="kw">let </span>n: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
-<a href=#1767 id=1767 data-nosnippet>1767</a>        .try_into()
-<a href=#1768 id=1768 data-nosnippet>1768</a>        .unwrap_validated();
-<a href=#1769 id=1769 data-nosnippet>1769</a>    <span class="comment">// decrement fuel, but push n back if it fails
-<a href=#1770 id=1770 data-nosnippet>1770</a>    </span><span class="kw">let </span>cost = T::get_flat_cost(instructions::MEMORY_GROW)
-<a href=#1771 id=1771 data-nosnippet>1771</a>        + u64::from(n) * T::get_cost_per_element(instructions::MEMORY_GROW);
-<a href=#1772 id=1772 data-nosnippet>1772</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(fuel) = <span class="kw-2">&amp;mut </span>state.resumable.maybe_fuel {
-<a href=#1773 id=1773 data-nosnippet>1773</a>        <span class="kw">if </span><span class="kw-2">*</span>fuel &gt;= cost {
-<a href=#1774 id=1774 data-nosnippet>1774</a>            <span class="kw-2">*</span>fuel -= cost;
-<a href=#1775 id=1775 data-nosnippet>1775</a>        } <span class="kw">else </span>{
-<a href=#1776 id=1776 data-nosnippet>1776</a>            state
-<a href=#1777 id=1777 data-nosnippet>1777</a>                .resumable
-<a href=#1778 id=1778 data-nosnippet>1778</a>                .stack
-<a href=#1779 id=1779 data-nosnippet>1779</a>                .push_value(Value::I32(n))
-<a href=#1780 id=1780 data-nosnippet>1780</a>                .unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
-<a href=#1781 id=1781 data-nosnippet>1781</a>
-<a href=#1782 id=1782 data-nosnippet>1782</a>            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
-<a href=#1783 id=1783 data-nosnippet>1783</a>                required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel)
-<a href=#1784 id=1784 data-nosnippet>1784</a>                    .expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
-<a href=#1785 id=1785 data-nosnippet>1785</a>            }));
-<a href=#1786 id=1786 data-nosnippet>1786</a>        }
-<a href=#1787 id=1787 data-nosnippet>1787</a>    }
-<a href=#1788 id=1788 data-nosnippet>1788</a>
-<a href=#1789 id=1789 data-nosnippet>1789</a>    <span class="comment">// TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
-<a href=#1790 id=1790 data-nosnippet>1790</a>    // for now we execute it always according to the following match expr.
-<a href=#1791 id=1791 data-nosnippet>1791</a>    // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the stack per spec
-<a href=#1792 id=1792 data-nosnippet>1792</a>    </span><span class="kw">let </span>grow_result = mem.grow(n);
-<a href=#1793 id=1793 data-nosnippet>1793</a>    <span class="kw">let </span>pushed_value = <span class="kw">match </span>grow_result {
-<a href=#1794 id=1794 data-nosnippet>1794</a>        <span class="prelude-val">Ok</span>(previous_len_pages) =&gt; previous_len_pages,
-<a href=#1795 id=1795 data-nosnippet>1795</a>        <span class="prelude-val">Err</span>(RuntimeError::MemoryGrowOverflowed | RuntimeError::MemoryGrowExceededLimit) =&gt; u32::MAX,
-<a href=#1796 id=1796 data-nosnippet>1796</a>        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(<span class="string">"growing memory cannot return any other errors"</span>),
-<a href=#1797 id=1797 data-nosnippet>1797</a>    };
-<a href=#1798 id=1798 data-nosnippet>1798</a>    state.resumable.stack.push_value(Value::I32(pushed_value))<span class="question-mark">?</span>;
-<a href=#1799 id=1799 data-nosnippet>1799</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
-<a href=#1800 id=1800 data-nosnippet>1800</a>}
-<a href=#1801 id=1801 data-nosnippet>1801</a>
-<a href=#1802 id=1802 data-nosnippet>1802</a><span class="comment">// memory.fill
-<a href=#1803 id=1803 data-nosnippet>1803</a>// See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
-<a href=#1804 id=1804 data-nosnippet>1804</a></span><span class="macro">define_instruction!</span>(<span class="kw">super</span>::memory_fill::&lt;T&gt;, memory_fill_mod, fuel_check = omit);
-<a href=#1805 id=1805 data-nosnippet>1805</a><span class="attr">#[inline(always)]
-<a href=#1806 id=1806 data-nosnippet>1806</a></span><span class="kw">pub unsafe fn </span>memory_fill&lt;T: Config&gt;(
-<a href=#1807 id=1807 data-nosnippet>1807</a>    state: State,
-<a href=#1808 id=1808 data-nosnippet>1808</a>) -&gt; <span class="prelude-ty">Result</span>&lt;ControlFlow&lt;InterpreterLoopOutcome&gt;, RuntimeError&gt; {
-<a href=#1809 id=1809 data-nosnippet>1809</a>    <span class="comment">//  mappings:
-<a href=#1810 id=1810 data-nosnippet>1810</a>    //      n =&gt; number of bytes to update
-<a href=#1811 id=1811 data-nosnippet>1811</a>    //      val =&gt; the value to set each byte to (must be &lt; 256)
-<a href=#1812 id=1812 data-nosnippet>1812</a>    //      d =&gt; the pointer to the region to update
-<a href=#1813 id=1813 data-nosnippet>1813</a>
-<a href=#1814 id=1814 data-nosnippet>1814</a>    // Note: This zero byte is reserved for the multiple
-<a href=#1815 id=1815 data-nosnippet>1815</a>    // memories proposal.
-<a href=#1816 id=1816 data-nosnippet>1816</a>    </span><span class="kw">let </span>_zero = state.wasm.decode_u8().unwrap_validated();
-<a href=#1817 id=1817 data-nosnippet>1817</a>
-<a href=#1818 id=1818 data-nosnippet>1818</a>    <span class="comment">// SAFETY: The current module address must come from the current
-<a href=#1819 id=1819 data-nosnippet>1819</a>    // store, because it is the only parameter to this function that
-<a href=#1820 id=1820 data-nosnippet>1820</a>    // can contain module addresses. All stores guarantee all
-<a href=#1821 id=1821 data-nosnippet>1821</a>    // addresses in them to be valid within themselves.
-<a href=#1822 id=1822 data-nosnippet>1822</a>    </span><span class="kw">let </span>module = <span class="kw">unsafe </span>{ state.modules.get(<span class="kw-2">*</span>state.current_module) };
-<a href=#1823 id=1823 data-nosnippet>1823</a>
-<a href=#1824 id=1824 data-nosnippet>1824</a>    <span class="comment">// SAFETY: Validation guarantees at least one memory to exist.
-<a href=#1825 id=1825 data-nosnippet>1825</a>    </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
-<a href=#1826 id=1826 data-nosnippet>1826</a>    <span class="comment">// SAFETY: This memory address was just read from the
-<a href=#1827 id=1827 data-nosnippet>1827</a>    // current store. Therefore, it is valid in the current
-<a href=#1828 id=1828 data-nosnippet>1828</a>    // store.
-<a href=#1829 id=1829 data-nosnippet>1829</a>    </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ state.store_inner.memories.get_mut(mem_addr) };
-<a href=#1830 id=1830 data-nosnippet>1830</a>
-<a href=#1831 id=1831 data-nosnippet>1831</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
-<a href=#1832 id=1832 data-nosnippet>1832</a>    </span><span class="kw">let </span>n: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
-<a href=#1833 id=1833 data-nosnippet>1833</a>        .try_into()
-<a href=#1834 id=1834 data-nosnippet>1834</a>        .unwrap_validated();
-<a href=#1835 id=1835 data-nosnippet>1835</a>    <span class="comment">// decrement fuel, but push n back if it fails
-<a href=#1836 id=1836 data-nosnippet>1836</a>    </span><span class="kw">let </span>cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_FILL)
-<a href=#1837 id=1837 data-nosnippet>1837</a>        + u64::from(n)
-<a href=#1838 id=1838 data-nosnippet>1838</a>            * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_FILL);
-<a href=#1839 id=1839 data-nosnippet>1839</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(fuel) = <span class="kw-2">&amp;mut </span>state.resumable.maybe_fuel {
-<a href=#1840 id=1840 data-nosnippet>1840</a>        <span class="kw">if </span><span class="kw-2">*</span>fuel &gt;= cost {
-<a href=#1841 id=1841 data-nosnippet>1841</a>            <span class="kw-2">*</span>fuel -= cost;
-<a href=#1842 id=1842 data-nosnippet>1842</a>        } <span class="kw">else </span>{
-<a href=#1843 id=1843 data-nosnippet>1843</a>            state
-<a href=#1844 id=1844 data-nosnippet>1844</a>                .resumable
-<a href=#1845 id=1845 data-nosnippet>1845</a>                .stack
-<a href=#1846 id=1846 data-nosnippet>1846</a>                .push_value(Value::I32(n))
-<a href=#1847 id=1847 data-nosnippet>1847</a>                .unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
-<a href=#1848 id=1848 data-nosnippet>1848</a>            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
-<a href=#1849 id=1849 data-nosnippet>1849</a>                required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel)
-<a href=#1850 id=1850 data-nosnippet>1850</a>                    .expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
-<a href=#1851 id=1851 data-nosnippet>1851</a>            }));
-<a href=#1852 id=1852 data-nosnippet>1852</a>        }
-<a href=#1853 id=1853 data-nosnippet>1853</a>    }
-<a href=#1854 id=1854 data-nosnippet>1854</a>
-<a href=#1855 id=1855 data-nosnippet>1855</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
-<a href=#1856 id=1856 data-nosnippet>1856</a>    </span><span class="kw">let </span>val: i32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
-<a href=#1857 id=1857 data-nosnippet>1857</a>        .try_into()
-<a href=#1858 id=1858 data-nosnippet>1858</a>        .unwrap_validated();
-<a href=#1859 id=1859 data-nosnippet>1859</a>
-<a href=#1860 id=1860 data-nosnippet>1860</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
-<a href=#1861 id=1861 data-nosnippet>1861</a>    </span><span class="kw">let </span>d: i32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
-<a href=#1862 id=1862 data-nosnippet>1862</a>        .try_into()
-<a href=#1863 id=1863 data-nosnippet>1863</a>        .unwrap_validated();
-<a href=#1864 id=1864 data-nosnippet>1864</a>
-<a href=#1865 id=1865 data-nosnippet>1865</a>    mem.mem
-<a href=#1866 id=1866 data-nosnippet>1866</a>        .fill(d.cast_unsigned().into_usize(), val <span class="kw">as </span>u8, n.into_usize())<span class="question-mark">?</span>;
+<a href=#1740 id=1740 data-nosnippet>1740</a>    state
+<a href=#1741 id=1741 data-nosnippet>1741</a>        .resumable
+<a href=#1742 id=1742 data-nosnippet>1742</a>        .stack
+<a href=#1743 id=1743 data-nosnippet>1743</a>        .push_value(Value::I32(u32::from(size)))<span class="question-mark">?</span>;
+<a href=#1744 id=1744 data-nosnippet>1744</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
+<a href=#1745 id=1745 data-nosnippet>1745</a>}
+<a href=#1746 id=1746 data-nosnippet>1746</a>
+<a href=#1747 id=1747 data-nosnippet>1747</a><span class="comment">// memory.grow
+<a href=#1748 id=1748 data-nosnippet>1748</a></span><span class="macro">define_instruction!</span>(<span class="kw">super</span>::memory_grow::&lt;T&gt;, memory_grow_mod, fuel_check = omit);
+<a href=#1749 id=1749 data-nosnippet>1749</a><span class="attr">#[inline(always)]
+<a href=#1750 id=1750 data-nosnippet>1750</a></span><span class="kw">pub unsafe fn </span>memory_grow&lt;T: Config&gt;(
+<a href=#1751 id=1751 data-nosnippet>1751</a>    state: State,
+<a href=#1752 id=1752 data-nosnippet>1752</a>) -&gt; <span class="prelude-ty">Result</span>&lt;ControlFlow&lt;InterpreterLoopOutcome&gt;, RuntimeError&gt; {
+<a href=#1753 id=1753 data-nosnippet>1753</a>    <span class="comment">// Note: This zero byte is reserved for the multiple memories
+<a href=#1754 id=1754 data-nosnippet>1754</a>    // proposal.
+<a href=#1755 id=1755 data-nosnippet>1755</a>    </span><span class="kw">let </span>_zero = state.wasm.decode_u8().unwrap_validated();
+<a href=#1756 id=1756 data-nosnippet>1756</a>    <span class="comment">// SAFETY: The current module address must come from the current
+<a href=#1757 id=1757 data-nosnippet>1757</a>    // store, because it is the only parameter to this function that
+<a href=#1758 id=1758 data-nosnippet>1758</a>    // can contain module addresses. All stores guarantee all
+<a href=#1759 id=1759 data-nosnippet>1759</a>    // addresses in them to be valid within themselves.
+<a href=#1760 id=1760 data-nosnippet>1760</a>    </span><span class="kw">let </span>module = <span class="kw">unsafe </span>{ state.modules.get(<span class="kw-2">*</span>state.current_module) };
+<a href=#1761 id=1761 data-nosnippet>1761</a>
+<a href=#1762 id=1762 data-nosnippet>1762</a>    <span class="comment">// SAFETY: Validation guarantees at least one memory to exist.
+<a href=#1763 id=1763 data-nosnippet>1763</a>    </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
+<a href=#1764 id=1764 data-nosnippet>1764</a>    <span class="comment">// SAFETY: This memory address was just read from the current
+<a href=#1765 id=1765 data-nosnippet>1765</a>    // store. Therefore, it is valid in the current store.
+<a href=#1766 id=1766 data-nosnippet>1766</a>    </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ state.store_inner.memories.get_mut(mem_addr) };
+<a href=#1767 id=1767 data-nosnippet>1767</a>
+<a href=#1768 id=1768 data-nosnippet>1768</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
+<a href=#1769 id=1769 data-nosnippet>1769</a>    </span><span class="kw">let </span>n: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
+<a href=#1770 id=1770 data-nosnippet>1770</a>        .try_into()
+<a href=#1771 id=1771 data-nosnippet>1771</a>        .unwrap_validated();
+<a href=#1772 id=1772 data-nosnippet>1772</a>    <span class="comment">// decrement fuel, but push n back if it fails
+<a href=#1773 id=1773 data-nosnippet>1773</a>    </span><span class="kw">let </span>cost = T::get_flat_cost(instructions::MEMORY_GROW)
+<a href=#1774 id=1774 data-nosnippet>1774</a>        + u64::from(n) * T::get_cost_per_element(instructions::MEMORY_GROW);
+<a href=#1775 id=1775 data-nosnippet>1775</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(fuel) = <span class="kw-2">&amp;mut </span>state.resumable.maybe_fuel {
+<a href=#1776 id=1776 data-nosnippet>1776</a>        <span class="kw">if </span><span class="kw-2">*</span>fuel &gt;= cost {
+<a href=#1777 id=1777 data-nosnippet>1777</a>            <span class="kw-2">*</span>fuel -= cost;
+<a href=#1778 id=1778 data-nosnippet>1778</a>        } <span class="kw">else </span>{
+<a href=#1779 id=1779 data-nosnippet>1779</a>            state
+<a href=#1780 id=1780 data-nosnippet>1780</a>                .resumable
+<a href=#1781 id=1781 data-nosnippet>1781</a>                .stack
+<a href=#1782 id=1782 data-nosnippet>1782</a>                .push_value(Value::I32(n))
+<a href=#1783 id=1783 data-nosnippet>1783</a>                .unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
+<a href=#1784 id=1784 data-nosnippet>1784</a>
+<a href=#1785 id=1785 data-nosnippet>1785</a>            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
+<a href=#1786 id=1786 data-nosnippet>1786</a>                required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel)
+<a href=#1787 id=1787 data-nosnippet>1787</a>                    .expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
+<a href=#1788 id=1788 data-nosnippet>1788</a>            }));
+<a href=#1789 id=1789 data-nosnippet>1789</a>        }
+<a href=#1790 id=1790 data-nosnippet>1790</a>    }
+<a href=#1791 id=1791 data-nosnippet>1791</a>
+<a href=#1792 id=1792 data-nosnippet>1792</a>    <span class="comment">// TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
+<a href=#1793 id=1793 data-nosnippet>1793</a>    // for now we execute it always according to the following match expr.
+<a href=#1794 id=1794 data-nosnippet>1794</a>    // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the stack per spec
+<a href=#1795 id=1795 data-nosnippet>1795</a>    </span><span class="kw">let </span>grow_result = mem.grow::&lt;T&gt;(n);
+<a href=#1796 id=1796 data-nosnippet>1796</a>    <span class="kw">let </span>pushed_value = <span class="kw">match </span>grow_result {
+<a href=#1797 id=1797 data-nosnippet>1797</a>        <span class="prelude-val">Ok</span>(previous_len_pages) =&gt; previous_len_pages,
+<a href=#1798 id=1798 data-nosnippet>1798</a>        <span class="prelude-val">Err</span>(RuntimeError::MemoryOverflowed | RuntimeError::MemoryGrowExceededLimit) =&gt; u32::MAX,
+<a href=#1799 id=1799 data-nosnippet>1799</a>        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(<span class="string">"growing memory cannot return any other errors"</span>),
+<a href=#1800 id=1800 data-nosnippet>1800</a>    };
+<a href=#1801 id=1801 data-nosnippet>1801</a>    state.resumable.stack.push_value(Value::I32(pushed_value))<span class="question-mark">?</span>;
+<a href=#1802 id=1802 data-nosnippet>1802</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
+<a href=#1803 id=1803 data-nosnippet>1803</a>}
+<a href=#1804 id=1804 data-nosnippet>1804</a>
+<a href=#1805 id=1805 data-nosnippet>1805</a><span class="comment">// memory.fill
+<a href=#1806 id=1806 data-nosnippet>1806</a>// See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
+<a href=#1807 id=1807 data-nosnippet>1807</a></span><span class="macro">define_instruction!</span>(<span class="kw">super</span>::memory_fill::&lt;T&gt;, memory_fill_mod, fuel_check = omit);
+<a href=#1808 id=1808 data-nosnippet>1808</a><span class="attr">#[inline(always)]
+<a href=#1809 id=1809 data-nosnippet>1809</a></span><span class="kw">pub unsafe fn </span>memory_fill&lt;T: Config&gt;(
+<a href=#1810 id=1810 data-nosnippet>1810</a>    state: State,
+<a href=#1811 id=1811 data-nosnippet>1811</a>) -&gt; <span class="prelude-ty">Result</span>&lt;ControlFlow&lt;InterpreterLoopOutcome&gt;, RuntimeError&gt; {
+<a href=#1812 id=1812 data-nosnippet>1812</a>    <span class="comment">//  mappings:
+<a href=#1813 id=1813 data-nosnippet>1813</a>    //      n =&gt; number of bytes to update
+<a href=#1814 id=1814 data-nosnippet>1814</a>    //      val =&gt; the value to set each byte to (must be &lt; 256)
+<a href=#1815 id=1815 data-nosnippet>1815</a>    //      d =&gt; the pointer to the region to update
+<a href=#1816 id=1816 data-nosnippet>1816</a>
+<a href=#1817 id=1817 data-nosnippet>1817</a>    // Note: This zero byte is reserved for the multiple
+<a href=#1818 id=1818 data-nosnippet>1818</a>    // memories proposal.
+<a href=#1819 id=1819 data-nosnippet>1819</a>    </span><span class="kw">let </span>_zero = state.wasm.decode_u8().unwrap_validated();
+<a href=#1820 id=1820 data-nosnippet>1820</a>
+<a href=#1821 id=1821 data-nosnippet>1821</a>    <span class="comment">// SAFETY: The current module address must come from the current
+<a href=#1822 id=1822 data-nosnippet>1822</a>    // store, because it is the only parameter to this function that
+<a href=#1823 id=1823 data-nosnippet>1823</a>    // can contain module addresses. All stores guarantee all
+<a href=#1824 id=1824 data-nosnippet>1824</a>    // addresses in them to be valid within themselves.
+<a href=#1825 id=1825 data-nosnippet>1825</a>    </span><span class="kw">let </span>module = <span class="kw">unsafe </span>{ state.modules.get(<span class="kw-2">*</span>state.current_module) };
+<a href=#1826 id=1826 data-nosnippet>1826</a>
+<a href=#1827 id=1827 data-nosnippet>1827</a>    <span class="comment">// SAFETY: Validation guarantees at least one memory to exist.
+<a href=#1828 id=1828 data-nosnippet>1828</a>    </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
+<a href=#1829 id=1829 data-nosnippet>1829</a>    <span class="comment">// SAFETY: This memory address was just read from the
+<a href=#1830 id=1830 data-nosnippet>1830</a>    // current store. Therefore, it is valid in the current
+<a href=#1831 id=1831 data-nosnippet>1831</a>    // store.
+<a href=#1832 id=1832 data-nosnippet>1832</a>    </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ state.store_inner.memories.get_mut(mem_addr) };
+<a href=#1833 id=1833 data-nosnippet>1833</a>
+<a href=#1834 id=1834 data-nosnippet>1834</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
+<a href=#1835 id=1835 data-nosnippet>1835</a>    </span><span class="kw">let </span>n: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
+<a href=#1836 id=1836 data-nosnippet>1836</a>        .try_into()
+<a href=#1837 id=1837 data-nosnippet>1837</a>        .unwrap_validated();
+<a href=#1838 id=1838 data-nosnippet>1838</a>    <span class="comment">// decrement fuel, but push n back if it fails
+<a href=#1839 id=1839 data-nosnippet>1839</a>    </span><span class="kw">let </span>cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_FILL)
+<a href=#1840 id=1840 data-nosnippet>1840</a>        + u64::from(n)
+<a href=#1841 id=1841 data-nosnippet>1841</a>            * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_FILL);
+<a href=#1842 id=1842 data-nosnippet>1842</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(fuel) = <span class="kw-2">&amp;mut </span>state.resumable.maybe_fuel {
+<a href=#1843 id=1843 data-nosnippet>1843</a>        <span class="kw">if </span><span class="kw-2">*</span>fuel &gt;= cost {
+<a href=#1844 id=1844 data-nosnippet>1844</a>            <span class="kw-2">*</span>fuel -= cost;
+<a href=#1845 id=1845 data-nosnippet>1845</a>        } <span class="kw">else </span>{
+<a href=#1846 id=1846 data-nosnippet>1846</a>            state
+<a href=#1847 id=1847 data-nosnippet>1847</a>                .resumable
+<a href=#1848 id=1848 data-nosnippet>1848</a>                .stack
+<a href=#1849 id=1849 data-nosnippet>1849</a>                .push_value(Value::I32(n))
+<a href=#1850 id=1850 data-nosnippet>1850</a>                .unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
+<a href=#1851 id=1851 data-nosnippet>1851</a>            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
+<a href=#1852 id=1852 data-nosnippet>1852</a>                required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel)
+<a href=#1853 id=1853 data-nosnippet>1853</a>                    .expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
+<a href=#1854 id=1854 data-nosnippet>1854</a>            }));
+<a href=#1855 id=1855 data-nosnippet>1855</a>        }
+<a href=#1856 id=1856 data-nosnippet>1856</a>    }
+<a href=#1857 id=1857 data-nosnippet>1857</a>
+<a href=#1858 id=1858 data-nosnippet>1858</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
+<a href=#1859 id=1859 data-nosnippet>1859</a>    </span><span class="kw">let </span>val: i32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
+<a href=#1860 id=1860 data-nosnippet>1860</a>        .try_into()
+<a href=#1861 id=1861 data-nosnippet>1861</a>        .unwrap_validated();
+<a href=#1862 id=1862 data-nosnippet>1862</a>
+<a href=#1863 id=1863 data-nosnippet>1863</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
+<a href=#1864 id=1864 data-nosnippet>1864</a>    </span><span class="kw">let </span>d: i32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
+<a href=#1865 id=1865 data-nosnippet>1865</a>        .try_into()
+<a href=#1866 id=1866 data-nosnippet>1866</a>        .unwrap_validated();
 <a href=#1867 id=1867 data-nosnippet>1867</a>
-<a href=#1868 id=1868 data-nosnippet>1868</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
-<a href=#1869 id=1869 data-nosnippet>1869</a>}
+<a href=#1868 id=1868 data-nosnippet>1868</a>    mem.mem
+<a href=#1869 id=1869 data-nosnippet>1869</a>        .fill(d.cast_unsigned().into_usize(), val <span class="kw">as </span>u8, n.into_usize())<span class="question-mark">?</span>;
 <a href=#1870 id=1870 data-nosnippet>1870</a>
-<a href=#1871 id=1871 data-nosnippet>1871</a><span class="comment">// memory.copy
-<a href=#1872 id=1872 data-nosnippet>1872</a>// See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
-<a href=#1873 id=1873 data-nosnippet>1873</a></span><span class="macro">define_instruction!</span>(<span class="kw">super</span>::memory_copy::&lt;T&gt;, memory_copy_mod, fuel_check = omit);
-<a href=#1874 id=1874 data-nosnippet>1874</a><span class="attr">#[inline(always)]
-<a href=#1875 id=1875 data-nosnippet>1875</a></span><span class="kw">pub unsafe fn </span>memory_copy&lt;T: Config&gt;(
-<a href=#1876 id=1876 data-nosnippet>1876</a>    state: State,
-<a href=#1877 id=1877 data-nosnippet>1877</a>) -&gt; <span class="prelude-ty">Result</span>&lt;ControlFlow&lt;InterpreterLoopOutcome&gt;, RuntimeError&gt; {
-<a href=#1878 id=1878 data-nosnippet>1878</a>    <span class="comment">//  mappings:
-<a href=#1879 id=1879 data-nosnippet>1879</a>    //      n =&gt; number of bytes to copy
-<a href=#1880 id=1880 data-nosnippet>1880</a>    //      s =&gt; source address to copy from
-<a href=#1881 id=1881 data-nosnippet>1881</a>    //      d =&gt; destination address to copy to
-<a href=#1882 id=1882 data-nosnippet>1882</a>    // Note: These zero bytes are reserved for the multiple
-<a href=#1883 id=1883 data-nosnippet>1883</a>    // memories proposal.
-<a href=#1884 id=1884 data-nosnippet>1884</a>    </span><span class="kw">let </span>_zero = state.wasm.decode_u8().unwrap_validated();
-<a href=#1885 id=1885 data-nosnippet>1885</a>    <span class="kw">let </span>_zero = state.wasm.decode_u8().unwrap_validated();
-<a href=#1886 id=1886 data-nosnippet>1886</a>
-<a href=#1887 id=1887 data-nosnippet>1887</a>    <span class="comment">// SAFETY: The current module address must come from the current
-<a href=#1888 id=1888 data-nosnippet>1888</a>    // store, because it is the only parameter to this function that
-<a href=#1889 id=1889 data-nosnippet>1889</a>    // can contain module addresses. All stores guarantee all
-<a href=#1890 id=1890 data-nosnippet>1890</a>    // addresses in them to be valid within themselves.
-<a href=#1891 id=1891 data-nosnippet>1891</a>    </span><span class="kw">let </span>module = <span class="kw">unsafe </span>{ state.modules.get(<span class="kw-2">*</span>state.current_module) };
-<a href=#1892 id=1892 data-nosnippet>1892</a>
-<a href=#1893 id=1893 data-nosnippet>1893</a>    <span class="comment">// SAFETY: Validation guarantees at least one memory to
-<a href=#1894 id=1894 data-nosnippet>1894</a>    // exist.
-<a href=#1895 id=1895 data-nosnippet>1895</a>    </span><span class="kw">let </span>src_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
+<a href=#1871 id=1871 data-nosnippet>1871</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
+<a href=#1872 id=1872 data-nosnippet>1872</a>}
+<a href=#1873 id=1873 data-nosnippet>1873</a>
+<a href=#1874 id=1874 data-nosnippet>1874</a><span class="comment">// memory.copy
+<a href=#1875 id=1875 data-nosnippet>1875</a>// See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
+<a href=#1876 id=1876 data-nosnippet>1876</a></span><span class="macro">define_instruction!</span>(<span class="kw">super</span>::memory_copy::&lt;T&gt;, memory_copy_mod, fuel_check = omit);
+<a href=#1877 id=1877 data-nosnippet>1877</a><span class="attr">#[inline(always)]
+<a href=#1878 id=1878 data-nosnippet>1878</a></span><span class="kw">pub unsafe fn </span>memory_copy&lt;T: Config&gt;(
+<a href=#1879 id=1879 data-nosnippet>1879</a>    state: State,
+<a href=#1880 id=1880 data-nosnippet>1880</a>) -&gt; <span class="prelude-ty">Result</span>&lt;ControlFlow&lt;InterpreterLoopOutcome&gt;, RuntimeError&gt; {
+<a href=#1881 id=1881 data-nosnippet>1881</a>    <span class="comment">//  mappings:
+<a href=#1882 id=1882 data-nosnippet>1882</a>    //      n =&gt; number of bytes to copy
+<a href=#1883 id=1883 data-nosnippet>1883</a>    //      s =&gt; source address to copy from
+<a href=#1884 id=1884 data-nosnippet>1884</a>    //      d =&gt; destination address to copy to
+<a href=#1885 id=1885 data-nosnippet>1885</a>    // Note: These zero bytes are reserved for the multiple
+<a href=#1886 id=1886 data-nosnippet>1886</a>    // memories proposal.
+<a href=#1887 id=1887 data-nosnippet>1887</a>    </span><span class="kw">let </span>_zero = state.wasm.decode_u8().unwrap_validated();
+<a href=#1888 id=1888 data-nosnippet>1888</a>    <span class="kw">let </span>_zero = state.wasm.decode_u8().unwrap_validated();
+<a href=#1889 id=1889 data-nosnippet>1889</a>
+<a href=#1890 id=1890 data-nosnippet>1890</a>    <span class="comment">// SAFETY: The current module address must come from the current
+<a href=#1891 id=1891 data-nosnippet>1891</a>    // store, because it is the only parameter to this function that
+<a href=#1892 id=1892 data-nosnippet>1892</a>    // can contain module addresses. All stores guarantee all
+<a href=#1893 id=1893 data-nosnippet>1893</a>    // addresses in them to be valid within themselves.
+<a href=#1894 id=1894 data-nosnippet>1894</a>    </span><span class="kw">let </span>module = <span class="kw">unsafe </span>{ state.modules.get(<span class="kw-2">*</span>state.current_module) };
+<a href=#1895 id=1895 data-nosnippet>1895</a>
 <a href=#1896 id=1896 data-nosnippet>1896</a>    <span class="comment">// SAFETY: Validation guarantees at least one memory to
 <a href=#1897 id=1897 data-nosnippet>1897</a>    // exist.
-<a href=#1898 id=1898 data-nosnippet>1898</a>    </span><span class="kw">let </span>dst_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
-<a href=#1899 id=1899 data-nosnippet>1899</a>
-<a href=#1900 id=1900 data-nosnippet>1900</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
-<a href=#1901 id=1901 data-nosnippet>1901</a>    </span><span class="kw">let </span>n: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
-<a href=#1902 id=1902 data-nosnippet>1902</a>        .try_into()
-<a href=#1903 id=1903 data-nosnippet>1903</a>        .unwrap_validated();
-<a href=#1904 id=1904 data-nosnippet>1904</a>    <span class="comment">// decrement fuel, but push n back if it fails
-<a href=#1905 id=1905 data-nosnippet>1905</a>    </span><span class="kw">let </span>cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_COPY)
-<a href=#1906 id=1906 data-nosnippet>1906</a>        + u64::from(n)
-<a href=#1907 id=1907 data-nosnippet>1907</a>            * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_COPY);
-<a href=#1908 id=1908 data-nosnippet>1908</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(fuel) = <span class="kw-2">&amp;mut </span>state.resumable.maybe_fuel {
-<a href=#1909 id=1909 data-nosnippet>1909</a>        <span class="kw">if </span><span class="kw-2">*</span>fuel &gt;= cost {
-<a href=#1910 id=1910 data-nosnippet>1910</a>            <span class="kw-2">*</span>fuel -= cost;
-<a href=#1911 id=1911 data-nosnippet>1911</a>        } <span class="kw">else </span>{
-<a href=#1912 id=1912 data-nosnippet>1912</a>            state
-<a href=#1913 id=1913 data-nosnippet>1913</a>                .resumable
-<a href=#1914 id=1914 data-nosnippet>1914</a>                .stack
-<a href=#1915 id=1915 data-nosnippet>1915</a>                .push_value(Value::I32(n))
-<a href=#1916 id=1916 data-nosnippet>1916</a>                .unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
-<a href=#1917 id=1917 data-nosnippet>1917</a>            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
-<a href=#1918 id=1918 data-nosnippet>1918</a>                required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel)
-<a href=#1919 id=1919 data-nosnippet>1919</a>                    .expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
-<a href=#1920 id=1920 data-nosnippet>1920</a>            }));
-<a href=#1921 id=1921 data-nosnippet>1921</a>        }
-<a href=#1922 id=1922 data-nosnippet>1922</a>    }
-<a href=#1923 id=1923 data-nosnippet>1923</a>
-<a href=#1924 id=1924 data-nosnippet>1924</a>    <span class="macro">assert_eq!</span>(
-<a href=#1925 id=1925 data-nosnippet>1925</a>        src_addr, dst_addr,
-<a href=#1926 id=1926 data-nosnippet>1926</a>        <span class="string">"the multiple memories proposal is not yet supported"
-<a href=#1927 id=1927 data-nosnippet>1927</a>    </span>);
-<a href=#1928 id=1928 data-nosnippet>1928</a>    <span class="kw">let </span>src_dst_addr = src_addr;
-<a href=#1929 id=1929 data-nosnippet>1929</a>
-<a href=#1930 id=1930 data-nosnippet>1930</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
-<a href=#1931 id=1931 data-nosnippet>1931</a>    </span><span class="kw">let </span>s: i32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
-<a href=#1932 id=1932 data-nosnippet>1932</a>        .try_into()
-<a href=#1933 id=1933 data-nosnippet>1933</a>        .unwrap_validated();
-<a href=#1934 id=1934 data-nosnippet>1934</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
-<a href=#1935 id=1935 data-nosnippet>1935</a>    </span><span class="kw">let </span>d: i32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
-<a href=#1936 id=1936 data-nosnippet>1936</a>        .try_into()
-<a href=#1937 id=1937 data-nosnippet>1937</a>        .unwrap_validated();
-<a href=#1938 id=1938 data-nosnippet>1938</a>
-<a href=#1939 id=1939 data-nosnippet>1939</a>    <span class="comment">// SAFETY: The source and destination addresses (which must be the same as of now!) were
-<a href=#1940 id=1940 data-nosnippet>1940</a>    // just read from the current store. Therefore, it must also be valid in the current store.
-<a href=#1941 id=1941 data-nosnippet>1941</a>    </span><span class="kw">let </span>src_dst_memory = <span class="kw">unsafe </span>{ state.store_inner.memories.get_mut(src_dst_addr) };
-<a href=#1942 id=1942 data-nosnippet>1942</a>
-<a href=#1943 id=1943 data-nosnippet>1943</a>    src_dst_memory.mem.copy_within(
-<a href=#1944 id=1944 data-nosnippet>1944</a>        d.cast_unsigned().into_usize(),
-<a href=#1945 id=1945 data-nosnippet>1945</a>        s.cast_unsigned().into_usize(),
-<a href=#1946 id=1946 data-nosnippet>1946</a>        n.into_usize(),
-<a href=#1947 id=1947 data-nosnippet>1947</a>    )<span class="question-mark">?</span>;
-<a href=#1948 id=1948 data-nosnippet>1948</a>
-<a href=#1949 id=1949 data-nosnippet>1949</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
-<a href=#1950 id=1950 data-nosnippet>1950</a>}
+<a href=#1898 id=1898 data-nosnippet>1898</a>    </span><span class="kw">let </span>src_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
+<a href=#1899 id=1899 data-nosnippet>1899</a>    <span class="comment">// SAFETY: Validation guarantees at least one memory to
+<a href=#1900 id=1900 data-nosnippet>1900</a>    // exist.
+<a href=#1901 id=1901 data-nosnippet>1901</a>    </span><span class="kw">let </span>dst_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module.mem_addrs.get(MemIdx::new(<span class="number">0</span>)) };
+<a href=#1902 id=1902 data-nosnippet>1902</a>
+<a href=#1903 id=1903 data-nosnippet>1903</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
+<a href=#1904 id=1904 data-nosnippet>1904</a>    </span><span class="kw">let </span>n: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
+<a href=#1905 id=1905 data-nosnippet>1905</a>        .try_into()
+<a href=#1906 id=1906 data-nosnippet>1906</a>        .unwrap_validated();
+<a href=#1907 id=1907 data-nosnippet>1907</a>    <span class="comment">// decrement fuel, but push n back if it fails
+<a href=#1908 id=1908 data-nosnippet>1908</a>    </span><span class="kw">let </span>cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_COPY)
+<a href=#1909 id=1909 data-nosnippet>1909</a>        + u64::from(n)
+<a href=#1910 id=1910 data-nosnippet>1910</a>            * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_COPY);
+<a href=#1911 id=1911 data-nosnippet>1911</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(fuel) = <span class="kw-2">&amp;mut </span>state.resumable.maybe_fuel {
+<a href=#1912 id=1912 data-nosnippet>1912</a>        <span class="kw">if </span><span class="kw-2">*</span>fuel &gt;= cost {
+<a href=#1913 id=1913 data-nosnippet>1913</a>            <span class="kw-2">*</span>fuel -= cost;
+<a href=#1914 id=1914 data-nosnippet>1914</a>        } <span class="kw">else </span>{
+<a href=#1915 id=1915 data-nosnippet>1915</a>            state
+<a href=#1916 id=1916 data-nosnippet>1916</a>                .resumable
+<a href=#1917 id=1917 data-nosnippet>1917</a>                .stack
+<a href=#1918 id=1918 data-nosnippet>1918</a>                .push_value(Value::I32(n))
+<a href=#1919 id=1919 data-nosnippet>1919</a>                .unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
+<a href=#1920 id=1920 data-nosnippet>1920</a>            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
+<a href=#1921 id=1921 data-nosnippet>1921</a>                required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel)
+<a href=#1922 id=1922 data-nosnippet>1922</a>                    .expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
+<a href=#1923 id=1923 data-nosnippet>1923</a>            }));
+<a href=#1924 id=1924 data-nosnippet>1924</a>        }
+<a href=#1925 id=1925 data-nosnippet>1925</a>    }
+<a href=#1926 id=1926 data-nosnippet>1926</a>
+<a href=#1927 id=1927 data-nosnippet>1927</a>    <span class="macro">assert_eq!</span>(
+<a href=#1928 id=1928 data-nosnippet>1928</a>        src_addr, dst_addr,
+<a href=#1929 id=1929 data-nosnippet>1929</a>        <span class="string">"the multiple memories proposal is not yet supported"
+<a href=#1930 id=1930 data-nosnippet>1930</a>    </span>);
+<a href=#1931 id=1931 data-nosnippet>1931</a>    <span class="kw">let </span>src_dst_addr = src_addr;
+<a href=#1932 id=1932 data-nosnippet>1932</a>
+<a href=#1933 id=1933 data-nosnippet>1933</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
+<a href=#1934 id=1934 data-nosnippet>1934</a>    </span><span class="kw">let </span>s: i32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
+<a href=#1935 id=1935 data-nosnippet>1935</a>        .try_into()
+<a href=#1936 id=1936 data-nosnippet>1936</a>        .unwrap_validated();
+<a href=#1937 id=1937 data-nosnippet>1937</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
+<a href=#1938 id=1938 data-nosnippet>1938</a>    </span><span class="kw">let </span>d: i32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
+<a href=#1939 id=1939 data-nosnippet>1939</a>        .try_into()
+<a href=#1940 id=1940 data-nosnippet>1940</a>        .unwrap_validated();
+<a href=#1941 id=1941 data-nosnippet>1941</a>
+<a href=#1942 id=1942 data-nosnippet>1942</a>    <span class="comment">// SAFETY: The source and destination addresses (which must be the same as of now!) were
+<a href=#1943 id=1943 data-nosnippet>1943</a>    // just read from the current store. Therefore, it must also be valid in the current store.
+<a href=#1944 id=1944 data-nosnippet>1944</a>    </span><span class="kw">let </span>src_dst_memory = <span class="kw">unsafe </span>{ state.store_inner.memories.get_mut(src_dst_addr) };
+<a href=#1945 id=1945 data-nosnippet>1945</a>
+<a href=#1946 id=1946 data-nosnippet>1946</a>    src_dst_memory.mem.copy_within(
+<a href=#1947 id=1947 data-nosnippet>1947</a>        d.cast_unsigned().into_usize(),
+<a href=#1948 id=1948 data-nosnippet>1948</a>        s.cast_unsigned().into_usize(),
+<a href=#1949 id=1949 data-nosnippet>1949</a>        n.into_usize(),
+<a href=#1950 id=1950 data-nosnippet>1950</a>    )<span class="question-mark">?</span>;
 <a href=#1951 id=1951 data-nosnippet>1951</a>
-<a href=#1952 id=1952 data-nosnippet>1952</a><span class="comment">// memory.init
-<a href=#1953 id=1953 data-nosnippet>1953</a>// See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
-<a href=#1954 id=1954 data-nosnippet>1954</a>// Copy a region from a data segment into memory
-<a href=#1955 id=1955 data-nosnippet>1955</a></span><span class="macro">define_instruction!</span>(
-<a href=#1956 id=1956 data-nosnippet>1956</a>    <span class="kw">super</span>::memory_init_fn::&lt;T&gt;,
-<a href=#1957 id=1957 data-nosnippet>1957</a>    memory_init_fn_mod,
-<a href=#1958 id=1958 data-nosnippet>1958</a>    fuel_check = omit
-<a href=#1959 id=1959 data-nosnippet>1959</a>);
-<a href=#1960 id=1960 data-nosnippet>1960</a><span class="attr">#[inline(always)]
-<a href=#1961 id=1961 data-nosnippet>1961</a></span><span class="kw">pub unsafe fn </span>memory_init_fn&lt;T: Config&gt;(
-<a href=#1962 id=1962 data-nosnippet>1962</a>    state: State,
-<a href=#1963 id=1963 data-nosnippet>1963</a>) -&gt; <span class="prelude-ty">Result</span>&lt;ControlFlow&lt;InterpreterLoopOutcome&gt;, RuntimeError&gt; {
-<a href=#1964 id=1964 data-nosnippet>1964</a>    <span class="comment">//  mappings:
-<a href=#1965 id=1965 data-nosnippet>1965</a>    //      n =&gt; number of bytes to copy
-<a href=#1966 id=1966 data-nosnippet>1966</a>    //      s =            }&gt; starting pointer in the data segment
-<a href=#1967 id=1967 data-nosnippet>1967</a>    //      d =&gt; destination address to copy to
-<a href=#1968 id=1968 data-nosnippet>1968</a>    // SAFETY: Validation guarantees there to be a valid
-<a href=#1969 id=1969 data-nosnippet>1969</a>    // data index next.
-<a href=#1970 id=1970 data-nosnippet>1970</a>    </span><span class="kw">let </span>data_idx = <span class="kw">unsafe </span>{ DataIdx::decode_unchecked(state.wasm) };
-<a href=#1971 id=1971 data-nosnippet>1971</a>
-<a href=#1972 id=1972 data-nosnippet>1972</a>    <span class="comment">// Note: This zero byte is reserved for the multiple memories
-<a href=#1973 id=1973 data-nosnippet>1973</a>    // proposal.
-<a href=#1974 id=1974 data-nosnippet>1974</a>    </span><span class="kw">let </span>_zero = state.wasm.decode_u8().unwrap_validated();
-<a href=#1975 id=1975 data-nosnippet>1975</a>
-<a href=#1976 id=1976 data-nosnippet>1976</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
-<a href=#1977 id=1977 data-nosnippet>1977</a>    </span><span class="kw">let </span>n: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
-<a href=#1978 id=1978 data-nosnippet>1978</a>        .try_into()
-<a href=#1979 id=1979 data-nosnippet>1979</a>        .unwrap_validated();
-<a href=#1980 id=1980 data-nosnippet>1980</a>    <span class="comment">// decrement fuel, but push n back if it fails
-<a href=#1981 id=1981 data-nosnippet>1981</a>    </span><span class="kw">let </span>cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_INIT)
-<a href=#1982 id=1982 data-nosnippet>1982</a>        + u64::from(n)
-<a href=#1983 id=1983 data-nosnippet>1983</a>            * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_INIT);
-<a href=#1984 id=1984 data-nosnippet>1984</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(fuel) = <span class="kw-2">&amp;mut </span>state.resumable.maybe_fuel {
-<a href=#1985 id=1985 data-nosnippet>1985</a>        <span class="kw">if </span><span class="kw-2">*</span>fuel &gt;= cost {
-<a href=#1986 id=1986 data-nosnippet>1986</a>            <span class="kw-2">*</span>fuel -= cost;
-<a href=#1987 id=1987 data-nosnippet>1987</a>        } <span class="kw">else </span>{
-<a href=#1988 id=1988 data-nosnippet>1988</a>            state
-<a href=#1989 id=1989 data-nosnippet>1989</a>                .resumable
-<a href=#1990 id=1990 data-nosnippet>1990</a>                .stack
-<a href=#1991 id=1991 data-nosnippet>1991</a>                .push_value(Value::I32(n))
-<a href=#1992 id=1992 data-nosnippet>1992</a>                .unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
-<a href=#1993 id=1993 data-nosnippet>1993</a>            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
-<a href=#1994 id=1994 data-nosnippet>1994</a>                required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel)
-<a href=#1995 id=1995 data-nosnippet>1995</a>                    .expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
-<a href=#1996 id=1996 data-nosnippet>1996</a>            }));
-<a href=#1997 id=1997 data-nosnippet>1997</a>        }
-<a href=#1998 id=1998 data-nosnippet>1998</a>    }
-<a href=#1999 id=1999 data-nosnippet>1999</a>
-<a href=#2000 id=2000 data-nosnippet>2000</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
-<a href=#2001 id=2001 data-nosnippet>2001</a>    </span><span class="kw">let </span>s: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
-<a href=#2002 id=2002 data-nosnippet>2002</a>        .try_into()
-<a href=#2003 id=2003 data-nosnippet>2003</a>        .unwrap_validated();
-<a href=#2004 id=2004 data-nosnippet>2004</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
-<a href=#2005 id=2005 data-nosnippet>2005</a>    </span><span class="kw">let </span>d: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
-<a href=#2006 id=2006 data-nosnippet>2006</a>        .try_into()
-<a href=#2007 id=2007 data-nosnippet>2007</a>        .unwrap_validated();
-<a href=#2008 id=2008 data-nosnippet>2008</a>
-<a href=#2009 id=2009 data-nosnippet>2009</a>    <span class="comment">// SAFETY: All requirements are met:
-<a href=#2010 id=2010 data-nosnippet>2010</a>    // 1. The current module address must come from the
-<a href=#2011 id=2011 data-nosnippet>2011</a>    //    current store, because it is the only parameter to
-<a href=#2012 id=2012 data-nosnippet>2012</a>    //    this function that can contain module addresses. All
-<a href=#2013 id=2013 data-nosnippet>2013</a>    //    stores guarantee all addresses in them to be valid
-<a href=#2014 id=2014 data-nosnippet>2014</a>    //    within themselves.
-<a href=#2015 id=2015 data-nosnippet>2015</a>    // 2. Validation guarantees at least one memory to exist.
-<a href=#2016 id=2016 data-nosnippet>2016</a>    // 3./5. The memory and data addresses are valid for a
-<a href=#2017 id=2017 data-nosnippet>2017</a>    //       similar reason that the module address is valid:
-<a href=#2018 id=2018 data-nosnippet>2018</a>    //       they are stored in the current module instance,
-<a href=#2019 id=2019 data-nosnippet>2019</a>    //       which is also part of the current store.
-<a href=#2020 id=2020 data-nosnippet>2020</a>    // 4. Validation gurantees this data index to be valid
-<a href=#2021 id=2021 data-nosnippet>2021</a>    //    for the current module instance.
-<a href=#2022 id=2022 data-nosnippet>2022</a>    </span><span class="kw">unsafe </span>{
-<a href=#2023 id=2023 data-nosnippet>2023</a>        memory_init(
-<a href=#2024 id=2024 data-nosnippet>2024</a>            state.modules,
-<a href=#2025 id=2025 data-nosnippet>2025</a>            <span class="kw-2">&amp;mut </span>state.store_inner.memories,
-<a href=#2026 id=2026 data-nosnippet>2026</a>            <span class="kw-2">&amp;</span>state.store_inner.data,
-<a href=#2027 id=2027 data-nosnippet>2027</a>            <span class="kw-2">*</span>state.current_module,
-<a href=#2028 id=2028 data-nosnippet>2028</a>            data_idx,
-<a href=#2029 id=2029 data-nosnippet>2029</a>            MemIdx::new(<span class="number">0</span>),
-<a href=#2030 id=2030 data-nosnippet>2030</a>            n,
-<a href=#2031 id=2031 data-nosnippet>2031</a>            s,
-<a href=#2032 id=2032 data-nosnippet>2032</a>            d,
-<a href=#2033 id=2033 data-nosnippet>2033</a>        )<span class="question-mark">?
-<a href=#2034 id=2034 data-nosnippet>2034</a>    </span>};
-<a href=#2035 id=2035 data-nosnippet>2035</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
-<a href=#2036 id=2036 data-nosnippet>2036</a>}
-<a href=#2037 id=2037 data-nosnippet>2037</a>
-<a href=#2038 id=2038 data-nosnippet>2038</a><span class="comment">// data.drop
-<a href=#2039 id=2039 data-nosnippet>2039</a></span><span class="macro">define_instruction!</span>(
-<a href=#2040 id=2040 data-nosnippet>2040</a>    <span class="kw">super</span>::data_drop_fn,
-<a href=#2041 id=2041 data-nosnippet>2041</a>    data_drop_fn_mod,
-<a href=#2042 id=2042 data-nosnippet>2042</a>    fuel_check = flat_fc(DATA_DROP)
-<a href=#2043 id=2043 data-nosnippet>2043</a>);
-<a href=#2044 id=2044 data-nosnippet>2044</a><span class="attr">#[inline(always)]
-<a href=#2045 id=2045 data-nosnippet>2045</a></span><span class="kw">pub unsafe fn </span>data_drop_fn(
-<a href=#2046 id=2046 data-nosnippet>2046</a>    state: State,
-<a href=#2047 id=2047 data-nosnippet>2047</a>) -&gt; <span class="prelude-ty">Result</span>&lt;ControlFlow&lt;InterpreterLoopOutcome&gt;, RuntimeError&gt; {
-<a href=#2048 id=2048 data-nosnippet>2048</a>    <span class="comment">// SAFETY: Validation guarantees there to be a valid
-<a href=#2049 id=2049 data-nosnippet>2049</a>    // data index next.
-<a href=#2050 id=2050 data-nosnippet>2050</a>    </span><span class="kw">let </span>data_idx = <span class="kw">unsafe </span>{ DataIdx::decode_unchecked(state.wasm) };
-<a href=#2051 id=2051 data-nosnippet>2051</a>    <span class="comment">// SAFETY: All requirements are met:
-<a href=#2052 id=2052 data-nosnippet>2052</a>    // 1. The current module address must come from the
-<a href=#2053 id=2053 data-nosnippet>2053</a>    //    current store, because it is the only parameter to
-<a href=#2054 id=2054 data-nosnippet>2054</a>    //    this function that can contain module addresses. All
-<a href=#2055 id=2055 data-nosnippet>2055</a>    //    stores guarantee all addresses in them to be valid
-<a href=#2056 id=2056 data-nosnippet>2056</a>    //    within themselves.
-<a href=#2057 id=2057 data-nosnippet>2057</a>    // 2. Validation guarantees the data index to be valid
-<a href=#2058 id=2058 data-nosnippet>2058</a>    //    for the current module instance.
-<a href=#2059 id=2059 data-nosnippet>2059</a>    // 3. The data address is valid for a similar reason that
-<a href=#2060 id=2060 data-nosnippet>2060</a>    //    the module address is valid: it is stored in the
-<a href=#2061 id=2061 data-nosnippet>2061</a>    //    current module instance, which is also part of the
-<a href=#2062 id=2062 data-nosnippet>2062</a>    //    current store.
-<a href=#2063 id=2063 data-nosnippet>2063</a>    </span><span class="kw">unsafe </span>{
-<a href=#2064 id=2064 data-nosnippet>2064</a>        data_drop(
-<a href=#2065 id=2065 data-nosnippet>2065</a>            state.modules,
-<a href=#2066 id=2066 data-nosnippet>2066</a>            <span class="kw-2">&amp;mut </span>state.store_inner.data,
-<a href=#2067 id=2067 data-nosnippet>2067</a>            <span class="kw-2">*</span>state.current_module,
-<a href=#2068 id=2068 data-nosnippet>2068</a>            data_idx,
-<a href=#2069 id=2069 data-nosnippet>2069</a>        )
-<a href=#2070 id=2070 data-nosnippet>2070</a>    };
-<a href=#2071 id=2071 data-nosnippet>2071</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
-<a href=#2072 id=2072 data-nosnippet>2072</a>}
+<a href=#1952 id=1952 data-nosnippet>1952</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
+<a href=#1953 id=1953 data-nosnippet>1953</a>}
+<a href=#1954 id=1954 data-nosnippet>1954</a>
+<a href=#1955 id=1955 data-nosnippet>1955</a><span class="comment">// memory.init
+<a href=#1956 id=1956 data-nosnippet>1956</a>// See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
+<a href=#1957 id=1957 data-nosnippet>1957</a>// Copy a region from a data segment into memory
+<a href=#1958 id=1958 data-nosnippet>1958</a></span><span class="macro">define_instruction!</span>(
+<a href=#1959 id=1959 data-nosnippet>1959</a>    <span class="kw">super</span>::memory_init_fn::&lt;T&gt;,
+<a href=#1960 id=1960 data-nosnippet>1960</a>    memory_init_fn_mod,
+<a href=#1961 id=1961 data-nosnippet>1961</a>    fuel_check = omit
+<a href=#1962 id=1962 data-nosnippet>1962</a>);
+<a href=#1963 id=1963 data-nosnippet>1963</a><span class="attr">#[inline(always)]
+<a href=#1964 id=1964 data-nosnippet>1964</a></span><span class="kw">pub unsafe fn </span>memory_init_fn&lt;T: Config&gt;(
+<a href=#1965 id=1965 data-nosnippet>1965</a>    state: State,
+<a href=#1966 id=1966 data-nosnippet>1966</a>) -&gt; <span class="prelude-ty">Result</span>&lt;ControlFlow&lt;InterpreterLoopOutcome&gt;, RuntimeError&gt; {
+<a href=#1967 id=1967 data-nosnippet>1967</a>    <span class="comment">//  mappings:
+<a href=#1968 id=1968 data-nosnippet>1968</a>    //      n =&gt; number of bytes to copy
+<a href=#1969 id=1969 data-nosnippet>1969</a>    //      s =            }&gt; starting pointer in the data segment
+<a href=#1970 id=1970 data-nosnippet>1970</a>    //      d =&gt; destination address to copy to
+<a href=#1971 id=1971 data-nosnippet>1971</a>    // SAFETY: Validation guarantees there to be a valid
+<a href=#1972 id=1972 data-nosnippet>1972</a>    // data index next.
+<a href=#1973 id=1973 data-nosnippet>1973</a>    </span><span class="kw">let </span>data_idx = <span class="kw">unsafe </span>{ DataIdx::decode_unchecked(state.wasm) };
+<a href=#1974 id=1974 data-nosnippet>1974</a>
+<a href=#1975 id=1975 data-nosnippet>1975</a>    <span class="comment">// Note: This zero byte is reserved for the multiple memories
+<a href=#1976 id=1976 data-nosnippet>1976</a>    // proposal.
+<a href=#1977 id=1977 data-nosnippet>1977</a>    </span><span class="kw">let </span>_zero = state.wasm.decode_u8().unwrap_validated();
+<a href=#1978 id=1978 data-nosnippet>1978</a>
+<a href=#1979 id=1979 data-nosnippet>1979</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
+<a href=#1980 id=1980 data-nosnippet>1980</a>    </span><span class="kw">let </span>n: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
+<a href=#1981 id=1981 data-nosnippet>1981</a>        .try_into()
+<a href=#1982 id=1982 data-nosnippet>1982</a>        .unwrap_validated();
+<a href=#1983 id=1983 data-nosnippet>1983</a>    <span class="comment">// decrement fuel, but push n back if it fails
+<a href=#1984 id=1984 data-nosnippet>1984</a>    </span><span class="kw">let </span>cost = T::get_fc_extension_flat_cost(instructions::fc_extensions::MEMORY_INIT)
+<a href=#1985 id=1985 data-nosnippet>1985</a>        + u64::from(n)
+<a href=#1986 id=1986 data-nosnippet>1986</a>            * T::get_fc_extension_cost_per_element(instructions::fc_extensions::MEMORY_INIT);
+<a href=#1987 id=1987 data-nosnippet>1987</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(fuel) = <span class="kw-2">&amp;mut </span>state.resumable.maybe_fuel {
+<a href=#1988 id=1988 data-nosnippet>1988</a>        <span class="kw">if </span><span class="kw-2">*</span>fuel &gt;= cost {
+<a href=#1989 id=1989 data-nosnippet>1989</a>            <span class="kw-2">*</span>fuel -= cost;
+<a href=#1990 id=1990 data-nosnippet>1990</a>        } <span class="kw">else </span>{
+<a href=#1991 id=1991 data-nosnippet>1991</a>            state
+<a href=#1992 id=1992 data-nosnippet>1992</a>                .resumable
+<a href=#1993 id=1993 data-nosnippet>1993</a>                .stack
+<a href=#1994 id=1994 data-nosnippet>1994</a>                .push_value(Value::I32(n))
+<a href=#1995 id=1995 data-nosnippet>1995</a>                .unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
+<a href=#1996 id=1996 data-nosnippet>1996</a>            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(ControlFlow::Break(InterpreterLoopOutcome::OutOfFuel {
+<a href=#1997 id=1997 data-nosnippet>1997</a>                required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel)
+<a href=#1998 id=1998 data-nosnippet>1998</a>                    .expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
+<a href=#1999 id=1999 data-nosnippet>1999</a>            }));
+<a href=#2000 id=2000 data-nosnippet>2000</a>        }
+<a href=#2001 id=2001 data-nosnippet>2001</a>    }
+<a href=#2002 id=2002 data-nosnippet>2002</a>
+<a href=#2003 id=2003 data-nosnippet>2003</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
+<a href=#2004 id=2004 data-nosnippet>2004</a>    </span><span class="kw">let </span>s: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
+<a href=#2005 id=2005 data-nosnippet>2005</a>        .try_into()
+<a href=#2006 id=2006 data-nosnippet>2006</a>        .unwrap_validated();
+<a href=#2007 id=2007 data-nosnippet>2007</a>    <span class="comment">// SAFETY: Validation guarantees that there is a value on the stack.
+<a href=#2008 id=2008 data-nosnippet>2008</a>    </span><span class="kw">let </span>d: u32 = <span class="kw">unsafe </span>{ state.resumable.stack.pop_value() }
+<a href=#2009 id=2009 data-nosnippet>2009</a>        .try_into()
+<a href=#2010 id=2010 data-nosnippet>2010</a>        .unwrap_validated();
+<a href=#2011 id=2011 data-nosnippet>2011</a>
+<a href=#2012 id=2012 data-nosnippet>2012</a>    <span class="comment">// SAFETY: All requirements are met:
+<a href=#2013 id=2013 data-nosnippet>2013</a>    // 1. The current module address must come from the
+<a href=#2014 id=2014 data-nosnippet>2014</a>    //    current store, because it is the only parameter to
+<a href=#2015 id=2015 data-nosnippet>2015</a>    //    this function that can contain module addresses. All
+<a href=#2016 id=2016 data-nosnippet>2016</a>    //    stores guarantee all addresses in them to be valid
+<a href=#2017 id=2017 data-nosnippet>2017</a>    //    within themselves.
+<a href=#2018 id=2018 data-nosnippet>2018</a>    // 2. Validation guarantees at least one memory to exist.
+<a href=#2019 id=2019 data-nosnippet>2019</a>    // 3./5. The memory and data addresses are valid for a
+<a href=#2020 id=2020 data-nosnippet>2020</a>    //       similar reason that the module address is valid:
+<a href=#2021 id=2021 data-nosnippet>2021</a>    //       they are stored in the current module instance,
+<a href=#2022 id=2022 data-nosnippet>2022</a>    //       which is also part of the current store.
+<a href=#2023 id=2023 data-nosnippet>2023</a>    // 4. Validation gurantees this data index to be valid
+<a href=#2024 id=2024 data-nosnippet>2024</a>    //    for the current module instance.
+<a href=#2025 id=2025 data-nosnippet>2025</a>    </span><span class="kw">unsafe </span>{
+<a href=#2026 id=2026 data-nosnippet>2026</a>        memory_init(
+<a href=#2027 id=2027 data-nosnippet>2027</a>            state.modules,
+<a href=#2028 id=2028 data-nosnippet>2028</a>            <span class="kw-2">&amp;mut </span>state.store_inner.memories,
+<a href=#2029 id=2029 data-nosnippet>2029</a>            <span class="kw-2">&amp;</span>state.store_inner.data,
+<a href=#2030 id=2030 data-nosnippet>2030</a>            <span class="kw-2">*</span>state.current_module,
+<a href=#2031 id=2031 data-nosnippet>2031</a>            data_idx,
+<a href=#2032 id=2032 data-nosnippet>2032</a>            MemIdx::new(<span class="number">0</span>),
+<a href=#2033 id=2033 data-nosnippet>2033</a>            n,
+<a href=#2034 id=2034 data-nosnippet>2034</a>            s,
+<a href=#2035 id=2035 data-nosnippet>2035</a>            d,
+<a href=#2036 id=2036 data-nosnippet>2036</a>        )<span class="question-mark">?
+<a href=#2037 id=2037 data-nosnippet>2037</a>    </span>};
+<a href=#2038 id=2038 data-nosnippet>2038</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
+<a href=#2039 id=2039 data-nosnippet>2039</a>}
+<a href=#2040 id=2040 data-nosnippet>2040</a>
+<a href=#2041 id=2041 data-nosnippet>2041</a><span class="comment">// data.drop
+<a href=#2042 id=2042 data-nosnippet>2042</a></span><span class="macro">define_instruction!</span>(
+<a href=#2043 id=2043 data-nosnippet>2043</a>    <span class="kw">super</span>::data_drop_fn,
+<a href=#2044 id=2044 data-nosnippet>2044</a>    data_drop_fn_mod,
+<a href=#2045 id=2045 data-nosnippet>2045</a>    fuel_check = flat_fc(DATA_DROP)
+<a href=#2046 id=2046 data-nosnippet>2046</a>);
+<a href=#2047 id=2047 data-nosnippet>2047</a><span class="attr">#[inline(always)]
+<a href=#2048 id=2048 data-nosnippet>2048</a></span><span class="kw">pub unsafe fn </span>data_drop_fn(
+<a href=#2049 id=2049 data-nosnippet>2049</a>    state: State,
+<a href=#2050 id=2050 data-nosnippet>2050</a>) -&gt; <span class="prelude-ty">Result</span>&lt;ControlFlow&lt;InterpreterLoopOutcome&gt;, RuntimeError&gt; {
+<a href=#2051 id=2051 data-nosnippet>2051</a>    <span class="comment">// SAFETY: Validation guarantees there to be a valid
+<a href=#2052 id=2052 data-nosnippet>2052</a>    // data index next.
+<a href=#2053 id=2053 data-nosnippet>2053</a>    </span><span class="kw">let </span>data_idx = <span class="kw">unsafe </span>{ DataIdx::decode_unchecked(state.wasm) };
+<a href=#2054 id=2054 data-nosnippet>2054</a>    <span class="comment">// SAFETY: All requirements are met:
+<a href=#2055 id=2055 data-nosnippet>2055</a>    // 1. The current module address must come from the
+<a href=#2056 id=2056 data-nosnippet>2056</a>    //    current store, because it is the only parameter to
+<a href=#2057 id=2057 data-nosnippet>2057</a>    //    this function that can contain module addresses. All
+<a href=#2058 id=2058 data-nosnippet>2058</a>    //    stores guarantee all addresses in them to be valid
+<a href=#2059 id=2059 data-nosnippet>2059</a>    //    within themselves.
+<a href=#2060 id=2060 data-nosnippet>2060</a>    // 2. Validation guarantees the data index to be valid
+<a href=#2061 id=2061 data-nosnippet>2061</a>    //    for the current module instance.
+<a href=#2062 id=2062 data-nosnippet>2062</a>    // 3. The data address is valid for a similar reason that
+<a href=#2063 id=2063 data-nosnippet>2063</a>    //    the module address is valid: it is stored in the
+<a href=#2064 id=2064 data-nosnippet>2064</a>    //    current module instance, which is also part of the
+<a href=#2065 id=2065 data-nosnippet>2065</a>    //    current store.
+<a href=#2066 id=2066 data-nosnippet>2066</a>    </span><span class="kw">unsafe </span>{
+<a href=#2067 id=2067 data-nosnippet>2067</a>        data_drop(
+<a href=#2068 id=2068 data-nosnippet>2068</a>            state.modules,
+<a href=#2069 id=2069 data-nosnippet>2069</a>            <span class="kw-2">&amp;mut </span>state.store_inner.data,
+<a href=#2070 id=2070 data-nosnippet>2070</a>            <span class="kw-2">*</span>state.current_module,
+<a href=#2071 id=2071 data-nosnippet>2071</a>            data_idx,
+<a href=#2072 id=2072 data-nosnippet>2072</a>        )
+<a href=#2073 id=2073 data-nosnippet>2073</a>    };
+<a href=#2074 id=2074 data-nosnippet>2074</a>    <span class="prelude-val">Ok</span>(ControlFlow::Continue(()))
+<a href=#2075 id=2075 data-nosnippet>2075</a>}
 </code></pre></div></section></main></body></html>

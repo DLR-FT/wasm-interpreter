@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["DEFAULT_PAGE_SIZE"],"struct":["LinearMemory"]};
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_PAGE_SIZE"],"struct":["LinearMemory","MemorySizeOverflow"]};
