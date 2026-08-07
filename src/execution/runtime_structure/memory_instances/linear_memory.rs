@@ -10,8 +10,8 @@ pub const DEFAULT_PAGE_SIZE: NonZeroUsize = NonZeroUsize::new(65536).unwrap();
 
 /// A linear memory is the backing data structure for a memory instance[^memory-instances].
 ///
-/// It is a wrapper around a contiguous, but growable sequence of bytes (up to 2^32 bytes). Also it
-/// provides generic methods to be build upon by memory instructions[^memory-instructions].
+/// It is a wrapper around a contiguous, but growable sequence of bytes. Also it provides generic
+/// methods to be build upon by memory instructions[^memory-instructions].
 ///
 /// TODO: Write section on why some memory instructions are implemented here vs. implemented in
 /// their instruction handlers. Also find out how we can reference the specification steps for each
@@ -21,7 +21,6 @@ pub const DEFAULT_PAGE_SIZE: NonZeroUsize = NonZeroUsize::new(65536).unwrap();
 /// [^memory-instances]: [WebAssembly Specification 2.0 - 4.2.9. Memory Instances](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instances%E2%91%A0).
 /// [^memory-instructions]: [WebAssembly Specification 2.0 - 4.4.7. Memory Instructions](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instructions%E2%91%A4).
 pub struct LinearMemory {
-    /// This vector's size must never be 2^32 or larger.
     pub(crate) data: Vec<u8>,
     page_size: NonZeroUsize,
 }
