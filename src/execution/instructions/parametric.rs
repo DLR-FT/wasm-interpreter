@@ -8,12 +8,11 @@ use core::ops::ControlFlow;
 use crate::{
     execution::{
         assert_validated::UnwrapValidatedExt,
-        instructions::{define_instruction, InterpreterLoopOutcome, State},
+        instructions::{InterpreterLoopOutcome, State},
     },
     RuntimeError, ValType,
 };
 
-define_instruction!(super::drop, drop_mod, fuel_check = flat(DROP));
 #[inline(always)]
 pub unsafe fn drop(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -22,7 +21,6 @@ pub unsafe fn drop(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::select, select_mod, fuel_check = flat(SELECT));
 #[inline(always)]
 pub unsafe fn select(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -41,7 +39,6 @@ pub unsafe fn select(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::select_t, select_t_mod, fuel_check = flat(SELECT_T));
 #[inline(always)]
 pub unsafe fn select_t(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // skip past type vec

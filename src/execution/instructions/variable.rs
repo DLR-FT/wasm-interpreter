@@ -7,15 +7,10 @@ use core::ops::ControlFlow;
 
 use crate::{
     core::structure::modules::indices::{GlobalIdx, LocalIdx},
-    execution::instructions::{define_instruction, InterpreterLoopOutcome, State},
+    execution::instructions::{InterpreterLoopOutcome, State},
     RuntimeError,
 };
 
-define_instruction!(
-    super::local_get,
-    local_get_mod,
-    fuel_check = flat(LOCAL_GET)
-);
 #[inline(always)]
 pub unsafe fn local_get(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid local index next.
@@ -26,11 +21,6 @@ pub unsafe fn local_get(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::local_set,
-    local_set_mod,
-    fuel_check = flat(LOCAL_SET)
-);
 #[inline(always)]
 pub unsafe fn local_set(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid local index next.
@@ -43,11 +33,6 @@ pub unsafe fn local_set(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::local_tee,
-    local_tee_mod,
-    fuel_check = flat(LOCAL_TEE)
-);
 #[inline(always)]
 pub unsafe fn local_tee(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid local index next.
@@ -60,11 +45,6 @@ pub unsafe fn local_tee(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::global_get,
-    global_get_mod,
-    fuel_check = flat(GLOBAL_GET)
-);
 #[inline(always)]
 pub unsafe fn global_get(
     state: State,
@@ -90,11 +70,6 @@ pub unsafe fn global_get(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::global_set,
-    global_set_mod,
-    fuel_check = flat(GLOBAL_SET)
-);
 #[inline(always)]
 pub unsafe fn global_set(
     state: State,

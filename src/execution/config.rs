@@ -1,5 +1,7 @@
 use core::num::{NonZeroU16, NonZeroUsize};
 
+use crate::DispatchMechanism;
+
 /// Trait that allows user specified configuration for various items during interpretation. Additionally, the types
 /// implementing this trait can act as custom user data within an interpreter instance, passed along to each method of
 /// this trait and host functions whenever they are invoked.
@@ -20,6 +22,10 @@ pub trait Config {
 
     /// An optional limit for the number of elements a table's size can grow to.
     const MAX_NUMBER_OF_TABLE_ELEMENTS: Option<NonZeroUsize> = None;
+
+    /// The mechanism to use for dispatching during interpretation. Refer to [`DispatchMechanism`]
+    /// for a list of all mechanisms, including their up- and downsides.
+    const DISPATCH_MECHANISM: DispatchMechanism = DispatchMechanism::LoopCall;
 
     /// A hook which is called before every wasm instruction
     ///

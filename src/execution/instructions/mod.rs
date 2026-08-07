@@ -1,4 +1,12 @@
-//! This module contains the actual interpretation loop
+//! This module contains common definitions required by the instruction handlers, which exist in
+//! submodules of this module.
+//!
+//! The logic for dispatching the execution of instruction handlers resides in the [`dispatch`]
+//! submodule, which itself provides multiple dispatch mechanisms. There execution is started via
+//! [`dispatch::run`].
+//!
+//! Additionally, the [`const_interpreter_loop`] submodule contains the execution logic for const
+//! expressions.
 
 use alloc::vec::Vec;
 use core::{array, num::NonZeroU64, ops::ControlFlow};
@@ -14,16 +22,10 @@ use crate::{
         utils::ToUsizeExt,
     },
     execution::{
-        assert_validated::UnwrapValidatedExt,
-        config::Config,
-        instructions::dispatch_tables::{
-            HasBaseDispatchTable, HasFcDispatchTable, HasFdDispatchTable,
-        },
         numerics::representations::LittleEndianBytes,
         runtime_structure::{
             data_instances::DataInst,
             element_instances::ElemInst,
-            function_instances::FuncInst,
             memory_instances::MemInst,
             module_instances::ModuleInst,
             store::{Hostcode, StoreInner},
@@ -31,8 +33,8 @@ use crate::{
             value_stack::Stack,
         },
     },
-    AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, RuntimeError, Store, TableAddr,
-    TrapError, Value, WasmResumable,
+    AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, RuntimeError, TableAddr, TrapError,
+    Value, WasmResumable,
 };
 
 mod control;
@@ -45,131 +47,46 @@ mod variable;
 mod vector;
 
 pub mod const_interpreter_loop;
-mod dispatch_tables;
+pub(crate) mod dispatch;
 
-/// A non-error outcome of execution of the interpreter loop
+/// A non-error outcome of interpretation
 pub enum InterpreterLoopOutcome {
-    /// Execution has returned normally, i.e. the end of the bottom-most
-    /// function on the stack was reached.
+    /// Execution has returned normally, i.e. the end of the bottom-most function on the stack was
+    /// reached. The return values for the initially invoked function are on the stack.
     ExecutionReturned,
-    /// Execution was preempted because there was not enough fuel in the
-    /// [`WasmResumable`] object.
-    ///
+    /// Execution was preempted because there was not enough fuel in the [`WasmResumable`] object.
     OutOfFuel {
-        /// The amount of fuel required to continue execution at least the next
-        /// instruction.
+        /// The amount of fuel required to continue execution at least the next instruction.
         required_fuel: NonZeroU64,
     },
+    /// A host function instance was called. The arguments for the host function call have been
+    /// collected into `params` already.
     HostCalled {
         func_addr: FuncAddr,
-        // TODO this allocation might be preventable. mutably borrow the stack
-        // instead
+        // TODO this allocation might be preventable. mutably borrow the stack instead
         params: Vec<Value>,
         hostcode: Hostcode,
     },
 }
 
-type InstructionHandlerFn =
-    for<'wasm, 'modules> unsafe fn(
-        wasm: &mut WasmDecoder<'wasm>,
-        resumable: &mut WasmResumable,
-        current_sidetable: &mut &'modules Sidetable,
-        store_inner: &mut StoreInner,
-        modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
-        current_module: &mut ModuleAddr,
-        current_function_end_marker: &mut usize,
-    )
-        -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError>;
-
-// A placeholder instruction for unassigned instruction bytes. This function is by definition dead
-// code!
-define_instruction!(super::unset, unset_mod, fuel_check = omit);
-/// # Safety
-///
-/// This function may not be called.
-#[inline(always)]
-pub unsafe fn unset(_: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    unreachable!("an invalid instruction byte was called. This should never happen, and could become UB in the future.")
-}
-
-/// Interprets wasm native functions. Wasm parameters and Wasm return values are passed on the stack.
-/// Returns `Ok(ControlFlow::Continue(()))` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
-/// terminates due to insufficient fuel, indicating how much fuel is required to resume with `required_fuel`,
-/// and `[Error::RuntimeError]` otherwise.
+/// The execution state interacted with by all instructions.
 ///
 /// # Safety
 ///
-/// The given resumable must be valid in the given [`Store`].
-#[inline(never)]
-pub(super) unsafe fn run<T: Config>(
-    resumable: &mut WasmResumable,
-    store: &mut Store<T>,
-) -> Result<InterpreterLoopOutcome, RuntimeError> {
-    let current_func_addr = resumable.current_func_addr;
-    let pc = resumable.pc;
-    // SAFETY: The caller ensures that the resumable and thus also its function
-    // address is valid in the current store.
-    let func_inst = unsafe { store.inner.functions.get(current_func_addr) };
-    let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
-        unreachable!(
-            "the interpreter loop shall only be executed with native wasm functions as root call"
-        );
-    };
-    let mut current_module = wasm_func_inst.module_addr;
-
-    // Start reading the function's instructions
-    // SAFETY: This module address was just read from the current store. Every
-    // store guarantees all addresses contained in it to be valid within itself.
-    let module = unsafe { store.modules.get(current_module) };
-    let wasm_bytecode = module.wasm_bytecode;
-    let wasm = &mut WasmDecoder::new(wasm_bytecode);
-
-    let mut current_sidetable: &Sidetable = &module.sidetable;
-
-    let mut current_function_end_marker =
-        wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
-
-    let store_inner = &mut store.inner;
-
-    wasm.pc = pc;
-
-    loop {
-        // call the instruction hook
-        store.user_data.instruction_hook(wasm_bytecode, wasm.pc);
-
-        let prev_pc = wasm.pc;
-
-        let first_instr_byte = wasm.decode_u8().unwrap_validated();
-
-        let instruction_fn = T::DISPATCH_TABLE
-            .get(usize::from(first_instr_byte))
-            .expect("the instruction to be valid because the code is validated");
-
-        // SAFETY: All possible instruction handler functions use the same safety requirements, as
-        // they are defined through the same macro: The caller ensures that the resumable is valid
-        // in the current store. Also all other address types passed via the `State` must come from
-        // the current store itself. Therefore, they are automatically valid in this store.
-        let instruction_result = unsafe {
-            instruction_fn(
-                wasm,
-                resumable,
-                &mut current_sidetable,
-                store_inner,
-                &store.modules,
-                &mut current_module,
-                &mut current_function_end_marker,
-            )
-        };
-
-        if let ControlFlow::Break(interpreter_loop_outcome) = instruction_result? {
-            if let InterpreterLoopOutcome::OutOfFuel { .. } = interpreter_loop_outcome {
-                wasm.pc = prev_pc;
-            }
-
-            resumable.pc = wasm.pc;
-            return Ok(interpreter_loop_outcome);
-        }
-    }
+/// - The [`StoreInner`] must be valid.
+/// - All address types contained in this struct must be valid in the [`StoreInner`]. Also see
+///   [`StoreInner`]'s safety documentation.
+/// - The sidetable must be correct for the module of the current module instance.
+/// - The end marker for the current function must point to the end index of the current function in
+///   the current module's bytecode.
+pub(crate) struct State<'a, 'sidetable, 'wasm> {
+    wasm: &'a mut WasmDecoder<'wasm>,
+    resumable: &'a mut WasmResumable,
+    current_sidetable: &'a mut &'sidetable Sidetable,
+    store_inner: &'a mut StoreInner,
+    modules: &'sidetable AddrVec<ModuleAddr, ModuleInst<'wasm>>,
+    current_module: &'a mut ModuleAddr,
+    current_function_end_marker: &'a mut usize,
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps
@@ -398,256 +315,6 @@ pub(crate) fn from_lanes<const M: usize, const N: usize, T: LittleEndianBytes<M>
     array::from_fn(|_| bytes.next().unwrap())
 }
 
-/// The main execution state interacted with by all instructions.
-///
-/// # Safety
-///
-/// This struct is passed across many different functions. For soundness, all address types
-/// contained in it must be valid in the [`StoreInner`]. Also see [`StoreInner`]s safety
-/// documentation.
-pub(crate) struct State<'a, 'sidetable, 'wasm> {
-    wasm: &'a mut WasmDecoder<'wasm>,
-    resumable: &'a mut WasmResumable,
-    current_sidetable: &'a mut &'sidetable Sidetable,
-    store_inner: &'a mut StoreInner,
-    modules: &'sidetable AddrVec<ModuleAddr, ModuleInst<'wasm>>,
-    current_module: &'a mut ModuleAddr,
-    current_function_end_marker: &'a mut usize,
-}
-
-macro_rules! define_instruction {
-    ($name:expr, $name_mod:ident, fuel_check = omit) => {
-        pub(crate) mod $name_mod {
-            use ::core::ops::ControlFlow;
-
-            use $crate::{
-                core::{decoding::decoder::WasmDecoder, sidetable::Sidetable},
-                execution::{
-                    instructions::{InterpreterLoopOutcome, State},
-                    resumable::WasmResumable,
-                    runtime_structure::{
-                        addresses::{AddrVec, ModuleAddr},
-                        module_instances::ModuleInst,
-                        store::StoreInner,
-                    },
-                },
-                Config, RuntimeError,
-            };
-
-            /// # Safety
-            ///
-            /// The given [`WasmResumable`] and all address types contained in the [`State`] must be
-            /// valid in the [`StoreInner`] that is also contained in the [`State`].
-            #[allow(
-                clippy::extra_unused_type_parameters,
-                reason = "T is only used by some instructions"
-            )]
-            pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
-                wasm: &mut WasmDecoder<'wasm>,
-                resumable: &mut WasmResumable,
-                current_sidetable: &mut &'modules Sidetable,
-                store_inner: &mut StoreInner,
-                modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
-                current_module: &mut ModuleAddr,
-                current_function_end_marker: &mut usize,
-            ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-                let state = State {
-                    store_inner,
-                    modules,
-                    wasm,
-                    current_module,
-                    current_function_end_marker,
-                    current_sidetable,
-                    resumable,
-                };
-
-                // SAFETY: The instruction implementation requires that the `State` is correct
-                // according to its safety documentation. The caller of the current function
-                // guarantees the same for all fields.
-                unsafe { $name(state) }
-            }
-        }
-    };
-
-    ($name:expr, $name_mod:ident, fuel_check = flat($instruction:ident)) => {
-        pub(crate) mod $name_mod {
-            use ::core::ops::ControlFlow;
-
-            use $crate::{
-                core::{
-                    decoding::decoder::WasmDecoder, sidetable::Sidetable, structure::instructions,
-                },
-                execution::{
-                    instructions::{decrement_fuel, InterpreterLoopOutcome, State},
-                    resumable::WasmResumable,
-                    runtime_structure::{
-                        addresses::{AddrVec, ModuleAddr},
-                        module_instances::ModuleInst,
-                        store::StoreInner,
-                    },
-                },
-                Config, RuntimeError,
-            };
-
-            /// # Safety
-            ///
-            /// The given [`WasmResumable`] and all address types contained in the [`State`] must be
-            /// valid in the [`StoreInner`] that is also contained in the [`State`].
-            pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
-                wasm: &mut WasmDecoder<'wasm>,
-                resumable: &mut WasmResumable,
-                current_sidetable: &mut &'modules Sidetable,
-                store_inner: &mut StoreInner,
-                modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
-                current_module: &mut ModuleAddr,
-                current_function_end_marker: &mut usize,
-            ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-                if let core::ops::ControlFlow::Break(outcome) = decrement_fuel(
-                    T::get_flat_cost(instructions::$instruction),
-                    &mut resumable.maybe_fuel,
-                ) {
-                    return Ok(core::ops::ControlFlow::Break(outcome));
-                }
-
-                let state = State {
-                    store_inner,
-                    modules,
-                    wasm,
-                    current_module,
-                    current_function_end_marker,
-                    current_sidetable,
-                    resumable,
-                };
-
-                // SAFETY: The instruction implementation requires that the `State` is correct
-                // according to its safety documentation. The caller of the current function
-                // guarantees the same for all fields.
-                unsafe { $name(state) }
-            }
-        }
-    };
-
-    ($name:expr, $name_mod:ident, fuel_check = flat_fc($instruction:ident)) => {
-        pub(crate) mod $name_mod {
-            use ::core::ops::ControlFlow;
-
-            use $crate::{
-                core::{
-                    decoding::decoder::WasmDecoder, sidetable::Sidetable,
-                    structure::instructions::fc_extensions,
-                },
-                execution::{
-                    instructions::{decrement_fuel, InterpreterLoopOutcome, State},
-                    resumable::WasmResumable,
-                    runtime_structure::{
-                        addresses::{AddrVec, ModuleAddr},
-                        module_instances::ModuleInst,
-                        store::StoreInner,
-                    },
-                },
-                Config, RuntimeError,
-            };
-
-            /// # Safety
-            ///
-            /// The given [`WasmResumable`] and all address types contained in the [`State`] must be
-            /// valid in the [`StoreInner`].
-            pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
-                wasm: &mut WasmDecoder<'wasm>,
-                resumable: &mut WasmResumable,
-                current_sidetable: &mut &'modules Sidetable,
-                store_inner: &mut StoreInner,
-                modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
-                current_module: &mut ModuleAddr,
-                current_function_end_marker: &mut usize,
-            ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-                if let core::ops::ControlFlow::Break(outcome) = decrement_fuel(
-                    T::get_fc_extension_flat_cost(fc_extensions::$instruction),
-                    &mut resumable.maybe_fuel,
-                ) {
-                    return Ok(core::ops::ControlFlow::Break(outcome));
-                }
-
-                let state = State {
-                    store_inner,
-                    modules,
-                    wasm,
-                    current_module,
-                    current_function_end_marker,
-                    current_sidetable,
-                    resumable,
-                };
-
-                // SAFETY: The instruction implementation requires that the `State` is correct
-                // according to its safety documentation. The caller of the current function
-                // guarantees the same for all fields.
-                unsafe { $name(state) }
-            }
-        }
-    };
-
-    ($name:expr, $name_mod:ident, fuel_check = flat_fd($instruction:ident)) => {
-        pub(crate) mod $name_mod {
-            use ::core::ops::ControlFlow;
-
-            use $crate::{
-                core::{
-                    decoding::decoder::WasmDecoder, sidetable::Sidetable,
-                    structure::instructions::fd_extensions,
-                },
-                execution::{
-                    instructions::{decrement_fuel, InterpreterLoopOutcome, State},
-                    resumable::WasmResumable,
-                    runtime_structure::{
-                        addresses::{AddrVec, ModuleAddr},
-                        module_instances::ModuleInst,
-                        store::StoreInner,
-                    },
-                },
-                Config, RuntimeError,
-            };
-
-            /// # Safety
-            ///
-            /// The given [`WasmResumable`] and all address types contained in the [`State`] must be
-            /// valid in the [`StoreInner`] that is also contained in the [`State`].
-            pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
-                wasm: &mut WasmDecoder<'wasm>,
-                resumable: &mut WasmResumable,
-                current_sidetable: &mut &'modules Sidetable,
-                store_inner: &mut StoreInner,
-                modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
-                current_module: &mut ModuleAddr,
-                current_function_end_marker: &mut usize,
-            ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-                if let ControlFlow::Break(outcome) = decrement_fuel(
-                    T::get_fd_extension_flat_cost(fd_extensions::$instruction),
-                    &mut resumable.maybe_fuel,
-                ) {
-                    return Ok(core::ops::ControlFlow::Break(outcome));
-                }
-
-                let state = State {
-                    store_inner,
-                    modules,
-                    wasm,
-                    current_module,
-                    current_function_end_marker,
-                    current_sidetable,
-                    resumable,
-                };
-
-                // SAFETY: The instruction implementation requires that the `State` is correct
-                // according to its safety documentation. The caller of the current function
-                // guarantees the same for all fields.
-                unsafe { $name(state) }
-            }
-        }
-    };
-}
-
-pub(crate) use define_instruction;
-
 #[inline(always)]
 fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> ControlFlow<InterpreterLoopOutcome> {
     if let Some(fuel) = maybe_fuel {
@@ -662,77 +329,4 @@ fn decrement_fuel(cost: u64, maybe_fuel: &mut Option<u64>) -> ControlFlow<Interp
     }
 
     ControlFlow::Continue(())
-}
-
-define_instruction!(
-    super::fc_extensions_dispatch::<T>,
-    fc_extensions_dispatch_mod,
-    fuel_check = omit
-);
-/// # Safety
-///
-/// The given [`WasmResumable`] and all address types contained in the [`State`] must be
-/// valid in the [`StoreInner`] that is also contained in the [`State`].
-#[inline(always)]
-pub unsafe fn fc_extensions_dispatch<T: Config>(
-    state: State,
-) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    // should we call instruction hook here as well? multibyte instruction
-    let second_instr = state.wasm.decode_var_u32().unwrap_validated();
-
-    let instruction_fn = T::FC_DISPATCH_TABLE
-        .get(second_instr.into_usize())
-        .expect("the instruction to be valid because the code is validated");
-
-    // SAFETY: All possible instruction handler functions use the same safety requirements, as
-    // they are defined through the same macro: The caller ensures that the resumable is valid
-    // in the current store. Also all other address types passed via the `State` must come from
-    // the current store itself. Therefore, they are automatically valid in this store.
-    unsafe {
-        instruction_fn(
-            state.wasm,
-            state.resumable,
-            state.current_sidetable,
-            state.store_inner,
-            state.modules,
-            state.current_module,
-            state.current_function_end_marker,
-        )
-    }
-}
-
-define_instruction!(
-    super::fd_extensions_dispatch::<T>,
-    fd_extensions_dispatch_mod,
-    fuel_check = omit
-);
-/// # Safety
-///
-/// See [`State`] for more information.
-#[inline(always)]
-pub unsafe fn fd_extensions_dispatch<T: Config>(
-    state: State,
-) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    // Should we call instruction hook here as well? Multibyte instruction
-    let second_instr = state.wasm.decode_var_u32().unwrap_validated();
-
-    let instruction_fn = T::FD_DISPATCH_TABLE
-        .get(second_instr.into_usize())
-        .expect("the instruction to be valid because the code is validated");
-
-    // SAFETY: All possible instruction handler functions use the same safety requirements, as
-    // they are defined through the same macro: The caller ensures that the resumable is valid
-    // in the current store. Also all other address types passed via the `State` must come from
-    // the current store itself. Therefore, they are automatically valid in this store.
-    unsafe {
-        instruction_fn(
-            state.wasm,
-            state.resumable,
-            state.current_sidetable,
-            state.store_inner,
-            state.modules,
-            state.current_module,
-            state.current_function_end_marker,
-        )
-    }
 }

@@ -15,16 +15,11 @@ use crate::{
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
-        instructions::{define_instruction, elem_drop, table_init, InterpreterLoopOutcome, State},
+        instructions::{elem_drop, table_init, InterpreterLoopOutcome, State},
     },
     Config, Ref, RuntimeError, TrapError, Value,
 };
 
-define_instruction!(
-    super::table_get,
-    table_get_mod,
-    fuel_check = flat(TABLE_GET)
-);
 #[inline(always)]
 pub unsafe fn table_get(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid table index
@@ -57,11 +52,6 @@ pub unsafe fn table_get(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::table_set,
-    table_set_mod,
-    fuel_check = flat(TABLE_SET)
-);
 #[inline(always)]
 pub unsafe fn table_set(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be valid table index
@@ -96,11 +86,6 @@ pub unsafe fn table_set(state: State) -> Result<ControlFlow<InterpreterLoopOutco
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::table_size,
-    table_size_mod,
-    fuel_check = flat_fc(TABLE_SIZE)
-);
 #[inline(always)]
 pub unsafe fn table_size(
     state: State,
@@ -130,7 +115,6 @@ pub unsafe fn table_size(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::table_grow::<T>, table_grow_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn table_grow<T: Config>(
     state: State,
@@ -196,7 +180,6 @@ pub unsafe fn table_grow<T: Config>(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(super::table_fill::<T>, table_fill_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn table_fill<T: Config>(
     state: State,
@@ -264,7 +247,6 @@ pub unsafe fn table_fill<T: Config>(
 }
 
 // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
-define_instruction!(super::table_copy::<T>, table_copy_mod, fuel_check = omit);
 #[inline(always)]
 pub unsafe fn table_copy<T: Config>(
     state: State,
@@ -385,11 +367,6 @@ pub unsafe fn table_copy<T: Config>(
 // https://webassembly.github.io/spec/core/binary/instructions.html#table-instructions
 // in binary format it seems that elemidx is first ???????
 // this is ONLY for passive elements
-define_instruction!(
-    super::table_init_fn::<T>,
-    table_init_fn_mod,
-    fuel_check = omit
-);
 #[inline(always)]
 pub unsafe fn table_init_fn<T: Config>(
     state: State,
@@ -463,11 +440,6 @@ pub unsafe fn table_init_fn<T: Config>(
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::elem_drop_fn,
-    elem_drop_fn_mod,
-    fuel_check = flat_fc(ELEM_DROP)
-);
 #[inline(always)]
 pub unsafe fn elem_drop_fn(
     state: State,

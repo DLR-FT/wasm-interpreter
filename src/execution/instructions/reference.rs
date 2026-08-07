@@ -9,12 +9,11 @@ use crate::{
     core::structure::modules::indices::FuncIdx,
     execution::{
         assert_validated::UnwrapValidatedExt,
-        instructions::{define_instruction, InterpreterLoopOutcome, State},
+        instructions::{InterpreterLoopOutcome, State},
     },
     Ref, RefType, RuntimeError, Value,
 };
 
-define_instruction!(super::ref_null, ref_null_mod, fuel_check = flat(REF_NULL));
 #[inline(always)]
 pub unsafe fn ref_null(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let reftype = RefType::decode(state.wasm).unwrap_validated();
@@ -26,11 +25,6 @@ pub unsafe fn ref_null(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     Ok(ControlFlow::Continue(()))
 }
 
-define_instruction!(
-    super::ref_is_null,
-    ref_is_null_mod,
-    fuel_check = flat(REF_IS_NULL)
-);
 #[inline(always)]
 pub unsafe fn ref_is_null(
     state: State,
@@ -47,7 +41,6 @@ pub unsafe fn ref_is_null(
 }
 
 // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
-define_instruction!(super::ref_func, ref_func_mod, fuel_check = flat(REF_FUNC));
 #[inline(always)]
 pub unsafe fn ref_func(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees a valid function index to be
