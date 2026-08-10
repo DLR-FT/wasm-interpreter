@@ -27,6 +27,7 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
+    execution::assert_validated::UnwrapValidatedExt,
     validation::{config::ValidationConfig, modules::functions::decode_and_validate_code_section},
     CustomSection, DecodingError, ValidationError,
 };
@@ -48,12 +49,12 @@ pub mod config;
 pub struct Module<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: IdxVec<TypeIdx, FuncType>,
-    pub(crate) imports: Vec<Import<'bytecode>>,
+    pub(crate) imports: Vec<Import>,
     pub(crate) functions: ExtendedIdxVec<FuncIdx, TypeIdx>,
     pub(crate) tables: ExtendedIdxVec<TableIdx, TableType>,
     pub(crate) memories: ExtendedIdxVec<MemIdx, MemType>,
     pub(crate) globals: ExtendedIdxVec<GlobalIdx, Global>,
-    pub(crate) exports: Vec<Export<'bytecode>>,
+    pub(crate) exports: Vec<Export>,
     pub(crate) elements: IdxVec<ElemIdx, ElemType>,
     pub(crate) data: IdxVec<DataIdx, DataSegment>,
     /// Each block contains the validated code section and the stp corresponding to
@@ -62,17 +63,19 @@ pub struct Module<'bytecode> {
     pub(crate) sidetable: Sidetable,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
-    pub(crate) custom_sections: Vec<CustomSection<'bytecode>>,
+    pub(crate) custom_sections: Vec<CustomSection>,
     // pub(crate) exports_length: Exported,
 }
 
 fn validate_no_duplicate_exports(module: &Module) -> Result<(), ValidationError> {
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
+    let decoder = WasmDecoder::new(module.wasm);
     for export in &module.exports {
-        if found_export_names.contains(export.name) {
+        let name = core::str::from_utf8(&decoder[export.name]).unwrap_validated();
+        if found_export_names.contains(name) {
             return Err(ValidationError::DuplicateExportName);
         }
-        found_export_names.insert(export.name);
+        found_export_names.insert(name);
     }
     Ok(())
 }
@@ -369,7 +372,7 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
 /// into the `custom_sections` vector.
 fn read_all_custom_sections<'wasm>(
     wasm: &mut WasmDecoder<'wasm>,
-    custom_sections: &mut Vec<CustomSection<'wasm>>,
+    custom_sections: &mut Vec<CustomSection>,
 ) -> Result<(), ValidationError> {
     while let Some(custom_section) =
         decode_section_if_ty_matches(wasm, SectionTy::Custom, CustomSection::decode)?
@@ -387,15 +390,24 @@ impl<'wasm> Module<'wasm> {
     /// See: WebAssembly Specification 2.0 - 7.1.5 - module_imports
     pub fn imports<'a>(
         &'a self,
-    ) -> Map<
-        core::slice::Iter<'a, Import<'wasm>>,
-        impl FnMut(&'a Import<'wasm>) -> (&'a str, &'a str, ExternType),
-    > {
+    ) -> Map<core::slice::Iter<'a, Import>, impl FnMut(&'a Import) -> (&'a str, &'a str, ExternType)>
+    {
         self.imports.iter().map(|import| {
             // SAFETY: This is sound because the argument is `self` and the
             // import desc also comes from `self`.
             let extern_type = unsafe { import.desc.extern_type_owned(self) };
-            (import.module_name, import.name, extern_type)
+            (
+                core::str::from_utf8(
+                    &self.wasm
+                        [import.module_name.from..import.module_name.from + import.module_name.len],
+                )
+                .unwrap_validated(),
+                core::str::from_utf8(
+                    &self.wasm[import.name.from..import.name.from + import.name.len],
+                )
+                .unwrap_validated(),
+                extern_type,
+            )
         })
     }
 
@@ -405,22 +417,25 @@ impl<'wasm> Module<'wasm> {
     /// See: WebAssembly Specification 2.0 - 7.1.5 - module_exports
     pub fn exports<'a>(
         &'a self,
-    ) -> Map<
-        core::slice::Iter<'a, Export<'wasm>>,
-        impl FnMut(&'a Export<'wasm>) -> (&'a str, ExternType),
-    > {
+    ) -> Map<core::slice::Iter<'a, Export>, impl FnMut(&'a Export) -> (&'a str, ExternType)> {
         self.exports.iter().map(|export| {
             // SAFETY: This is sound because the argument is `self` and the
             // export desc also comes from `self`.
             let extern_type = unsafe { export.desc.extern_type(self) };
-            (export.name, extern_type)
+            (
+                core::str::from_utf8(
+                    &self.wasm[export.name.from..export.name.from + export.name.len],
+                )
+                .unwrap_validated(),
+                extern_type,
+            )
         })
     }
 
     /// Returns a list of all custom sections in the bytecode. Every custom
     /// section consists of its name and the custom section's bytecode
     /// (excluding the name itself).
-    pub fn custom_sections(&self) -> &[CustomSection<'wasm>] {
+    pub fn custom_sections(&self) -> &[CustomSection] {
         &self.custom_sections
     }
 }
