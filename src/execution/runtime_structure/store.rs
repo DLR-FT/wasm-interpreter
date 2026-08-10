@@ -1,6 +1,3 @@
-use alloc::{boxed::Box, vec, vec::Vec};
-use core::convert::Infallible;
-
 use crate::{
     core::{
         decoding::{
@@ -44,6 +41,8 @@ use crate::{
     HostCall, HostResumable, MemAddr, MemType, Module, ModuleAddr, Ref, RefType, Resumable,
     RunState, RuntimeError, TableAddr, TableType, Value, WasmResumable,
 };
+use alloc::{boxed::Box, vec, vec::Vec};
+use core::convert::Infallible;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -425,9 +424,11 @@ impl<'b, T: Config> Store<'b, T> {
                         ExternVal::Global(*global_addr)
                     }
                 };
-
                 ExportInst {
-                    name: export.name,
+                    name: core::str::from_utf8(
+                        &module.wasm[export.name.from..(export.name.from + export.name.len)],
+                    )
+                    .unwrap_validated(),
                     value,
                 }
             })

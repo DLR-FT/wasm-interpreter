@@ -10,9 +10,9 @@ use crate::{
     DecodingError, ExternType, MemType, Module, TableType, ValidationError,
 };
 
-impl<'wasm> Export<'wasm> {
+impl Export {
     pub fn decode_and_validate(
-        wasm: &mut WasmDecoder<'wasm>,
+        wasm: &mut WasmDecoder,
         c_funcs: &IdxVec<FuncIdx, TypeIdx>,
         c_tables: &IdxVec<TableIdx, TableType>,
         c_mems: &IdxVec<MemIdx, MemType>,

@@ -4,16 +4,16 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct CustomSection<'wasm> {
-    pub name: &'wasm str,
-    pub contents: &'wasm [u8],
+pub struct CustomSection {
+    pub name: Span,
+    pub contents: Span,
 }
 
-impl<'wasm> CustomSection<'wasm> {
+impl CustomSection {
     pub(crate) fn decode(
-        wasm: &mut WasmDecoder<'wasm>,
+        wasm: &mut WasmDecoder,
         section_contents: Span,
-    ) -> Result<CustomSection<'wasm>, DecodingError> {
+    ) -> Result<CustomSection, DecodingError> {
         // customsec ::= section_0(custom)
         // custom ::= name byte*
         // name ::= b*:vec(byte) => name (if utf8(name) = b*)
@@ -26,14 +26,14 @@ impl<'wasm> CustomSection<'wasm> {
             .checked_add(section_contents.len())
             .ok_or(DecodingError::SectionSizeMismatch)?;
 
-        let contents = wasm
-            .full_wasm_binary
-            .get(section_start..section_end)
-            .ok_or(DecodingError::SectionSizeMismatch)?;
-
         let section_len = section_end
             .checked_sub(section_start)
-            .expect("section start <= section end always");
+            .ok_or(DecodingError::SectionSizeMismatch)?;
+
+        let contents = Span {
+            from: section_start,
+            len: section_len,
+        };
 
         wasm.skip(section_len)?;
 
