@@ -426,9 +426,11 @@ impl<'b, T: Config> Store<'b, T> {
                         ExternVal::Global(*global_addr)
                     }
                 };
-
                 ExportInst {
-                    name: export.name,
+                    name: core::str::from_utf8(
+                        &module.wasm[export.name.from..(export.name.from + export.name.len)],
+                    )
+                    .unwrap_validated(),
                     value,
                 }
             })

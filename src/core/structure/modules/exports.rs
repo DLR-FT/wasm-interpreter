@@ -1,8 +1,11 @@
-use crate::core::structure::modules::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
+use crate::core::{
+    decoding::decoder::span::Span,
+    structure::modules::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx},
+};
 
 #[derive(Debug, Clone)]
-pub struct Export<'wasm> {
-    pub name: &'wasm str,
+pub struct Export {
+    pub name: Span,
     pub desc: ExportDesc,
 }
 
