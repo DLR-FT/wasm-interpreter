@@ -1,9 +1,12 @@
-use crate::{GlobalType, MemType, TableType, core::structure::modules::indices::TypeIdx};
+use crate::{
+    GlobalType, MemType, TableType,
+    core::{decoding::decoder::span::Span, structure::modules::indices::TypeIdx},
+};
 
 #[derive(Debug, Clone)]
-pub struct Import<'wasm> {
-    pub module_name: &'wasm str,
-    pub name: &'wasm str,
+pub struct Import {
+    pub module_name: Span,
+    pub name: Span,
     pub desc: ImportDesc,
 }
 
