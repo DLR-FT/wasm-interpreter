@@ -7,7 +7,10 @@
 
 use crate::{
     DecodingError,
-    core::{decoding::decoder::WasmDecoder, utils::ToUsizeExt},
+    core::{
+        decoding::decoder::{WasmDecoder, span::Span},
+        utils::ToUsizeExt,
+    },
 };
 
 /// Wasm encodes integers according to the LEB128 format, which specifies that
@@ -351,17 +354,12 @@ impl<'wasm> WasmDecoder<'wasm> {
     }
 
     /// Note: If `Err`, the [WasmDecoder] object is no longer guaranteed to be in a valid state
-    pub fn decode_name(&mut self) -> Result<&'wasm str, DecodingError> {
+    pub fn decode_name(&mut self) -> Result<Span, DecodingError> {
         let len = self.decode_var_u32()?.into_usize();
-
-        let utf8_str = &self
-            .full_wasm_binary
-            .get(self.pc..(self.pc + len))
-            .ok_or(DecodingError::Eof)?;
-
-        self.pc += len;
-
-        core::str::from_utf8(utf8_str).map_err(DecodingError::MalformedUtf8)
+        let result = self.make_span(len)?;
+        core::str::from_utf8(&self[result]).map_err(DecodingError::MalformedUtf8)?;
+        self.pc += result.len();
+        Ok(result)
     }
 
     /// A version of [`WasmDecoder::decode_vec_map`] that enumerates all elements.
