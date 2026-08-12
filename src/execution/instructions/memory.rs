@@ -24,6 +24,111 @@ use crate::{
     Config, RuntimeError, Value, F32, F64,
 };
 
+#[cfg(test)]
+mod tests {
+    use alloc::{boxed::Box, vec, vec::Vec};
+
+    use crate::{
+        core::{decoding::decoder::WasmDecoder, structure::modules::indices::IdxVec},
+        execution::{
+            instructions::{memory::i32_load, State},
+            runtime_structure::{
+                memory_instances::{
+                    linear_memory::LinearMemory, MemInst, UnsharedMemInst, DEFAULT_PAGE_SIZE,
+                },
+                module_instances::ModuleInst,
+                store::StoreInner,
+                value_stack::Stack,
+            },
+        },
+        Addr, AddrVec, FuncAddr, FuncType, Limits, MemAddr, MemType, ModuleAddr, Value,
+        WasmResumable,
+    };
+
+    #[test]
+    fn i32_load_simple() {
+        // State setup
+        let wasm_bytecode = &[
+            // 0x28 m:memarg => i32.load m
+            // memarg ::= a:u32 o:u32.
+            // Validation: 2^a must not be larger than the bit width of u32 divided by 8.
+            0x28, 0x00, // a=0 is valid
+            0x00, // o=0 is always valid
+        ];
+        let mut decoder = WasmDecoder::new(wasm_bytecode);
+        let mut stack = Stack::new::<()>(Vec::new(), &FuncType::new_empty(), &[]).unwrap();
+        stack.push_value(Value::I32(123)).unwrap();
+
+        let mut resumable = WasmResumable {
+            stack,
+            pc: 999999,
+            stp: 999999,
+            current_func_addr: FuncAddr::new(999999),
+            maybe_fuel: None,
+        };
+        let sidetable = Vec::new();
+        let mut memories = AddrVec::<MemAddr, MemInst>::default();
+        let mut linear_memory =
+            LinearMemory::new_with_initial_pages::<()>(DEFAULT_PAGE_SIZE, 1).unwrap();
+
+        linear_memory.store(123, 456_u32).unwrap();
+
+        memories.insert(MemInst::Unshared(UnsharedMemInst {
+            ty: MemType {
+                limits: Limits {
+                    min: 1,
+                    max: None,
+                    shared: false,
+                },
+            },
+            mem: linear_memory,
+        }));
+
+        let mut modules = AddrVec::default();
+        let mem_addrs = IdxVec::new(vec![MemAddr::new(0)]).unwrap();
+        modules.insert(ModuleInst {
+            types: IdxVec::default(),
+            func_addrs: IdxVec::default(),
+            table_addrs: IdxVec::default(),
+            mem_addrs,
+            global_addrs: IdxVec::default(),
+            elem_addrs: IdxVec::default(),
+            data_addrs: IdxVec::default(),
+            exports: Box::default(),
+            wasm_bytecode: &[],
+            sidetable,
+        });
+
+        let mut current_module = ModuleAddr::new(0);
+        let mut sidetable_ref = &unsafe { modules.get(current_module) }.sidetable;
+
+        let mut current_function_end_marker = 999999;
+
+        let mut store_inner = StoreInner {
+            functions: AddrVec::default(),
+            tables: AddrVec::default(),
+            memories,
+            globals: AddrVec::default(),
+            elements: AddrVec::default(),
+            data: AddrVec::default(),
+        };
+        let state = State {
+            wasm: &mut decoder,
+            resumable: &mut resumable,
+            current_sidetable: &mut sidetable_ref,
+            store_inner: &mut store_inner,
+            modules: &modules,
+            current_module: &mut current_module,
+            current_function_end_marker: &mut current_function_end_marker,
+        };
+
+        let instruction_result = unsafe { i32_load(state) };
+
+        assert_eq!(instruction_result.unwrap().continue_value(), Some(()));
+        assert_eq!(unsafe { resumable.stack.pop_value() }, Value::I32(456));
+    }
+}
+
 // t.load
 define_instruction!(super::i32_load, i32_load_mod, fuel_check = flat(I32_LOAD));
 #[inline(always)]
