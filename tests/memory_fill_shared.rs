@@ -1,0 +1,120 @@
+/*
+# This file incorporates code from the WebAssembly testsuite, originally
+# available at https://github.com/WebAssembly/testsuite.
+#
+# The original code is licensed under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/
+
+// use core::slice::SlicePattern;
+
+use dlr_wasm_interpreter::decode_and_validate;
+use dlr_wasm_interpreter_checked::{Store, StoredRunState};
+
+#[test_log::test]
+fn memory_fill() {
+    let w = r#"
+    (module
+        (memory (export "mem") 1 5 shared)
+        (func (export "fill")
+            (memory.fill (i32.const 0) (i32.const 2777) (i32.const 100))
+        )
+    )
+  "#;
+    let wasm_bytes = wat::parse_str(w).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&module, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let fill = store
+        .instance_export(module, "fill")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let mem = store
+        .instance_export(module, "mem")
+        .unwrap()
+        .as_mem()
+        .expect("memory");
+
+    store.invoke_simple_typed::<(), ()>(fill, ()).unwrap();
+
+    let expected = [vec![217u8; 100], vec![0u8; 5]].concat();
+    for (idx, expected_byte) in expected.into_iter().enumerate() {
+        let mem_byte: u8 = store.mem_read(mem, idx as u32).unwrap();
+        assert_eq!(
+            mem_byte.to_ascii_lowercase(),
+            expected_byte.to_ascii_lowercase()
+        );
+    }
+}
+
+// we need control flow implemented for any of these tests
+#[ignore = "not yet implemented"]
+#[test_log::test]
+fn memory_fill_with_control_flow() {
+    todo!()
+}
+
+#[test_log::test]
+fn fill_with_fuel() {
+    let w = r#"
+    (module
+        (memory (export "mem") 1 5 shared)
+        (func (export "fill")
+            (memory.fill (i32.const 0) (i32.const 2777) (i32.const 100))
+        )
+    )
+  "#;
+    let wasm_bytes = wat::parse_str(w).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&module, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let fill = store
+        .instance_export(module, "fill")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let mem = store
+        .instance_export(module, "mem")
+        .unwrap()
+        .as_mem()
+        .expect("memory");
+
+    let mut run_state = store.invoke(fill, Vec::new(), Some(1)).unwrap();
+    loop {
+        match run_state {
+            StoredRunState::Finished { .. } => break,
+            StoredRunState::Resumable { mut resumable, .. } => {
+                *resumable.fuel_mut().as_mut().unwrap() += 1;
+                run_state = store.resume_wasm(resumable).unwrap();
+            }
+            StoredRunState::HostCalled { .. } => unreachable!("no host calls exist"),
+        }
+    }
+
+    let expected = [vec![217u8; 100], vec![0u8; 5]].concat();
+    for (idx, expected_byte) in expected.into_iter().enumerate() {
+        let mem_byte: u8 = store.mem_read(mem, idx as u32).unwrap();
+        assert_eq!(
+            mem_byte.to_ascii_lowercase(),
+            expected_byte.to_ascii_lowercase()
+        );
+    }
+}

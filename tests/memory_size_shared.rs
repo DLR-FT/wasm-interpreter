@@ -1,0 +1,225 @@
+use log::info;
+/*
+# This file incorporates code from the WebAssembly testsuite, originally
+# available at https://github.com/WebAssembly/testsuite.
+#
+# The original code is licensed under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/
+use dlr_wasm_interpreter::{decode_and_validate, ValidationError};
+use dlr_wasm_interpreter_checked::Store;
+
+#[test_log::test]
+fn memory_size_1() {
+    let w = r#"
+(module
+  (memory 0 10 shared)
+  (func (export "size") (result i32) (memory.size))
+  (func (export "grow") (param $sz i32) (drop (memory.grow (local.get $sz))))
+)
+  "#;
+    let wasm_bytes = wat::parse_str(w).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&module, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let size = store
+        .instance_export(module, "size")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow = store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(0));
+    assert_eq!(store.invoke_simple_typed(grow, 1), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(1));
+    assert_eq!(store.invoke_simple_typed(grow, 4), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(5));
+    assert_eq!(store.invoke_simple_typed(grow, 0), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(5));
+}
+
+#[test_log::test]
+fn memory_size_2() {
+    let w = r#"
+(module
+  (memory 1 10 shared)
+  (func (export "size") (result i32) (memory.size))
+  (func (export "grow") (param $sz i32) (drop (memory.grow (local.get $sz))))
+)
+  "#;
+    let wasm_bytes = wat::parse_str(w).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&module, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let size = store
+        .instance_export(module, "size")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow = store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(1));
+    assert_eq!(store.invoke_simple_typed(grow, 1), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(2));
+    assert_eq!(store.invoke_simple_typed(grow, 4), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(6));
+    assert_eq!(store.invoke_simple_typed(grow, 0), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(6));
+}
+
+#[test_log::test]
+fn memory_size_3() {
+    let w = r#"
+(module
+  (memory 0 2 shared)
+  (func (export "size") (result i32) (memory.size))
+  (func (export "grow") (param $sz i32) (drop (memory.grow (local.get $sz))))
+)
+"#;
+    let wasm_bytes = wat::parse_str(w).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&module, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let size = store
+        .instance_export(module, "size")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow = store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(0));
+    assert_eq!(store.invoke_simple_typed(grow, 3), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(0));
+    assert_eq!(store.invoke_simple_typed(grow, 1), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(1));
+    assert_eq!(store.invoke_simple_typed(grow, 0), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(1));
+    assert_eq!(store.invoke_simple_typed(grow, 4), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(1));
+    assert_eq!(store.invoke_simple_typed(grow, 1), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(2));
+}
+
+#[test_log::test]
+fn memory_size_4() {
+    let w = r#"
+(module
+  (memory 3 8 shared)
+  (func (export "size") (result i32) (memory.size))
+  (func (export "grow") (param $sz i32) (drop (memory.grow (local.get $sz))))
+)
+"#;
+    let wasm_bytes = wat::parse_str(w).unwrap();
+    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&module, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let size = store
+        .instance_export(module, "size")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow = store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(3));
+    assert_eq!(store.invoke_simple_typed(grow, 1), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(4));
+    assert_eq!(store.invoke_simple_typed(grow, 3), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(7));
+    assert_eq!(store.invoke_simple_typed(grow, 0), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(7));
+    assert_eq!(store.invoke_simple_typed(grow, 2), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(7));
+    assert_eq!(store.invoke_simple_typed(grow, 1), Ok(()));
+    assert_eq!(store.invoke_simple_typed(size, ()), Ok(8));
+}
+
+#[test_log::test]
+fn memory_size_5() {
+    let w = r#"
+  (module
+    (memory 1 10 shared)
+    (func $type-result-i32-vs-empty
+      (memory.size)
+    )
+  )
+  "#;
+    let wasm_bytes = wat::parse_str(w).unwrap();
+    let mut i = 0;
+    let mut info_str = String::new();
+    for byte in wasm_bytes.iter() {
+        info_str.push_str(&format!("{byte:#04X} "));
+        i += 1;
+        if i % 8 == 0 {
+            i = 0;
+            info!("{info_str}");
+        }
+    }
+    let module = decode_and_validate(&wasm_bytes, &mut ());
+    assert_eq!(module.err(), Some(ValidationError::EndInvalidValueStack));
+}
+
+#[test_log::test]
+fn memory_size_6() {
+    let w = r#"
+  (module
+    (memory 1 10 shared)
+    (func $type-result-i32-vs-f32 (result f32)
+      (memory.size)
+    )
+  )
+  "#;
+    let wasm_bytes = wat::parse_str(w).unwrap();
+    let mut i = 0;
+    let mut info_str = String::new();
+    for byte in wasm_bytes.iter() {
+        info_str.push_str(&format!("{byte:#04X} "));
+        i += 1;
+        if i % 8 == 0 {
+            i = 0;
+            info!("{info_str}");
+        }
+    }
+    let module = decode_and_validate(&wasm_bytes, &mut ());
+    assert_eq!(module.err(), Some(ValidationError::EndInvalidValueStack));
+}
