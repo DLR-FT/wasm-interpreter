@@ -50,35 +50,42 @@
 <a href=#50 id=50 data-nosnippet>50</a>    </span>SectionSizeMismatch,
 <a href=#51 id=51 data-nosnippet>51</a>    <span class="doccomment">/// A section with given type is out of order. All section types have a fixed order in which they must occur.
 <a href=#52 id=52 data-nosnippet>52</a>    </span>SectionOutOfOrder(SectionTy),
-<a href=#53 id=53 data-nosnippet>53</a>}
-<a href=#54 id=54 data-nosnippet>54</a>
-<a href=#55 id=55 data-nosnippet>55</a><span class="kw">impl </span>error::Error <span class="kw">for </span>DecodingError {}
-<a href=#56 id=56 data-nosnippet>56</a>
-<a href=#57 id=57 data-nosnippet>57</a><span class="kw">impl </span>fmt::Display <span class="kw">for </span>DecodingError {
-<a href=#58 id=58 data-nosnippet>58</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
-<a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#60 id=60 data-nosnippet>60</a>            DecodingError::InvalidMagic =&gt; <span class="macro">write!</span>(f, <span class="string">"The magic number is invalid"</span>),
-<a href=#61 id=61 data-nosnippet>61</a>            DecodingError::InvalidBinaryFormatVersion =&gt; <span class="macro">write!</span>(f, <span class="string">"The Wasm binary format version is invalid"</span>),
-<a href=#62 id=62 data-nosnippet>62</a>            DecodingError::Eof =&gt; <span class="macro">write!</span>(f, <span class="string">"The end of the Wasm bytecode was reached unexpectedly"</span>),
-<a href=#63 id=63 data-nosnippet>63</a>            DecodingError::MalformedUtf8(utf8_error) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse a UTF-8 string: {utf8_error}"</span>),
-<a href=#64 id=64 data-nosnippet>64</a>            DecodingError::MalformedSectionTypeDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a section type discriminator"</span>),
-<a href=#65 id=65 data-nosnippet>65</a>            DecodingError::MalformedNumTypeDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a number type discriminator"</span>),
-<a href=#66 id=66 data-nosnippet>66</a>            DecodingError::MalformedVecTypeDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a vector type discriminator"</span>),
-<a href=#67 id=67 data-nosnippet>67</a>            DecodingError::MalformedFuncTypeDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a function type discriminator"</span>),
-<a href=#68 id=68 data-nosnippet>68</a>            DecodingError::MalformedRefTypeDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a reference type discriminator"</span>),
-<a href=#69 id=69 data-nosnippet>69</a>            DecodingError::MalformedValType =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to read a value type because it is neither a number, reference or vector type"</span>),
-<a href=#70 id=70 data-nosnippet>70</a>            DecodingError::MalformedExportDescDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as an export description discriminator"</span>),
-<a href=#71 id=71 data-nosnippet>71</a>            DecodingError::MalformedImportDescDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as an import description discriminator"</span>),
-<a href=#72 id=72 data-nosnippet>72</a>            DecodingError::MalformedLimitsDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a limits type discriminator"</span>),
-<a href=#73 id=73 data-nosnippet>73</a>            DecodingError::MalformedMutDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a mute type discriminator"</span>),
-<a href=#74 id=74 data-nosnippet>74</a>            DecodingError::MalformedBlockTypeTypeIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The type index {idx} which is encoded as a singed 33-bit integer inside a block type is malformed"</span>),
-<a href=#75 id=75 data-nosnippet>75</a>            DecodingError::MalformedVariableLengthInteger =&gt; <span class="macro">write!</span>(f, <span class="string">"Reading a variable-length integer overflowed"</span>),
-<a href=#76 id=76 data-nosnippet>76</a>            DecodingError::MalformedElemKindDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as an element kind discriminator"</span>),
-<a href=#77 id=77 data-nosnippet>77</a>            DecodingError::I33IsNegative =&gt; f.write_str(<span class="string">"An i33 type is negative which is not allowed"</span>),
-<a href=#78 id=78 data-nosnippet>78</a>            DecodingError::TooManyLocals =&gt; <span class="macro">write!</span>(f,<span class="string">"A function specifies too many locals, i.e. more than of 2^32-1"</span>),
-<a href=#79 id=79 data-nosnippet>79</a>            DecodingError::SectionSizeMismatch =&gt; f.write_str(<span class="string">"A section's contents were successfully decoded, but either too many or not enough bytes of the section's bytecode were consumed."</span>),
-<a href=#80 id=80 data-nosnippet>80</a>            DecodingError::SectionOutOfOrder(ty) =&gt; <span class="macro">write!</span>(f, <span class="string">"A section of type `{ty:?}` is defined out of order"</span>),
-<a href=#81 id=81 data-nosnippet>81</a>        }
-<a href=#82 id=82 data-nosnippet>82</a>    }
-<a href=#83 id=83 data-nosnippet>83</a>}
+<a href=#53 id=53 data-nosnippet>53</a>    <span class="doccomment">/// A table type was marked as shared but shared tables are not yet
+<a href=#54 id=54 data-nosnippet>54</a>    /// implemented.
+<a href=#55 id=55 data-nosnippet>55</a>    </span>SharedTablesNotYetImplemented,
+<a href=#56 id=56 data-nosnippet>56</a>    <span class="doccomment">/// A memory type is shared and thus requires a max limit but none was set.
+<a href=#57 id=57 data-nosnippet>57</a>    </span>SharedMemoryWithoutMaxLimit,
+<a href=#58 id=58 data-nosnippet>58</a>}
+<a href=#59 id=59 data-nosnippet>59</a>
+<a href=#60 id=60 data-nosnippet>60</a><span class="kw">impl </span>error::Error <span class="kw">for </span>DecodingError {}
+<a href=#61 id=61 data-nosnippet>61</a>
+<a href=#62 id=62 data-nosnippet>62</a><span class="kw">impl </span>fmt::Display <span class="kw">for </span>DecodingError {
+<a href=#63 id=63 data-nosnippet>63</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+<a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#65 id=65 data-nosnippet>65</a>            DecodingError::InvalidMagic =&gt; <span class="macro">write!</span>(f, <span class="string">"The magic number is invalid"</span>),
+<a href=#66 id=66 data-nosnippet>66</a>            DecodingError::InvalidBinaryFormatVersion =&gt; <span class="macro">write!</span>(f, <span class="string">"The Wasm binary format version is invalid"</span>),
+<a href=#67 id=67 data-nosnippet>67</a>            DecodingError::Eof =&gt; <span class="macro">write!</span>(f, <span class="string">"The end of the Wasm bytecode was reached unexpectedly"</span>),
+<a href=#68 id=68 data-nosnippet>68</a>            DecodingError::MalformedUtf8(utf8_error) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse a UTF-8 string: {utf8_error}"</span>),
+<a href=#69 id=69 data-nosnippet>69</a>            DecodingError::MalformedSectionTypeDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a section type discriminator"</span>),
+<a href=#70 id=70 data-nosnippet>70</a>            DecodingError::MalformedNumTypeDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a number type discriminator"</span>),
+<a href=#71 id=71 data-nosnippet>71</a>            DecodingError::MalformedVecTypeDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a vector type discriminator"</span>),
+<a href=#72 id=72 data-nosnippet>72</a>            DecodingError::MalformedFuncTypeDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a function type discriminator"</span>),
+<a href=#73 id=73 data-nosnippet>73</a>            DecodingError::MalformedRefTypeDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a reference type discriminator"</span>),
+<a href=#74 id=74 data-nosnippet>74</a>            DecodingError::MalformedValType =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to read a value type because it is neither a number, reference or vector type"</span>),
+<a href=#75 id=75 data-nosnippet>75</a>            DecodingError::MalformedExportDescDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as an export description discriminator"</span>),
+<a href=#76 id=76 data-nosnippet>76</a>            DecodingError::MalformedImportDescDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as an import description discriminator"</span>),
+<a href=#77 id=77 data-nosnippet>77</a>            DecodingError::MalformedLimitsDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a limits type discriminator"</span>),
+<a href=#78 id=78 data-nosnippet>78</a>            DecodingError::MalformedMutDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as a mute type discriminator"</span>),
+<a href=#79 id=79 data-nosnippet>79</a>            DecodingError::MalformedBlockTypeTypeIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The type index {idx} which is encoded as a singed 33-bit integer inside a block type is malformed"</span>),
+<a href=#80 id=80 data-nosnippet>80</a>            DecodingError::MalformedVariableLengthInteger =&gt; <span class="macro">write!</span>(f, <span class="string">"Reading a variable-length integer overflowed"</span>),
+<a href=#81 id=81 data-nosnippet>81</a>            DecodingError::MalformedElemKindDiscriminator(byte) =&gt; <span class="macro">write!</span>(f, <span class="string">"Failed to parse {byte:#x} as an element kind discriminator"</span>),
+<a href=#82 id=82 data-nosnippet>82</a>            DecodingError::I33IsNegative =&gt; f.write_str(<span class="string">"An i33 type is negative which is not allowed"</span>),
+<a href=#83 id=83 data-nosnippet>83</a>            DecodingError::TooManyLocals =&gt; <span class="macro">write!</span>(f,<span class="string">"A function specifies too many locals, i.e. more than of 2^32-1"</span>),
+<a href=#84 id=84 data-nosnippet>84</a>            DecodingError::SectionSizeMismatch =&gt; f.write_str(<span class="string">"A section's contents were successfully decoded, but either too many or not enough bytes of the section's bytecode were consumed."</span>),
+<a href=#85 id=85 data-nosnippet>85</a>            DecodingError::SectionOutOfOrder(ty) =&gt; <span class="macro">write!</span>(f, <span class="string">"A section of type `{ty:?}` is defined out of order"</span>),
+<a href=#86 id=86 data-nosnippet>86</a>            DecodingError::SharedTablesNotYetImplemented =&gt; f.write_str(<span class="string">"A table type was marked as shared but shared tables are not yet implemented"</span>),
+<a href=#87 id=87 data-nosnippet>87</a>            DecodingError::SharedMemoryWithoutMaxLimit =&gt; f.write_str(<span class="string">"A memory type is shared and thus requires a max limit but none was set"</span>),
+<a href=#88 id=88 data-nosnippet>88</a>        }
+<a href=#89 id=89 data-nosnippet>89</a>    }
+<a href=#90 id=90 data-nosnippet>90</a>}
 </code></pre></div></section></main></body></html>

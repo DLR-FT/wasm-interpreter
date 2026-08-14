@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["linear_memory"],"struct":["MemInst"]};
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_PAGE_SIZE"],"enum":["MemInst"],"mod":["linear_memory","shared_linear_memory"],"struct":["SharedMemInst","UnsharedMemInst"]};
