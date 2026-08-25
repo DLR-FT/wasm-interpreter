@@ -1756,12 +1756,12 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
             }
 
             FE_EXTENSIONS => {
-                let Ok(second_instr) = wasm.read_var_u32() else {
+                let Ok(second_instr) = wasm.decode_var_u32() else {
                     // TODO only do this if EOF
                     return Err(ValidationError::ExprMissingEnd);
                 };
 
-                use crate::core::reader::types::opcode::fe_extensions::*;
+                use crate::core::structure::instructions::fe_extensions::*;
 
                 match second_instr {
                     MEMORY_ATOMIC_NOTIFY | MEMORY_ATOMIC_WAIT32 | MEMORY_ATOMIC_WAIT64 => {
@@ -1770,7 +1770,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     ATOMIC_FENCE => todo!("atomic.fence"),
                     I32_ATOMIC_LOAD => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 2 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1782,7 +1782,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_LOAD => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 3 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1794,7 +1794,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I32_ATOMIC_LOAD8_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 0 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1806,7 +1806,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I32_ATOMIC_LOAD16_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 1 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1818,7 +1818,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_LOAD8_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 0 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1830,7 +1830,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_LOAD16_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 1 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1842,7 +1842,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_LOAD32_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 2 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1854,7 +1854,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I32_ATOMIC_STORE => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 2 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1866,7 +1866,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_STORE => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 3 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1878,7 +1878,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I32_ATOMIC_STORE8 => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 0 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1890,7 +1890,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I32_ATOMIC_STORE16 => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 1 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1902,7 +1902,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_STORE8 => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 0 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1914,7 +1914,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_STORE16 => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 1 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1926,7 +1926,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_STORE32 => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 2 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1939,7 +1939,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     I32_ATOMIC_RMW_ADD | I32_ATOMIC_RMW_SUB | I32_ATOMIC_RMW_AND
                     | I32_ATOMIC_RMW_OR | I32_ATOMIC_RMW_XOR | I32_ATOMIC_RMW_XCHG => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 2 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1952,7 +1952,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     I64_ATOMIC_RMW_ADD | I64_ATOMIC_RMW_SUB | I64_ATOMIC_RMW_AND
                     | I64_ATOMIC_RMW_OR | I64_ATOMIC_RMW_XOR | I64_ATOMIC_RMW_XCHG => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 3 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1969,7 +1969,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     | I32_ATOMIC_RMW8_XOR_U
                     | I32_ATOMIC_RMW8_XCHG_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 0 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -1986,7 +1986,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     | I32_ATOMIC_RMW16_XOR_U
                     | I32_ATOMIC_RMW16_XCHG_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 1 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -2003,7 +2003,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     | I64_ATOMIC_RMW8_XOR_U
                     | I64_ATOMIC_RMW8_XCHG_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 0 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -2020,7 +2020,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     | I64_ATOMIC_RMW16_XOR_U
                     | I64_ATOMIC_RMW16_XCHG_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 1 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -2037,7 +2037,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     | I64_ATOMIC_RMW32_XOR_U
                     | I64_ATOMIC_RMW32_XCHG_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 2 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -2049,7 +2049,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I32_ATOMIC_RMW_CMPXCHG => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 2 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -2062,7 +2062,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_RMW_CMPXCHG => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 3 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -2075,7 +2075,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I32_ATOMIC_RMW8_CMPXCHG_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 0 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -2088,7 +2088,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I32_ATOMIC_RMW16_CMPXCHG_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 1 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -2101,7 +2101,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_RMW8_CMPXCHG_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 0 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -2114,7 +2114,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_RMW16_CMPXCHG_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 1 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
@@ -2127,7 +2127,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     }
                     I64_ATOMIC_RMW32_CMPXCHG_U => {
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
-                        let memarg = MemArg::read(wasm)?;
+                        let memarg = MemArg::decode(wasm)?;
                         if memarg.align != 2 {
                             return Err(ValidationError::ErroneousAtomicAlignment {
                                 actual_alignment: memarg.align,
