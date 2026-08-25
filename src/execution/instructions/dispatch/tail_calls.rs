@@ -44,7 +44,7 @@ type InstructionHandlerFn<T> = for<'wasm, 'modules> unsafe extern "rust-preserve
 ///
 /// # Safety
 ///
-/// The given resumable must be valid in the given store.
+/// The given resumable must be valid in the given store and the store itself must be valid.
 #[inline(never)]
 pub(super) unsafe fn run<T: Config>(
     resumable: &mut WasmResumable,
@@ -81,6 +81,14 @@ pub(super) unsafe fn run<T: Config>(
 
     wasm.pc = pc;
 
+    // SAFETY: All safety requirements of `State` are fulfilled:
+    // - The wasm decoder was created initialized with the Wasm code for the current module. Also it
+    //   points into the current function, as guarantees by the fact that the resumable is valid.
+    // - The `StoreInner` is valid because the `Store` was valid.
+    // - The caller ensures that the resumable is valid in the `Store`, therefore also in the
+    //   `StoreInner`.
+    // - The current sidetable was determined through the current module.
+    // - The end marker for the current function was computed using the current function instance.
     unsafe {
         dispatch(
             wasm,
@@ -91,12 +99,16 @@ pub(super) unsafe fn run<T: Config>(
             current_module,
             current_function_end_marker,
             user_data,
-            0, // this is set in dispatch function
+            0, // this is set in dispatch function. it is needed for fn signatures to match
         )
     }
 }
 
-#[inline(always)]
+/// # Safety
+///
+/// All arguments must be valid according to the same rules that exist for
+/// [`State`](crate::execution::instructions::State).
+#[inline(always)] // we try to inline this function at the end of every instruction handler
 unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
     mut wasm: WasmDecoder<'wasm>,
     resumable: &mut WasmResumable,
@@ -121,10 +133,15 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
         .and_then(Option::as_ref)
         .expect("the instruction to be valid because the code is validated");
 
-    // SAFETY: All possible instruction handler functions use the same safety requirements, as
-    // they are defined through the same macro: The caller ensures that the resumable is valid
-    // in the current store. Also all other address types passed via the `Args` must come from
-    // the current store itself. Therefore, they are automatically valid in this store.
+    // SAFETY: All safety requirements of `State` are fulfilled:
+    // - The wasm decoder was created initialized with the Wasm code for the current module.
+    //   Also it points into the current function, as guarantees by the fact that the resumable is
+    //   valid.
+    // - The `StoreInner` is valid because the `Store` was valid.
+    // - The caller ensures that the resumable is valid in the `Store`, therefore also in the
+    //   `StoreInner`.
+    // - The current sidetable was determined through the current module.
+    // - The end marker for the current function was computed using the current function instance.
     unsafe {
         become instruction_fn(
             wasm,
@@ -140,6 +157,10 @@ unsafe extern "rust-preserve-none" fn dispatch<'wasm, 'modules, T: Config>(
     }
 }
 
+/// # Safety
+///
+/// All arguments must be valid according to the same rules that exist for
+/// [`State`](crate::execution::instructions::State).
 pub(crate) unsafe extern "rust-preserve-none" fn fc_extensions<
     'wasm,
     'modules,
@@ -163,10 +184,8 @@ pub(crate) unsafe extern "rust-preserve-none" fn fc_extensions<
         .and_then(Option::as_ref)
         .expect("the instruction to be valid because the code is validated");
 
-    // SAFETY: All possible instruction handler functions use the same safety requirements, as
-    // they are defined through the same macro: The caller ensures that the resumable is valid
-    // in the current store. Also all other address types passed via the `Args` must come from
-    // the current store itself. Therefore, they are automatically valid in this store.
+    // SAFETY: The caller ensures that all safety requirements of `State` are fulfilled for all
+    // arguments.
     unsafe {
         become instruction_fn(
             wasm,
@@ -182,6 +201,10 @@ pub(crate) unsafe extern "rust-preserve-none" fn fc_extensions<
     }
 }
 
+/// # Safety
+///
+/// All arguments must be valid according to the same rules that exist for
+/// [`State`](crate::execution::instructions::State).
 pub(crate) unsafe extern "rust-preserve-none" fn fd_extensions<
     'wasm,
     'modules,
@@ -205,10 +228,8 @@ pub(crate) unsafe extern "rust-preserve-none" fn fd_extensions<
         .and_then(Option::as_ref)
         .expect("the instruction to be valid because the code is validated");
 
-    // SAFETY: All possible instruction handler functions use the same safety requirements, as
-    // they are defined through the same macro: The caller ensures that the resumable is valid
-    // in the current store. Also all other address types passed via the `Args` must come from
-    // the current store itself. Therefore, they are automatically valid in this store.
+    // SAFETY: The caller ensures that all safety requirements of `State` are fulfilled for all
+    // arguments.
     unsafe {
         become instruction_fn(
             wasm,
@@ -251,6 +272,11 @@ mod wrappers {
     macro_rules! define_wrappers {
         ($(($name:ident, $handler_fn:path, $opcode:path, $fuel_check:expr)),*) => {
             $(
+
+                /// # Safety
+                ///
+                /// All arguments must be valid according to the same rules that exist for
+                /// [`State`].
                 #[allow(
                     clippy::extra_unused_type_parameters,
                     reason = "T is only used by some instructions"
@@ -288,9 +314,9 @@ mod wrappers {
                         resumable: &mut *resumable,
                     };
 
-                    // SAFETY: The instruction implementation requires that the `State` is correct
+                    // SAFETY: All instruction handlers require that the passed `State` is valid
                     // according to its safety documentation. The caller of the current function
-                    // guarantees the same for all fields.
+                    // guarantees the same for all fields that were used to construct it.
                     let maybe_outcome = unsafe { $handler_fn(state) };
 
                     if let ControlFlow::Break(interpreter_loop_outcome) = maybe_outcome?  {
@@ -304,6 +330,8 @@ mod wrappers {
                         resumable.pc = wasm.pc;
                         Ok(interpreter_loop_outcome)
                     } else {
+                        // SAFETY: The caller ensures that all safety requirements of `State` are
+                        // fulfilled.
                         unsafe { become dispatch::<T>(
                             wasm,
                             resumable,
@@ -324,6 +352,10 @@ mod wrappers {
     macro_rules! define_wrappers_fc {
         ($(($name:ident, $handler_fn:path, $opcode:path, $fuel_check:expr)),*) => {
             $(
+                /// # Safety
+                ///
+                /// All arguments must be valid according to the same rules that exist for
+                /// [`State`].
                 #[allow(
                     clippy::extra_unused_type_parameters,
                     reason = "T is only used by some instructions"
@@ -361,9 +393,9 @@ mod wrappers {
                         resumable: &mut *resumable,
                     };
 
-                    // SAFETY: The instruction implementation requires that the `State` is correct
+                    // SAFETY: All instruction handlers require that the passed `State` is valid
                     // according to its safety documentation. The caller of the current function
-                    // guarantees the same for all fields.
+                    // guarantees the same for all fields that were used to construct it.
                     let maybe_outcome = unsafe { $handler_fn(state) };
 
                     if let ControlFlow::Break(interpreter_loop_outcome) = maybe_outcome?  {
@@ -377,6 +409,8 @@ mod wrappers {
                         resumable.pc = wasm.pc;
                         Ok(interpreter_loop_outcome)
                     } else {
+                        // SAFETY: The caller ensures that all safety requirements of `State` are
+                        // fulfilled.
                         unsafe { become dispatch::<T>(
                             wasm,
                             resumable,
@@ -397,6 +431,10 @@ mod wrappers {
     macro_rules! define_wrappers_fd {
         ($(($name:ident, $handler_fn:path, $opcode:path, $fuel_check:expr)),*) => {
             $(
+                /// # Safety
+                ///
+                /// All arguments must be valid according to the same rules that exist for
+                /// [`State`].
                 #[allow(
                     clippy::extra_unused_type_parameters,
                     reason = "T is only used by some instructions"
@@ -434,9 +472,9 @@ mod wrappers {
                         resumable: &mut *resumable,
                     };
 
-                    // SAFETY: The instruction implementation requires that the `State` is correct
+                    // SAFETY: All instruction handlers require that the passed `State` is valid
                     // according to its safety documentation. The caller of the current function
-                    // guarantees the same for all fields.
+                    // guarantees the same for all fields that were used to construct it.
                     let maybe_outcome = unsafe { $handler_fn(state) };
 
                     if let ControlFlow::Break(interpreter_loop_outcome) = maybe_outcome?  {
@@ -450,6 +488,8 @@ mod wrappers {
                         resumable.pc = wasm.pc;
                         Ok(interpreter_loop_outcome)
                     } else {
+                        // SAFETY: The caller ensures that all safety requirements of `State` are
+                        // fulfilled.
                         unsafe { become dispatch::<T>(
                             wasm,
                             resumable,

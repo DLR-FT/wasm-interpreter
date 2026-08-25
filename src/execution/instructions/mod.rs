@@ -73,12 +73,16 @@ pub enum InterpreterLoopOutcome {
 ///
 /// # Safety
 ///
+/// - The [`WasmDecoder`] must point to the Wasm code for the module of the current module instance.
+/// - The [`WasmDecoder`] must point into Wasm code of the current function as set in
+///   `resumable.current_func_addr`.
 /// - The [`StoreInner`] must be valid.
-/// - All address types contained in this struct must be valid in the [`StoreInner`]. Also see
-///   [`StoreInner`]'s safety documentation.
-/// - The sidetable must be correct for the module of the current module instance.
+/// - The [`WasmResumable`] must be valid in [`StoreInner`].
+/// - All address types contained in this struct must be valid in the [`StoreInner`].
+/// - The current sidetable must be correct for the module of the current module instance.
 /// - The end marker for the current function must point to the end index of the current function in
 ///   the current module's bytecode.
+// TODO possibly improve safety requirements
 pub(crate) struct State<'a, 'sidetable, 'wasm> {
     wasm: &'a mut WasmDecoder<'wasm>,
     resumable: &'a mut WasmResumable,
