@@ -54,8 +54,8 @@ use crate::{
 ///
 /// # Safety
 ///
-/// All addresses contained in a store must be valid for their associated
-/// address vectors in the same store.
+/// All addresses contained in a store must be valid for their associated address vectors in the
+/// same store.
 pub struct Store<'b, T: Config> {
     /// The actual inner Wasm store.
     ///
@@ -1505,7 +1505,8 @@ impl<'b, T: Config> Store<'b, T> {
         &mut self,
         mut resumable: WasmResumable,
     ) -> Result<RunState, RuntimeError> {
-        // SAFETY: The caller guarantees that the resumable comes from the current store.
+        // SAFETY: The caller guarantees that the resumable comes from the current store which
+        // itself is also automatically valid.
         let result = unsafe { instructions::dispatch::run(&mut resumable, self) }?;
 
         let run_state = match result {

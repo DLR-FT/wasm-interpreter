@@ -25,7 +25,7 @@ use crate::{
 ///
 /// # Safety
 ///
-/// The given resumable must be valid in the given store.
+/// The given resumable must be valid in the given store and the store itself must be valid.
 #[inline(never)]
 pub unsafe fn run<T: Config>(
     resumable: &mut WasmResumable,
@@ -96,6 +96,20 @@ pub unsafe fn run<T: Config>(
                                             break outcome;
                                         }
                                     }
+
+                                    // SAFETY: All safety requirements of `State` are fulfilled:
+                                    // - The wasm decoder was created initialized with the Wasm
+                                    //   code for the current module. Also it points into the
+                                    //   current function, as guarantees by the fact that the
+                                    //   resumable is valid.
+                                    // - The `StoreInner` is valid because the `Store` was
+                                    //   valid.
+                                    // - The caller ensures that the resumable is valid in the
+                                    //   `Store`, therefore also in the `StoreInner`.
+                                    // - The current sidetable was determined through the
+                                    //   current module.
+                                    // - The end marker for the current function was computed
+                                    //   using the current function instance.
                                     if let ControlFlow::Break(outcome) = unsafe { $handler_fn(state) }? {
                                         break outcome;
                                     }
@@ -125,6 +139,20 @@ pub unsafe fn run<T: Config>(
                                             break outcome;
                                         }
                                     }
+
+                                    // SAFETY: All safety requirements of `State` are fulfilled:
+                                    // - The wasm decoder was created initialized with the Wasm
+                                    //   code for the current module. Also it points into the
+                                    //   current function, as guarantees by the fact that the
+                                    //   resumable is valid.
+                                    // - The `StoreInner` is valid because the `Store` was
+                                    //   valid.
+                                    // - The caller ensures that the resumable is valid in the
+                                    //   `Store`, therefore also in the `StoreInner`.
+                                    // - The current sidetable was determined through the
+                                    //   current module.
+                                    // - The end marker for the current function was computed
+                                    //   using the current function instance.
                                     if let ControlFlow::Break(outcome) = unsafe { $handler_fn(state) }? {
                                         break outcome;
                                     }
@@ -154,12 +182,18 @@ pub unsafe fn run<T: Config>(
                                         }
                                     }
 
-                                    // SAFETY: All possible instruction handler functions use the
-                                    // same safety requirements documented on `State`.  The caller
-                                    // ensures that the resumable is valid in the current store.
-                                    // Also all other address types passed via the `State` must come
-                                    // from the current store itself.  Therefore, they are
-                                    // automatically valid in this store.
+                                    // SAFETY: All safety requirements of `State` are fulfilled:
+                                    // - The wasm decoder was created initialized with the Wasm code
+                                    //   for the current module. Also it points into the current
+                                    //   function, as guarantees by the fact that the resumable is
+                                    //   valid.
+                                    // - The `StoreInner` is valid because the `Store` was valid.
+                                    // - The caller ensures that the resumable is valid in the
+                                    //   `Store`, therefore also in the `StoreInner`.
+                                    // - The current sidetable was determined through the current
+                                    //   module.
+                                    // - The end marker for the current function was computed using
+                                    //   the current function instance.
                                     if let ControlFlow::Break(outcome) = unsafe { $handler_fn(state) }? {
                                         break outcome;
                                     }

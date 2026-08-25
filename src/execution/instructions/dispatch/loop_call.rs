@@ -35,7 +35,7 @@ type InstructionHandlerFn =
 ///
 /// # Safety
 ///
-/// The given resumable must be valid in the given store.
+/// The given resumable must be valid in the given store and the store itself must be valid.
 #[inline(never)]
 pub unsafe fn run<T: Config>(
     resumable: &mut WasmResumable,
@@ -82,9 +82,16 @@ pub unsafe fn run<T: Config>(
             .and_then(Option::as_ref)
             .expect("the instruction to be valid because the code is validated");
 
-        // SAFETY: The caller ensures that the resumable is valid in this store. Also all other
-        // address types and the sidetable come from the store itself, making them automatically
-        // valid.
+        // SAFETY: All safety requirements of `State` are fulfilled:
+        // - The wasm decoder was created initialized with the Wasm code for the current module.
+        //   Also it points into the current function, as guarantees by the fact that the resumable
+        //   is valid.
+        // - The `StoreInner` is valid because the `Store` was valid.
+        // - The caller ensures that the resumable is valid in the `Store`, therefore also in the
+        //   `StoreInner`.
+        // - The current sidetable was determined through the current module.
+        // - The end marker for the current function was computed using the current function
+        //   instance.
         let instruction_result = unsafe {
             instruction_fn(
                 wasm,
@@ -108,6 +115,10 @@ pub unsafe fn run<T: Config>(
     }
 }
 
+/// # Safety
+///
+/// All arguments must be valid according to the same rules that exist for
+/// [`State`](crate::execution::instructions::State).
 #[inline(always)]
 pub(crate) unsafe fn fc_extensions<'wasm, 'modules, T: Config>(
     wasm: &mut WasmDecoder<'wasm>,
@@ -126,10 +137,7 @@ pub(crate) unsafe fn fc_extensions<'wasm, 'modules, T: Config>(
         .and_then(Option::as_ref)
         .expect("the instruction to be valid because the code is validated");
 
-    // SAFETY: All possible instruction handler functions use the same safety requirements, as
-    // they are defined through the same macro: The caller ensures that the resumable is valid
-    // in the current store. Also all other address types passed via the `State` must come from
-    // the current store itself. Therefore, they are automatically valid in this store.
+    // SAFETY: The caller ensures that all safety requirements of `State` are fulfilled.
     unsafe {
         instruction_fn(
             wasm,
@@ -143,6 +151,10 @@ pub(crate) unsafe fn fc_extensions<'wasm, 'modules, T: Config>(
     }
 }
 
+/// # Safety
+///
+/// All arguments must be valid according to the same rules that exist for
+/// [`State`](crate::execution::instructions::State).
 #[inline(always)]
 pub(crate) unsafe fn fd_extensions<'wasm, 'modules, T: Config>(
     wasm: &mut WasmDecoder<'wasm>,
@@ -161,8 +173,7 @@ pub(crate) unsafe fn fd_extensions<'wasm, 'modules, T: Config>(
         .and_then(Option::as_ref)
         .expect("the instruction to be valid because the code is validated");
 
-    // SAFETY: The caller ensures that the resumable is valid in this store. Also all other address
-    // types and the sidetable come from the store itself, making them automatically valid.
+    // SAFETY: The caller ensures that all safety requirements of `State` are fulfilled.
     unsafe {
         instruction_fn(
             wasm,
@@ -203,6 +214,10 @@ mod wrappers {
         ($(($name:ident, $handler_fn:path, $opcode:path, $fuel_check:expr)),*) => {
 
             $(
+                /// # Safety
+                ///
+                /// All arguments must be valid according to the same rules that exist for
+                /// [`State`].
                 #[allow(
                     clippy::extra_unused_type_parameters,
                     reason = "T is only used by some instructions"
@@ -236,9 +251,9 @@ mod wrappers {
                         resumable,
                     };
 
-                    // SAFETY: The instruction implementation requires that the `State` is correct
+                    // SAFETY: All instruction handlers require that the passed `State` is valid
                     // according to its safety documentation. The caller of the current function
-                    // guarantees the same for all fields.
+                    // guarantees the same for all fields that were used to construct it.
                     unsafe { $handler_fn(state) }
                 }
             )*
@@ -248,6 +263,10 @@ mod wrappers {
     macro_rules! define_wrappers_fc {
         ($(($name:ident, $handler_fn:path, $opcode:path, $fuel_check:expr)),*) => {
             $(
+                /// # Safety
+                ///
+                /// All arguments must be valid according to the same rules that exist for
+                /// [`State`].
                 #[allow(
                     clippy::extra_unused_type_parameters,
                     reason = "T is only used by some instructions"
@@ -281,9 +300,9 @@ mod wrappers {
                         resumable,
                     };
 
-                    // SAFETY: The instruction implementation requires that the `State` is correct
+                    // SAFETY: All instruction handlers require that the passed `State` is valid
                     // according to its safety documentation. The caller of the current function
-                    // guarantees the same for all fields.
+                    // guarantees the same for all fields that were used to construct it.
                     unsafe { $handler_fn(state) }
                 }
             )*
@@ -293,6 +312,10 @@ mod wrappers {
     macro_rules! define_wrappers_fd {
         ($(($name:ident, $handler_fn:path, $opcode:path, $fuel_check:expr)),*) => {
             $(
+                /// # Safety
+                ///
+                /// All arguments must be valid according to the same rules that exist for
+                /// [`State`].
                 #[allow(
                     clippy::extra_unused_type_parameters,
                     reason = "T is only used by some instructions"
@@ -326,9 +349,9 @@ mod wrappers {
                         resumable,
                     };
 
-                    // SAFETY: The instruction implementation requires that the `State` is correct
+                    // SAFETY: All instruction handlers require that the passed `State` is valid
                     // according to its safety documentation. The caller of the current function
-                    // guarantees the same for all fields.
+                    // guarantees the same for all fields that were used to construct it.
                     unsafe { $handler_fn(state) }
                 }
             )*

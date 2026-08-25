@@ -77,23 +77,26 @@ pub enum DispatchMechanism {
 
 /// # Safety
 ///
-/// The given resumable must be valid in the given [`Store`].
+/// The given resumable must be valid in the given [`Store`] and the store itself must be valid.
 pub(crate) unsafe fn run<T: Config>(
     resumable: &mut WasmResumable,
     store: &mut Store<T>,
 ) -> Result<InterpreterLoopOutcome, RuntimeError> {
     match T::DISPATCH_MECHANISM {
         DispatchMechanism::LoopCall => {
-            // SAFETY: The caller ensures that the resumable is valid in this store.
+            // SAFETY: The caller ensures that the resumable is valid in this store and that the
+            // store is valid itself.
             unsafe { loop_call::run(resumable, store) }
         }
         DispatchMechanism::LoopMatch => {
-            // SAFETY: The caller ensures that the resumable is valid in this store.
+            // SAFETY: The caller ensures that the resumable is valid in this store and that the
+            // store is valid itself.
             unsafe { loop_match::run(resumable, store) }
         }
         #[cfg(feature = "nightly")]
         DispatchMechanism::TailCalls => {
-            // SAFETY: The caller ensures that the resumable is valid in this store.
+            // SAFETY: The caller ensures that the resumable is valid in this store and that the
+            // store is valid itself.
             unsafe { tail_calls::run(resumable, store) }
         }
     }
