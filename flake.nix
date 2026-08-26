@@ -142,6 +142,7 @@
                   cargo = rust-toolchain-nightly;
                   rustc = rust-toolchain-nightly;
                 };
+                docUseAllFeatures = true;
               };
             };
 
