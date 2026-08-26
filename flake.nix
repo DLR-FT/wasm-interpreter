@@ -110,6 +110,24 @@
                 "i686-unknown-linux-musl" # to test if we can run on 32 Bit architectures
               ];
             };
+
+            # Nightly Rust toolchain
+            rust-toolchain-nightly = pkgs.rust-bin.selectLatestNightlyWith (
+              toolchain:
+              toolchain.default.override {
+                extensions = [
+                  "miri-preview"
+                  "rust-analysis"
+                  "rust-src"
+                ];
+                targets = [
+                  rust-target
+                  "wasm32-unknown-unknown"
+                  "thumbv6m-none-eabi" # for no_std test
+                  "i686-unknown-linux-musl" # to test if we can run on 32 Bit architectures
+                ];
+              }
+            );
           in
           {
             # packages from `pkgs/`, injected into the `pkgs` via our `overlay.nix`
@@ -120,6 +138,13 @@
                 rustPlatform = pkgs.makeRustPlatform {
                   cargo = rust-toolchain-nixpkgs-current;
                   rustc = rust-toolchain-nixpkgs-current;
+                };
+              };
+              # build the dlr-wasm-interpreter with the latest nightly rust toolchain
+              dlr-wasm-interpreter-nightly = pkgs.dlr-wasm-interpreter.override {
+                rustPlatform = pkgs.makeRustPlatform {
+                  cargo = rust-toolchain-nightly;
+                  rustc = rust-toolchain-nightly;
                 };
               };
             };
@@ -319,13 +344,7 @@
             devShells.nightly = pkgs.mkShell {
               inputsFrom = [ self.checks.${system}.dlr-wasm-interpreter-msrv ];
               nativeBuildInputs = with pkgs; [
-                ((rust-bin.selectLatestNightlyWith (toolchain: toolchain.default)).override {
-                  extensions = [
-                    "miri-preview"
-                    "rust-analysis"
-                    "rust-src"
-                  ];
-                })
+                rust-toolchain-nightly
                 cargo-llvm-cov
                 cargo-udeps
                 cargo-nextest
@@ -354,9 +373,10 @@
                 useNextest = false;
               };
 
-              # check that the Minimum Supported Rust Version (MSRV) we promise does actually compile
+              # Check that clippy passes. This is done using the latest nightly Rust version, to
+              # include the nighly feature.
               dlr-wasm-interpreter-clippy = (
-                self.packages.${system}.dlr-wasm-interpreter-current-rust.overrideAttrs (old: {
+                self.packages.${system}.dlr-wasm-interpreter-nightly.overrideAttrs (old: {
                   name = self.packages.${system}.dlr-wasm-interpreter.name + "-clippy-report.txt";
                   phases = [
                     "unpackPhase"
@@ -365,8 +385,7 @@
                   ];
                   env.RUSTFLAGS = "-Dwarnings";
                   postConfigure = ''
-                    # TODO: also include the nightly feature in this check
-                    cargo clippy --workspace --frozen --locked --offline --all-targets |& tee "$out"
+                    cargo clippy --workspace --frozen --locked --offline --all-targets --all-features |& tee "$out"
                   '';
                 })
               );
