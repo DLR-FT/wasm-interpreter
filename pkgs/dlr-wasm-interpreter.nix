@@ -2,6 +2,7 @@
   lib,
   rustPlatform,
   doDoc ? true,
+  docUseAllFeatures ? false,
   useNextest ? true,
 }:
 
@@ -60,9 +61,8 @@ rustPlatform.buildRustPackage rec {
 
   # we want a full documentation, if at all
   postBuild = lib.strings.optionalString doDoc ''
-    # TODO: also include the nightly feature in this check
     # Rationale for excluding `benchmark`: It contains only binaries and has a lot of dependencies.
-    cargo doc --workspace --exclude benchmark --document-private-items --locked --offline --frozen
+    cargo doc --workspace --exclude benchmark --document-private-items --locked --offline --frozen ${lib.strings.optionalString docUseAllFeatures "--all-features"}
     mkdir -- "$out"
 
     shopt -s globstar
