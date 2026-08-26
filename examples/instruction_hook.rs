@@ -79,7 +79,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!();
 
     // We can still access our user data
-    println!("{}", &store.user_data);
+    println!("{}", store.user_data);
 
     Ok(())
 }
