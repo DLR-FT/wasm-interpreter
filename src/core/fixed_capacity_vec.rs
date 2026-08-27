@@ -1,5 +1,9 @@
 use alloc::boxed::Box;
-use core::mem::MaybeUninit;
+use core::{
+    mem::MaybeUninit,
+    ops::{Deref, DerefMut, Index},
+    slice::SliceIndex,
+};
 
 /// The operation would remove more elements than currently present or tries to access an element
 /// when none are present
@@ -187,62 +191,6 @@ impl<T> FixedCapacityVec<T> {
         Ok(value)
     }
 
-    /// Get a shared ref to the nth element in [`Self`]
-    #[inline(always)]
-    pub fn get(&self, idx: usize) -> Option<&T> {
-        (idx < self.len).then(|| {
-            // SAFETY: `idx` is less than `self.len()`
-            unsafe { self.get_unchecked(idx) }
-        })
-    }
-
-    /// Get a shared ref to the nth element in [`Self`]
-    ///
-    /// # Safety
-    ///
-    /// `idx` must be within bounds, i.e. `0 <= idx < self.len()`.
-    #[inline(always)]
-    pub unsafe fn get_unchecked(&self, idx: usize) -> &T {
-        debug_assert!(self.elements.get(idx).is_some());
-        // SAFETY: The caller ensures that `idx` is less than `self.len()` which it always less or
-        // equal to `self.capacity()`. Therefore, `idx` is always less than `self.capacity()`.
-        let element = unsafe { self.elements.get_unchecked(idx) };
-
-        debug_assert!(idx < self.len());
-        // SAFETY: The caller ensures that `idx` is less than `self.len()`. Therefore, the element
-        // at this index must be initialized.
-        unsafe { element.assume_init_ref() }
-    }
-
-    /// Get an exclusive reference to the nth element in [`Self`]
-    #[inline(always)]
-    #[expect(unused, reason = "this might be used in the future")]
-    pub fn get_mut(&mut self, idx: usize) -> Option<&mut T> {
-        (idx < self.len).then(|| {
-            // SAFETY: `idx` is less than `self.len()`
-            unsafe { self.get_unchecked_mut(idx) }
-        })
-    }
-
-    /// Get an exclusive reference to the n-th element in [`Self`]
-    ///
-    /// # Safety
-    ///
-    /// `idx` must be within bounds, i.e. `0 <= idx < self.len()`.
-    #[inline(always)]
-    pub unsafe fn get_unchecked_mut(&mut self, idx: usize) -> &mut T {
-        debug_assert!(self.elements.get(idx).is_some());
-        debug_assert!(idx < self.len());
-
-        // SAFETY: The caller ensures that `idx` is less than `self.len()` which it always less or
-        // equal to `self.capacity()`. Therefore, `idx` is always less than `self.capacity()`.
-        let element = unsafe { self.elements.get_unchecked_mut(idx) };
-
-        // SAFETY: The caller ensures that `idx` is less than `self.len()`. Therefore, the element
-        // at this index is guaranteed to be initialized.
-        unsafe { element.assume_init_mut() }
-    }
-
     /// Drops all elements in this vector and sets its length to zero. The capacity of this vector
     /// remains unaltered.
     pub fn clear(&mut self) {
@@ -257,6 +205,32 @@ impl<T> FixedCapacityVec<T> {
         }
 
         self.len = 0;
+    }
+}
+
+impl<T> Deref for FixedCapacityVec<T> {
+    type Target = [T];
+
+    fn deref(&self) -> &Self::Target {
+        debug_assert!(self.elements.get(0..self.len).is_some());
+        // SAFETY: self.len is always less or equal to the capacity, i.e. the length of
+        // self.elements. Therefore, this must always return a valid slice.
+        let initialized_elements = unsafe { self.elements.get_unchecked(0..self.len) };
+
+        // SAFETY: All elements in the range 0..self.len are always properly initialized.
+        unsafe { slice_assume_init(initialized_elements) }
+    }
+}
+
+impl<T> DerefMut for FixedCapacityVec<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        debug_assert!(self.elements.get(0..self.len).is_some());
+        // SAFETY: self.len is always less or equal to the capacity, i.e. the length of
+        // self.elements. Therefore, this must always return a valid slice.
+        let initialized_elements = unsafe { self.elements.get_unchecked_mut(0..self.len) };
+
+        // SAFETY: All elements in the range 0..self.len are always properly initialized.
+        unsafe { slice_assume_init_mut(initialized_elements) }
     }
 }
 
@@ -377,11 +351,25 @@ impl<T> Drop for FixedCapacityVec<T> {
 /// 1.93.0.
 #[inline(always)]
 unsafe fn slice_assume_init<T>(slice: &[MaybeUninit<T>]) -> &[T] {
-    // SAFETY: casting `slice` to a `*const [T]` is safe since the caller guarantees that
-    // `slice` is initialized, and `MaybeUninit` is guaranteed to have the same layout as `T`.
-    // The pointer obtained is valid since it refers to memory owned by `slice` which is a
-    // reference and thus guaranteed to be valid for reads.
+    // SAFETY: casting `slice` to a `*const [T]` is safe since the caller guarantees that `slice` is
+    // initialized, and `MaybeUninit` is guaranteed to have the same layout as `T`. The pointer
+    // obtained is valid since it refers to memory owned by `slice` which is a reference and thus
+    // guaranteed to be valid for reads.
     unsafe { &*(slice as *const _ as *const [T]) }
+}
+
+// TODO use assume_init_ref, once we get the MSRV to 1.93.0
+/// # Safety
+///
+/// Use this to assume a range of a slice to be initialized. This is provided starting with Rust
+/// 1.93.0.
+#[inline(always)]
+unsafe fn slice_assume_init_mut<T>(slice: &mut [MaybeUninit<T>]) -> &mut [T] {
+    // SAFETY: casting `slice` to a `*mut [T]` is safe since the caller guarantees that `slice` is
+    // initialized, and `MaybeUninit` is guaranteed to have the same layout as `T`. The pointer
+    // obtained is valid since it refers to memory owned by `slice` which is a reference and thus
+    // guaranteed to be valid for reads.
+    unsafe { &mut *(slice as *mut _ as *mut [T]) }
 }
 
 #[cfg(test)]
