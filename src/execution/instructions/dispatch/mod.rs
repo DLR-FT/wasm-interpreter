@@ -29,7 +29,7 @@ pub(crate) mod tail_calls;
 /// requiring nightly).
 ///
 /// This enum is marked as non-exhaustive due to the feature-dependent tail calls mechanism.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 #[non_exhaustive]
 pub enum DispatchMechanism {
     /// Calls the instruction handler function for the next instruction in a loop.

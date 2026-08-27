@@ -1,5 +1,6 @@
 use dlr_wasm_interpreter::{
-    decode_and_validate, ExternVal, FuncType, NumType, ResultType, RunState, Store, ValType, Value,
+    decode_and_validate, Config, DispatchMechanism, ExternVal, FuncType, NumType, ResultType,
+    RunState, Store, ValType, Value,
 };
 use envconfig::Envconfig;
 use std::{str::FromStr, time::UNIX_EPOCH};
@@ -27,18 +28,18 @@ impl FromStr for OutputFormat {
 }
 
 #[derive(Envconfig, Debug, Default)]
-struct Config {
+struct EnvConfig {
     /// Output format
     #[envconfig(from = "BENCH_OUTPUT_FORMAT")]
     format: Option<OutputFormat>,
 }
 
 fn main() {
-    let config = Config::init_from_env().unwrap();
+    let env_config = EnvConfig::init_from_env().unwrap();
 
-    let score = run();
+    let score = run(InterpreterConfig);
 
-    let format = config.format.unwrap_or_default();
+    let format = env_config.format.unwrap_or_default();
     match format {
         OutputFormat::HumanReadable => {
             println!("Score: {score}");
@@ -49,9 +50,10 @@ fn main() {
     }
 }
 
-pub fn run() -> f32 {
+pub fn run<T: Config>(interpreter_config: T) -> f32 {
     let module = decode_and_validate(COREMARK_MINIMAL_BYTECODE, &mut ()).unwrap();
-    let mut store = Store::new(());
+
+    let mut store = Store::new(interpreter_config);
     let env_clock_ms_function = store.func_alloc(
         FuncType {
             params: ResultType {
@@ -112,4 +114,10 @@ fn clock_ms() -> u64 {
             .as_millis(),
     )
     .expect("time after UNIX_EPOCH in milliseconds never really exceeds 2^64")
+}
+
+struct InterpreterConfig;
+
+impl Config for InterpreterConfig {
+    const DISPATCH_MECHANISM: DispatchMechanism = DispatchMechanism::LoopMatch;
 }
