@@ -114,12 +114,13 @@ impl UnsharedMemInst {
         //
         // For us this operation is fallible, as a custom upper size limit can be set through
         // `Config`.
-        self.mem.grow::<T>(n.into_usize())?;
+        self.mem
+            .grow::<T>(n.into_usize(), limits.max.map(u32::into_usize))?;
 
         // 9. Set meminst.type to the memory type limits'.
         self.ty.limits = limits_prime;
 
-        // Additionally, return the previous length
+        // Additionally, return the previous lmove ength
         Ok(u32::from(previous_len))
     }
 

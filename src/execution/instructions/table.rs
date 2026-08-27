@@ -172,7 +172,11 @@ pub unsafe fn table_grow<T: Config>(
     // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the state.resumable.stack per spec
     let pushed_value = match tab.grow::<T>(n, val) {
         Ok(_) => sz,
-        Err(RuntimeError::TableGrowOverflowed | RuntimeError::TableGrowExceededLimit) => u32::MAX,
+        Err(
+            RuntimeError::TableGrowOverflowed
+            | RuntimeError::TableGrowExceededLimit
+            | RuntimeError::HostRefusedAllocation,
+        ) => u32::MAX,
         Err(_) => unreachable!("table grow operation cannot produce any other errors"),
     };
     state.resumable.stack.push_value(Value::I32(pushed_value))?;

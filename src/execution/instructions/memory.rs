@@ -1846,7 +1846,11 @@ pub unsafe fn memory_grow<T: Config>(
     };
     let pushed_value = match grow_result {
         Ok(previous_len_pages) => previous_len_pages,
-        Err(RuntimeError::MemoryOverflowed | RuntimeError::MemoryGrowExceededLimit) => u32::MAX,
+        Err(
+            RuntimeError::MemoryOverflowed
+            | RuntimeError::MemoryGrowExceededLimit
+            | RuntimeError::HostRefusedAllocation,
+        ) => u32::MAX,
         Err(_) => unreachable!("growing memory cannot return any other errors"),
     };
     state.resumable.stack.push_value(Value::I32(pushed_value))?;

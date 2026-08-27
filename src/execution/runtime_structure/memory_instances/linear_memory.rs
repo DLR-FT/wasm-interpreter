@@ -1,13 +1,8 @@
 use core::{iter, num::NonZeroUsize};
 
-use alloc::{vec, vec::Vec};
-
 use crate::{
-    execution::{
-        numerics::representations::LittleEndianBytes,
-        runtime_structure::memory_instances::DEFAULT_PAGE_SIZE,
-    },
-    Config, RuntimeError, TrapError,
+    core::fixed_capacity_vec::FixedCapacityVec,
+    execution::numerics::representations::LittleEndianBytes, Config, RuntimeError, TrapError,
 };
 
 /// A linear memory is the backing data structure for a memory instance[^memory-instances].
@@ -23,66 +18,108 @@ use crate::{
 /// [^memory-instances]: [WebAssembly Specification 2.0 - 4.2.9. Memory Instances](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instances%E2%91%A0).
 /// [^memory-instructions]: [WebAssembly Specification 2.0 - 4.4.7. Memory Instructions](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instructions%E2%91%A4).
 pub struct LinearMemory {
-    pub(crate) data: Vec<u8>,
+    // Length and capacity of this vector must always be multiples of `self.page_size`.
+    pub(crate) data: FixedCapacityVec<u8>,
     page_size: NonZeroUsize,
 }
 
 impl LinearMemory {
-    /// Creates a new linear memory of size 0
-    pub fn new(page_size: NonZeroUsize) -> Self {
-        Self {
-            data: Vec::new(),
-            page_size,
-        }
-    }
-
     /// Creates a new zero-initialized linear memory. Its size is determined by the given page size
     /// and number of pages.
     pub fn new_with_initial_pages<T: Config>(
         page_size: NonZeroUsize,
         pages: usize,
+        upper_limit_in_pages: Option<usize>,
     ) -> Result<Self, RuntimeError> {
-        // If there is a limit configured check that first.
-        if let Some(max_pages) = T::MAX_NUMBER_OF_MEMORY_PAGES {
-            if pages > usize::from(max_pages.get()) {
-                return Err(RuntimeError::MemoryOverflowed);
-            }
-        }
-
-        // Also, the number of bytes can still exceed the capacity of a usize.
-        let size_bytes = page_size
-            .get()
-            .checked_mul(pages)
+        // Size in bytes must not overflow
+        let size_in_bytes = pages
+            .checked_mul(page_size.get())
             .ok_or(RuntimeError::MemoryOverflowed)?;
 
-        let data = vec![0; size_bytes];
+        // The user may refuse this allocation or increase the number of pages we allocate.
+        let allocation_size_in_pages =
+            T::memory_requested_allocation(None, pages, upper_limit_in_pages)
+                .ok_or(RuntimeError::HostRefusedAllocation)?;
+
+        // If the user chose an size lower than the required size, fail early.
+        if allocation_size_in_pages < pages {
+            return Err(RuntimeError::MemoryOverflowed);
+        }
+
+        // New size in bytes also must not overflow
+        let allocation_size_in_bytes = allocation_size_in_pages
+            .checked_mul(page_size.get())
+            .ok_or(RuntimeError::MemoryOverflowed)?;
+
+        let mut data = FixedCapacityVec::with_capacity(allocation_size_in_bytes);
+
+        // TODO optimize
+        for _ in 0..size_in_bytes {
+            data.push(0)
+                .expect("size_in_bytes is less or equal to capacity");
+        }
 
         Ok(Self { data, page_size })
     }
 
     /// Grows the current linear memory by a number of pages.
-    pub fn grow<T: Config>(&mut self, pages_to_add: usize) -> Result<(), RuntimeError> {
-        // This implementation uses only 2 (or 3) multiplications. It does not rely on `len_pages`
-        // which would use a division.
+    ///
+    /// This function does not check if the given upper limit is exceeded. It is only required for
+    /// calling the user's configuration code.
+    pub fn grow<T: Config>(
+        &mut self,
+        pages_to_add: usize,
+        upper_limit_in_pages: Option<usize>,
+    ) -> Result<(), RuntimeError> {
+        // Size in pages must not overflow
+        let new_len_pages = self
+            .len_pages()
+            .checked_add(pages_to_add)
+            .ok_or(RuntimeError::MemoryOverflowed)?;
 
-        let num_bytes_to_grow = pages_to_add
+        // Size in pages must not overflow as well
+        let new_len = new_len_pages
             .checked_mul(self.page_size.get())
             .ok_or(RuntimeError::MemoryOverflowed)?;
-        let new_len = self
-            .len()
-            .checked_add(num_bytes_to_grow)
-            .ok_or(RuntimeError::MemoryOverflowed)?;
 
-        if let Some(max_pages) = T::MAX_NUMBER_OF_MEMORY_PAGES {
-            if usize::from(max_pages.get())
-                .checked_mul(self.page_size.get())
-                .is_some_and(|max_len| new_len > max_len)
-            {
+        // If the capacity does not suffice, call the user to ask for a reallocation.
+        let capacity_pages = self.capacity_pages();
+        if let Some(additional_capacity_pages) = new_len_pages.checked_sub(capacity_pages) {
+            let num_new_pages = T::memory_requested_allocation(
+                Some(capacity_pages),
+                additional_capacity_pages,
+                upper_limit_in_pages,
+            )
+            .ok_or(RuntimeError::HostRefusedAllocation)?;
+
+            // If the user chose a reallocation size lower than the required additional capacity, it
+            // is okay to return early and perform no realloc at all.
+            if num_new_pages < additional_capacity_pages {
                 return Err(RuntimeError::MemoryOverflowed);
             }
+
+            // New number of bytes to allocate must not overflow
+            let num_new_bytes = num_new_pages
+                .checked_mul(self.page_size.get())
+                .ok_or(RuntimeError::MemoryOverflowed)?;
+
+            if self.capacity().checked_add(num_new_bytes).is_none() {
+                return Err(RuntimeError::MemoryOverflowed);
+            }
+
+            // SAFETY: The final capacity does not overflow.
+            unsafe { self.data.extend_reserve_unchecked(num_new_bytes) };
         }
 
-        self.data.resize(new_len, 0);
+        // TODO optimize
+        let num_bytes_to_push = new_len
+            .checked_sub(self.len())
+            .expect("new length is never less than previous length");
+        for _ in 0..num_bytes_to_push {
+            self.data
+                .push(0)
+                .expect("the capacity check ensures that enough capacity is available");
+        }
 
         Ok(())
     }
@@ -99,6 +136,16 @@ impl LinearMemory {
     /// The size of each page in this linear memory in bytes.
     pub fn page_size(&self) -> NonZeroUsize {
         self.page_size
+    }
+
+    // Returns the capacity of the current allocation backing the linear memory.
+    fn capacity(&self) -> usize {
+        self.data.capacity()
+    }
+
+    // Returns the capacity of the current allocation backing the linear memory in pages.
+    fn capacity_pages(&self) -> usize {
+        self.data.capacity() / self.page_size()
     }
 
     /// Stores a `T` starting from the given index into this linear memory.
@@ -368,12 +415,6 @@ impl core::fmt::Debug for LinearMemory {
     }
 }
 
-impl Default for LinearMemory {
-    fn default() -> Self {
-        Self::new(DEFAULT_PAGE_SIZE)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use core::f64;
@@ -390,20 +431,20 @@ mod test {
 
     #[test]
     fn new_constructor() {
-        let lin_mem = LinearMemory::new(PAGE_SIZE);
+        let lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, 0, None).unwrap();
         assert_eq!(lin_mem.len_pages(), 0);
     }
 
     #[test]
     fn new_grow() {
-        let mut lin_mem = LinearMemory::new(PAGE_SIZE);
-        lin_mem.grow::<()>(1).unwrap();
+        let mut lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, 0, None).unwrap();
+        lin_mem.grow::<()>(1, None).unwrap();
         assert_eq!(lin_mem.len_pages(), 1);
     }
 
     #[test]
     fn debug_print_simple() {
-        let lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, 1).unwrap();
+        let lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, 1, None).unwrap();
         assert_eq!(lin_mem.len_pages(), 1);
 
         let expected = format!("LinearMemory {{ inner_data: [#{PAGE_SIZE} × 0] }}");
@@ -416,7 +457,7 @@ mod test {
     fn debug_print_complex() {
         let page_count = 2;
         let mut lin_mem =
-            LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, page_count).unwrap();
+            LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, page_count, None).unwrap();
         assert_eq!(lin_mem.len_pages(), page_count);
 
         lin_mem.store(1, 0xffu8).unwrap();
@@ -431,7 +472,7 @@ mod test {
 
     #[test]
     fn debug_print_empty() {
-        let lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, 0).unwrap();
+        let lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, 0, None).unwrap();
         assert_eq!(lin_mem.len_pages(), 0);
 
         let expected = "LinearMemory { inner_data: [] }";
@@ -445,7 +486,8 @@ mod test {
         let x: i8 = -127;
         let highest_legal_offset = PAGE_SIZE.get() - mem::size_of::<i8>();
         for offset in 0..highest_legal_offset {
-            let mut lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, PAGES).unwrap();
+            let mut lin_mem =
+                LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, PAGES, None).unwrap();
 
             lin_mem.store(offset, x).unwrap();
 
@@ -464,7 +506,8 @@ mod test {
         let x = F32(13.0);
         let highest_legal_offset = PAGE_SIZE.get() - mem::size_of::<F32>();
         for offset in 0..highest_legal_offset {
-            let mut lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, PAGES).unwrap();
+            let mut lin_mem =
+                LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, PAGES, None).unwrap();
 
             lin_mem.store(offset, x).unwrap();
 
@@ -483,7 +526,8 @@ mod test {
         let x = F64(f64::MIN);
         let highest_legal_offset = PAGE_SIZE.get() - mem::size_of::<F64>();
         for offset in 0..highest_legal_offset {
-            let mut lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, PAGES).unwrap();
+            let mut lin_mem =
+                LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, PAGES, None).unwrap();
 
             lin_mem.store(offset, x).unwrap();
 
@@ -502,7 +546,8 @@ mod test {
         let x = F64(f64::NAN);
         let highest_legal_offset = PAGE_SIZE.get() - mem::size_of::<f64>();
         for offset in 0..highest_legal_offset {
-            let mut lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, PAGES).unwrap();
+            let mut lin_mem =
+                LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, PAGES, None).unwrap();
 
             lin_mem.store(offset, x).unwrap();
 
@@ -524,7 +569,8 @@ mod test {
         let x: u128 = u128::MAX;
         let pages = 1;
         let lowest_illegal_offset = PAGE_SIZE.get() - mem::size_of::<u128>() + 1;
-        let mut lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, pages).unwrap();
+        let mut lin_mem =
+            LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, pages, None).unwrap();
 
         lin_mem.store(lowest_illegal_offset, x).unwrap();
     }
@@ -537,7 +583,8 @@ mod test {
         let x: u8 = u8::MAX;
         let pages = 0;
         let lowest_illegal_offset = PAGE_SIZE.get() - mem::size_of::<u8>() + 1;
-        let mut lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, pages).unwrap();
+        let mut lin_mem =
+            LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, pages, None).unwrap();
 
         lin_mem.store(lowest_illegal_offset, x).unwrap();
     }
@@ -549,7 +596,7 @@ mod test {
     fn load_out_of_range_u128_max() {
         let pages = 1;
         let lowest_illegal_offset = PAGE_SIZE.get() - mem::size_of::<u128>() + 1;
-        let lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, pages).unwrap();
+        let lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, pages, None).unwrap();
 
         let _x: u128 = lin_mem.load(lowest_illegal_offset).unwrap();
     }
@@ -561,7 +608,7 @@ mod test {
     fn load_empty_lineaer_memory_u8() {
         let pages = 0;
         let lowest_illegal_offset = PAGE_SIZE.get() - mem::size_of::<u8>() + 1;
-        let lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, pages).unwrap();
+        let lin_mem = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, pages, None).unwrap();
 
         let _x: u8 = lin_mem.load(lowest_illegal_offset).unwrap();
     }
@@ -569,7 +616,7 @@ mod test {
     #[test]
     #[should_panic]
     fn copy_out_of_bounds() {
-        let mut lin_mem_0 = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, 2).unwrap();
+        let mut lin_mem_0 = LinearMemory::new_with_initial_pages::<()>(PAGE_SIZE, 2, None).unwrap();
         lin_mem_0
             .copy_within(0, PAGE_SIZE.get(), PAGE_SIZE.get() + 1)
             .unwrap();

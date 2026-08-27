@@ -1,8 +1,8 @@
 use alloc::boxed::Box;
 use core::{
     mem::MaybeUninit,
-    ops::{Deref, DerefMut, Index},
-    slice::SliceIndex,
+    ops::{Deref, DerefMut},
+    ptr,
 };
 
 /// The operation would remove more elements than currently present or tries to access an element
@@ -19,8 +19,6 @@ impl From<FullContainerError> for crate::RuntimeError {
         Self::StackExhaustion
     }
 }
-
-// TODO consider adding a generic ContainerError enum?
 
 pub struct FixedCapacityVec<T> {
     /// A contiguous, non-reallocating, heap allocated vector. Behaves like a subset of
@@ -71,25 +69,25 @@ impl<T> FixedCapacityVec<T> {
         }
     }
 
-    /// Check if the [`Self`] is empty
+    /// Checks if this vector is empty, i.e. no initialized `T`s are contained.
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
 
-    /// Check if the [`Self`] is full
+    /// Checks if this vector is full, i.e. the number of initialized `T`s is equal to the capacity.
     #[inline(always)]
     pub const fn is_full(&self) -> bool {
         self.len == self.elements.len()
     }
 
-    /// Get the [`Self`] is height.
+    /// Returns the number of initialized `T`s in this vector.
     #[inline(always)]
     pub const fn len(&self) -> usize {
         self.len
     }
 
-    /// Get the maximum number of elements that fit into [`Self`].
+    /// Returns the number of `T`s that can be stored in this vector before this vector is full.
     #[inline(always)]
     pub const fn capacity(&self) -> usize {
         self.elements.len()
@@ -206,6 +204,64 @@ impl<T> FixedCapacityVec<T> {
 
         self.len = 0;
     }
+
+    /// Grows this vector's capacity by a fixed amount.
+    ///
+    /// Note: In contrast to [`alloc::vec::Vec::reserve`], this computes the new capacity as
+    /// `self.capacity() + additional`, not `self.len() + additional`.
+    ///
+    /// Use with caution! This method performs allocations. Currently, it only exists to support
+    /// growing for memories and tables which do not have an upper size limit.
+    ///
+    /// # Safety
+    ///
+    /// `self.capacity() + additional` must not overflow a `usize`.
+    pub unsafe fn extend_reserve_unchecked(&mut self, additional: usize) {
+        let capacity = self.capacity();
+
+        debug_assert!(capacity.checked_add(additional).is_some());
+        // SAFETY: Caller ensures this does not overflow.
+        let new_capacity = unsafe { capacity.unchecked_add(additional) };
+
+        let mut new_vector = Self::with_capacity(new_capacity);
+
+        let len = self.len;
+
+        // Prevent old elements from being accessed through safe code
+        self.len = 0;
+
+        unsafe {
+            ptr::copy(
+                self.elements.as_ptr(),
+                new_vector.elements.as_mut_ptr(),
+                len,
+            )
+        };
+
+        // This makes the copied elements which are now in `new_vector` accessible again.
+        new_vector.len = len;
+
+        // Drops self and replace it with the new vector
+        *self = new_vector;
+    }
+
+    /// Returns all uninitialized elements in this vector as am
+    #[expect(unused, reason = "to be used by future methods")]
+    pub fn spare_capacity_mut(&mut self) -> &mut [MaybeUninit<T>] {
+        unsafe { self.elements.get_unchecked_mut(self.len..) }
+    }
+
+    /// Directly sets the current length of this vector, assuming the new elements are already
+    /// initialized.
+    ///
+    /// To gain access to uninitialized elements, use [`FixedCapacityVec::spare_capacity_mut`].
+    ///
+    /// # Safety
+    ///
+    /// All elements in the range `self.len()`..`new_len` must be properly initialized.
+    pub unsafe fn set_len(&mut self, new_len: usize) {
+        self.len = new_len;
+    }
 }
 
 impl<T> Deref for FixedCapacityVec<T> {
@@ -231,6 +287,21 @@ impl<T> DerefMut for FixedCapacityVec<T> {
 
         // SAFETY: All elements in the range 0..self.len are always properly initialized.
         unsafe { slice_assume_init_mut(initialized_elements) }
+    }
+}
+
+impl<T: Copy> FixedCapacityVec<T> {
+    /// We require Copy, because panics during T's clone could leak elements.
+    pub unsafe fn push_n_unchecked(&mut self, t: T, n: usize) {
+        debug_assert!(self.len.checked_add(n).is_some());
+        // SAFETY: Caller ensures this is safe
+        let new_len = unsafe { self.len().unchecked_add(n) };
+
+        debug_assert!(new_len <= self.capacity());
+        let new_elements = unsafe { self.elements.get_unchecked_mut(self.len..new_len) };
+
+        new_elements.fill_with(|| MaybeUninit::new(t));
+        unsafe { self.set_len(new_len) };
     }
 }
 
@@ -299,7 +370,7 @@ impl<'a, T> Drop for SliceDropGuard<'a, T> {
     }
 }
 
-impl<T: Copy> FixedCapacityVec<T> {
+impl<T> FixedCapacityVec<T> {
     /// Remove `remove_count` values from [`Self`], keeping the topmost `keep_count` values
     ///
     /// From the [`Self`], remove `remove_count` elements, by sliding down the `keep_count` last/topmost
@@ -311,10 +382,28 @@ impl<T: Copy> FixedCapacityVec<T> {
     /// - `keep_count` topmost elements will be identical before and after the operation
     /// - all elements below the `remove_count + keep_count` topmost stack entry remain
     pub fn remove_in_between(&mut self, remove_count: usize, keep_count: usize) {
-        // TODO make unchecked version, remove overflowing arithmetic in safe version
+        // TODO make method unsafe, make these asserts into debug_asserts
+        assert!(remove_count.checked_add(keep_count).is_some());
+        assert!(remove_count + keep_count <= self.len);
+
         let len = self.len();
-        self.elements
-            .copy_within(len - keep_count..len, len - keep_count - remove_count);
+        let keep_start_idx = unsafe { len.unchecked_sub(keep_count) };
+        let remove_start_idx = unsafe { keep_start_idx.unchecked_sub(remove_count) };
+
+        let elements_to_remove = self
+            .elements
+            .get_mut(remove_start_idx..keep_start_idx)
+            .unwrap();
+
+        for element in &mut *elements_to_remove {
+            unsafe { element.assume_init_drop() };
+        }
+
+        let elements_to_remove = elements_to_remove.as_mut_ptr();
+        let elements_to_keep = unsafe { self.elements.get_unchecked(keep_start_idx..).as_ptr() };
+
+        unsafe { ptr::copy(elements_to_keep, elements_to_remove, keep_count) };
+
         self.len -= remove_count;
     }
 }

@@ -38,18 +38,14 @@ pub enum RuntimeError {
     /// A host function was called from a start function during module
     /// instantiation.
     UnsupportedHostCallDuringInstantiation,
-    /// An operation on a linear memory would have resulted in an overflow. Overflows can happen due
-    /// to multiple reasons:
-    ///
-    /// - A limit set via
-    ///   [`Config::MAX_NUMBER_OF_MEMORY_PAGES`](crate::Config::MAX_NUMBER_OF_MEMORY_PAGES).
-    /// - An upper limit of some memory type [`MemType`](crate::MemType)
-    /// - The general limit of 2^16 pages
+    /// An operation on a linear memory would have caused an overflow, i.e. the memory type's upper
+    /// limit or 2^16 would have been exceeded.
     MemoryOverflowed,
     /// A memory grow operation failed because the new size would have exceeded
     /// its upper limit.
     MemoryGrowExceededLimit,
-    /// A table grow operation failed because its new size would have overflowed by being over 2^32
+    /// An operation on a table would have caused an overflow, i.e. the table type's upper limit or
+    /// 2^32 would have been exceeded.
     TableGrowOverflowed,
     /// A table grow operation failed because the new size would have exceeded
     /// its upper limit.
@@ -58,6 +54,11 @@ pub enum RuntimeError {
     /// was specified, the size of the linear memory is not within its memory type's limits or the
     /// linear memory was initialized with a different maximum size than what size was provided.
     SharedLinearMemoryAllocationError,
+    /// A vector with a fixed capacity is at its maximum possible size.
+    FullContainer,
+    /// The user refused a memory allocation, e.g. through
+    /// [`Config::memory_requested_allocation`](crate::Config::memory_requested_allocation).
+    HostRefusedAllocation,
 }
 
 impl fmt::Display for RuntimeError {
@@ -112,7 +113,9 @@ impl fmt::Display for RuntimeError {
             RuntimeError::MemoryGrowExceededLimit => f.write_str("A memory grow operation failed due to exceeding its upper limit"),
             RuntimeError::TableGrowOverflowed => f.write_str("A table grow operation failed with an overflow"),
             RuntimeError::TableGrowExceededLimit => f.write_str("A table grow operation failed due to exceeding its upper limit"),
-            RuntimeError::SharedLinearMemoryAllocationError => f.write_str("The allocation of a new shared linear memory failed. This happens either if no maximum limit was specified or the size of the linear memory is not within its memory type's limits")
+            RuntimeError::SharedLinearMemoryAllocationError => f.write_str("The allocation of a new shared linear memory failed. This happens either if no maximum limit was specified or the size of the linear memory is not within its memory type's limits"),
+            RuntimeError::FullContainer => f.write_str("A vector with a fixed capacity is at its maximum possible size."),
+            RuntimeError::HostRefusedAllocation => f.write_str("The host refused a required allocation to be made."),
         }
     }
 }

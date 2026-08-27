@@ -5,9 +5,8 @@ use core::{
     sync::{self, atomic::AtomicU8},
 };
 
-use alloc::vec::Vec;
-
 use crate::{
+    core::fixed_capacity_vec::FixedCapacityVec,
     execution::{
         numerics::representations::LittleEndianBytes,
         runtime_structure::memory_instances::DEFAULT_PAGE_SIZE,
@@ -34,8 +33,8 @@ use crate::{
 ///
 /// # Implementation & Locking
 ///
-/// This memory internally relies on a [`Vec<AtomicU8>`]. Thus, the atomic unit of information for
-/// it is a byte (`u8`). All byte-wise accesses to the linear memory internally occur through
+/// This memory internally relies on a vector of [`AtomicU8`]s. Thus, the atomic unit of information
+/// for it is a byte (`u8`). All byte-wise accesses to the linear memory internally occur through
 /// [`AtomicU8::load`] and [`AtomicU8::store`], avoiding the need for an exclusive for these
 /// operations.
 ///
@@ -47,8 +46,8 @@ use crate::{
 ///    overlap with another operation at runtime, thereby necessitating a lock to gain temporary
 ///    exclusive access.
 /// 2. Linear memory can grow and while shared memories must always have an upper limit, we choose
-///    not to pre-allocate the entire memory. Instead we allow growing the inner [`Vec`] allocation,
-///    which requires temporary exclusive access to move all data from the old to the new fresh
+///    not to pre-allocate the entire memory. Instead we allow growing the inner allocation, which
+///    requires temporary exclusive access to move all data from the old to the new fresh
 ///    allocation. The old allocation is then freed afterwards.
 ///
 /// TODO: Does it pay of to have more fine-granular locking for multi-byte stores than a single
@@ -72,10 +71,10 @@ use crate::{
 //       implement dynamically checked custom memory limits.
 pub struct SharedLinearMemory {
     /// This vector's length must never be 2^32 or larger.
-    inner_data: RwSpinLock<Vec<AtomicU8>>,
+    inner_data: RwSpinLock<FixedCapacityVec<AtomicU8>>,
     page_size: NonZeroUsize,
     /// We have to store the maximum number of pages in this memory so that we can perform a bounds
-    /// when whenever the user calls [`SharedLinearMemory::grow`].
+    /// check whenever the user calls [`SharedLinearMemory::grow`].
     max_pages: usize,
 }
 
@@ -102,20 +101,17 @@ impl Ordering {
 impl SharedLinearMemory {
     /// Create a new and empty shared linear memory. A maximum for the number of pages allocatable
     /// by this memory must be set.
-    pub fn new(max_pages: usize) -> Self {
-        Self::new_with_page_size(max_pages, DEFAULT_PAGE_SIZE)
+    pub fn new<T: Config>(max_pages: usize) -> Result<Self, RuntimeError> {
+        Self::new_with_page_size::<T>(max_pages, DEFAULT_PAGE_SIZE)
     }
 
     // This is pub(crate) because we cannot expose custom page sizes to users yet.
     // TODO For the custom page size proposal, rename this to `new`.
-    pub(crate) fn new_with_page_size(max_pages: usize, page_size: NonZeroUsize) -> Self {
-        Self {
-            inner_data: RwSpinLock::new(Vec::new()),
-            // For now do not expose the option to set custom page sizes, as the SharedLinearMemory
-            // is exposed to users.
-            page_size,
-            max_pages,
-        }
+    pub(crate) fn new_with_page_size<T: Config>(
+        max_pages: usize,
+        page_size: NonZeroUsize,
+    ) -> Result<Self, RuntimeError> {
+        Self::new_with_initial_pages_and_page_size::<T>(0, max_pages, page_size)
     }
 
     // This is pub(crate) because we cannot expose custom page sizes to users yet.
@@ -125,21 +121,32 @@ impl SharedLinearMemory {
         max_pages: usize,
         page_size: NonZeroUsize,
     ) -> Result<Self, RuntimeError> {
-        let size_bytes = page_size
-            .get()
-            .checked_mul(pages)
+        // Size in bytes must not overflow
+        let size_in_bytes = pages
+            .checked_mul(page_size.get())
             .ok_or(RuntimeError::MemoryOverflowed)?;
 
-        if let Some(max_pages) = T::MAX_NUMBER_OF_MEMORY_PAGES {
-            if pages > usize::from(max_pages.get()) {
-                // TODO Should we return RuntimeError::MemoryExceededLimit instead? Do this after we
-                // have proper unverified/verified versions of Limits/MemType (see issue #406).
-                return Err(RuntimeError::MemoryOverflowed);
-            }
+        // The user may refuse this allocation or increase the number of pages we allocate.
+        let allocation_size_in_pages = T::memory_requested_allocation(None, pages, Some(max_pages))
+            .ok_or(RuntimeError::HostRefusedAllocation)?;
+
+        // If the user chose an size lower than the required size, fail early.
+        if allocation_size_in_pages < pages {
+            return Err(RuntimeError::MemoryOverflowed);
         }
 
-        let mut data = Vec::with_capacity(size_bytes);
-        data.resize_with(size_bytes, || AtomicU8::new(0));
+        // New size in bytes also must not overflow
+        let allocation_size_in_bytes = allocation_size_in_pages
+            .checked_mul(page_size.get())
+            .ok_or(RuntimeError::MemoryOverflowed)?;
+
+        let mut data = FixedCapacityVec::with_capacity(allocation_size_in_bytes);
+
+        // TODO optimize
+        for _ in 0..size_in_bytes {
+            data.push(AtomicU8::new(0))
+                .expect("size_in_bytes is less or equal to capacity");
+        }
 
         Ok(Self {
             inner_data: RwSpinLock::new(data),
@@ -166,34 +173,64 @@ impl SharedLinearMemory {
     pub fn grow<T: Config>(&self, pages_to_add: usize) -> Result<usize, RuntimeError> {
         let mut lock_guard = self.inner_data.write();
 
-        let prior_length_bytes = lock_guard.len();
-        let len_pages = prior_length_bytes / self.page_size;
-        if len_pages
+        let len = lock_guard.len();
+        let len_pages = len / self.page_size;
+        let capacity = lock_guard.capacity();
+        let capacity_pages = lock_guard.capacity() / self.page_size;
+
+        // Size in pages must not overflow
+        let new_len_pages = len_pages
             .checked_add(pages_to_add)
-            .is_none_or(|new_pages| new_pages > self.max_pages)
-        {
+            .ok_or(RuntimeError::MemoryGrowExceededLimit)?;
+
+        // For shared linear memories the check against the memory's upper limit is performed here,
+        // instead of in the `SharedMemInst`, because this method is exposed to the user.
+        if new_len_pages > self.max_pages {
             return Err(RuntimeError::MemoryGrowExceededLimit);
         }
 
-        let num_bytes_to_append = self
-            .page_size
-            .get()
-            .checked_mul(pages_to_add)
-            .ok_or(RuntimeError::MemoryOverflowed)?;
-        let new_length_bytes = prior_length_bytes
-            .checked_add(num_bytes_to_append)
+        // Size in pages must not overflow as well
+        let new_len = new_len_pages
+            .checked_mul(self.page_size.get())
             .ok_or(RuntimeError::MemoryOverflowed)?;
 
-        if let Some(max_pages) = T::MAX_NUMBER_OF_MEMORY_PAGES {
-            if usize::from(max_pages.get())
-                .checked_mul(self.page_size.get())
-                .is_some_and(|max_len| new_length_bytes > max_len)
-            {
+        // If the capacity does not suffice, call the user to ask for a reallocation.
+        if let Some(additional_capacity_pages) = new_len_pages.checked_sub(capacity_pages) {
+            let num_new_pages = T::memory_requested_allocation(
+                Some(capacity_pages),
+                additional_capacity_pages,
+                Some(self.max_pages),
+            )
+            .ok_or(RuntimeError::HostRefusedAllocation)?;
+
+            // If the user chose a reallocation size lower than the required additional capacity, it
+            // is okay to return early and perform no realloc at all.
+            if num_new_pages < additional_capacity_pages {
                 return Err(RuntimeError::MemoryOverflowed);
             }
+
+            // New number of bytes to allocate must not overflow
+            let num_new_bytes = num_new_pages
+                .checked_mul(self.page_size.get())
+                .ok_or(RuntimeError::MemoryOverflowed)?;
+
+            if capacity.checked_add(num_new_bytes).is_none() {
+                return Err(RuntimeError::MemoryOverflowed);
+            }
+
+            // SAFETY: The final capacity does not overflow.
+            unsafe { lock_guard.extend_reserve_unchecked(num_new_bytes) };
         }
 
-        lock_guard.resize_with(new_length_bytes, || AtomicU8::new(0));
+        // TODO optimize
+        let num_bytes_to_push = new_len
+            .checked_sub(len)
+            .expect("new length is never less than previous length");
+        for _ in 0..num_bytes_to_push {
+            lock_guard
+                .push(AtomicU8::new(0))
+                .expect("the capacity check ensures that enough capacity is available");
+        }
 
         Ok(len_pages)
     }
@@ -632,7 +669,7 @@ impl SharedLinearMemory {
     /// - `index + n` must not overflow a usize.
     /// - `index + n` must not be larger than some length previously returned by [`Self::rd_len`].
     unsafe fn rd_data_no_tears(
-        mut lock_guard: WriteLockGuard<'_, Vec<AtomicU8>>,
+        mut lock_guard: WriteLockGuard<'_, FixedCapacityVec<AtomicU8>>,
         index: usize,
         mut dst_byte_buffer: impl AsMut<[MaybeUninit<u8>]>,
     ) {
@@ -730,7 +767,7 @@ impl SharedLinearMemory {
     ///
     /// `n`: length of iterator over source buffer bytes.
     unsafe fn wr_data_no_tears(
-        mut lock_guard: WriteLockGuard<'_, Vec<AtomicU8>>,
+        mut lock_guard: WriteLockGuard<'_, FixedCapacityVec<AtomicU8>>,
         index: usize,
         bytes: impl ExactSizeIterator<Item = u8>,
     ) {
@@ -767,7 +804,7 @@ impl core::fmt::Debug for SharedLinearMemory {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         /// A helper struct for formatting a [`Vec<UnsafeCell<u8>>`] which is guarded by a [`ReadLockGuard`].
         /// This formatter is able to detect and format byte repetitions in a compact way.
-        struct RepetitionDetectingMemoryWriter<'a>(ReadLockGuard<'a, Vec<AtomicU8>>);
+        struct RepetitionDetectingMemoryWriter<'a>(ReadLockGuard<'a, FixedCapacityVec<AtomicU8>>);
         impl core::fmt::Debug for RepetitionDetectingMemoryWriter<'_> {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 /// The number of repetitions required for successive elements to be grouped
@@ -860,13 +897,13 @@ mod test {
 
     #[test]
     fn new_constructor() {
-        let lin_mem = SharedLinearMemory::new_with_page_size(MAX_PAGES, PAGE_SIZE);
+        let lin_mem = SharedLinearMemory::new_with_page_size::<()>(MAX_PAGES, PAGE_SIZE).unwrap();
         assert_eq!(lin_mem.rd_len_in_pages(Ordering::SeqCst), 0);
     }
 
     #[test]
     fn new_grow() {
-        let lin_mem = SharedLinearMemory::new_with_page_size(MAX_PAGES, PAGE_SIZE);
+        let lin_mem = SharedLinearMemory::new_with_page_size::<()>(MAX_PAGES, PAGE_SIZE).unwrap();
         lin_mem.grow::<()>(1).unwrap();
         assert_eq!(lin_mem.rd_len_in_pages(Ordering::SeqCst), 1);
     }

@@ -1,6 +1,6 @@
 use core::convert::Infallible;
 
-use alloc::{boxed::Box, sync::Arc, vec, vec::Vec};
+use alloc::{boxed::Box, sync::Arc, vec::Vec};
 
 use crate::{
     core::{
@@ -8,6 +8,7 @@ use crate::{
             decoder::{span::Span, WasmDecoder},
             modules::code_section::decode_locals,
         },
+        fixed_capacity_vec::FixedCapacityVec,
         structure::{
             import_subtyping::ImportSubTypeRelation,
             modules::{
@@ -1320,10 +1321,19 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that any [`FuncAddr`] or [`ExternAddr`](crate::ExternAddr)
     /// values contained in the [`Ref`] came from the current [`Store`] object.
     unsafe fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> TableAddr {
+        let limits_min = table_type.lim.min.into_usize();
+
+        let mut elem = FixedCapacityVec::with_capacity(limits_min);
+
+        // TODO optimize
+        for _ in 0..limits_min {
+            elem.push(reff).expect("limits_min is exactly the capacity");
+        }
+
         // TODO assert that table_type is valid
         let table_inst = TableInst {
             ty: table_type,
-            elem: vec![reff; table_type.lim.min.into_usize()],
+            elem,
         };
 
         self.inner.tables.insert(table_inst)
@@ -1350,8 +1360,11 @@ impl<'b, T: Config> Store<'b, T> {
                 mem: Arc::new(shared_memory),
             })
         } else {
-            let mem =
-                LinearMemory::new_with_initial_pages::<T>(DEFAULT_PAGE_SIZE, initial_page_count)?;
+            let mem = LinearMemory::new_with_initial_pages::<T>(
+                DEFAULT_PAGE_SIZE,
+                initial_page_count,
+                mem_type.limits.max.map(u32::into_usize),
+            )?;
             MemInst::Unshared(UnsharedMemInst { ty: mem_type, mem })
         };
 
