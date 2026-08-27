@@ -1,13 +1,12 @@
-use core::iter;
-
-use alloc::vec::Vec;
-
-use crate::{core::utils::ToUsizeExt, Config, Limits, Ref, RuntimeError, TableType};
+use crate::{
+    core::{fixed_capacity_vec::FixedCapacityVec, utils::ToUsizeExt},
+    Config, Limits, Ref, RuntimeError, TableType,
+};
 
 #[derive(Debug)]
 pub struct TableInst {
     pub ty: TableType,
-    pub elem: Vec<Ref>,
+    pub elem: FixedCapacityVec<Ref>,
 }
 
 impl TableInst {
@@ -43,14 +42,37 @@ impl TableInst {
             return Err(RuntimeError::TableGrowExceededLimit);
         }
 
-        if let Some(max_elements) = T::MAX_NUMBER_OF_TABLE_ELEMENTS {
-            if len.into_usize() > max_elements.get() {
+        // If the capacity does not suffice, call the user to ask for a reallocation.
+        if let Some(additional_capacity) = len.into_usize().checked_sub(self.elem.capacity()) {
+            let num_new_elements = T::table_requested_allocation(
+                Some(self.elem.capacity()),
+                additional_capacity,
+                limits.max.map(u32::into_usize),
+            )
+            .ok_or(RuntimeError::HostRefusedAllocation)?;
+
+            // If the user chose a reallocation size lower than the required additional capacity, it
+            // is okay to return early and perform no realloc at all.
+            if num_new_elements < additional_capacity {
                 return Err(RuntimeError::TableGrowOverflowed);
             }
+
+            if self.elem.capacity().checked_add(num_new_elements).is_none() {
+                return Err(RuntimeError::TableGrowOverflowed);
+            }
+
+            unsafe { self.elem.extend_reserve_unchecked(num_new_elements) };
         }
 
         // 7. Append ref^N to tableinst.elem.
-        self.elem.extend(iter::repeat_n(reff, n.into_usize()));
+        debug_assert!(self
+            .elem
+            .len()
+            .checked_add(n.into_usize())
+            .is_some_and(|new_len| new_len <= self.elem.capacity()));
+        // SAFETY: The capacity check ensures that enough capacity is available for at least n more
+        // elements.
+        unsafe { self.elem.push_n_unchecked(reff, n.into_usize()) };
 
         // 8. Set tableinst.type to the table type limits' t.
         self.ty.lim = limits_prime;

@@ -1,5 +1,3 @@
-use core::num::{NonZeroU16, NonZeroUsize};
-
 use crate::DispatchMechanism;
 
 /// Trait that allows user specified configuration for various items during interpretation. Additionally, the types
@@ -15,17 +13,74 @@ pub trait Config {
     /// Maximum number of cascading function invocations
     const MAX_CALL_STACK_SIZE: usize = 0x1000; // 4 Kibi-Functions
 
-    /// An optional limit for the number of pages a memory's size can grow to.
-    // TODO(memory64): Use Option<NonZeroUsize> with limit of 2^48 pages
-    // TODO(custom-page-sizes): Use Option<NonZeroU32>
-    const MAX_NUMBER_OF_MEMORY_PAGES: Option<NonZeroU16> = None;
-
-    /// An optional limit for the number of elements a table's size can grow to.
-    const MAX_NUMBER_OF_TABLE_ELEMENTS: Option<NonZeroUsize> = None;
+    /// An optional size limit (i.e. capacity) for table sizes. If set, the table is only allocated
+    /// once with that capacity, but all table grows exceeding that capacity will fail.
+    ///
+    /// This is essentially a weaker version of [`Config::memory_requested_allocation`], as tables
+    /// allocation management likely does not need as much flexibility relative to memories.
+    /// However, a `Config::table_requested_allocation` may be added in the future.
+    const TABLE_CAPACITY: Option<usize> = None;
 
     /// The mechanism to use for dispatching during interpretation. Refer to [`DispatchMechanism`]
     /// for a list of all mechanisms, including their up- and downsides.
     const DISPATCH_MECHANISM: DispatchMechanism = DispatchMechanism::LoopCall;
+
+    /// A function to manage memory allocation requests by linear memories.
+    ///
+    /// It is called whenever it is determined that a new memory allocation or a reallocation must
+    /// take place, as part of either instantiation or growing memory. Note that calls to this
+    /// function do not necessarily map one-to-one to memory grows, as an existing allocation may
+    /// suffice for growing a memory to succeed.
+    ///
+    /// When given information about the memory allocation, this function must return the number of
+    /// Wasm pages that will be allocated in the end. If this is `None` or the allocation size in
+    /// bytes overflows, the original memory operation may fail with
+    /// [`RuntimeError::HostRefusedAllocation`](crate::RuntimeError::HostRefusedAllocation) or
+    /// [`RuntimeError::MemoryOverflowed`](crate::RuntimeError::MemoryOverflowed), respectively.
+    ///
+    /// # Arguments
+    ///
+    /// - `current_page_capacity` - The number of Wasm pages currently allocated to this memory.
+    ///   This can be `None`, if the memory does not have a backing allocation yet.
+    /// - `additional_page_capacity` - The minimum number of Wasm pages by which the current
+    ///   allocation should be grown (or a new one allocated).
+    /// - `memory_upper_limit` - The upper page count limit of the memory type. This can be `None`,
+    ///   if no upper limit is specified.
+    ///
+    /// It is guaranteed that `current_page_capacity.unwrap_or(0) + additional_page_capacity` is
+    /// less or equal to the upper limit, if one is present. This is because allocating or growing a
+    /// memory would have failed early, if its upper limit is exceeded.
+    #[inline(always)]
+    fn memory_requested_allocation(
+        current_page_capacity: Option<usize>,
+        additional_page_capacity: usize,
+        memory_upper_limit: Option<usize>,
+    ) -> Option<usize> {
+        // Default behavior is independent of these
+        let _ = current_page_capacity;
+        let _ = memory_upper_limit;
+
+        // Allocates, then possibly reallocates later
+        Some(additional_page_capacity)
+    }
+
+    /// A function to manage memory allocation requests by tables.
+    ///
+    /// This works exactly the same as [`Config::memory_requested_allocation`] which is used for
+    /// memories instead of tables.
+    #[inline(always)]
+    fn table_requested_allocation(
+        current_capacity: Option<usize>,
+        additional_capacity: usize,
+        table_upper_limit: Option<usize>,
+    ) -> Option<usize> {
+        // Default behavior is independent of these
+        let _ = current_capacity;
+        let _ = table_upper_limit;
+
+        // Allocates, then possibly reallocates later
+        Some(additional_capacity)
+    }
 
     /// A hook which is called before every wasm instruction
     ///
@@ -109,3 +164,22 @@ pub trait Config {
 
 /// Default implementation of the interpreter configuration, with all hooks empty
 impl Config for () {}
+
+// TODO remove. This is an initial PoC for memory resource limiter usage
+pub struct MinimalAllocationsConfig;
+impl Config for MinimalAllocationsConfig {
+    #[inline(always)]
+    fn memory_requested_allocation(
+        current_page_capacity: Option<usize>,
+        additional_page_capacity: usize,
+        memory_upper_limit: Option<usize>,
+    ) -> Option<usize> {
+        // Never realloc
+        if current_page_capacity.is_some() {
+            return None;
+        }
+
+        // Always allocate with maximum size, or if not present the requested size.
+        Some(memory_upper_limit.unwrap_or(additional_page_capacity))
+    }
+}
