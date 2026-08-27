@@ -36,6 +36,7 @@ wasmtime = { version = "27.0.0", default-features = false, features = [
 [features]
 wasmi = []
 wasmtime = []
+nightly = ["dlr-wasm-interpreter/nightly"]
 
 [[bench]]
 name = "general_purpose"
