@@ -107,3 +107,49 @@ pub trait Config {
 
 /// Default implementation of the interpreter configuration, with all hooks empty
 impl Config for () {}
+
+/// Return the number of bytes consumed for stack memory.
+///
+/// This includes all bytes allocated for Call-Stack and Value-Stack, including management
+/// structures (i.e. the fat pointers holding the allocations of the aforementioned Call- and
+/// Value-Stack).
+#[allow(unused)]
+pub const fn stack_memory_bytes_total<T: Config>() -> usize {
+    use crate::{
+        execution::runtime_structure::value_stack::{CallFrame, Stack},
+        Value,
+    };
+
+    let value_stack_size = <T as Config>::MAX_VALUE_STACK_SIZE * core::mem::size_of::<Value>();
+    let call_stack_size = <T as Config>::MAX_CALL_STACK_SIZE * core::mem::size_of::<CallFrame>();
+    let stack_struct_size = core::mem::size_of::<Stack>();
+
+    value_stack_size + call_stack_size + stack_struct_size
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        execution::runtime_structure::value_stack::{CallFrame, Stack},
+        Value,
+    };
+
+    use super::*;
+
+    #[test]
+    fn size_of_stack_simple() {
+        let management_only_stack_size = core::mem::size_of::<Stack>();
+        let default_total_stack_size = stack_memory_bytes_total::<()>();
+        let default_data_only_value_stack_size =
+            <() as Config>::MAX_VALUE_STACK_SIZE * core::mem::size_of::<Value>();
+        let default_data_only_call_stack_size =
+            <() as Config>::MAX_CALL_STACK_SIZE * core::mem::size_of::<CallFrame>();
+
+        let default_data_only_stack_size =
+            default_data_only_call_stack_size + default_data_only_value_stack_size;
+        assert_eq!(
+            default_data_only_stack_size as usize,
+            default_total_stack_size - management_only_stack_size
+        );
+    }
+}
