@@ -8,10 +8,14 @@ use core::num::{NonZeroU16, NonZeroUsize};
 // It must always be checked that there is no additional performance penalty for the default config!
 pub trait Config {
     /// Maximum number of values in the value stack
-    const MAX_VALUE_STACK_SIZE: usize = 0x10000; // 64 Kibi-Values
+    ///
+    /// The default of `0xd0`/`208` is just the bare minimum multiple of 16 to pass the Specification Test Suite
+    const MAX_VALUE_STACK_SIZE: usize = 0xd0;
 
     /// Maximum number of cascading function invocations
-    const MAX_CALL_STACK_SIZE: usize = 0x1000; // 4 Kibi-Functions
+    ///
+    /// The default of `0xd0`/`208` is just the bare minimum multiple of 16 to pass the Specification Test Suite
+    const MAX_CALL_STACK_SIZE: usize = 0xd0;
 
     /// An optional limit for the number of pages a memory's size can grow to.
     // TODO(memory64): Use Option<NonZeroUsize> with limit of 2^48 pages
