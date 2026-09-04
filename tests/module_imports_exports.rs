@@ -33,18 +33,7 @@ fn imports() {
     assert_eq!(
         &imports,
         &[
-            (
-                "foo",
-                "baz",
-                ExternType::Func(FuncType {
-                    params: ResultType {
-                        valtypes: Vec::new()
-                    },
-                    returns: ResultType {
-                        valtypes: Vec::new()
-                    },
-                })
-            ),
+            ("foo", "baz", ExternType::Func(FuncType::default()),),
             (
                 "bar",
                 "bat",
@@ -86,10 +75,10 @@ fn exports() {
                 "foo",
                 ExternType::Func(FuncType {
                     params: ResultType {
-                        valtypes: vec![ValType::NumType(NumType::I32)]
+                        valtypes: Box::from([ValType::NumType(NumType::I32)]),
                     },
                     returns: ResultType {
-                        valtypes: vec![ValType::NumType(NumType::I64)],
+                        valtypes: Box::from([ValType::NumType(NumType::I64)]),
                     }
                 }),
             ),

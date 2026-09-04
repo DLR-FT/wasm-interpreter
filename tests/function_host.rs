@@ -220,10 +220,10 @@ pub fn weird_multi_typed_host_func() {
         &mut store,
         FuncType {
             params: ResultType {
-                valtypes: vec![ValType::NumType(NumType::I32)],
+                valtypes: Box::from([ValType::NumType(NumType::I32)]),
             },
             returns: ResultType {
-                valtypes: vec![ValType::NumType(NumType::F64)],
+                valtypes: Box::from([ValType::NumType(NumType::F64)]),
             },
         },
         weird_add_mult,
@@ -233,10 +233,10 @@ pub fn weird_multi_typed_host_func() {
         &mut store,
         FuncType {
             params: ResultType {
-                valtypes: vec![ValType::NumType(NumType::F32)],
+                valtypes: Box::from([ValType::NumType(NumType::F32)]),
             },
             returns: ResultType {
-                valtypes: vec![ValType::NumType(NumType::I64)],
+                valtypes: Box::from([ValType::NumType(NumType::I64)]),
             },
         },
         weird_add_mult,
@@ -291,10 +291,10 @@ pub fn host_func_runtime_error() {
         &mut store,
         FuncType {
             params: ResultType {
-                valtypes: vec![ValType::NumType(NumType::I32)],
+                valtypes: Box::from([ValType::NumType(NumType::I32)]),
             },
             returns: ResultType {
-                valtypes: vec![ValType::NumType(NumType::I32)],
+                valtypes: Box::from([ValType::NumType(NumType::I32)]),
             },
         },
         mult3,

@@ -1,4 +1,4 @@
-use alloc::{fmt::Debug, vec, vec::Vec};
+use alloc::{boxed::Box, fmt::Debug, vec, vec::Vec};
 use dlr_wasm_interpreter::{
     Config, FuncAddr, FuncType, Hostcode, NumType, RefType, ResultType, RuntimeError, ValType,
     ValueTypeMismatchError, F32, F64,
@@ -263,10 +263,10 @@ impl<T: Config> Store<'_, T> {
     ) -> Stored<FuncAddr> {
         let func_type = FuncType {
             params: ResultType {
-                valtypes: Vec::from(Params::TYS),
+                valtypes: Box::from(Params::TYS),
             },
             returns: ResultType {
-                valtypes: Vec::from(Returns::TYS),
+                valtypes: Box::from(Returns::TYS),
             },
         };
 

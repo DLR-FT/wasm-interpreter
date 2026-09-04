@@ -8,7 +8,7 @@
 
 extern crate alloc;
 
-use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
+use alloc::{boxed::Box, vec::Vec};
 
 use dlr_wasm_interpreter::{
     Config, FuncAddr, FuncType, HostResumable, ResultType, RuntimeError, ValueTypeMismatchError,
@@ -68,10 +68,10 @@ impl<T> Registry<T> {
     {
         let func_type = FuncType {
             params: ResultType {
-                valtypes: Params::TYS.to_owned(),
+                valtypes: Box::from(Params::TYS),
             },
             returns: ResultType {
-                valtypes: Returns::TYS.to_owned(),
+                valtypes: Box::from(Returns::TYS),
             },
         };
 

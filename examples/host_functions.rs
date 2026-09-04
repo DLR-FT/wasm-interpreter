@@ -71,11 +71,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // It is the developers responsibility to adhere to the output type signature specified in the
     // `returns` field.
     let host_read_num_type = FuncType {
-        params: ResultType {
-            valtypes: Vec::new(),
-        },
+        params: ResultType::default(),
         returns: ResultType {
-            valtypes: vec![ValType::NumType(NumType::I32)],
+            valtypes: Box::from([ValType::NumType(NumType::I32)]),
         },
     };
 
@@ -84,11 +82,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // `returns` field.
     let host_print_num_type = FuncType {
         params: ResultType {
-            valtypes: vec![ValType::NumType(NumType::I32)],
+            valtypes: Box::from([ValType::NumType(NumType::I32)]),
         },
-        returns: ResultType {
-            valtypes: Vec::new(),
-        },
+        returns: ResultType::default(),
     };
 
     // Allocate host functions in the store with their associated hostcode.
