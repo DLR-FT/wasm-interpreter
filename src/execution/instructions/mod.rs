@@ -8,7 +8,7 @@
 //! Additionally, the [`const_interpreter_loop`] submodule contains the execution logic for const
 //! expressions.
 
-use alloc::vec::Vec;
+use alloc::{boxed::Box, vec::Vec};
 use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
@@ -210,7 +210,8 @@ pub(super) unsafe fn elem_drop(
     // address vector (3).
     let elem = unsafe { store_elements.get_mut(elem_addr) };
 
-    elem.references.clear();
+    // Free the existing memory allocation and replace it with a dangling pointer.
+    elem.references = Box::from([]);
 }
 
 /// # Safety
@@ -294,7 +295,8 @@ pub(super) unsafe fn data_drop(
     // address vector (3).
     let data = unsafe { store_data.get_mut(data_addr) };
 
-    data.data.clear();
+    // Free the existing memory allocation and replace it with a dangling pointer.
+    data.data = Box::from([]);
 }
 
 #[inline(always)]

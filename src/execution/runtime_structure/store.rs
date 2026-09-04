@@ -18,7 +18,7 @@ use crate::{
                 indices::{ElemIdx, IdxVec, TypeIdx},
             },
         },
-        utils::ToUsizeExt,
+        utils::{MapIntoBoxedSlice, ToUsizeExt},
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
@@ -250,25 +250,21 @@ impl<'b, T: Config> Store<'b, T> {
                 // shortcut of evaluation of "ref.func <func_idx>; end;"
                 // validation guarantees corresponding func_idx's existence
                 ElemItems::RefFuncs(ref_funcs) => {
-                    ref_funcs
-                        .iter()
-                        .map(|func_idx| {
-                            // SAFETY: The module with this module address was
-                            // just inserted into this `AddrVec`
-                            let module = unsafe { self.modules.get(module_addr) };
-                            // SAFETY: Both the function index and the module
-                            // instance's `func_addrs` come from the same
-                            // `Module`, i.e. the one passed into this
-                            // function.
-                            let func_addr = unsafe { module.func_addrs.get(*func_idx) };
+                    ref_funcs.map_into_boxed_slice(|func_idx| {
+                        // SAFETY: The module with this module address was
+                        // just inserted into this `AddrVec`
+                        let module = unsafe { self.modules.get(module_addr) };
+                        // SAFETY: Both the function index and the module
+                        // instance's `func_addrs` come from the same
+                        // `Module`, i.e. the one passed into this
+                        // function.
+                        let func_addr = unsafe { module.func_addrs.get(*func_idx) };
 
-                            Ref::Func(*func_addr)
-                        })
-                        .collect()
+                        Ref::Func(*func_addr)
+                    })
                 }
-                ElemItems::Exprs(_, exprs) => exprs
-                    .iter()
-                    .map(|expr| {
+                ElemItems::Exprs(_, exprs) => {
+                    exprs.try_map_into_boxed_slice(|expr| {
                         // SAFETY: All requirements are met:
                         // 1. Validation guarantees that all constant expressions
                         //    for elements, including this one, are valid.
@@ -285,8 +281,8 @@ impl<'b, T: Config> Store<'b, T> {
                         };
                         const_expr_result
                             .map(|res| res.unwrap_validated().try_into().unwrap_validated())
-                    })
-                    .collect::<Result<Vec<Ref>, RuntimeError>>()?,
+                    })?
+                }
             };
 
             // SAFETY: The initial values were retrieved by (1) resolving
@@ -339,7 +335,9 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: step 7, 13
         let data_addrs = module
             .data
-            .map::<DataAddr, Infallible>(|data_segment| Ok(self.alloc_data(&data_segment.init)))
+            .map::<DataAddr, Infallible>(|data_segment| {
+                Ok(self.alloc_data(data_segment.init.clone()))
+            })
             .expect("infallible error type to never be constructed");
 
         // allocation: skip step 14 as it was done in instantiation step 5
@@ -1393,7 +1391,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that any [`FuncAddr`] or [`ExternAddr`](crate::ExternAddr)
     /// values contained in
     /// the [`Ref`]s came from the current [`Store`] object.
-    unsafe fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> ElemAddr {
+    unsafe fn alloc_elem(&mut self, ref_type: RefType, refs: Box<[Ref]>) -> ElemAddr {
         let elem_inst = ElemInst {
             _ty: ref_type,
             references: refs,
@@ -1403,10 +1401,8 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#data-segments>
-    fn alloc_data(&mut self, bytes: &[u8]) -> DataAddr {
-        let data_inst = DataInst {
-            data: Vec::from(bytes),
-        };
+    fn alloc_data(&mut self, bytes: Box<[u8]>) -> DataAddr {
+        let data_inst = DataInst { data: bytes };
 
         self.inner.data.insert(data_inst)
     }

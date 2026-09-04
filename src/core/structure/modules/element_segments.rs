@@ -1,4 +1,4 @@
-use alloc::vec::Vec;
+use alloc::boxed::Box;
 
 use crate::{
     core::{
@@ -29,8 +29,8 @@ impl ElemType {
 
 #[derive(Debug, Clone)]
 pub enum ElemItems {
-    RefFuncs(Vec<FuncIdx>),
-    Exprs(RefType, Vec<Span>),
+    RefFuncs(Box<[FuncIdx]>),
+    Exprs(RefType, Box<[Span]>),
 }
 
 impl ElemItems {

@@ -1,7 +1,7 @@
-use alloc::vec::Vec;
+use alloc::boxed::Box;
 
 pub struct DataInst {
-    pub data: Vec<u8>,
+    pub data: Box<[u8]>,
 }
 
 impl core::fmt::Debug for DataInst {

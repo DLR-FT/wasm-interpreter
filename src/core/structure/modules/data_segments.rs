@@ -1,10 +1,10 @@
-use alloc::{fmt, vec::Vec};
+use alloc::{boxed::Box, fmt};
 
 use crate::core::{decoding::decoder::span::Span, structure::modules::indices::MemIdx};
 
 #[derive(Clone)]
 pub struct DataSegment {
-    pub init: Vec<u8>,
+    pub init: Box<[u8]>,
     pub mode: DataMode,
 }
 
