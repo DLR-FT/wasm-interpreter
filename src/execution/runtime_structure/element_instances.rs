@@ -1,4 +1,4 @@
-use alloc::vec::Vec;
+use alloc::boxed::Box;
 
 use crate::{Ref, RefType};
 
@@ -6,7 +6,7 @@ use crate::{Ref, RefType};
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#element-instances>
 pub struct ElemInst {
     pub _ty: RefType,
-    pub references: Vec<Ref>,
+    pub references: Box<[Ref]>,
 }
 
 impl ElemInst {
