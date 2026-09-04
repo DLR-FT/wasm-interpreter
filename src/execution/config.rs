@@ -113,7 +113,6 @@ impl Config for () {}
 /// This includes all bytes allocated for Call-Stack and Value-Stack, including management
 /// structures (i.e. the fat pointers holding the allocations of the aforementioned Call- and
 /// Value-Stack).
-#[allow(unused)]
 pub const fn stack_memory_bytes_total<T: Config>() -> usize {
     use crate::{
         execution::runtime_structure::value_stack::{CallFrame, Stack},
