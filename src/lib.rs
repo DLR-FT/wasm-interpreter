@@ -76,7 +76,7 @@ pub use crate::{
         },
     },
     execution::{
-        config::Config,
+        config::{stack_memory_bytes_total, Config},
         error::{RuntimeError, TrapError},
         instructions::dispatch::DispatchMechanism,
         resumable::*,
