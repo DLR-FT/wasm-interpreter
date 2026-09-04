@@ -1571,7 +1571,7 @@ impl<'b, T: Config> Store<'b, T> {
             .map(|v| v.to_ty())
             .collect::<Vec<_>>();
 
-        if host_func_inst.function_type.returns.valtypes != return_types {
+        if *host_func_inst.function_type.returns.valtypes != *return_types {
             return Err(RuntimeError::HostFunctionSignatureMismatch);
         }
 

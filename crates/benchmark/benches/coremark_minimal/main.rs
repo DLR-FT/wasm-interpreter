@@ -56,11 +56,9 @@ pub fn run<T: Config>(interpreter_config: T) -> f32 {
     let mut store = Store::new(interpreter_config);
     let env_clock_ms_function = store.func_alloc(
         FuncType {
-            params: ResultType {
-                valtypes: Vec::new(),
-            },
+            params: ResultType::default(),
             returns: ResultType {
-                valtypes: vec![ValType::NumType(NumType::I64)],
+                valtypes: Box::from([ValType::NumType(NumType::I64)]),
             },
         },
         0, // Use arbitrary host code, as there is only one host function

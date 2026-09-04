@@ -246,7 +246,6 @@ impl<T> FixedCapacityVec<T> {
     }
 
     /// Returns all uninitialized elements in this vector as am
-    #[expect(unused, reason = "to be used by future methods")]
     pub fn spare_capacity_mut(&mut self) -> &mut [MaybeUninit<T>] {
         unsafe { self.elements.get_unchecked_mut(self.len..) }
     }
@@ -261,6 +260,26 @@ impl<T> FixedCapacityVec<T> {
     /// All elements in the range `self.len()`..`new_len` must be properly initialized.
     pub unsafe fn set_len(&mut self, new_len: usize) {
         self.len = new_len;
+    }
+}
+
+impl<const N: usize, T> From<[T; N]> for FixedCapacityVec<T> {
+    fn from(values: [T; N]) -> Self {
+        let as_maybe_uninit = values.map(MaybeUninit::new);
+        Self {
+            elements: Box::from(as_maybe_uninit),
+            len: N,
+        }
+    }
+}
+
+impl<T: Clone> From<&[T]> for FixedCapacityVec<T> {
+    fn from(values: &[T]) -> Self {
+        let mut vector = Self::with_capacity(values.len());
+        vector
+            .push_from_slice(values)
+            .expect("number of values is equal to capacity");
+        vector
     }
 }
 
@@ -348,6 +367,12 @@ impl<T: Clone> FixedCapacityVec<T> {
     }
 }
 
+impl<T> Default for FixedCapacityVec<T> {
+    fn default() -> Self {
+        Self::with_capacity(0)
+    }
+}
+
 pub struct SliceDropGuard<'a, T>(&'a mut [MaybeUninit<T>]);
 
 impl<'a, T> core::ops::Deref for SliceDropGuard<'a, T> {
@@ -432,6 +457,14 @@ impl<T> Drop for FixedCapacityVec<T> {
         }
     }
 }
+
+impl<T: PartialEq> PartialEq for FixedCapacityVec<T> {
+    fn eq(&self, other: &Self) -> bool {
+        **self == **other
+    }
+}
+
+impl<T: Eq> Eq for FixedCapacityVec<T> {}
 
 // TODO use assume_init_ref, once we get the MSRV to 1.93.0
 /// # Safety

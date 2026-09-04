@@ -17,7 +17,7 @@ use dlr_wasm_interpreter::{
     RuntimeError, Store, ValType, Value, ValueTypeMismatchError,
 };
 
-use alloc::{fmt::Debug, vec, vec::Vec};
+use alloc::{boxed::Box, fmt::Debug, vec, vec::Vec};
 
 /// An [InteropValue] is a Rust types that can be converted into a WASM [Value].
 /// This trait is intended to simplify translation between Rust values and WASM values and thus is not used internally.
@@ -274,10 +274,10 @@ impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
     ) -> FuncAddr {
         let func_type = FuncType {
             params: ResultType {
-                valtypes: Vec::from(Params::TYS),
+                valtypes: Box::from(Params::TYS),
             },
             returns: ResultType {
-                valtypes: Vec::from(Returns::TYS),
+                valtypes: Box::from(Returns::TYS),
             },
         };
         self.func_alloc(func_type, hostcode)

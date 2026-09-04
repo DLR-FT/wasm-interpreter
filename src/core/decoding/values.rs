@@ -5,6 +5,8 @@
 //! Note: If any of these methods return `Err`, they may have consumed some bytes from the [WasmDecoder] object and thus consequent calls may result in unexpected behaviour.
 //! This is due to the fact that these methods read elemental types which cannot be split.
 
+use alloc::boxed::Box;
+
 use crate::{
     core::{decoding::decoder::WasmDecoder, utils::ToUsizeExt},
     DecodingError,
@@ -413,6 +415,33 @@ impl<'wasm> WasmDecoder<'wasm> {
         });
 
         Ok(elements_until_first_error_inclusive)
+    }
+
+    /// Decodes a vector, maps every element with the given closure and collects all the mappings
+    /// into a boxed slice.
+    ///
+    /// Note: If we had the `trusted_len` feature, this method would not be needed, as a custom
+    /// collect could then consume the result of [`WasmDecoder::decode_vec_map`].
+    pub fn decode_vec_map_collect<'a, 'f, T, F, E>(
+        &'a mut self,
+        mut read_element: F,
+    ) -> Result<Box<[T]>, E>
+    where
+        T: 'wasm,
+        F: FnMut(&mut WasmDecoder<'wasm>) -> Result<T, E> + 'f,
+        E: From<DecodingError>,
+    {
+        let len = self.decode_var_u32()?;
+        let mut elements = Box::new_uninit_slice(len.into_usize());
+
+        for element in &mut elements {
+            element.write(read_element(self)?);
+        }
+
+        // SAFETY: All elements have been initialized in a for-loop over the entire slice.
+        let elements = unsafe { elements.assume_init() };
+
+        Ok(elements)
     }
 }
 
