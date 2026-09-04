@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["fc_extensions","fd_extensions","run"],"mod":["wrappers"],"trait":["HasBaseDispatchTable","HasFcDispatchTable","HasFdDispatchTable"],"type":["InstructionHandlerFn"]};

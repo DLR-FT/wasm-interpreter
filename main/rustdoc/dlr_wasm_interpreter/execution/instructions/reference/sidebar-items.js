@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["ref_func","ref_is_null","ref_null"],"mod":["ref_func_mod","ref_is_null_mod","ref_null_mod"]};
+window.SIDEBAR_ITEMS = {"fn":["ref_func","ref_is_null","ref_null"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["elem_drop_fn","table_copy","table_fill","table_get","table_grow","table_init_fn","table_set","table_size"],"mod":["elem_drop_fn_mod","table_copy_mod","table_fill_mod","table_get_mod","table_grow_mod","table_init_fn_mod","table_set_mod","table_size_mod"]};
+window.SIDEBAR_ITEMS = {"fn":["elem_drop_fn","table_copy","table_fill","table_get","table_grow","table_init_fn","table_set","table_size"]};
