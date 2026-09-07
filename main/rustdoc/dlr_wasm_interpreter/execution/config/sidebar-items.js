@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["Config"]};
+window.SIDEBAR_ITEMS = {"fn":["stack_memory_bytes_total"],"trait":["Config"]};
