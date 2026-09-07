@@ -1,6 +1,6 @@
 use alloc::boxed::Box;
 use core::{
-    mem::MaybeUninit,
+    mem::{self, MaybeUninit},
     ops::{Deref, DerefMut},
     ptr,
 };
@@ -260,6 +260,24 @@ impl<T> FixedCapacityVec<T> {
     /// All elements in the range `self.len()`..`new_len` must be properly initialized.
     pub unsafe fn set_len(&mut self, new_len: usize) {
         self.len = new_len;
+    }
+
+    /// Converts this full vector into a boxed slice.
+    ///
+    /// # Safety
+    ///
+    /// This vector must be full, i.e. its length must be equal to its capacity.
+    pub unsafe fn into_boxed_slice(mut self) -> Box<[T]> {
+        debug_assert!(self.is_full());
+
+        self.len = 0;
+        let elements = mem::take(&mut self.elements);
+        // This is a noop with the now-empty `self.elements` and length 0.
+        drop(self);
+
+        // SAFETY: The vector is full, therefore all `capacity` elements must be properly
+        // initialized.
+        unsafe { elements.assume_init() }
     }
 }
 
