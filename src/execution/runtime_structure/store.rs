@@ -427,10 +427,7 @@ impl<'b, T: Config> Store<'b, T> {
                     }
                 };
                 ExportInst {
-                    name: core::str::from_utf8(
-                        &module.wasm[export.name.from..(export.name.from + export.name.len)],
-                    )
-                    .unwrap_validated(),
+                    name: export.name,
                     value,
                 }
             })
@@ -730,7 +727,14 @@ impl<'b, T: Config> Store<'b, T> {
         module_inst
             .exports
             .iter()
-            .find_map(|export_inst| (export_inst.name == name).then_some(export_inst.value))
+            .find_map(|export_inst| {
+                let export_inst_name = core::str::from_utf8(
+                    &module_inst.wasm_bytecode
+                        [export_inst.name.from..export_inst.name.from + export_inst.name.len],
+                )
+                .unwrap_validated();
+                (export_inst_name == name).then_some(export_inst.value)
+            })
             .ok_or(RuntimeError::UnknownExport)
     }
 
@@ -1688,10 +1692,16 @@ impl<'b, T: Config> Store<'b, T> {
         // the current store.
         let module = unsafe { self.modules.get(module_addr) };
 
-        module
-            .exports
-            .iter()
-            .map(|export_inst| (export_inst.name, export_inst.value))
+        module.exports.iter().map(|export_inst| {
+            (
+                core::str::from_utf8(
+                    &module.wasm_bytecode
+                        [export_inst.name.from..(export_inst.name.from + export_inst.name.len)],
+                )
+                .unwrap_validated(),
+                export_inst.value,
+            )
+        })
     }
 }
 

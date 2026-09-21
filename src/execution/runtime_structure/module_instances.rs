@@ -26,7 +26,7 @@ pub struct ModuleInst<'b> {
     pub global_addrs: IdxVec<GlobalIdx, GlobalAddr>,
     pub elem_addrs: IdxVec<ElemIdx, ElemAddr>,
     pub data_addrs: IdxVec<DataIdx, DataAddr>,
-    pub exports: Box<[ExportInst<'b>]>,
+    pub exports: Box<[ExportInst]>,
 
     // TODO the bytecode is not in the spec, but required for re-parsing
     pub wasm_bytecode: &'b [u8],
