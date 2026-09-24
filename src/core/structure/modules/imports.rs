@@ -5,9 +5,9 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct Import {
-    pub module_name: Span,
-    pub name: Span,
-    pub desc: ImportDesc,
+    pub(crate) module_name: Span,
+    pub(crate) name: Span,
+    pub(crate) desc: ImportDesc,
 }
 
 #[derive(Debug, Clone)]

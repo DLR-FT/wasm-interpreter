@@ -18,7 +18,7 @@ use crate::{
 /// All indices contained in a module instance must be valid in their associated
 /// index vectors from the same module instance.
 #[derive(Debug)]
-pub struct ModuleInst<'b> {
+pub struct ModuleInst {
     pub types: IdxVec<TypeIdx, FuncType>,
     pub func_addrs: IdxVec<FuncIdx, FuncAddr>,
     pub table_addrs: IdxVec<TableIdx, TableAddr>,
@@ -29,7 +29,7 @@ pub struct ModuleInst<'b> {
     pub exports: Box<[ExportInst]>,
 
     // TODO the bytecode is not in the spec, but required for re-parsing
-    pub wasm_bytecode: &'b [u8],
+    pub bytecode_id: usize,
 
     // sidetable is not in the spec, but required for control flow
     pub sidetable: Sidetable,

@@ -12,7 +12,7 @@ use crate::{
             modules::indices::{FuncIdx, TableIdx, TypeIdx},
             types::BlockType,
         },
-        utils::ToUsizeExt,
+        utils::{BytecodeProvider, ToUsizeExt},
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
@@ -23,17 +23,23 @@ use crate::{
 };
 
 #[inline(always)]
-pub unsafe fn nop(_: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn nop<T: BytecodeProvider>(
+    _: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     Ok(ControlFlow::Continue(()))
 }
 
 #[inline(always)]
-pub unsafe fn unreachable(_: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn unreachable<T: BytecodeProvider>(
+    _: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     Err(TrapError::ReachedUnreachable.into())
 }
 
 #[inline(always)]
-pub unsafe fn block(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn block<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantess there to be a valid block type
     // next.
     let _ = unsafe { BlockType::decode_unchecked(state.wasm) };
@@ -41,7 +47,9 @@ pub unsafe fn block(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>,
 }
 
 #[inline(always)]
-pub unsafe fn end(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn end<'a, 'modules, 'wasm, T: BytecodeProvider>(
+    state: State<'a, 'modules, 'wasm, T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // There might be multiple ENDs in a single function. We want to
     // exit only when the outermost block (aka function block) ends.
     if state.wasm.pc != *state.current_function_end_marker {
@@ -83,8 +91,9 @@ pub unsafe fn end(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, R
     // can contain module addresses. All stores guarantee all
     // addresses in them to be valid within themselves.
     let module = unsafe { state.modules.get(*state.current_module) };
+    let module_wasm = state.bytecode_provider.get_bytecode(module.bytecode_id);
 
-    state.wasm.full_wasm_binary = module.wasm_bytecode;
+    state.wasm.full_wasm_binary = module_wasm;
     state.wasm.pc = maybe_return_address;
     state.resumable.stp = maybe_return_stp;
 
@@ -97,7 +106,9 @@ pub unsafe fn end(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, R
 }
 
 #[inline(always)]
-pub unsafe fn r#loop(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn r#loop<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid block type
     // next.
     let _ = unsafe { BlockType::decode_unchecked(state.wasm) };
@@ -105,7 +116,9 @@ pub unsafe fn r#loop(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn r#if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn r#if<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid block type
     // next.
     let _block_type = unsafe { BlockType::decode_unchecked(state.wasm) };
@@ -130,7 +143,9 @@ pub unsafe fn r#if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
 }
 
 #[inline(always)]
-pub unsafe fn r#else(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn r#else<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     do_sidetable_control_transfer(
         state.wasm,
         &mut state.resumable.stack,
@@ -141,7 +156,9 @@ pub unsafe fn r#else(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn br(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn br<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid label index
     // next.
     let _label_idx = unsafe { decode_label_idx_unchecked(state.wasm) };
@@ -155,7 +172,9 @@ pub unsafe fn br(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, Ru
 }
 
 #[inline(always)]
-pub unsafe fn br_if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn br_if<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid label index
     // next.
     let _label_idx = unsafe { decode_label_idx_unchecked(state.wasm) };
@@ -179,7 +198,9 @@ pub unsafe fn br_if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>,
 }
 
 #[inline(always)]
-pub unsafe fn br_table(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn br_table<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let label_vec_len = state
         .wasm
         .decode_vec_map::<_, _, DecodingError>(|wasm| {
@@ -216,7 +237,9 @@ pub unsafe fn br_table(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn r#return(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn r#return<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // same as BR
     do_sidetable_control_transfer(
         state.wasm,
@@ -228,7 +251,9 @@ pub unsafe fn r#return(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn call(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn call<'a, 'modules, 'wasm, T: BytecodeProvider>(
+    state: State<'a, 'modules, 'wasm, T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid function
     // index next.
     let func_idx = unsafe { FuncIdx::decode_unchecked(state.wasm) };
@@ -294,8 +319,9 @@ pub unsafe fn call(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
             // this address must automatically be valid in the
             // current store.
             let module = unsafe { state.modules.get(*state.current_module) };
+            let module_wasm = state.bytecode_provider.get_bytecode(module.bytecode_id);
 
-            state.wasm.full_wasm_binary = module.wasm_bytecode;
+            state.wasm.full_wasm_binary = module_wasm;
             state
                 .wasm
                 .move_start_to(wasm_func_to_call_inst.code_expr)
@@ -312,8 +338,8 @@ pub unsafe fn call(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
 }
 
 #[inline(always)]
-pub unsafe fn call_indirect(
-    state: State,
+pub unsafe fn call_indirect<'a, 'modules, 'wasm, T: BytecodeProvider>(
+    state: State<'a, 'modules, 'wasm, T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid type index
     // next.
@@ -402,7 +428,9 @@ pub unsafe fn call_indirect(
             // this address must automatically be valid in the
             // current store.
             let module = unsafe { state.modules.get(*state.current_module) };
-            state.wasm.full_wasm_binary = module.wasm_bytecode;
+            let module_wasm = state.bytecode_provider.get_bytecode(module.bytecode_id);
+
+            state.wasm.full_wasm_binary = module_wasm;
             state
                 .wasm
                 .move_start_to(wasm_func_to_call_inst.code_expr)
