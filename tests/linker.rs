@@ -1,4 +1,5 @@
-use dlr_wasm_interpreter::{RuntimeError, decode_and_validate};
+use dlr_wasm_interpreter::RuntimeError;
+use dlr_wasm_interpreter_checked::decode_and_validate;
 use dlr_wasm_interpreter_checked::{Linker, Store, StoredValue};
 
 const SIMPLE_IMPORT_BASE: &str = r#"

@@ -1,6 +1,6 @@
-use dlr_wasm_interpreter::decode_and_validate;
 use dlr_wasm_interpreter::{RuntimeError, TrapError};
 use dlr_wasm_interpreter_checked::Store;
+use dlr_wasm_interpreter_checked::decode_and_validate;
 const REM_S_WAT: &str = r#"
     (module
         (func (export "rem_s") (param $divisor {{TYPE}}) (param $dividend {{TYPE}}) (result {{TYPE}})

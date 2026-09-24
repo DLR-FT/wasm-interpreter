@@ -43,7 +43,7 @@ use crate::{
 /// | [`FuncIdx`] | [`IdxVec<FuncIdx, TypeIdx>`] contained in [`ExtendedIdxVec<FuncIdx, TypeIdx>`] |
 /// | [`TableIdx`] | [`IdxVec<TableIdx, TableType>`] |
 #[allow(clippy::too_many_arguments)]
-pub unsafe fn decode_and_validate_code_section<T2: ValidationConfig>(
+pub unsafe fn decode_and_validate_code_section<T: ValidationConfig>(
     wasm: &mut WasmDecoder,
     fn_types: &IdxVec<TypeIdx, FuncType>,
     c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
@@ -54,7 +54,7 @@ pub unsafe fn decode_and_validate_code_section<T2: ValidationConfig>(
     c_elems: &IdxVec<ElemIdx, ElemType>,
     validation_context_refs: &BTreeSet<FuncIdx>,
     sidetable: &mut Sidetable,
-    user_data: &mut T2,
+    user_data: &mut T,
 ) -> Result<Vec<(Span, usize)>, ValidationError> {
     let code_block_spans_stps = wasm.decode_vec_enumerate_map(|wasm, idx| {
         // We need to offset the index by the number of functions that were

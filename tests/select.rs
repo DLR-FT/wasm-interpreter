@@ -1,5 +1,5 @@
-use dlr_wasm_interpreter::decode_and_validate;
 use dlr_wasm_interpreter_checked::Store;
+use dlr_wasm_interpreter_checked::decode_and_validate;
 
 const SELECT_TEST: &str = r#"
 (module

@@ -12,7 +12,8 @@ use alloc::{
 };
 
 use dlr_wasm_interpreter::{
-    Config, ExternVal, InstantiationOutcome, Module, ModuleAddr, RuntimeError, Store,
+    BytecodeProvider, Config, ExternVal, InstantiationOutcome, Module, ModuleAddr, RuntimeError,
+    Store,
 };
 
 /// A linker used to link a module's imports against extern values previously
@@ -91,18 +92,23 @@ impl Linker {
     ///
     /// # Safety
     ///
-    /// It must be guaranteed that this [`Linker`] is only ever used with one
-    /// specific [`Store`] and that the given [`ModuleAddr`] is valid in this
-    /// store.
-    pub unsafe fn define_module_instance<T: Config>(
+    /// 1. It must be guaranteed that this [`Linker`] is only ever used with one
+    ///    specific [`Store`] and that the given [`ModuleAddr`] is valid in this
+    ///    store.
+    /// 2. `bytecode_provider` satisfies the safety guarantees of all previous
+    ///    `module_instantiate` method calls for the given [`Store`].
+    pub unsafe fn define_module_instance<T: Config, B: BytecodeProvider>(
         &mut self,
         store: &Store<T>,
         module_name: String,
         module: ModuleAddr,
+        bytecode_provider: &B,
     ) -> Result<(), RuntimeError> {
-        // SAFETY: The caller ensures that the given module address is valid in
-        // the given store.
-        let module_exports = unsafe { store.instance_exports(module) };
+        // SAFETY:
+        // 1. The caller ensures that the given module address is valid in the given store.
+        // 2. The caller ensures that `bytecode_provider` is consistent with previous
+        //    instantiations.
+        let module_exports = unsafe { store.instance_exports(module, bytecode_provider) };
         for export in module_exports {
             // SAFETY: The module and thus also its exported extern values come
             // from the same store used now. Therefore, the extern values must
@@ -132,9 +138,9 @@ impl Linker {
     /// Therefore, using the returned list of extern values may still fail when
     /// trying to instantiate a module with it.
     // TODO find a better name for this method? Maybe something like `link`?
-    pub fn instantiate_pre(&self, module: &Module) -> Option<Vec<ExternVal>> {
+    pub fn instantiate_pre(&self, module: &Module, wasm: &[u8]) -> Option<Vec<ExternVal>> {
         module
-            .imports()
+            .imports(wasm)
             .map(|(module_name, name, _desc)| self.get(module_name.to_owned(), name.to_owned()))
             .collect()
     }
@@ -145,22 +151,32 @@ impl Linker {
     ///
     /// # Safety
     ///
-    /// It must be guaranteed that this [`Linker`] is only ever used with one
-    /// specific [`Store`].
-    pub unsafe fn module_instantiate<'b, T: Config>(
+    /// 1. It must be guaranteed that this [`Linker`] is only ever used with one
+    ///    specific [`Store`].
+    /// 2. `bytecode_provider.get_bytecode(bytecode_id)` must return the reference of the bytecode
+    ///    that corresponds to the `module`.
+    /// 3. `bytecode_provider` satisfies the safety guarantees of all previous
+    ///    `module_instantiate` method calls for the [`Store`].
+    pub unsafe fn module_instantiate<T: Config, B: BytecodeProvider>(
         &self,
-        store: &mut Store<'b, T>,
-        module: &Module<'b>,
+        store: &mut Store<T>,
+        bytecode_id: usize,
+        module: &Module,
         maybe_fuel: Option<u64>,
+        bytecode_provider: &B,
     ) -> Option<Result<InstantiationOutcome, RuntimeError>> {
-        self.instantiate_pre(module).map(|instantiate_pre|
-            // SAFETY: Because all extern values in a single linker can only come
-            // from one specific store, the current store must be the same store
-            // used to define all previous extern values. Therefore, the extern
-            // values in `instantiate_pre` must be from the same store that is
-            // passed now. Thus, using them as imports for module instantiation is
-            // sound.
-            unsafe { store.module_instantiate(module, instantiate_pre, maybe_fuel) })
+        let wasm = bytecode_provider.get_bytecode(bytecode_id);
+        self.instantiate_pre(module, wasm).map(|instantiate_pre|
+            // SAFETY: 
+            // 1. Because all extern values in a single linker can only come from one specific
+            //    store, the current store must be the same store used to define all previous extern
+            //    values. Therefore, the extern values in `instantiate_pre` must be from the same
+            //    store that is passed now. Thus, using them as imports for module instantiation is
+            //    sound.
+            // 2. The `bytecode_id` / `module` association is ensured by the caller.
+            // 3. The consistency of `bytecode_provider` wrt previous instantiations is ensured by
+            //    the caller.
+            unsafe { store.module_instantiate(module, bytecode_id, instantiate_pre, maybe_fuel, bytecode_provider) })
     }
 }
 
