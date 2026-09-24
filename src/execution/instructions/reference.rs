@@ -6,7 +6,7 @@
 use core::ops::ControlFlow;
 
 use crate::{
-    core::structure::modules::indices::FuncIdx,
+    core::{structure::modules::indices::FuncIdx, utils::BytecodeProvider},
     execution::{
         assert_validated::UnwrapValidatedExt,
         instructions::{InterpreterLoopOutcome, State},
@@ -15,7 +15,9 @@ use crate::{
 };
 
 #[inline(always)]
-pub unsafe fn ref_null(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn ref_null<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let reftype = RefType::decode(state.wasm).unwrap_validated();
 
     state
@@ -26,8 +28,8 @@ pub unsafe fn ref_null(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn ref_is_null(
-    state: State,
+pub unsafe fn ref_is_null<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a ref value on the stack.
     let rref: Ref = unsafe { state.resumable.stack.pop_value() }
@@ -42,7 +44,9 @@ pub unsafe fn ref_is_null(
 
 // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
 #[inline(always)]
-pub unsafe fn ref_func(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn ref_func<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees a valid function index to be
     // next.
     let func_idx = unsafe { FuncIdx::decode_unchecked(state.wasm) };

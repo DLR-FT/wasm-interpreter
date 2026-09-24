@@ -46,8 +46,7 @@ pub mod config;
 /// [`Store`](crate::Store) thorugh
 /// [`Store::module_instantiate`](crate::Store::module_instantiate)
 #[derive(Clone, Debug)]
-pub struct Module<'bytecode> {
-    pub(crate) wasm: &'bytecode [u8],
+pub struct Module {
     pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import>,
     pub(crate) functions: ExtendedIdxVec<FuncIdx, TypeIdx>,
@@ -67,9 +66,9 @@ pub struct Module<'bytecode> {
     // pub(crate) exports_length: Exported,
 }
 
-fn validate_no_duplicate_exports(module: &Module) -> Result<(), ValidationError> {
+fn validate_no_duplicate_exports(wasm: &[u8], module: &Module) -> Result<(), ValidationError> {
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
-    let decoder = WasmDecoder::new(module.wasm);
+    let decoder = WasmDecoder::new(wasm);
     for export in &module.exports {
         let name = core::str::from_utf8(&decoder[export.name]).unwrap_validated();
         if found_export_names.contains(name) {
@@ -80,10 +79,10 @@ fn validate_no_duplicate_exports(module: &Module) -> Result<(), ValidationError>
     Ok(())
 }
 
-pub fn decode_and_validate<'wasm, T: ValidationConfig>(
-    wasm: &'wasm [u8],
+pub fn decode_and_validate<T: ValidationConfig>(
+    wasm: &[u8],
     user_data: &mut T,
-) -> Result<Module<'wasm>, ValidationError> {
+) -> Result<Module, ValidationError> {
     let mut wasm = WasmDecoder::new(wasm);
 
     // represents C.refs in https://webassembly.github.io/spec/core/valid/conventions.html#context
@@ -348,7 +347,6 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
     }
 
     let module = Module {
-        wasm: wasm.into_inner(),
         types,
         imports,
         functions,
@@ -363,7 +361,7 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
         elements,
         custom_sections,
     };
-    validate_no_duplicate_exports(&module)?;
+    validate_no_duplicate_exports(wasm.full_wasm_binary, &module)?;
 
     Ok(module)
 }
@@ -383,14 +381,15 @@ fn read_all_custom_sections<'wasm>(
     Ok(())
 }
 
-impl<'wasm> Module<'wasm> {
+impl Module {
     /// Returns the imports of this module as an iterator. Each import consist
     /// of a module name, a name and an extern type.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.5 - module_imports
-    pub fn imports<'a>(
+    pub fn imports<'a, 'b>(
         &'a self,
-    ) -> Map<core::slice::Iter<'a, Import>, impl FnMut(&'a Import) -> (&'a str, &'a str, ExternType)>
+        wasm: &'b [u8],
+    ) -> Map<core::slice::Iter<'a, Import>, impl FnMut(&'a Import) -> (&'b str, &'b str, ExternType)>
     {
         self.imports.iter().map(|import| {
             // SAFETY: This is sound because the argument is `self` and the
@@ -398,12 +397,13 @@ impl<'wasm> Module<'wasm> {
             let extern_type = unsafe { import.desc.extern_type_owned(self) };
             (
                 core::str::from_utf8(
-                    &self.wasm
+                    &wasm
                         [import.module_name.from..import.module_name.from + import.module_name.len],
                 )
                 .unwrap_validated(),
                 core::str::from_utf8(
-                    &self.wasm[import.name.from..import.name.from + import.name.len],
+                    &wasm
+                        [import.module_name.from..import.module_name.from + import.module_name.len],
                 )
                 .unwrap_validated(),
                 extern_type,
@@ -415,18 +415,17 @@ impl<'wasm> Module<'wasm> {
     /// of a name, and an extern type.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.5 - module_exports
-    pub fn exports<'a>(
+    pub fn exports<'a, 'b>(
         &'a self,
-    ) -> Map<core::slice::Iter<'a, Export>, impl FnMut(&'a Export) -> (&'a str, ExternType)> {
+        wasm: &'b [u8],
+    ) -> Map<core::slice::Iter<'a, Export>, impl FnMut(&'a Export) -> (&'b str, ExternType)> {
         self.exports.iter().map(|export| {
             // SAFETY: This is sound because the argument is `self` and the
             // export desc also comes from `self`.
             let extern_type = unsafe { export.desc.extern_type(self) };
             (
-                core::str::from_utf8(
-                    &self.wasm[export.name.from..export.name.from + export.name.len],
-                )
-                .unwrap_validated(),
+                core::str::from_utf8(&wasm[export.name.from..export.name.from + export.name.len])
+                    .unwrap_validated(),
                 extern_type,
             )
         })

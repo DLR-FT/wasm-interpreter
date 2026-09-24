@@ -6,6 +6,7 @@
 use core::ops::ControlFlow;
 
 use crate::{
+    core::utils::BytecodeProvider,
     execution::{
         assert_validated::UnwrapValidatedExt,
         instructions::{InterpreterLoopOutcome, State},
@@ -14,7 +15,9 @@ use crate::{
 };
 
 #[inline(always)]
-pub unsafe fn drop(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn drop<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let _ = unsafe { state.resumable.stack.pop_value() };
 
@@ -22,7 +25,9 @@ pub unsafe fn drop(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, 
 }
 
 #[inline(always)]
-pub unsafe fn select(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn select<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let test_val: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -40,7 +45,9 @@ pub unsafe fn select(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn select_t(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn select_t<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // skip past type vec
     state
         .wasm

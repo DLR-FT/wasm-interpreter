@@ -74,6 +74,7 @@ pub use crate::{
             ExternType, FuncType, GlobalType, Limits, MemType, NumType, RefType, ResultType,
             TableType, ValType,
         },
+        utils::BytecodeProvider,
     },
     execution::{
         config::{stack_memory_bytes_total, Config},
