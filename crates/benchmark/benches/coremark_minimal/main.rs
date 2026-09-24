@@ -1,11 +1,18 @@
 use dlr_wasm_interpreter::{
-    decode_and_validate, Config, DispatchMechanism, ExternVal, FuncType, NumType, ResultType,
-    RunState, Store, ValType, Value,
+    decode_and_validate, BytecodeProvider, Config, DispatchMechanism, ExternVal, FuncType, NumType,
+    ResultType, RunState, Store, ValType, Value,
 };
 use envconfig::Envconfig;
 use std::{str::FromStr, time::UNIX_EPOCH};
 
 const COREMARK_MINIMAL_BYTECODE: &[u8] = include_bytes!("coremark-minimal.wasm");
+
+struct SingleBytecodeRef<'b>(&'b [u8]);
+impl<'b> BytecodeProvider for SingleBytecodeRef<'b> {
+    fn get_bytecode(&self, _id: usize) -> &[u8] {
+        self.0
+    }
+}
 
 #[derive(Debug, Clone, Default)]
 enum OutputFormat {
@@ -66,21 +73,29 @@ pub fn run<T: Config>(interpreter_config: T) -> f32 {
         0, // Use arbitrary host code, as there is only one host function
     );
 
+    let bytecode_provider = SingleBytecodeRef(COREMARK_MINIMAL_BYTECODE);
     // SAFETY: This function address was just returned from a function allocation in the same store.
     let module = unsafe {
-        store.module_instantiate(&module, vec![ExternVal::Func(env_clock_ms_function)], None)
+        store.module_instantiate(
+            &module,
+            &bytecode_provider,
+            0,
+            vec![ExternVal::Func(env_clock_ms_function)],
+            None,
+        )
     }
     .unwrap()
     .module_addr;
 
     // SAFETY: This module address was just returned from module instantiation in the same store.
-    let run_function = unsafe { store.instance_export(module, "run") }
+    let run_function = unsafe { store.instance_export(module, &bytecode_provider, "run") }
         .unwrap()
         .as_func()
         .unwrap();
 
     // SAFETY: This function address was just returned from the same store.
-    let mut run_state = unsafe { store.invoke(run_function, Vec::new(), None) }.unwrap();
+    let mut run_state =
+        unsafe { store.invoke(run_function, Vec::new(), None, &bytecode_provider) }.unwrap();
     loop {
         match run_state {
             RunState::Finished { values, .. } => {
@@ -92,7 +107,7 @@ pub fn run<T: Config>(interpreter_config: T) -> f32 {
             RunState::Resumable { resumable, .. } => {
                 // SAFETY: This resumable was just returned by a function invocation in the same
                 // store.
-                run_state = unsafe { store.resume_wasm(resumable) }.unwrap();
+                run_state = unsafe { store.resume_wasm(resumable, &bytecode_provider) }.unwrap();
             }
             RunState::HostCalled { resumable, .. } => {
                 let clock_ms = clock_ms();
