@@ -1,5 +1,6 @@
-use dlr_wasm_interpreter::{ValidationError, decode_and_validate};
+use dlr_wasm_interpreter::ValidationError;
 use dlr_wasm_interpreter_checked::Store;
+use dlr_wasm_interpreter_checked::decode_and_validate;
 
 /// Runs a function that does nothing and contains only a single empty block
 #[test_log::test]

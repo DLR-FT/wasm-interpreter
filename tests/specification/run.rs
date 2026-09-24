@@ -7,10 +7,10 @@ use bumpalo::Bump;
 use dlr_wasm_interpreter::ExternAddr;
 use dlr_wasm_interpreter::{
     F32, F64, GlobalType, Limits, MemType, ModuleAddr, NumType, RefType, RuntimeError, TableType,
-    TrapError, ValType, decode_and_validate,
+    TrapError, ValType,
 };
 use dlr_wasm_interpreter_checked::{
-    Linker, Store, Stored, StoredExternVal, StoredRef, StoredValue,
+    Linker, Store, Stored, StoredExternVal, StoredRef, StoredValue, decode_and_validate,
 };
 use dlr_wasm_interpreter_registry::Registry;
 use log::debug;

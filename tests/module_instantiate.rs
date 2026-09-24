@@ -1,5 +1,6 @@
-use dlr_wasm_interpreter::{RuntimeError, decode_and_validate};
+use dlr_wasm_interpreter::RuntimeError;
 use dlr_wasm_interpreter_checked::Store;
+use dlr_wasm_interpreter_checked::decode_and_validate;
 
 #[test_log::test]
 fn use_incorrect_number_of_extern_vals() {

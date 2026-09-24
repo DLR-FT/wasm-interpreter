@@ -1,5 +1,5 @@
-use dlr_wasm_interpreter::decode_and_validate;
 use dlr_wasm_interpreter_checked::Store;
+use dlr_wasm_interpreter_checked::decode_and_validate;
 
 /// This test checks if we can validate and executa a module which has two functions with the same signature.
 #[test_log::test]

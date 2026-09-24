@@ -1,7 +1,7 @@
 use core::ops::ControlFlow;
 
 use crate::{
-    Config, RuntimeError, Store, WasmResumable,
+    BytecodeProvider, Config, RuntimeError, Store, WasmResumable,
     core::{decoding::decoder::WasmDecoder, sidetable::Sidetable, structure::instructions},
     execution::{
         assert_validated::UnwrapValidatedExt,
@@ -24,11 +24,14 @@ use crate::{
 ///
 /// # Safety
 ///
-/// The given resumable must be valid in the given store and the store itself must be valid.
+/// 1. The given resumable must be valid in the given store and the store itself must be valid.
+/// 2. The bytecode_id of each module instance within store must correspond to its associated
+///    bytecode reference in `bytecode_provider`.
 #[inline(never)]
-pub unsafe fn run<T: Config>(
+pub unsafe fn run<T: Config, B: BytecodeProvider>(
     resumable: &mut WasmResumable,
     store: &mut Store<T>,
+    bytecode_provider: &B,
 ) -> Result<InterpreterLoopOutcome, RuntimeError> {
     let current_func_addr = resumable.current_func_addr;
     let pc = resumable.pc;
@@ -46,7 +49,7 @@ pub unsafe fn run<T: Config>(
     // SAFETY: This module address was just read from the current store. Every
     // store guarantees all addresses contained in it to be valid within itself.
     let module = unsafe { store.modules.get(current_module) };
-    let wasm_bytecode = module.wasm_bytecode;
+    let wasm_bytecode = bytecode_provider.get_bytecode(module.bytecode_id);
     let wasm = &mut WasmDecoder::new(wasm_bytecode);
 
     let mut current_sidetable: &Sidetable = &module.sidetable;
@@ -76,6 +79,7 @@ pub unsafe fn run<T: Config>(
             current_function_end_marker: &mut current_function_end_marker,
             current_sidetable: &mut current_sidetable,
             resumable,
+            bytecode_provider,
         };
 
         match first_instr_byte {
@@ -109,6 +113,8 @@ pub unsafe fn run<T: Config>(
                                     //   current module.
                                     // - The end marker for the current function was computed
                                     //   using the current function instance.
+                                    // - Consistency of the `bytecode_provider` is ensured by the
+                                    //   caller.
                                     if let ControlFlow::Break(outcome) = unsafe { $handler_fn(state) }? {
                                         break outcome;
                                     }
@@ -152,6 +158,8 @@ pub unsafe fn run<T: Config>(
                                     //   current module.
                                     // - The end marker for the current function was computed
                                     //   using the current function instance.
+                                    // - Consistency of the `bytecode_provider` is ensured by the
+                                    //   caller
                                     if let ControlFlow::Break(outcome) = unsafe { $handler_fn(state) }? {
                                         break outcome;
                                     }
@@ -193,6 +201,8 @@ pub unsafe fn run<T: Config>(
                                     //   module.
                                     // - The end marker for the current function was computed using
                                     //   the current function instance.
+                                    // - Consistency of the `bytecode_provider` is ensured by the
+                                    //   caller
                                     if let ControlFlow::Break(outcome) = unsafe { $handler_fn(state) }? {
                                         break outcome;
                                     }
