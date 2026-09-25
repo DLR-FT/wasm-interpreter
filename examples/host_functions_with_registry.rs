@@ -8,9 +8,10 @@
 
 use std::{error::Error, io};
 
-use dlr_wasm_interpreter::{decode_and_validate, FuncAddr, Module, ModuleAddr};
+use dlr_wasm_interpreter::{FuncAddr, ModuleAddr};
 use dlr_wasm_interpreter_checked::{
-    Store, Stored, StoredExternVal, StoredInstantiationOutcome, StoredRunState,
+    decode_and_validate, Module, Store, Stored, StoredExternVal, StoredInstantiationOutcome,
+    StoredRunState,
 };
 use dlr_wasm_interpreter_registry::Registry;
 

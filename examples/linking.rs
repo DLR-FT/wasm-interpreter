@@ -11,8 +11,17 @@
 
 use std::error::Error;
 
-use dlr_wasm_interpreter::{decode_and_validate, FuncAddr, Module, ModuleAddr, Store, Value};
+use dlr_wasm_interpreter::{
+    decode_and_validate, BytecodeProvider, FuncAddr, Module, ModuleAddr, Store, Value,
+};
 use dlr_wasm_interpreter_linker::Linker;
+
+struct BytecodeRefArr<'a>([&'a [u8]; 2]);
+impl BytecodeProvider for BytecodeRefArr<'_> {
+    fn get_bytecode(&self, id: usize) -> &[u8] {
+        self.0[id]
+    }
+}
 
 const MAIN_WAT_CODE: &str = r#"
 (module
@@ -30,6 +39,7 @@ const MAIN_WAT_CODE: &str = r#"
     )
 )
 "#;
+const MAIN_WASM_BYTECODE_ID: usize = 0;
 
 const UTILS_WAT_CODE: &str = r#"
 (module
@@ -46,6 +56,7 @@ const UTILS_WAT_CODE: &str = r#"
     )
 )
 "#;
+const UTILS_WASM_BYTECODE_ID: usize = 0;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // First, decode and validate both modules.
@@ -58,6 +69,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // linkers and stores (i.e. one linker cannot be used with multiple stores). However, most of
     // the time there will only be a single linker per store.
     let mut store: Store<()> = Store::new(());
+
+    let bytecode_provider = BytecodeRefArr([&main_wasm_bytecode, &utils_wasm_bytecode]);
+
     let mut linker: Linker = Linker::new();
 
     // Instead of instantiating a module via `Store::module_instantiate`, we now use
@@ -69,16 +83,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     // module_instantiate on the store directly.
     //
     // SAFETY: There exists only a single store in this program.
-    let utils_module_addr: ModuleAddr =
-        unsafe { linker.module_instantiate(&mut store, &utils_module, None) }
-            .ok_or("linking failed")??
-            .module_addr;
+    let utils_module_addr: ModuleAddr = unsafe {
+        linker.module_instantiate(
+            &mut store,
+            &bytecode_provider,
+            UTILS_WASM_BYTECODE_ID,
+            &utils_module,
+            None,
+        )
+    }
+    .ok_or("linking failed")??
+    .module_addr;
 
     // `module_instantiate` does not automatically define the module's export as symbols. We have to
     // do this manually after instantiation like so:
     //
     // SAFETY: There exists only a single store in this program.
-    unsafe { linker.define_module_instance(&store, "utils".to_owned(), utils_module_addr) }?;
+    unsafe {
+        linker.define_module_instance(
+            &store,
+            &bytecode_provider,
+            "utils".to_owned(),
+            utils_module_addr,
+        )
+    }?;
 
     // `define_module_instance`` is simply syntactic sugar for iterating through all exports of a
     // module and defining them as symbols in the linker. We could also define individual symbols
@@ -91,21 +119,36 @@ fn main() -> Result<(), Box<dyn Error>> {
     // performs linking for the "add" and "sub" imports.
     //
     // SAFETY: There exists only a single store in this program.
-    let main_module_addr: ModuleAddr =
-        unsafe { linker.module_instantiate(&mut store, &main_module, None) }
-            .ok_or("linking failed")??
-            .module_addr;
+    let main_module_addr: ModuleAddr = unsafe {
+        linker.module_instantiate(
+            &mut store,
+            &bytecode_provider,
+            MAIN_WASM_BYTECODE_ID,
+            &main_module,
+            None,
+        )
+    }
+    .ok_or("linking failed")??
+    .module_addr;
 
     // Here we can either use `Store::instance_export` to get the identity function's address...
     //
     // SAFETY: There exists only a single store in this program.
-    let _identity: FuncAddr = unsafe { store.instance_export(main_module_addr, "identity") }?
-        .as_func()
-        .ok_or("identity is not a function")?;
+    let _identity: FuncAddr =
+        unsafe { store.instance_export(main_module_addr, &bytecode_provider, "identity") }?
+            .as_func()
+            .ok_or("identity is not a function")?;
     // ... or define the module instance's exports in the linker context and then use `Linker::get`:
     //
     // SAFETY: There exists only a single store in this program.
-    unsafe { linker.define_module_instance(&store, "main".to_owned(), main_module_addr) }?;
+    unsafe {
+        linker.define_module_instance(
+            &store,
+            &bytecode_provider,
+            "main".to_owned(),
+            main_module_addr,
+        )
+    }?;
     let identity: FuncAddr = linker
         .get("main".to_owned(), "identity".to_owned())
         .ok_or("identity symbol does not exist")?
@@ -115,7 +158,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Now simply invoke the function and check that it returns the same value that was passed in.
     //
     // SAFETY: There exists only a single store in this program.
-    let result_values: Vec<Value> = unsafe { store.invoke_simple(identity, vec![Value::I32(42)]) }?;
+    let result_values: Vec<Value> =
+        unsafe { store.invoke_simple(identity, vec![Value::I32(42)], &bytecode_provider) }?;
     let [Value::I32(result)] = *result_values else {
         panic!("expected a single i32 as a result");
     };
