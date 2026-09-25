@@ -401,11 +401,8 @@ impl Module {
                         [import.module_name.from..import.module_name.from + import.module_name.len],
                 )
                 .unwrap_validated(),
-                core::str::from_utf8(
-                    &wasm
-                        [import.module_name.from..import.module_name.from + import.module_name.len],
-                )
-                .unwrap_validated(),
+                core::str::from_utf8(&wasm[import.name.from..import.name.from + import.name.len])
+                    .unwrap_validated(),
                 extern_type,
             )
         })

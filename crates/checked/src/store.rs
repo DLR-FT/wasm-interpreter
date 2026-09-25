@@ -19,8 +19,9 @@ impl<'b> BytecodeRefs<'b> {
     }
 
     pub(crate) fn add_bytecode_ref(&mut self, bytecode: &'b [u8]) -> usize {
+        let id = self.0.len();
         self.0.push(bytecode);
-        self.0.len()
+        id
     }
 }
 

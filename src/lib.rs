@@ -70,6 +70,7 @@ pub use crate::{
         decoding::{error::DecodingError, modules::custom_section::CustomSection},
         rw_spinlock,
         structure::instructions,
+        structure::modules::{exports::Export, imports::Import},
         structure::types::{
             ExternType, FuncType, GlobalType, Limits, MemType, NumType, RefType, ResultType,
             TableType, ValType,

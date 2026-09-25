@@ -5,8 +5,8 @@ use crate::core::{
 
 #[derive(Debug, Clone)]
 pub struct Export {
-    pub name: Span,
-    pub desc: ExportDesc,
+    pub(crate) name: Span,
+    pub(crate) desc: ExportDesc,
 }
 
 #[derive(Debug, Clone)]
