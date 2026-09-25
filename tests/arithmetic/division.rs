@@ -1,5 +1,6 @@
 use dlr_wasm_interpreter::RuntimeError;
-use dlr_wasm_interpreter::{decode_and_validate, TrapError};
+use dlr_wasm_interpreter::TrapError;
+use dlr_wasm_interpreter_checked::decode_and_validate;
 use dlr_wasm_interpreter_checked::Store;
 
 const WAT_SIGNED_DIVISION_TEMPLATE: &str = r#"
