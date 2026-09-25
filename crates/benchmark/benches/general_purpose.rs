@@ -5,7 +5,14 @@ use criterion::{
     PlotConfiguration, Throughput,
 };
 
-use dlr_wasm_interpreter::{decode_and_validate, Store};
+use dlr_wasm_interpreter::{decode_and_validate, BytecodeProvider, Store};
+
+struct SingleBytecodeRef<'b>(&'b [u8]);
+impl<'b> BytecodeProvider for SingleBytecodeRef<'b> {
+    fn get_bytecode(&self, _id: usize) -> &[u8] {
+        self.0
+    }
+}
 
 macro_rules! bench_wasm {
     {
@@ -52,6 +59,7 @@ macro_rules! bench_wasm {
             let plot_config = $plot_config;
             let wasm_bytes = $wasm_bytes;
 
+
             // Our interpreter
             let our_module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
             struct UserData;
@@ -60,12 +68,13 @@ macro_rules! bench_wasm {
                 const MAX_CALL_STACK_SIZE: usize = $call_stack_size;
             }
             let mut store = Store::new(UserData);
+            let bytecode_provider = SingleBytecodeRef(&wasm_bytes);
             // SAFETY: Only one store is used. Therefore, this must always be
             // the correct one.
-            let module = unsafe { store.module_instantiate(&our_module, Vec::new(), None) }.unwrap().module_addr;
+            let module = unsafe { store.module_instantiate(&our_module, &bytecode_provider, 0, Vec::new(), None) }.unwrap().module_addr;
             // SAFETY: Only one store is used. Therefore, this must always be
             // the correct one.
-            let our_fn = unsafe { store.instance_export(module, $entry_function) }
+            let our_fn = unsafe { store.instance_export(module, &bytecode_provider, $entry_function) }
                 .unwrap()
                 .as_func()
                 .unwrap();
@@ -143,7 +152,7 @@ macro_rules! bench_wasm {
                     }, |resumable| {
                         // SAFETY: Only one store is used. Therefore, this must always be
                         // the correct one.
-                        unsafe { store.resume_wasm(resumable) }.unwrap()
+                        unsafe { store.resume_wasm(resumable, &bytecode_provider) }.unwrap()
                     }, BatchSize::PerIteration)
                 });
             }

@@ -11,8 +11,15 @@
 use std::{collections::HashMap, error::Error, fmt};
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, Config, FuncAddr, Module, ModuleAddr, Store, Value,
+    decode_and_validate, BytecodeProvider, Config, FuncAddr, Module, ModuleAddr, Store, Value,
 };
+
+struct SingleBytecodeRef<'a>(&'a [u8]);
+impl BytecodeProvider for SingleBytecodeRef<'_> {
+    fn get_bytecode(&self, _id: usize) -> &[u8] {
+        self.0
+    }
+}
 
 // This is the same Wasm code as in the fuel example
 const WAT_CODE: &str = r#"
@@ -57,18 +64,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut store: Store<MyHookConfig> = Store::new(MyHookConfig::default());
 
+    let bytecode_provider = SingleBytecodeRef(&wasm_bytecode);
     // SAFETY: There are no extern values.
     let module_addr: ModuleAddr =
-        unsafe { store.module_instantiate(&module, vec![], None) }?.module_addr;
+        unsafe { store.module_instantiate(&module, &bytecode_provider, 0, vec![], None) }?
+            .module_addr;
 
     // SAFETY: The module address was just returned from module instantiation in the same store.
-    let fibonacci: FuncAddr = unsafe { store.instance_export(module_addr, "fibonacci") }?
-        .as_func()
-        .ok_or("fibonacci is not a function")?;
+    let fibonacci: FuncAddr =
+        unsafe { store.instance_export(module_addr, &bytecode_provider, "fibonacci") }?
+            .as_func()
+            .ok_or("fibonacci is not a function")?;
 
     // SAFETY: The function address was just returned from the same store. Also, no addresses are
     // passed as parameters.
-    let return_values: Vec<Value> = unsafe { store.invoke_simple(fibonacci, vec![Value::I32(3)]) }?;
+    let return_values: Vec<Value> =
+        unsafe { store.invoke_simple(fibonacci, vec![Value::I32(3)], &bytecode_provider) }?;
 
     let [Value::I32(nth_fibonacci)] = *return_values else {
         return Err("expected one i32 as a return value".into());

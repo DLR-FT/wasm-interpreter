@@ -1,4 +1,4 @@
-use dlr_wasm_interpreter::decode_and_validate;
+use dlr_wasm_interpreter_checked::decode_and_validate;
 use dlr_wasm_interpreter_checked::Store;
 
 /// A simple function to add 2 two i32s but using the RETURN opcode.

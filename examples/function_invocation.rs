@@ -12,9 +12,16 @@
 use std::error::Error;
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, ExternVal, FuncAddr, InstantiationOutcome, Module, Store, Value,
+    decode_and_validate, BytecodeProvider, ExternVal, FuncAddr, InstantiationOutcome, Module,
+    Store, Value,
 };
 
+struct SingleBytecodeRef<'a>(&'a [u8]);
+impl BytecodeProvider for SingleBytecodeRef<'_> {
+    fn get_bytecode(&self, _id: usize) -> &[u8] {
+        self.0
+    }
+}
 /// The Wasm module is defined in the WebAssembly Text Format (WAT). We convert it to the Wasm
 /// bytecode format at runtime using the [`wat`] crate. You can also do this conversion at
 /// compile-time by running a tool such as wat2wasm from [WABT](https://github.com/WebAssembly/wabt)
@@ -41,6 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // some user data.
     let mut store: Store<()> = Store::new(());
 
+    let bytecode_provider = SingleBytecodeRef(&wasm_bytecode);
     // Now we can instantiate our module in the store. The instantiation process creates a new
     // module instance. The module instance is stored in the store and a module address that
     // uniquely identifies it within this store is returned.
@@ -53,7 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //
     // SAFETY: There are no extern values.
     let instantiation_outcome: InstantiationOutcome =
-        unsafe { store.module_instantiate(&module, vec![], None) }?;
+        unsafe { store.module_instantiate(&module, &bytecode_provider, 0, vec![], None) }?;
 
     let InstantiationOutcome {
         // The address identifying the newly created module instance
@@ -66,7 +74,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // It allows to lookup extern values exported by a module.
     //
     // SAFETY: The module address was just returned from module instantiation in the same store.
-    let add_one: ExternVal = unsafe { store.instance_export(module_addr, "add_one") }?;
+    let add_one: ExternVal =
+        unsafe { store.instance_export(module_addr, &bytecode_provider, "add_one") }?;
     // Wasm modules can not only export functions, but also globals, memories and tables. We know
     // add_one is a function.
     let add_one: FuncAddr = add_one.as_func().ok_or("add_one is not a function")?;
@@ -82,7 +91,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     //
     // SAFETY: The function address was just returned from the same store. Also no addresses are
     // passed as parameters.
-    let return_values: Vec<Value> = unsafe { store.invoke_simple(add_one, parameters) }?;
+    let return_values: Vec<Value> =
+        unsafe { store.invoke_simple(add_one, parameters, &bytecode_provider) }?;
 
     // Now simply destructure the returned values
     let [Value::I32(n)] = *return_values else {

@@ -17,7 +17,7 @@ use crate::{
                 indices::{ElemIdx, IdxVec, TypeIdx},
             },
         },
-        utils::ToUsizeExt,
+        utils::{BytecodeProvider, ToUsizeExt},
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
@@ -56,7 +56,7 @@ use crate::{
 ///
 /// All addresses contained in a store must be valid for their associated address vectors in the
 /// same store.
-pub struct Store<'b, T: Config> {
+pub struct Store<T: Config> {
     /// The actual inner Wasm store.
     ///
     /// This is stored as a separate inner type, so that we can partially borrow a [`StoreInner`]
@@ -70,7 +70,7 @@ pub struct Store<'b, T: Config> {
     /// to be part of the [`Store`], in reality they can be managed very similar to
     /// other instance types. Therefore, we extend the [`Store`] by a module address
     /// space along with a `ModuleAddr` index type.
-    pub(crate) modules: AddrVec<ModuleAddr, ModuleInst<'b>>,
+    pub(crate) modules: AddrVec<ModuleAddr, ModuleInst>,
 
     pub user_data: T,
 }
@@ -95,7 +95,7 @@ pub(crate) struct StoreInner {
     pub(crate) data: AddrVec<DataAddr, DataInst>,
 }
 
-impl<'b, T: Config> Store<'b, T> {
+impl<T: Config> Store<T> {
     /// Creates a new empty store with some user data
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.4 - store_init
@@ -127,12 +127,16 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that any address values contained in the
     /// [`ExternVal`]s came from the current [`Store`] object.
-    pub unsafe fn module_instantiate(
+    pub unsafe fn module_instantiate<T2: BytecodeProvider>(
         &mut self,
-        module: &Module<'b>,
+        module: &Module,
+        bytecode_provider: &T2,
+        bytecode_id: usize,
         extern_vals: Vec<ExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<InstantiationOutcome, RuntimeError> {
+        let wasm = bytecode_provider.get_bytecode(bytecode_id);
+
         // instantiation: step 1
         // The module is guaranteed to be valid, because only validation can
         // produce `Module`s.
@@ -182,7 +186,7 @@ impl<'b, T: Config> Store<'b, T> {
             elem_addrs: IdxVec::default(),
             data_addrs: IdxVec::default(),
             exports: Box::default(),
-            wasm_bytecode: module.wasm,
+            bytecode_id,
             sidetable: module.sidetable.clone(),
         };
         let module_addr = self.modules.insert(module_inst);
@@ -197,7 +201,7 @@ impl<'b, T: Config> Store<'b, T> {
                 // because it was just created and the type index is valid for
                 // that same module because it came from that module's
                 // `Module`.
-                unsafe { self.alloc_func((*ty_idx, (*span, *stp)), module_addr) }
+                unsafe { self.alloc_func((*ty_idx, (*span, *stp)), module_addr, wasm) }
             });
 
         let func_addrs = module
@@ -231,7 +235,7 @@ impl<'b, T: Config> Store<'b, T> {
                 //    this store's `AddrVec`.
                 let const_expr_result = unsafe {
                     run_const_span(
-                        module.wasm,
+                        wasm,
                         &global.init_expr,
                         module_addr,
                         self,
@@ -274,13 +278,7 @@ impl<'b, T: Config> Store<'b, T> {
                         // 2. The module with this module address was just inserted into
                         //    this store's `AddrVec`.
                         let const_expr_result = unsafe {
-                            run_const_span(
-                                module.wasm,
-                                expr,
-                                module_addr,
-                                self,
-                                &mut maybe_reusable_stack,
-                            )
+                            run_const_span(wasm, expr, module_addr, self, &mut maybe_reusable_stack)
                         };
                         const_expr_result
                             .map(|res| res.unwrap_validated().try_into().unwrap_validated())
@@ -426,7 +424,6 @@ impl<'b, T: Config> Store<'b, T> {
                         ExternVal::Global(*global_addr)
                     }
                 };
-
                 ExportInst {
                     name: export.name,
                     value,
@@ -483,7 +480,7 @@ impl<'b, T: Config> Store<'b, T> {
                     // in that span must be validated already.
                     let const_expr_result = unsafe {
                         run_const_span(
-                            module.wasm,
+                            wasm,
                             einstr_i,
                             module_addr,
                             self,
@@ -597,7 +594,7 @@ impl<'b, T: Config> Store<'b, T> {
                     // expression in that span must be validated already.
                     let const_expr_result = unsafe {
                         run_const_span(
-                            module.wasm,
+                            wasm,
                             dinstr_i,
                             module_addr,
                             self,
@@ -680,7 +677,7 @@ impl<'b, T: Config> Store<'b, T> {
 
             // SAFETY: The resumable just came from the current store.
             // Therefore, it is always valid in the current store.
-            match unsafe { self.resume_wasm(resumable) }? {
+            match unsafe { self.resume_wasm(resumable, bytecode_provider) }? {
                 RunState::Finished {
                     maybe_remaining_fuel,
                     ..
@@ -708,15 +705,17 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the [`ModuleAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn instance_export(
+    pub unsafe fn instance_export<T2: BytecodeProvider>(
         &self,
         module_addr: ModuleAddr,
+        bytecode_provider: &T2,
         name: &str,
     ) -> Result<ExternVal, RuntimeError> {
         // Fetch the module instance because we store them in the [`Store`]
         // SAFETY: The caller ensures the module address to be valid in the
         // current store.
         let module_inst = unsafe { self.modules.get(module_addr) };
+        let wasm = bytecode_provider.get_bytecode(module_inst.bytecode_id);
 
         // 1. Assert: due to validity of the module instance `moduleinst`, all its export names are different
 
@@ -728,7 +727,13 @@ impl<'b, T: Config> Store<'b, T> {
         module_inst
             .exports
             .iter()
-            .find_map(|export_inst| (export_inst.name == name).then_some(export_inst.value))
+            .find_map(|export_inst| {
+                let export_inst_name = core::str::from_utf8(
+                    &wasm[export_inst.name.from..export_inst.name.from + export_inst.name.len],
+                )
+                .unwrap_validated();
+                (export_inst_name == name).then_some(export_inst.value)
+            })
             .ok_or(RuntimeError::UnknownExport)
     }
 
@@ -788,11 +793,12 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that the given [`FuncAddr`] and any [`FuncAddr`] or
     /// [`ExternAddr`](crate::ExternAddr) values contained in the parameter values came from the
     /// current [`Store`] object.
-    pub unsafe fn invoke(
+    pub unsafe fn invoke<T2: BytecodeProvider>(
         &mut self,
         func_addr: FuncAddr,
         params: Vec<Value>,
         maybe_fuel: Option<u64>,
+        bytecode_provider: &T2,
     ) -> Result<RunState, RuntimeError> {
         // SAFETY: The caller ensures that the function address and any function
         // addresses or extern addresses contained in the parameter values are
@@ -800,7 +806,7 @@ impl<'b, T: Config> Store<'b, T> {
         let resumable = unsafe { self.create_resumable(func_addr, params, maybe_fuel)? };
         // SAFETY: The resumable just came from the current store. Therefore, it
         // must be valid in the current store.
-        unsafe { self.resume(resumable) }
+        unsafe { self.resume(resumable, bytecode_provider) }
     }
 
     /// Allocates a new table with some table type and an initialization value `ref` and returns its table address.
@@ -1277,6 +1283,7 @@ impl<'b, T: Config> Store<'b, T> {
         &mut self,
         func: (TypeIdx, (Span, usize)),
         module_addr: ModuleAddr,
+        wasm_bytecode: &[u8],
     ) -> FuncAddr {
         let (ty, (span, stp)) = func;
 
@@ -1284,7 +1291,7 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that the given module address is valid in
         // the current store.
         let module = unsafe { self.modules.get(module_addr) };
-        let mut wasm_decoder = WasmDecoder::new(module.wasm_bytecode);
+        let mut wasm_decoder = WasmDecoder::new(wasm_bytecode);
         wasm_decoder.move_start_to(span).unwrap_validated();
 
         let (locals, bytes_read) = wasm_decoder
@@ -1478,11 +1485,17 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the [`Resumable`] came from the current
     /// [`Store`] object.
-    pub unsafe fn resume(&mut self, resumable: Resumable) -> Result<RunState, RuntimeError> {
+    pub unsafe fn resume<T2: BytecodeProvider>(
+        &mut self,
+        resumable: Resumable,
+        bytecode_provider: &T2,
+    ) -> Result<RunState, RuntimeError> {
         match resumable {
             // SAFETY: The caller ensures that this `WasmResumable` came from
             // the current store.
-            Resumable::Wasm(wasm_resumable) => unsafe { self.resume_wasm(wasm_resumable) },
+            Resumable::Wasm(wasm_resumable) => unsafe {
+                self.resume_wasm(wasm_resumable, bytecode_provider)
+            },
             Resumable::Host {
                 host_call,
                 host_resumable,
@@ -1501,13 +1514,15 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the [`Resumable`] came from the current
     /// [`Store`] object.
-    pub unsafe fn resume_wasm(
+    pub unsafe fn resume_wasm<T2: BytecodeProvider>(
         &mut self,
         mut resumable: WasmResumable,
+        bytecode_provider: &T2,
     ) -> Result<RunState, RuntimeError> {
         // SAFETY: The caller guarantees that the resumable comes from the current store which
         // itself is also automatically valid.
-        let result = unsafe { instructions::dispatch::run(&mut resumable, self) }?;
+        let result =
+            unsafe { instructions::dispatch::run(&mut resumable, self, bytecode_provider) }?;
 
         let run_state = match result {
             InterpreterLoopOutcome::ExecutionReturned => RunState::Finished {
@@ -1594,15 +1609,16 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that the given [`FuncAddr`] and any [`FuncAddr`] or
     /// [`ExternAddr`](crate::ExternAddr) values contained in the parameter values came from the
     /// current [`Store`] object.
-    pub unsafe fn invoke_simple(
+    pub unsafe fn invoke_simple<T2: BytecodeProvider>(
         &mut self,
         function: FuncAddr,
         params: Vec<Value>,
+        bytecode_provider: &T2,
     ) -> Result<Vec<Value>, RuntimeError> {
         // SAFETY: The caller ensures that the given function address and all
         // address types contained in the parameters are valid in the current
         // store.
-        let run_state = unsafe { self.invoke(function, params, None) }?;
+        let run_state = unsafe { self.invoke(function, params, None, bytecode_provider) }?;
 
         match run_state {
             RunState::Finished {
@@ -1678,18 +1694,24 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`ModuleAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn instance_exports(
+    pub unsafe fn instance_exports<'b, T2: BytecodeProvider>(
         &self,
         module_addr: ModuleAddr,
-    ) -> impl ExactSizeIterator<Item = (&'b str, ExternVal)> + '_ {
+        bytecode_provider: &'b T2,
+    ) -> impl ExactSizeIterator<Item = (&'b str, ExternVal)> + use<'_, 'b, T, T2> {
         // SAFETY: The caller ensures that the given module address is valid in
         // the current store.
         let module = unsafe { self.modules.get(module_addr) };
-
-        module
-            .exports
-            .iter()
-            .map(|export_inst| (export_inst.name, export_inst.value))
+        let wasm: &'b [u8] = bytecode_provider.get_bytecode(module.bytecode_id);
+        module.exports.iter().map(|export_inst| {
+            (
+                core::str::from_utf8(
+                    &wasm[export_inst.name.from..(export_inst.name.from + export_inst.name.len)],
+                )
+                .unwrap_validated(),
+                export_inst.value,
+            )
+        })
     }
 }
 

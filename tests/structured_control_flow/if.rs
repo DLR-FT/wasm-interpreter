@@ -1,4 +1,5 @@
-use dlr_wasm_interpreter::{decode_and_validate, ValidationError};
+use dlr_wasm_interpreter::ValidationError;
+use dlr_wasm_interpreter_checked::decode_and_validate;
 use dlr_wasm_interpreter_checked::Store;
 
 #[test_log::test]

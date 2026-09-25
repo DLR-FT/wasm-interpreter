@@ -17,9 +17,16 @@
 use std::{error::Error, time::Duration};
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, Config, FuncAddr, InstantiationOutcome, MemAddr, Module, RunState, Store,
-    Value,
+    decode_and_validate, BytecodeProvider, Config, FuncAddr, InstantiationOutcome, MemAddr, Module,
+    RunState, Store, Value,
 };
+
+struct SingleBytecodeRef<'a>(&'a [u8]);
+impl BytecodeProvider for SingleBytecodeRef<'_> {
+    fn get_bytecode(&self, _id: usize) -> &[u8] {
+        self.0
+    }
+}
 
 const WAT_CODE: &str = r#"
 (module
@@ -71,9 +78,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut store: Store<SlowExecutionConfig> = Store::new(SlowExecutionConfig);
 
+    let bytecode_provider = SingleBytecodeRef(&wasm_bytecode);
     // SAFETY: There are no extern values.
     let instantiation_outcome: InstantiationOutcome =
-        unsafe { store.module_instantiate(&module, vec![], None) }?;
+        unsafe { store.module_instantiate(&module, &bytecode_provider, 0, vec![], None) }?;
 
     let InstantiationOutcome {
         module_addr,
@@ -81,14 +89,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     } = instantiation_outcome;
 
     // SAFETY: The module address was just returned from module instantiation in the same store.
-    let fibonacci: FuncAddr = unsafe { store.instance_export(module_addr, "fibonacci") }?
-        .as_func()
-        .ok_or("fibonacci is not a function")?;
+    let fibonacci: FuncAddr =
+        unsafe { store.instance_export(module_addr, &bytecode_provider, "fibonacci") }?
+            .as_func()
+            .ok_or("fibonacci is not a function")?;
 
     // SAFETY: The module address was just returned from module instantiation in the same store.
-    let memory: MemAddr = unsafe { store.instance_export(module_addr, "memory") }?
-        .as_mem()
-        .ok_or("memory is not a memory")?;
+    let memory: MemAddr =
+        unsafe { store.instance_export(module_addr, &bytecode_provider, "memory") }?
+            .as_mem()
+            .ok_or("memory is not a memory")?;
 
     let parameters: Vec<Value> = vec![Value::I32(u32::from(N))];
 
@@ -102,7 +112,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     //
     // SAFETY: The function address was just returned from the same store. Also, no addresses are
     // passed as parameters.
-    let mut run_state = unsafe { store.invoke(fibonacci, parameters, Some(FUEL_PER_CYCLE)) }?;
+    let mut run_state = unsafe {
+        store.invoke(
+            fibonacci,
+            parameters,
+            Some(FUEL_PER_CYCLE),
+            &bytecode_provider,
+        )
+    }?;
 
     let return_values: Vec<Value> = loop {
         match run_state {
@@ -135,7 +152,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 // Continue execution, save its resulting run state and restart the loop.
                 //
                 // SAFETY: The resumable was just returned from the same store.
-                run_state = unsafe { store.resume_wasm(resumable) }?;
+                run_state = unsafe { store.resume_wasm(resumable, &bytecode_provider) }?;
             }
             RunState::HostCalled { .. } => unreachable!("no host functions exist"),
         }

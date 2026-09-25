@@ -11,11 +11,12 @@
 //! dispatch mechanism to use can be configured via [`Config::DISPATCH_MECHANISM`].
 
 use crate::{
-    execution::instructions::InterpreterLoopOutcome, Config, RuntimeError, Store, WasmResumable,
+    core::utils::BytecodeProvider, execution::instructions::InterpreterLoopOutcome, Config,
+    RuntimeError, Store, WasmResumable,
 };
 
 pub(crate) mod loop_call;
-pub(crate) mod loop_match;
+// pub(crate) mod loop_match;
 #[cfg(feature = "nightly")]
 pub(crate) mod tail_calls;
 
@@ -78,20 +79,22 @@ pub enum DispatchMechanism {
 /// # Safety
 ///
 /// The given resumable must be valid in the given [`Store`] and the store itself must be valid.
-pub(crate) unsafe fn run<T: Config>(
+pub(crate) unsafe fn run<T: Config, T2: BytecodeProvider>(
     resumable: &mut WasmResumable,
     store: &mut Store<T>,
+    bytecode_provider: &T2,
 ) -> Result<InterpreterLoopOutcome, RuntimeError> {
     match T::DISPATCH_MECHANISM {
         DispatchMechanism::LoopCall => {
             // SAFETY: The caller ensures that the resumable is valid in this store and that the
             // store is valid itself.
-            unsafe { loop_call::run(resumable, store) }
+            unsafe { loop_call::run(resumable, store, bytecode_provider) }
         }
         DispatchMechanism::LoopMatch => {
             // SAFETY: The caller ensures that the resumable is valid in this store and that the
             // store is valid itself.
-            unsafe { loop_match::run(resumable, store) }
+            // unsafe { loop_match::run(resumable, store) }
+            unreachable!()
         }
         #[cfg(feature = "nightly")]
         DispatchMechanism::TailCalls => {
@@ -758,7 +761,7 @@ macro_rules! for_all_instructions {
             ),
             (
                 memory_grow,
-                $crate::execution::instructions::memory::memory_grow::<T>,
+                $crate::execution::instructions::memory::memory_grow::<T, T2>,
                 $crate::core::structure::instructions::MEMORY_GROW,
                 false
             ),
@@ -1297,43 +1300,43 @@ macro_rules! for_all_instructions_fc {
             ),
             (
                 table_init_fn,
-                $crate::execution::instructions::table::table_init_fn::<T>,
+                $crate::execution::instructions::table::table_init_fn::<T, T2>,
                 $crate::core::structure::instructions::fc_extensions::TABLE_INIT,
                 false
             ),
             (
                 table_copy,
-                $crate::execution::instructions::table::table_copy::<T>,
+                $crate::execution::instructions::table::table_copy::<T, T2>,
                 $crate::core::structure::instructions::fc_extensions::TABLE_COPY,
                 false
             ),
             (
                 table_fill,
-                $crate::execution::instructions::table::table_fill::<T>,
+                $crate::execution::instructions::table::table_fill::<T, T2>,
                 $crate::core::structure::instructions::fc_extensions::TABLE_FILL,
                 false
             ),
             (
                 table_grow,
-                $crate::execution::instructions::table::table_grow::<T>,
+                $crate::execution::instructions::table::table_grow::<T, T2>,
                 $crate::core::structure::instructions::fc_extensions::TABLE_GROW,
                 false
             ),
             (
                 memory_init_fn,
-                $crate::execution::instructions::memory::memory_init_fn::<T>,
+                $crate::execution::instructions::memory::memory_init_fn::<T, T2>,
                 $crate::core::structure::instructions::fc_extensions::MEMORY_INIT,
                 false
             ),
             (
                 memory_copy,
-                $crate::execution::instructions::memory::memory_copy::<T>,
+                $crate::execution::instructions::memory::memory_copy::<T, T2>,
                 $crate::core::structure::instructions::fc_extensions::MEMORY_COPY,
                 false
             ),
             (
                 memory_fill,
-                $crate::execution::instructions::memory::memory_fill::<T>,
+                $crate::execution::instructions::memory::memory_fill::<T, T2>,
                 $crate::core::structure::instructions::fc_extensions::MEMORY_FILL,
                 false
             )

@@ -14,3 +14,7 @@ impl ToUsizeExt for u32 {
 
 #[cfg(target_pointer_width = "16")]
 compile_error!("targets with 16 bit wide pointers are currently not supported");
+
+pub trait BytecodeProvider {
+    fn get_bytecode(&self, id: usize) -> &[u8];
+}

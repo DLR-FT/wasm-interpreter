@@ -17,7 +17,8 @@
 */
 use core::{f32, f64};
 
-use dlr_wasm_interpreter::{decode_and_validate, RuntimeError, TrapError};
+use dlr_wasm_interpreter::{RuntimeError, TrapError};
+use dlr_wasm_interpreter_checked::decode_and_validate;
 use dlr_wasm_interpreter_checked::Store;
 use hexf::{hexf32, hexf64};
 

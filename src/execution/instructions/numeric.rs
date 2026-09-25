@@ -6,6 +6,7 @@
 use core::ops::ControlFlow;
 
 use crate::{
+    core::utils::BytecodeProvider,
     execution::{
         assert_validated::UnwrapValidatedExt,
         instructions::{InterpreterLoopOutcome, State},
@@ -15,28 +16,36 @@ use crate::{
 
 // t.const
 #[inline(always)]
-pub unsafe fn i32_const(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_const<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let constant = state.wasm.decode_var_i32().unwrap_validated();
     state.resumable.stack.push_value(constant.into())?;
     Ok(ControlFlow::Continue(()))
 }
 
 #[inline(always)]
-pub unsafe fn i64_const(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_const<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let constant = state.wasm.decode_var_i64().unwrap_validated();
     state.resumable.stack.push_value(constant.into())?;
     Ok(ControlFlow::Continue(()))
 }
 
 #[inline(always)]
-pub unsafe fn f32_const(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_const<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let constant = F32::from_bits(state.wasm.decode_f32().unwrap_validated());
     state.resumable.stack.push_value(constant.into())?;
     Ok(ControlFlow::Continue(()))
 }
 
 #[inline(always)]
-pub unsafe fn f64_const(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_const<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let constant = F64::from_bits(state.wasm.decode_f64().unwrap_validated());
     state.resumable.stack.push_value(constant.into())?;
     Ok(ControlFlow::Continue(()))
@@ -44,7 +53,9 @@ pub unsafe fn f64_const(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 
 // i32.unop
 #[inline(always)]
-pub unsafe fn i32_clz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_clz<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -56,7 +67,9 @@ pub unsafe fn i32_clz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i32_ctz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_ctz<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -68,8 +81,8 @@ pub unsafe fn i32_ctz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i32_popcnt(
-    state: State,
+pub unsafe fn i32_popcnt<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
@@ -83,7 +96,9 @@ pub unsafe fn i32_popcnt(
 
 // i64.unop
 #[inline(always)]
-pub unsafe fn i64_clz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_clz<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -95,7 +110,9 @@ pub unsafe fn i64_clz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i64_ctz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_ctz<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -107,8 +124,8 @@ pub unsafe fn i64_ctz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i64_popcnt(
-    state: State,
+pub unsafe fn i64_popcnt<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i64 = unsafe { state.resumable.stack.pop_value() }
@@ -122,7 +139,9 @@ pub unsafe fn i64_popcnt(
 
 // f32.unop
 #[inline(always)]
-pub unsafe fn f32_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_abs<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -134,7 +153,9 @@ pub unsafe fn f32_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f32_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_neg<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -146,7 +167,9 @@ pub unsafe fn f32_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f32_ceil(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_ceil<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -158,7 +181,9 @@ pub unsafe fn f32_ceil(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn f32_floor(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_floor<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -170,7 +195,9 @@ pub unsafe fn f32_floor(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn f32_trunc(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_trunc<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -182,8 +209,8 @@ pub unsafe fn f32_trunc(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn f32_nearest(
-    state: State,
+pub unsafe fn f32_nearest<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -196,7 +223,9 @@ pub unsafe fn f32_nearest(
 }
 
 #[inline(always)]
-pub unsafe fn f32_sqrt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_sqrt<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -209,7 +238,9 @@ pub unsafe fn f32_sqrt(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
 // f64.unop
 #[inline(always)]
-pub unsafe fn f64_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_abs<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -221,7 +252,9 @@ pub unsafe fn f64_abs(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f64_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_neg<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -233,7 +266,9 @@ pub unsafe fn f64_neg(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f64_ceil(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_ceil<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -245,7 +280,9 @@ pub unsafe fn f64_ceil(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn f64_floor(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_floor<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -257,7 +294,9 @@ pub unsafe fn f64_floor(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn f64_trunc(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_trunc<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -269,8 +308,8 @@ pub unsafe fn f64_trunc(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn f64_nearest(
-    state: State,
+pub unsafe fn f64_nearest<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -283,7 +322,9 @@ pub unsafe fn f64_nearest(
 }
 
 #[inline(always)]
-pub unsafe fn f64_sqrt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_sqrt<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -296,7 +337,9 @@ pub unsafe fn f64_sqrt(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
 // i32.binop
 #[inline(always)]
-pub unsafe fn i32_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_add<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -312,7 +355,9 @@ pub unsafe fn i32_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i32_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_sub<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -328,7 +373,9 @@ pub unsafe fn i32_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i32_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_mul<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -344,7 +391,9 @@ pub unsafe fn i32_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i32_div_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_div_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let dividend: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -368,7 +417,9 @@ pub unsafe fn i32_div_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i32_div_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_div_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let dividend: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -392,7 +443,9 @@ pub unsafe fn i32_div_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i32_rem_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_rem_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let dividend: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -414,7 +467,9 @@ pub unsafe fn i32_rem_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i32_rem_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_rem_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let dividend: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -439,7 +494,9 @@ pub unsafe fn i32_rem_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i32_and(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_and<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -455,7 +512,9 @@ pub unsafe fn i32_and(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i32_or(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_or<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -471,7 +530,9 @@ pub unsafe fn i32_or(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn i32_xor(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_xor<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -487,7 +548,9 @@ pub unsafe fn i32_xor(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i32_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_shl<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -503,7 +566,9 @@ pub unsafe fn i32_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i32_shr_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_shr_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -520,7 +585,9 @@ pub unsafe fn i32_shr_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i32_shr_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_shr_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -537,7 +604,9 @@ pub unsafe fn i32_shr_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i32_rotl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_rotl<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -554,7 +623,9 @@ pub unsafe fn i32_rotl(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i32_rotr(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_rotr<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -572,7 +643,9 @@ pub unsafe fn i32_rotr(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
 // i64.binop
 #[inline(always)]
-pub unsafe fn i64_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_add<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -588,7 +661,9 @@ pub unsafe fn i64_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i64_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_sub<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -604,7 +679,9 @@ pub unsafe fn i64_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i64_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_mul<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -620,7 +697,9 @@ pub unsafe fn i64_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i64_div_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_div_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let dividend: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -644,7 +723,9 @@ pub unsafe fn i64_div_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i64_div_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_div_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let dividend: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -668,7 +749,9 @@ pub unsafe fn i64_div_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i64_rem_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_rem_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let dividend: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -690,7 +773,9 @@ pub unsafe fn i64_rem_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i64_rem_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_rem_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let dividend: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -714,7 +799,9 @@ pub unsafe fn i64_rem_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i64_and(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_and<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -731,7 +818,9 @@ pub unsafe fn i64_and(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i64_or(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_or<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -748,7 +837,9 @@ pub unsafe fn i64_or(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn i64_xor(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_xor<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -765,7 +856,9 @@ pub unsafe fn i64_xor(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i64_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_shl<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -782,7 +875,9 @@ pub unsafe fn i64_shl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn i64_shr_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_shr_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -799,7 +894,9 @@ pub unsafe fn i64_shr_s(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i64_shr_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_shr_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -816,7 +913,9 @@ pub unsafe fn i64_shr_u(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i64_rotl(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_rotl<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -833,7 +932,9 @@ pub unsafe fn i64_rotl(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i64_rotr(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_rotr<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -851,7 +952,9 @@ pub unsafe fn i64_rotr(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
 // f32.binop
 #[inline(always)]
-pub unsafe fn f32_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_add<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -867,7 +970,9 @@ pub unsafe fn f32_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f32_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_sub<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -883,7 +988,9 @@ pub unsafe fn f32_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f32_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_mul<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -899,7 +1006,9 @@ pub unsafe fn f32_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f32_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_div<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -915,7 +1024,9 @@ pub unsafe fn f32_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f32_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_min<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -931,7 +1042,9 @@ pub unsafe fn f32_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f32_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_max<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -947,8 +1060,8 @@ pub unsafe fn f32_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f32_copysign(
-    state: State,
+pub unsafe fn f32_copysign<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -966,7 +1079,9 @@ pub unsafe fn f32_copysign(
 
 // f64.binop
 #[inline(always)]
-pub unsafe fn f64_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_add<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -982,7 +1097,9 @@ pub unsafe fn f64_add(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f64_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_sub<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -998,7 +1115,9 @@ pub unsafe fn f64_sub(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f64_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_mul<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1014,7 +1133,9 @@ pub unsafe fn f64_mul(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f64_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_div<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1030,7 +1151,9 @@ pub unsafe fn f64_div(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f64_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_min<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1046,7 +1169,9 @@ pub unsafe fn f64_min(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f64_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_max<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1062,8 +1187,8 @@ pub unsafe fn f64_max(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 }
 
 #[inline(always)]
-pub unsafe fn f64_copysign(
-    state: State,
+pub unsafe fn f64_copysign<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -1081,7 +1206,9 @@ pub unsafe fn f64_copysign(
 
 // i32.testop
 #[inline(always)]
-pub unsafe fn i32_eqz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_eqz<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1095,7 +1222,9 @@ pub unsafe fn i32_eqz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 
 // i64.testop
 #[inline(always)]
-pub unsafe fn i64_eqz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_eqz<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1109,7 +1238,9 @@ pub unsafe fn i64_eqz(state: State) -> Result<ControlFlow<InterpreterLoopOutcome
 
 // i32.relop
 #[inline(always)]
-pub unsafe fn i32_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_eq<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1126,7 +1257,9 @@ pub unsafe fn i32_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn i32_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_ne<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1143,7 +1276,9 @@ pub unsafe fn i32_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn i32_lt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_lt_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1160,7 +1295,9 @@ pub unsafe fn i32_lt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i32_lt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_lt_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1177,7 +1314,9 @@ pub unsafe fn i32_lt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i32_gt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_gt_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1194,7 +1333,9 @@ pub unsafe fn i32_gt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i32_gt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_gt_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1211,7 +1352,9 @@ pub unsafe fn i32_gt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i32_le_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_le_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1228,7 +1371,9 @@ pub unsafe fn i32_le_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i32_le_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_le_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1245,7 +1390,9 @@ pub unsafe fn i32_le_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i32_ge_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_ge_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1262,7 +1409,9 @@ pub unsafe fn i32_ge_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i32_ge_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_ge_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1280,7 +1429,9 @@ pub unsafe fn i32_ge_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
 // i64.relop
 #[inline(always)]
-pub unsafe fn i64_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_eq<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1297,7 +1448,9 @@ pub unsafe fn i64_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn i64_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_ne<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1314,7 +1467,9 @@ pub unsafe fn i64_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn i64_lt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_lt_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1331,7 +1486,9 @@ pub unsafe fn i64_lt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i64_lt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_lt_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1348,7 +1505,9 @@ pub unsafe fn i64_lt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i64_gt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_gt_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1365,7 +1524,9 @@ pub unsafe fn i64_gt_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i64_gt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_gt_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1382,7 +1543,9 @@ pub unsafe fn i64_gt_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i64_le_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_le_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1399,7 +1562,9 @@ pub unsafe fn i64_le_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i64_le_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_le_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1416,7 +1581,9 @@ pub unsafe fn i64_le_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i64_ge_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_ge_s<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1433,7 +1600,9 @@ pub unsafe fn i64_ge_s(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i64_ge_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_ge_u<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: i64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1451,7 +1620,9 @@ pub unsafe fn i64_ge_u(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 
 // f32.relop
 #[inline(always)]
-pub unsafe fn f32_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_eq<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1468,7 +1639,9 @@ pub unsafe fn f32_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn f32_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_ne<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1485,7 +1658,9 @@ pub unsafe fn f32_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn f32_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_lt<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1502,7 +1677,9 @@ pub unsafe fn f32_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn f32_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_gt<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1519,7 +1696,9 @@ pub unsafe fn f32_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn f32_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_le<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1536,7 +1715,9 @@ pub unsafe fn f32_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn f32_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_ge<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1554,7 +1735,9 @@ pub unsafe fn f32_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 
 // f64.relop
 #[inline(always)]
-pub unsafe fn f64_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_eq<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1571,7 +1754,9 @@ pub unsafe fn f64_eq(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn f64_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_ne<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1588,7 +1773,9 @@ pub unsafe fn f64_ne(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn f64_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_lt<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1605,7 +1792,9 @@ pub unsafe fn f64_lt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn f64_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_gt<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1622,7 +1811,9 @@ pub unsafe fn f64_gt(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn f64_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_le<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1639,7 +1830,9 @@ pub unsafe fn f64_le(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 }
 
 #[inline(always)]
-pub unsafe fn f64_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_ge<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v2: F64 = unsafe { state.resumable.stack.pop_value() }
         .try_into()
@@ -1658,8 +1851,8 @@ pub unsafe fn f64_ge(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 // i32.cvtop
 
 #[inline(always)]
-pub unsafe fn i32_wrap_i64(
-    state: State,
+pub unsafe fn i32_wrap_i64<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: i64 = unsafe { state.resumable.stack.pop_value() }
@@ -1672,8 +1865,8 @@ pub unsafe fn i32_wrap_i64(
 }
 
 #[inline(always)]
-pub unsafe fn i32_trunc_f32_s(
-    state: State,
+pub unsafe fn i32_trunc_f32_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -1696,8 +1889,8 @@ pub unsafe fn i32_trunc_f32_s(
 }
 
 #[inline(always)]
-pub unsafe fn i32_trunc_f32_u(
-    state: State,
+pub unsafe fn i32_trunc_f32_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -1720,8 +1913,8 @@ pub unsafe fn i32_trunc_f32_u(
 }
 
 #[inline(always)]
-pub unsafe fn i32_trunc_f64_s(
-    state: State,
+pub unsafe fn i32_trunc_f64_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -1744,8 +1937,8 @@ pub unsafe fn i32_trunc_f64_s(
 }
 
 #[inline(always)]
-pub unsafe fn i32_trunc_f64_u(
-    state: State,
+pub unsafe fn i32_trunc_f64_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -1768,8 +1961,8 @@ pub unsafe fn i32_trunc_f64_u(
 }
 
 #[inline(always)]
-pub unsafe fn i32_reinterpret_f32(
-    state: State,
+pub unsafe fn i32_reinterpret_f32<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -1782,8 +1975,8 @@ pub unsafe fn i32_reinterpret_f32(
 }
 
 #[inline(always)]
-pub unsafe fn i32_extend8_s(
-    state: State,
+pub unsafe fn i32_extend8_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let mut v: u32 = unsafe { state.resumable.stack.pop_value() }
@@ -1802,8 +1995,8 @@ pub unsafe fn i32_extend8_s(
 }
 
 #[inline(always)]
-pub unsafe fn i32_extend16_s(
-    state: State,
+pub unsafe fn i32_extend16_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let mut v: u32 = unsafe { state.resumable.stack.pop_value() }
@@ -1826,8 +2019,8 @@ pub unsafe fn i32_extend16_s(
 }
 
 #[inline(always)]
-pub unsafe fn i32_trunc_sat_f32_s(
-    state: State,
+pub unsafe fn i32_trunc_sat_f32_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -1850,8 +2043,8 @@ pub unsafe fn i32_trunc_sat_f32_s(
 }
 
 #[inline(always)]
-pub unsafe fn i32_trunc_sat_f32_u(
-    state: State,
+pub unsafe fn i32_trunc_sat_f32_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -1872,8 +2065,8 @@ pub unsafe fn i32_trunc_sat_f32_u(
 }
 
 #[inline(always)]
-pub unsafe fn i32_trunc_sat_f64_s(
-    state: State,
+pub unsafe fn i32_trunc_sat_f64_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -1896,8 +2089,8 @@ pub unsafe fn i32_trunc_sat_f64_s(
 }
 
 #[inline(always)]
-pub unsafe fn i32_trunc_sat_f64_u(
-    state: State,
+pub unsafe fn i32_trunc_sat_f64_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -1920,8 +2113,8 @@ pub unsafe fn i32_trunc_sat_f64_u(
 // i64.cvtop
 
 #[inline(always)]
-pub unsafe fn i64_extend_i32_s(
-    state: State,
+pub unsafe fn i64_extend_i32_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: i32 = unsafe { state.resumable.stack.pop_value() }
@@ -1935,8 +2128,8 @@ pub unsafe fn i64_extend_i32_s(
 }
 
 #[inline(always)]
-pub unsafe fn i64_extend_i32_u(
-    state: State,
+pub unsafe fn i64_extend_i32_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: i32 = unsafe { state.resumable.stack.pop_value() }
@@ -1950,8 +2143,8 @@ pub unsafe fn i64_extend_i32_u(
 }
 
 #[inline(always)]
-pub unsafe fn i64_trunc_f32_s(
-    state: State,
+pub unsafe fn i64_trunc_f32_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -1974,8 +2167,8 @@ pub unsafe fn i64_trunc_f32_s(
 }
 
 #[inline(always)]
-pub unsafe fn i64_trunc_f32_u(
-    state: State,
+pub unsafe fn i64_trunc_f32_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -1998,8 +2191,8 @@ pub unsafe fn i64_trunc_f32_u(
 }
 
 #[inline(always)]
-pub unsafe fn i64_trunc_f64_s(
-    state: State,
+pub unsafe fn i64_trunc_f64_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -2022,8 +2215,8 @@ pub unsafe fn i64_trunc_f64_s(
 }
 
 #[inline(always)]
-pub unsafe fn i64_trunc_f64_u(
-    state: State,
+pub unsafe fn i64_trunc_f64_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -2046,8 +2239,8 @@ pub unsafe fn i64_trunc_f64_u(
 }
 
 #[inline(always)]
-pub unsafe fn i64_reinterpret_f64(
-    state: State,
+pub unsafe fn i64_reinterpret_f64<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -2060,8 +2253,8 @@ pub unsafe fn i64_reinterpret_f64(
 }
 
 #[inline(always)]
-pub unsafe fn i64_extend8_s(
-    state: State,
+pub unsafe fn i64_extend8_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let mut v: u64 = unsafe { state.resumable.stack.pop_value() }
@@ -2084,8 +2277,8 @@ pub unsafe fn i64_extend8_s(
 }
 
 #[inline(always)]
-pub unsafe fn i64_extend16_s(
-    state: State,
+pub unsafe fn i64_extend16_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let mut v: u64 = unsafe { state.resumable.stack.pop_value() }
@@ -2108,8 +2301,8 @@ pub unsafe fn i64_extend16_s(
 }
 
 #[inline(always)]
-pub unsafe fn i64_extend32_s(
-    state: State,
+pub unsafe fn i64_extend32_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let mut v: u64 = unsafe { state.resumable.stack.pop_value() }
@@ -2132,8 +2325,8 @@ pub unsafe fn i64_extend32_s(
 }
 
 #[inline(always)]
-pub unsafe fn i64_trunc_sat_f32_s(
-    state: State,
+pub unsafe fn i64_trunc_sat_f32_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -2156,8 +2349,8 @@ pub unsafe fn i64_trunc_sat_f32_s(
 }
 
 #[inline(always)]
-pub unsafe fn i64_trunc_sat_f32_u(
-    state: State,
+pub unsafe fn i64_trunc_sat_f32_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -2178,8 +2371,8 @@ pub unsafe fn i64_trunc_sat_f32_u(
 }
 
 #[inline(always)]
-pub unsafe fn i64_trunc_sat_f64_s(
-    state: State,
+pub unsafe fn i64_trunc_sat_f64_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -2202,8 +2395,8 @@ pub unsafe fn i64_trunc_sat_f64_s(
 }
 
 #[inline(always)]
-pub unsafe fn i64_trunc_sat_f64_u(
-    state: State,
+pub unsafe fn i64_trunc_sat_f64_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -2226,8 +2419,8 @@ pub unsafe fn i64_trunc_sat_f64_u(
 // f32.cvtop
 
 #[inline(always)]
-pub unsafe fn f32_convert_i32_s(
-    state: State,
+pub unsafe fn f32_convert_i32_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: i32 = unsafe { state.resumable.stack.pop_value() }
@@ -2240,8 +2433,8 @@ pub unsafe fn f32_convert_i32_s(
 }
 
 #[inline(always)]
-pub unsafe fn f32_convert_i32_u(
-    state: State,
+pub unsafe fn f32_convert_i32_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: i32 = unsafe { state.resumable.stack.pop_value() }
@@ -2254,8 +2447,8 @@ pub unsafe fn f32_convert_i32_u(
 }
 
 #[inline(always)]
-pub unsafe fn f32_convert_i64_s(
-    state: State,
+pub unsafe fn f32_convert_i64_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: i64 = unsafe { state.resumable.stack.pop_value() }
@@ -2268,8 +2461,8 @@ pub unsafe fn f32_convert_i64_s(
 }
 
 #[inline(always)]
-pub unsafe fn f32_convert_i64_u(
-    state: State,
+pub unsafe fn f32_convert_i64_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: i64 = unsafe { state.resumable.stack.pop_value() }
@@ -2282,8 +2475,8 @@ pub unsafe fn f32_convert_i64_u(
 }
 
 #[inline(always)]
-pub unsafe fn f32_demote_f64(
-    state: State,
+pub unsafe fn f32_demote_f64<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F64 = unsafe { state.resumable.stack.pop_value() }
@@ -2296,8 +2489,8 @@ pub unsafe fn f32_demote_f64(
 }
 
 #[inline(always)]
-pub unsafe fn f32_reinterpret_i32(
-    state: State,
+pub unsafe fn f32_reinterpret_i32<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i32 = unsafe { state.resumable.stack.pop_value() }
@@ -2312,8 +2505,8 @@ pub unsafe fn f32_reinterpret_i32(
 // f64.cvtop
 
 #[inline(always)]
-pub unsafe fn f64_convert_i32_s(
-    state: State,
+pub unsafe fn f64_convert_i32_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: i32 = unsafe { state.resumable.stack.pop_value() }
@@ -2326,8 +2519,8 @@ pub unsafe fn f64_convert_i32_s(
 }
 
 #[inline(always)]
-pub unsafe fn f64_convert_i32_u(
-    state: State,
+pub unsafe fn f64_convert_i32_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: i32 = unsafe { state.resumable.stack.pop_value() }
@@ -2340,8 +2533,8 @@ pub unsafe fn f64_convert_i32_u(
 }
 
 #[inline(always)]
-pub unsafe fn f64_convert_i64_s(
-    state: State,
+pub unsafe fn f64_convert_i64_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: i64 = unsafe { state.resumable.stack.pop_value() }
@@ -2354,8 +2547,8 @@ pub unsafe fn f64_convert_i64_s(
 }
 
 #[inline(always)]
-pub unsafe fn f64_convert_i64_u(
-    state: State,
+pub unsafe fn f64_convert_i64_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: i64 = unsafe { state.resumable.stack.pop_value() }
@@ -2368,8 +2561,8 @@ pub unsafe fn f64_convert_i64_u(
 }
 
 #[inline(always)]
-pub unsafe fn f64_promote_f32(
-    state: State,
+pub unsafe fn f64_promote_f32<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v: F32 = unsafe { state.resumable.stack.pop_value() }
@@ -2382,8 +2575,8 @@ pub unsafe fn f64_promote_f32(
 }
 
 #[inline(always)]
-pub unsafe fn f64_reinterpret_i64(
-    state: State,
+pub unsafe fn f64_reinterpret_i64<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let v1: i64 = unsafe { state.resumable.stack.pop_value() }
