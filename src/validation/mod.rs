@@ -431,7 +431,23 @@ impl Module {
     /// Returns a list of all custom sections in the bytecode. Every custom
     /// section consists of its name and the custom section's bytecode
     /// (excluding the name itself).
-    pub fn custom_sections(&self) -> &[CustomSection] {
-        &self.custom_sections
+    pub fn custom_sections<'a, 'b>(
+        &'a self,
+        wasm: &'b [u8],
+    ) -> Map<
+        core::slice::Iter<'a, CustomSection>,
+        impl FnMut(&'a CustomSection) -> (&'b str, &'b [u8]),
+    > {
+        self.custom_sections.iter().map(|custom_section| {
+            (
+                core::str::from_utf8(
+                    &wasm[custom_section.name.from
+                        ..custom_section.name.from + custom_section.name.len],
+                )
+                .unwrap_validated(),
+                &wasm[custom_section.contents.from
+                    ..custom_section.contents.from + custom_section.contents.len],
+            )
+        })
     }
 }

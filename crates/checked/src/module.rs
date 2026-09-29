@@ -1,5 +1,7 @@
 use core::iter::Map;
-use dlr_wasm_interpreter::{Export, ExternType, Import, ValidationConfig, ValidationError};
+use dlr_wasm_interpreter::{
+    CustomSection, Export, ExternType, Import, ValidationConfig, ValidationError,
+};
 
 #[derive(Clone, Debug)]
 pub struct Module<'wasm> {
@@ -29,5 +31,14 @@ impl<'wasm> Module<'wasm> {
         &'a self,
     ) -> Map<core::slice::Iter<'a, Export>, impl FnMut(&'a Export) -> (&'a str, ExternType)> {
         self.inner.exports(self.wasm)
+    }
+
+    pub fn custom_sections<'a>(
+        &'a self,
+    ) -> Map<
+        core::slice::Iter<'a, CustomSection>,
+        impl FnMut(&'a CustomSection) -> (&'a str, &'a [u8]),
+    > {
+        self.inner.custom_sections(self.wasm)
     }
 }
