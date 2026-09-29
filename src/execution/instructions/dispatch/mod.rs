@@ -16,7 +16,7 @@ use crate::{
 };
 
 pub(crate) mod loop_call;
-// pub(crate) mod loop_match;
+pub(crate) mod loop_match;
 #[cfg(feature = "nightly")]
 pub(crate) mod tail_calls;
 
@@ -93,14 +93,13 @@ pub(crate) unsafe fn run<T: Config, T2: BytecodeProvider>(
         DispatchMechanism::LoopMatch => {
             // SAFETY: The caller ensures that the resumable is valid in this store and that the
             // store is valid itself.
-            // unsafe { loop_match::run(resumable, store) }
-            unreachable!()
+            unsafe { loop_match::run(resumable, store, bytecode_provider) }
         }
         #[cfg(feature = "nightly")]
         DispatchMechanism::TailCalls => {
             // SAFETY: The caller ensures that the resumable is valid in this store and that the
             // store is valid itself.
-            unsafe { tail_calls::run(resumable, store) }
+            unsafe { tail_calls::run(resumable, store, bytecode_provider) }
         }
     }
 }
