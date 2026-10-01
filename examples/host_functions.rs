@@ -107,8 +107,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Since `read_num` was declared first as an import, it precedes `print_num`.
 
     let bytecode_provider = SingleBytecodeRef(&wasm_bytecode);
-    // SAFETY: The externvals come from this store, as witnessed by The `Store::func_alloc` calls
-    // above.
+    // SAFETY:
+    // 1. The externvals come from this store, as witnessed by The `Store::func_alloc` calls
+    //    above.
+    // 2. `bytecode_provider` always returns the same bytecode, which is associated with this
+    //    module.
+    // 3. There are no previous instantiations.
     let instantiation_outcome: InstantiationOutcome = unsafe {
         store.module_instantiate(
             &module,

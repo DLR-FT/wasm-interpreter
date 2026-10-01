@@ -147,8 +147,13 @@ impl Linker {
     ///
     /// # Safety
     ///
-    /// It must be guaranteed that this [`Linker`] is only ever used with one
-    /// specific [`Store`].
+    /// 1. It must be guaranteed that this [`Linker`] is only ever used with one
+    ///    specific [`Store`].
+    /// 2. `bytecode_provider.get_bytecode(bytecode_id)` must return the reference of the bytecode
+    ///    that corresponds to the `module`.
+    /// 3. `bytecode_provider` satisfies the safety guarantees of all previous
+    ///    `self.module_instantiate` calls.
+    // TODO finalize safety comments
     pub unsafe fn module_instantiate<T: Config, T2: BytecodeProvider>(
         &self,
         store: &mut Store<T>,
@@ -159,12 +164,15 @@ impl Linker {
     ) -> Option<Result<InstantiationOutcome, RuntimeError>> {
         let wasm = bytecode_provider.get_bytecode(bytecode_id);
         self.instantiate_pre(module, wasm).map(|instantiate_pre|
-            // SAFETY: Because all extern values in a single linker can only come
-            // from one specific store, the current store must be the same store
-            // used to define all previous extern values. Therefore, the extern
-            // values in `instantiate_pre` must be from the same store that is
-            // passed now. Thus, using them as imports for module instantiation is
-            // sound.
+            // SAFETY: 
+            // 1. Because all extern values in a single linker can only come from one specific
+            //    store, the current store must be the same store used to define all previous extern
+            //    values. Therefore, the extern values in `instantiate_pre` must be from the same
+            //    store that is passed now. Thus, using them as imports for module instantiation is
+            //    sound.
+            // 2. The `bytecode_id` / `module` association is ensured by the caller.
+            // 3. The consistency of `bytecode_provider` wrt previous instantiations is ensured by
+            //    the caller.
             unsafe { store.module_instantiate(module, bytecode_id, instantiate_pre, maybe_fuel, bytecode_provider) })
     }
 }

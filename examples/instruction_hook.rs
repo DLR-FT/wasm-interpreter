@@ -65,7 +65,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut store: Store<MyHookConfig> = Store::new(MyHookConfig::default());
 
     let bytecode_provider = SingleBytecodeRef(&wasm_bytecode);
-    // SAFETY: There are no extern values.
+    // SAFETY:
+    // 1. There are no extern values.
+    // 2. `bytecode_provider` always returns the same bytecode, which is associated with this
+    //    module.
+    // 3. There are no previous instantiations.
     let module_addr: ModuleAddr =
         unsafe { store.module_instantiate(&module, 0, vec![], None, &bytecode_provider) }?
             .module_addr;

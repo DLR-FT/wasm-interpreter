@@ -25,8 +25,12 @@ fn invoke_typed() {
 
     let bytecode_provider = SingleBytecodeRef(&wasm_bytes);
 
-    // SAFETY: There are no extern values and therefore none can be invalid in
-    // this store.
+    // SAFETY:
+    // 1. There are no extern values and therefore none can be invalid in
+    //    this store.
+    // 2. `bytecode_provider` always returns the same bytecode, which is associated with this
+    //    module.
+    // 3. There are no previous instantiations.
     let module =
         unsafe { store.module_instantiate(&module, 0, Vec::new(), None, &bytecode_provider) }
             .unwrap()

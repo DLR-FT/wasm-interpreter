@@ -74,7 +74,11 @@ pub fn run<T: Config>(interpreter_config: T) -> f32 {
     );
 
     let bytecode_provider = SingleBytecodeRef(COREMARK_MINIMAL_BYTECODE);
-    // SAFETY: This function address was just returned from a function allocation in the same store.
+    // SAFETY:
+    // 1. This function address was just returned from a function allocation in the same store.
+    // 2. `bytecode_provider` always returns the same bytecode reference, which is associated with
+    //    this module.
+    // 3. There are no previous instantiation calls.
     let module = unsafe {
         store.module_instantiate(
             &module,

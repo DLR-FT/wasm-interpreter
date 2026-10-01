@@ -87,8 +87,15 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let extern_vals = extern_vals.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `ExternVal`s came from the
-        // current store through their store ids.
+        // SAFETY:
+        // 1. It was just checked that the `ExternVal`s came from the current store through their
+        //    store ids.
+        // 2. The module was just registered to `self.bytecode_refs`, therefore the association
+        //    between `bytecode_id` and `module.inner` holds.
+        // 3. `self.bytecode_refs.add_bytecode_ref` is only called here in this crate. Therefore it
+        //    maintains an invariant where bytecode_ids correspond to the order of the modules being
+        //    instantiatied. This invariant is sufficient to show that `self.bytecode_refs` is
+        //    consistent with previous instantiations.
         let instantiation_outcome = unsafe {
             self.inner.module_instantiate(
                 &module.inner,
