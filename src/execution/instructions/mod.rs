@@ -82,6 +82,8 @@ pub enum InterpreterLoopOutcome {
 /// - The current sidetable must be correct for the module of the current module instance.
 /// - The end marker for the current function must point to the end index of the current function in
 ///   the current module's bytecode.
+/// - `bytecode_id` of each [`ModuleInst`] within [`StoreInner`] must correspond to its associated
+///   bytecode reference in `bytecode_provider`
 // TODO possibly improve safety requirements
 pub(crate) struct State<'wasm, 'a, 'sidetable, T2: BytecodeProvider> {
     wasm: &'a mut WasmDecoder<'wasm>,

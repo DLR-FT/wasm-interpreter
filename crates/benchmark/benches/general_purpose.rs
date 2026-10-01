@@ -71,10 +71,10 @@ macro_rules! bench_wasm {
             let bytecode_provider = SingleBytecodeRef(&wasm_bytes);
             // SAFETY: Only one store is used. Therefore, this must always be
             // the correct one.
-            let module = unsafe { store.module_instantiate(&our_module, &bytecode_provider, 0, Vec::new(), None) }.unwrap().module_addr;
+            let module = unsafe { store.module_instantiate(&our_module, 0, Vec::new(), None, &bytecode_provider) }.unwrap().module_addr;
             // SAFETY: Only one store is used. Therefore, this must always be
             // the correct one.
-            let our_fn = unsafe { store.instance_export(module, &bytecode_provider, $entry_function) }
+            let our_fn = unsafe { store.instance_export(module, $entry_function, &bytecode_provider ) }
                 .unwrap()
                 .as_func()
                 .unwrap();

@@ -67,12 +67,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let bytecode_provider = SingleBytecodeRef(&wasm_bytecode);
     // SAFETY: There are no extern values.
     let module_addr: ModuleAddr =
-        unsafe { store.module_instantiate(&module, &bytecode_provider, 0, vec![], None) }?
+        unsafe { store.module_instantiate(&module, 0, vec![], None, &bytecode_provider) }?
             .module_addr;
 
     // SAFETY: The module address was just returned from module instantiation in the same store.
     let fibonacci: FuncAddr =
-        unsafe { store.instance_export(module_addr, &bytecode_provider, "fibonacci") }?
+        unsafe { store.instance_export(module_addr, "fibonacci", &bytecode_provider) }?
             .as_func()
             .ok_or("fibonacci is not a function")?;
 

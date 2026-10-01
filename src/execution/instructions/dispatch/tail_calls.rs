@@ -10,6 +10,7 @@ use crate::{
     AddrVec, BytecodeProvider, Config, ModuleAddr, RuntimeError, Store, WasmResumable,
 };
 
+//TODO: Add trait bound T2: BytecodeProvider in the future when rust type checker can check for it
 type InstructionHandlerFn<T, T2> =
     for<'wasm, 'modules> unsafe extern "rust-preserve-none" fn(
         wasm: WasmDecoder<'wasm>,
@@ -45,7 +46,9 @@ type InstructionHandlerFn<T, T2> =
 ///
 /// # Safety
 ///
-/// The given resumable must be valid in the given store and the store itself must be valid.
+/// 1. The given resumable must be valid in the given store and the store itself must be valid.
+/// 2. The bytecode_id of each [`ModuleInst`] must correspond to its associated bytecode reference
+///    in `bytecode_provider`.
 #[inline(never)]
 pub(super) unsafe fn run<T: Config, T2: BytecodeProvider>(
     resumable: &mut WasmResumable,

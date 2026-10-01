@@ -46,11 +46,11 @@
 //! let bytecode_provider = SingleBytecodeRef(&wasm_bytecode);
 //! // Instantiate the module to create a module instance, returning its address
 //! // SAFETY: There are no extern values.
-//! let module_addr = unsafe { store.module_instantiate(&module, &bytecode_provider, 0, vec![], None) }?.module_addr;
+//! let module_addr = unsafe { store.module_instantiate(&module, 0, vec![], None, &bytecode_provider) }?.module_addr;
 //!
 //! // Get the function address of the exported add_one function
 //! // SAFETY: The module address was returned from the same store.
-//! let add_one_extern = unsafe { store.instance_export(module_addr, &bytecode_provider, "add_one") }?;
+//! let add_one_extern = unsafe { store.instance_export(module_addr, "add_one", &bytecode_provider) }?;
 //! let add_one = add_one_extern.as_func().ok_or("add_one is not a function")?;
 //!
 //! // Invoke the function

@@ -41,7 +41,9 @@ type InstructionHandlerFn<T2> =
 ///
 /// # Safety
 ///
-/// The given resumable must be valid in the given store and the store itself must be valid.
+/// 1. The given resumable must be valid in the given store and the store itself must be valid.
+/// 2. The bytecode_id of each [`ModuleInst`] must correspond to its associated bytecode reference
+///    in `bytecode_provider`.
 #[inline(never)]
 pub unsafe fn run<T: Config, T2: BytecodeProvider>(
     resumable: &mut WasmResumable,

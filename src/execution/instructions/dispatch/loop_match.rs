@@ -25,7 +25,9 @@ use crate::{
 ///
 /// # Safety
 ///
-/// The given resumable must be valid in the given store and the store itself must be valid.
+/// 1. The given resumable must be valid in the given store and the store itself must be valid.
+/// 2. The bytecode_id of each module instance within store must correspond to its associated
+///    bytecode reference in `bytecode_provider`.
 #[inline(never)]
 pub unsafe fn run<T: Config, T2: BytecodeProvider>(
     resumable: &mut WasmResumable,
@@ -112,6 +114,8 @@ pub unsafe fn run<T: Config, T2: BytecodeProvider>(
                                     //   current module.
                                     // - The end marker for the current function was computed
                                     //   using the current function instance.
+                                    // - Consistency of the `bytecode_provider` is ensured by the
+                                    //   caller
                                     if let ControlFlow::Break(outcome) = unsafe { $handler_fn(state) }? {
                                         break outcome;
                                     }
@@ -155,6 +159,8 @@ pub unsafe fn run<T: Config, T2: BytecodeProvider>(
                                     //   current module.
                                     // - The end marker for the current function was computed
                                     //   using the current function instance.
+                                    // - Consistency of the `bytecode_provider` is ensured by the
+                                    //   caller
                                     if let ControlFlow::Break(outcome) = unsafe { $handler_fn(state) }? {
                                         break outcome;
                                     }
@@ -196,6 +202,8 @@ pub unsafe fn run<T: Config, T2: BytecodeProvider>(
                                     //   module.
                                     // - The end marker for the current function was computed using
                                     //   the current function instance.
+                                    // - Consistency of the `bytecode_provider` is ensured by the
+                                    //   caller
                                     if let ControlFlow::Break(outcome) = unsafe { $handler_fn(state) }? {
                                         break outcome;
                                     }

@@ -112,13 +112,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let instantiation_outcome: InstantiationOutcome = unsafe {
         store.module_instantiate(
             &module,
-            &bytecode_provider,
             0,
             vec![
                 ExternVal::Func(host_read_num_addr),
                 ExternVal::Func(host_print_num_addr),
             ],
             None,
+            &bytecode_provider,
         )
     }?;
 
@@ -129,7 +129,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // SAFETY: `module_addr`` originates from this store, as witnessed by
     // `Store::module_instantiate` call above.
     let add_two_nums_addr: FuncAddr =
-        unsafe { store.instance_export(module_addr, &bytecode_provider, "add_two_nums") }?
+        unsafe { store.instance_export(module_addr, "add_two_nums", &bytecode_provider) }?
             .as_func()
             .ok_or("add_two_nums is not a function")?;
 

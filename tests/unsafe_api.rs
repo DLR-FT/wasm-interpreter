@@ -28,12 +28,12 @@ fn invoke_typed() {
     // SAFETY: There are no extern values and therefore none can be invalid in
     // this store.
     let module =
-        unsafe { store.module_instantiate(&module, &bytecode_provider, 0, Vec::new(), None) }
+        unsafe { store.module_instantiate(&module, 0, Vec::new(), None, &bytecode_provider) }
             .unwrap()
             .module_addr;
 
     // SAFETY: This module address just came from the same store.
-    let add_two = unsafe { store.instance_export(module, &bytecode_provider, "add_two") }
+    let add_two = unsafe { store.instance_export(module, "add_two", &bytecode_provider) }
         .unwrap()
         .as_func()
         .unwrap();

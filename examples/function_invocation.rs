@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //
     // SAFETY: There are no extern values.
     let instantiation_outcome: InstantiationOutcome =
-        unsafe { store.module_instantiate(&module, &bytecode_provider, 0, vec![], None) }?;
+        unsafe { store.module_instantiate(&module, 0, vec![], None, &bytecode_provider) }?;
 
     let InstantiationOutcome {
         // The address identifying the newly created module instance
@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //
     // SAFETY: The module address was just returned from module instantiation in the same store.
     let add_one: ExternVal =
-        unsafe { store.instance_export(module_addr, &bytecode_provider, "add_one") }?;
+        unsafe { store.instance_export(module_addr, "add_one", &bytecode_provider) }?;
     // Wasm modules can not only export functions, but also globals, memories and tables. We know
     // add_one is a function.
     let add_one: FuncAddr = add_one.as_func().ok_or("add_one is not a function")?;

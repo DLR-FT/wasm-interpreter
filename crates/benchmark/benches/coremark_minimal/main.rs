@@ -78,17 +78,17 @@ pub fn run<T: Config>(interpreter_config: T) -> f32 {
     let module = unsafe {
         store.module_instantiate(
             &module,
-            &bytecode_provider,
             0,
             vec![ExternVal::Func(env_clock_ms_function)],
             None,
+            &bytecode_provider,
         )
     }
     .unwrap()
     .module_addr;
 
     // SAFETY: This module address was just returned from module instantiation in the same store.
-    let run_function = unsafe { store.instance_export(module, &bytecode_provider, "run") }
+    let run_function = unsafe { store.instance_export(module, "run", &bytecode_provider) }
         .unwrap()
         .as_func()
         .unwrap();

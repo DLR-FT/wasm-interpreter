@@ -135,7 +135,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //
     // SAFETY: There exists only a single store in this program.
     let _identity: FuncAddr =
-        unsafe { store.instance_export(main_module_addr, &bytecode_provider, "identity") }?
+        unsafe { store.instance_export(main_module_addr, "identity", &bytecode_provider) }?
             .as_func()
             .ok_or("identity is not a function")?;
     // ... or define the module instance's exports in the linker context and then use `Linker::get`:

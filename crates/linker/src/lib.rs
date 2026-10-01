@@ -165,7 +165,7 @@ impl Linker {
             // values in `instantiate_pre` must be from the same store that is
             // passed now. Thus, using them as imports for module instantiation is
             // sound.
-            unsafe { store.module_instantiate(module, bytecode_provider, bytecode_id, instantiate_pre, maybe_fuel) })
+            unsafe { store.module_instantiate(module, bytecode_id, instantiate_pre, maybe_fuel, bytecode_provider) })
     }
 }
 

@@ -125,15 +125,20 @@ impl<T: Config> Store<T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that any address values contained in the
-    /// [`ExternVal`]s came from the current [`Store`] object.
+    /// The caller has to guarantee that:
+    /// 1. Any address values contained in the [`ExternVal`]s came from the current [`Store`]
+    ///    object.
+    /// 2. `bytecode_provider.get_bytecode(bytecode_id)` must return the reference of the bytecode
+    ///    that corresponds to the `module`.
+    /// 3. `bytecode_provider` satisfies the safety guarantees of all previous
+    ///    `self.module_instantiate` calls.
     pub unsafe fn module_instantiate<T2: BytecodeProvider>(
         &mut self,
         module: &Module,
-        bytecode_provider: &T2,
         bytecode_id: usize,
         extern_vals: Vec<ExternVal>,
         maybe_fuel: Option<u64>,
+        bytecode_provider: &T2,
     ) -> Result<InstantiationOutcome, RuntimeError> {
         let wasm = bytecode_provider.get_bytecode(bytecode_id);
 
@@ -675,8 +680,10 @@ impl<T: Config> Store<T> {
                 todo!("calling host functions from the start function");
             };
 
-            // SAFETY: The resumable just came from the current store.
-            // Therefore, it is always valid in the current store.
+            // SAFETY:
+            // 1. The resumable just came from the current store. Therefore, it is always valid in
+            //    the current store.
+            // 2. `bytecode_provider` argument is supplied as it is.
             match unsafe { self.resume_wasm(resumable, bytecode_provider) }? {
                 RunState::Finished {
                     maybe_remaining_fuel,
@@ -703,13 +710,15 @@ impl<T: Config> Store<T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the [`ModuleAddr`] came from the
-    /// current [`Store`] object.
+    /// The caller has to guarantee that:
+    /// 1. The [`ModuleAddr`] came from the current [`Store`] object.
+    /// 2. `bytecode_provider` satisfies the safety guarantees of all previous
+    ///    `self.module_instantiate` calls.
     pub unsafe fn instance_export<T2: BytecodeProvider>(
         &self,
         module_addr: ModuleAddr,
-        bytecode_provider: &T2,
         name: &str,
+        bytecode_provider: &T2,
     ) -> Result<ExternVal, RuntimeError> {
         // Fetch the module instance because we store them in the [`Store`]
         // SAFETY: The caller ensures the module address to be valid in the
@@ -790,9 +799,11 @@ impl<T: Config> Store<T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the given [`FuncAddr`] and any [`FuncAddr`] or
-    /// [`ExternAddr`](crate::ExternAddr) values contained in the parameter values came from the
-    /// current [`Store`] object.
+    /// The caller has to guarantee that:
+    /// 1. The given [`FuncAddr`] and any [`FuncAddr`] or [`ExternAddr`](crate::ExternAddr) values
+    ///    contained in the parameter values came from the current [`Store`] object.
+    /// 2. `bytecode_provider` satisfies the safety guarantees of all previous
+    ///    `self.module_instantiate` calls.
     pub unsafe fn invoke<T2: BytecodeProvider>(
         &mut self,
         func_addr: FuncAddr,
@@ -804,8 +815,11 @@ impl<T: Config> Store<T> {
         // addresses or extern addresses contained in the parameter values are
         // valid in the current store.
         let resumable = unsafe { self.create_resumable(func_addr, params, maybe_fuel)? };
-        // SAFETY: The resumable just came from the current store. Therefore, it
-        // must be valid in the current store.
+        // SAFETY:
+        // 1. The resumable just came from the current store. Therefore, it must be valid in the
+        //    current store.
+        // 2. The caller ensures that `bytecode_provider` satisfies the safety guarantees of all
+        //    previous `self.module_instantiate` calls.
         unsafe { self.resume(resumable, bytecode_provider) }
     }
 
@@ -1483,16 +1497,20 @@ impl<T: Config> Store<T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the [`Resumable`] came from the current
-    /// [`Store`] object.
+    /// The caller has to guarantee that:
+    /// 1. The [`Resumable`] came from the current [`Store`] object.
+    /// 2. `bytecode_provider` satisfies the safety guarantees of all previous
+    ///    `self.module_instantiate` calls.
     pub unsafe fn resume<T2: BytecodeProvider>(
         &mut self,
         resumable: Resumable,
         bytecode_provider: &T2,
     ) -> Result<RunState, RuntimeError> {
         match resumable {
-            // SAFETY: The caller ensures that this `WasmResumable` came from
-            // the current store.
+            // SAFETY:
+            // 1. The caller ensures that this `WasmResumable` came from the current store.
+            // 2. The caller ensures that `bytecode_provider` satisfies the safety guarantees of all
+            //    previous `self.module_instantiate` calls.
             Resumable::Wasm(wasm_resumable) => unsafe {
                 self.resume_wasm(wasm_resumable, bytecode_provider)
             },
@@ -1512,15 +1530,20 @@ impl<T: Config> Store<T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the [`Resumable`] came from the current
-    /// [`Store`] object.
+    /// 1. The caller has to guarantee that:
+    ///    the [`Resumable`] came from the current [`Store`] object.
+    /// 2. `bytecode_provider` satisfies the safety guarantees of all previous
+    ///    `self.module_instantiate` calls.
     pub unsafe fn resume_wasm<T2: BytecodeProvider>(
         &mut self,
         mut resumable: WasmResumable,
         bytecode_provider: &T2,
     ) -> Result<RunState, RuntimeError> {
-        // SAFETY: The caller guarantees that the resumable comes from the current store which
-        // itself is also automatically valid.
+        // SAFETY:
+        // 1. The caller guarantees that the resumable comes from the current store which itself is
+        //    also automatically valid.
+        // 2. The caller ensures that `bytecode_provider` satisfies the safety guarantees of all
+        //    previous `self.module_instantiate` calls.
         let result =
             unsafe { instructions::dispatch::run(&mut resumable, self, bytecode_provider) }?;
 
@@ -1606,18 +1629,22 @@ impl<T: Config> Store<T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the given [`FuncAddr`] and any [`FuncAddr`] or
-    /// [`ExternAddr`](crate::ExternAddr) values contained in the parameter values came from the
-    /// current [`Store`] object.
+    /// The caller has to guarantee that:
+    /// 1. the given [`FuncAddr`] and any [`FuncAddr`] or [`ExternAddr`](crate::ExternAddr) values
+    ///    contained in the parameter values came from the current [`Store`] object.
+    /// 2. `bytecode_provider` satisfies the safety guarantees of all previous
+    ///    `self.module_instantiate` calls.
     pub unsafe fn invoke_simple<T2: BytecodeProvider>(
         &mut self,
         function: FuncAddr,
         params: Vec<Value>,
         bytecode_provider: &T2,
     ) -> Result<Vec<Value>, RuntimeError> {
-        // SAFETY: The caller ensures that the given function address and all
-        // address types contained in the parameters are valid in the current
-        // store.
+        // SAFETY:
+        // 1. The caller ensures that the given function address and all address types contained in
+        // the parameters are valid in the current store.
+        // 2. The caller ensures that `bytecode_provider` satisfies the safety guarantees of all
+        //    previous `self.module_instantiate` calls.
         let run_state = unsafe { self.invoke(function, params, None, bytecode_provider) }?;
 
         match run_state {
@@ -1692,8 +1719,10 @@ impl<T: Config> Store<T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the given [`ModuleAddr`] came from the
-    /// current [`Store`] object.
+    /// The caller has to guarantee that:
+    /// 1. the given [`ModuleAddr`] came from the current [`Store`] object.
+    /// 2. `bytecode_provider` satisfies the safety guarantees of all previous
+    ///    `self.module_instantiate` calls.
     pub unsafe fn instance_exports<'b, T2: BytecodeProvider>(
         &self,
         module_addr: ModuleAddr,

@@ -92,10 +92,10 @@ impl<'b, T: Config> Store<'b, T> {
         let instantiation_outcome = unsafe {
             self.inner.module_instantiate(
                 &module.inner,
-                &self.bytecode_refs,
                 bytecode_id,
                 extern_vals,
                 maybe_fuel,
+                &self.bytecode_refs,
             )
         }?;
         // 3. rewrap
@@ -120,7 +120,7 @@ impl<'b, T: Config> Store<'b, T> {
         // current store through its store id.
         let extern_val = unsafe {
             self.inner
-                .instance_export(module_addr, &self.bytecode_refs, name)
+                .instance_export(module_addr, name, &self.bytecode_refs)
         }?;
         // 3. rewrap
         // SAFETY: The `ExternVal` just came from the current store.
