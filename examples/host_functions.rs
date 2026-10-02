@@ -131,7 +131,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Retrieve the address of the exported native Wasm function, `add_two_nums`.
 
     // SAFETY:
-    // 1. `module_addr`` originates from this store, as witnessed by `Store::module_instantiate` call above.
+    // 1. `module_addr`` originates from this store, as witnessed by `Store::module_instantiate`
+    //    call above.
     // 2. `bytecode_provider` has not changed since last instantiation.
     let add_two_nums_addr: FuncAddr =
         unsafe { store.instance_export(module_addr, "add_two_nums", &bytecode_provider) }?
@@ -139,8 +140,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             .ok_or("add_two_nums is not a function")?;
 
     // Invoke `add_two_nums`.
-    // SAFETY: `add_two_nums_addr` originates from this store, as witnessed by
-    // `Store::instance_export` call above.
+    // SAFETY:
+    // 1. `add_two_nums_addr` originates from this store, as witnessed by `Store::instance_export`
+    //    call above.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let mut run_state: RunState =
         unsafe { store.invoke(add_two_nums_addr, Vec::new(), None, &bytecode_provider) }?;
 

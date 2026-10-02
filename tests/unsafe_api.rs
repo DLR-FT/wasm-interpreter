@@ -60,8 +60,9 @@ fn host_function() {
     let consume_i32 = store.func_alloc_typed::<i32, ()>(123);
 
     let bytecode_provider = SingleBytecodeRef(&[]);
-    // SAFETY: The function address just came from the same store and no address
-    // type values are used.
+    // SAFETY:
+    // 1. The function address just came from the same store and no address type values are used.
+    // 2. There are no previous instantiations.
     let run_state =
         unsafe { store.invoke(consume_i32, vec![Value::I32(20)], None, &bytecode_provider) }
             .unwrap();

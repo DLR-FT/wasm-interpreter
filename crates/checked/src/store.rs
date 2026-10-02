@@ -180,8 +180,13 @@ impl<'b, T: Config> Store<'b, T> {
         let func_addr = func_addr.try_unwrap_into_bare(self.id);
         let params = params.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `FuncAddr` and any addresses in
-        // the parameters came from the current store through their store ids.
+        // SAFETY:
+        // 1. It was just checked that the `FuncAddr` and any addresses in the parameters came from
+        //    the current store through their store ids.
+        // 2. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation. Therefore
+        //    it maintains an invariant where bytecode_ids correspond to the order of the modules
+        //    being instantiatied. This invariant is sufficient to show that `self.bytecode_refs` is
+        //    consistent with previous instantiations.
         let run_state = unsafe {
             self.inner
                 .invoke(func_addr, params, maybe_fuel, &self.bytecode_refs)

@@ -118,8 +118,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     // `RunState` which depends on why execution stopped. In our case, execution can either finish
     // (`RunState::Finished`) or be stopped when fuel is empty (`RunState::Resumable`).
     //
-    // SAFETY: The function address was just returned from the same store. Also, no addresses are
-    // passed as parameters.
+    // SAFETY:
+    // 1. The function address was just returned from the same store. Also, no addresses are passed
+    //    as parameters.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let mut run_state = unsafe {
         store.invoke(
             fibonacci,

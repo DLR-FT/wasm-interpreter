@@ -99,7 +99,9 @@ pub fn run<T: Config>(interpreter_config: T) -> f32 {
         .as_func()
         .unwrap();
 
-    // SAFETY: This function address was just returned from the same store.
+    // SAFETY:
+    // 1. This function address was just returned from the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let mut run_state =
         unsafe { store.invoke(run_function, Vec::new(), None, &bytecode_provider) }.unwrap();
     loop {
