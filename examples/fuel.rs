@@ -161,7 +161,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 // Continue execution, save its resulting run state and restart the loop.
                 //
-                // SAFETY: The resumable was just returned from the same store.
+                // SAFETY:
+                // 1. The resumable was just returned from the same store.
+                // 2. `bytecode_provider` has not changed since last instantiation.
                 run_state = unsafe { store.resume_wasm(resumable, &bytecode_provider) }?;
             }
             RunState::HostCalled { .. } => unreachable!("no host functions exist"),

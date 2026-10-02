@@ -154,7 +154,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Specifically, there are 3 possibilities, corresponding to the `RunState` enum variants:
     loop {
         match run_state {
-            // 3. RunState::HostCalled{host_call: HostCall { params, hostcode }, resumable}:
+            // 1. RunState::HostCalled{host_call: HostCall { params, hostcode }, resumable}:
             // represents an ongoing function execution made with `Store::invoke`, that is about to
             // execute a host function. The information which host function should be executed is
             // relayed to the developer through `hostcode` field, which holds the hostcode value of
@@ -224,9 +224,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 resumable,
                 required_fuel: _,
             } => {
-                // SAFETY: the `run_state` variable, which contains `resumable`, is only assigned to
-                // the values produced by this `store`. Therefore the store is always invoked with a
-                // resumable it owns.
+                // SAFETY:
+                // a. the `run_state` variable, which contains `resumable`, is only assigned to the
+                //    values produced by this `store`. Therefore the store is always invoked with a
+                //    resumable it owns.
+                // b. `bytecode_provider` has not changed since last instantiation.
                 run_state = unsafe { store.resume_wasm(resumable, &bytecode_provider) }?;
             }
 

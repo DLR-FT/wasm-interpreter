@@ -113,8 +113,9 @@ pub fn run<T: Config>(interpreter_config: T) -> f32 {
                 return score.0;
             }
             RunState::Resumable { resumable, .. } => {
-                // SAFETY: This resumable was just returned by a function invocation in the same
-                // store.
+                // SAFETY:
+                // 1. This resumable was just returned by a function invocation in the same store.
+                // 2. `bytecode_provider` has not changed since last instantiation.
                 run_state = unsafe { store.resume_wasm(resumable, &bytecode_provider) }.unwrap();
             }
             RunState::HostCalled { resumable, .. } => {

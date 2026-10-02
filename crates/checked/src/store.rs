@@ -514,8 +514,13 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let resumable = resumable.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `WasmResumable` came from the
-        // current store through its store id.
+        // SAFETY:
+        // a. It was just checked that the `WasmResumable` came from the current store through its
+        //    store id
+        // b. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation.
+        //    Therefore it maintains an invariant where bytecode_ids correspond to the order of the
+        //    modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
         let run_state = unsafe { self.inner.resume_wasm(resumable, &self.bytecode_refs) }?;
         // 3. rewrap
         // SAFETY: The `RunState` just came from the current store.
