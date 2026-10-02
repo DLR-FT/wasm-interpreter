@@ -78,7 +78,9 @@ pub enum DispatchMechanism {
 
 /// # Safety
 ///
-/// The given resumable must be valid in the given [`Store`] and the store itself must be valid.
+/// 1. The given resumable must be valid in the given [`Store`] and the store itself must be valid.
+/// 2. `bytecode_provider` satisfies the safety guarantees of all previous `module_instantiate`
+///    method calls of the given [`Store`].
 pub(crate) unsafe fn run<T: Config, T2: BytecodeProvider>(
     resumable: &mut WasmResumable,
     store: &mut Store<T>,
@@ -86,19 +88,28 @@ pub(crate) unsafe fn run<T: Config, T2: BytecodeProvider>(
 ) -> Result<InterpreterLoopOutcome, RuntimeError> {
     match T::DISPATCH_MECHANISM {
         DispatchMechanism::LoopCall => {
-            // SAFETY: The caller ensures that the resumable is valid in this store and that the
-            // store is valid itself.
+            // SAFETY:
+            // 1. The caller ensures that the resumable is valid in this store and that the store is
+            //    valid itself.
+            // 2. The caller ensures that `bytecode_provider` is consistent with previous
+            //    instantiations.
             unsafe { loop_call::run(resumable, store, bytecode_provider) }
         }
         DispatchMechanism::LoopMatch => {
-            // SAFETY: The caller ensures that the resumable is valid in this store and that the
-            // store is valid itself.
+            // SAFETY:
+            // 1. The caller ensures that the resumable is valid in this store and that the store is
+            //    valid itself.
+            // 2. The caller ensures that `bytecode_provider` is consistent with previous
+            //    instantiations.
             unsafe { loop_match::run(resumable, store, bytecode_provider) }
         }
         #[cfg(feature = "nightly")]
         DispatchMechanism::TailCalls => {
-            // SAFETY: The caller ensures that the resumable is valid in this store and that the
-            // store is valid itself.
+            // SAFETY:
+            // 1. The caller ensures that the resumable is valid in this store and that the store is
+            //    valid itself.
+            // 2. The caller ensures that `bytecode_provider` is consistent with previous
+            //    instantiations.
             unsafe { tail_calls::run(resumable, store, bytecode_provider) }
         }
     }
