@@ -563,8 +563,13 @@ impl<'b, T: Config> Store<'b, T> {
         let function = function.try_unwrap_into_bare(self.id);
         let params = params.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `FuncAddr` and all `Value`s came
-        // from the current store through their store ids.
+        // SAFETY:
+        // a. It was just checked that the `FuncAddr` and all `Value`s came from the current store
+        //    through their store ids.
+        // b. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation.
+        //    Therefore it maintains an invariant where bytecode_ids correspond to the order of the
+        //    modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
         let return_values = unsafe {
             self.inner
                 .invoke_simple(function, params, &self.bytecode_refs)

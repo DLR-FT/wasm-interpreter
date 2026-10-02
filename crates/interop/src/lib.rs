@@ -260,6 +260,7 @@ pub trait StoreTypedInvocationExt<T: Config> {
     /// The caller has to guarantee that the given [`FuncAddr`] and any
     /// [`FuncAddr`] or [`ExternAddr`] values contained in the parameter values
     /// came from the current [`Store`] object.
+    //TODO safety comments for bytecode_provider
     unsafe fn invoke_simple_typed<
         Params: InteropValueList,
         Returns: InteropValueList,
@@ -299,8 +300,10 @@ impl<T: Config> StoreTypedInvocationExt<T> for Store<T> {
         params: Params,
     ) -> Result<Returns, RuntimeError> {
         let params = params.into_values();
-        // SAFETY: The caller ensures that the function address and any
-        // addresses in the parameters are valid in the current store.
+        // SAFETY:
+        // 1. The caller ensures that the function address and any addresses in the parameters are
+        //    valid in the current store.
+        // 2. The caller ensures that bytecode_provider is consistent with previous instantiations.
         let returns = unsafe { self.invoke_simple(function, params, bytecode_provider) }?;
         Returns::try_from_values(returns.into_iter())
             .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)

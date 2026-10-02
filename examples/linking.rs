@@ -159,7 +159,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Now simply invoke the function and check that it returns the same value that was passed in.
     //
-    // SAFETY: There exists only a single store in this program.
+    // SAFETY:
+    // 1. There exists only a single store in this program.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let result_values: Vec<Value> =
         unsafe { store.invoke_simple(identity, vec![Value::I32(42)], &bytecode_provider) }?;
     let [Value::I32(result)] = *result_values else {

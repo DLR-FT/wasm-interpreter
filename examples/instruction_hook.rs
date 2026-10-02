@@ -82,8 +82,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             .as_func()
             .ok_or("fibonacci is not a function")?;
 
-    // SAFETY: The function address was just returned from the same store. Also, no addresses are
-    // passed as parameters.
+    // SAFETY:
+    // 1. The function address was just returned from the same store. Also, no addresses are
+    //    passed as parameters.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let return_values: Vec<Value> =
         unsafe { store.invoke_simple(fibonacci, vec![Value::I32(3)], &bytecode_provider) }?;
 
