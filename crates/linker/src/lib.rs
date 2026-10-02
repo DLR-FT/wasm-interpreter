@@ -95,6 +95,7 @@ impl Linker {
     /// It must be guaranteed that this [`Linker`] is only ever used with one
     /// specific [`Store`] and that the given [`ModuleAddr`] is valid in this
     /// store.
+    //TODO bytecode_provider safety comment
     pub unsafe fn define_module_instance<T: Config, T2: BytecodeProvider>(
         &mut self,
         store: &Store<T>,
@@ -102,8 +103,10 @@ impl Linker {
         module_name: String,
         module: ModuleAddr,
     ) -> Result<(), RuntimeError> {
-        // SAFETY: The caller ensures that the given module address is valid in
-        // the given store.
+        // SAFETY:
+        // 1. The caller ensures that the given module address is valid in the given store.
+        // 2. The caller ensures that `bytecode_provider` is consistent with previous
+        //    instantiations.
         let module_exports = unsafe { store.instance_exports(module, bytecode_provider) };
         for export in module_exports {
             // SAFETY: The module and thus also its exported extern values come
