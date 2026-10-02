@@ -36,7 +36,9 @@ fn invoke_typed() {
             .unwrap()
             .module_addr;
 
-    // SAFETY: This module address just came from the same store.
+    // SAFETY:
+    // 1. This module address just came from the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let add_two = unsafe { store.instance_export(module, "add_two", &bytecode_provider) }
         .unwrap()
         .as_func()

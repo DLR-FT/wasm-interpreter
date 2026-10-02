@@ -77,7 +77,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // `Store::instance_export` is part of the Embedder API (see also: embedder_api.rs)
     // It allows to lookup extern values exported by a module.
     //
-    // SAFETY: The module address was just returned from module instantiation in the same store.
+    // SAFETY:
+    // 1. The module address was just returned from module instantiation in the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let add_one: ExternVal =
         unsafe { store.instance_export(module_addr, "add_one", &bytecode_provider) }?;
     // Wasm modules can not only export functions, but also globals, memories and tables. We know

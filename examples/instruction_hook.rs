@@ -74,7 +74,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         unsafe { store.module_instantiate(&module, 0, vec![], None, &bytecode_provider) }?
             .module_addr;
 
-    // SAFETY: The module address was just returned from module instantiation in the same store.
+    // SAFETY:
+    // 1. The module address was just returned from module instantiation in the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let fibonacci: FuncAddr =
         unsafe { store.instance_export(module_addr, "fibonacci", &bytecode_provider) }?
             .as_func()

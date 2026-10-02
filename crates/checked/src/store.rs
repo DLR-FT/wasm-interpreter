@@ -123,8 +123,13 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let module_addr = module_addr.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `ModuleAddr` came from the
-        // current store through its store id.
+        // SAFETY:
+        // 1. It was just checked that the `ModuleAddr` came from the current store through its
+        //    store id.
+        // 2. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation. Therefore
+        //    it maintains an invariant where bytecode_ids correspond to the order of the modules
+        //    being instantiatied. This invariant is sufficient to show that `self.bytecode_refs` is
+        //    consistent with previous instantiations.
         let extern_val = unsafe {
             self.inner
                 .instance_export(module_addr, name, &self.bytecode_refs)

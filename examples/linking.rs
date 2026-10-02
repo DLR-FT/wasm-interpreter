@@ -56,7 +56,7 @@ const UTILS_WAT_CODE: &str = r#"
     )
 )
 "#;
-const UTILS_WASM_BYTECODE_ID: usize = 0;
+const UTILS_WASM_BYTECODE_ID: usize = 1;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // First, decode and validate both modules.
@@ -133,7 +133,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Here we can either use `Store::instance_export` to get the identity function's address...
     //
-    // SAFETY: There exists only a single store in this program.
+    // SAFETY:
+    // 1. There exists only a single store in this program.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let _identity: FuncAddr =
         unsafe { store.instance_export(main_module_addr, "identity", &bytecode_provider) }?
             .as_func()

@@ -91,7 +91,9 @@ pub fn run<T: Config>(interpreter_config: T) -> f32 {
     .unwrap()
     .module_addr;
 
-    // SAFETY: This module address was just returned from module instantiation in the same store.
+    // SAFETY:
+    // 1. This module address was just returned from module instantiation in the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let run_function = unsafe { store.instance_export(module, "run", &bytecode_provider) }
         .unwrap()
         .as_func()

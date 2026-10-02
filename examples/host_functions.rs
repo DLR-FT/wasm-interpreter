@@ -130,8 +130,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Retrieve the address of the exported native Wasm function, `add_two_nums`.
 
-    // SAFETY: `module_addr`` originates from this store, as witnessed by
-    // `Store::module_instantiate` call above.
+    // SAFETY:
+    // 1. `module_addr`` originates from this store, as witnessed by `Store::module_instantiate` call above.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let add_two_nums_addr: FuncAddr =
         unsafe { store.instance_export(module_addr, "add_two_nums", &bytecode_provider) }?
             .as_func()

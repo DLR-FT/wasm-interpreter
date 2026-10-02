@@ -92,13 +92,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         maybe_remaining_fuel: _,
     } = instantiation_outcome;
 
-    // SAFETY: The module address was just returned from module instantiation in the same store.
+    // SAFETY:
+    // 1. The module address was just returned from module instantiation in the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let fibonacci: FuncAddr =
         unsafe { store.instance_export(module_addr, "fibonacci", &bytecode_provider) }?
             .as_func()
             .ok_or("fibonacci is not a function")?;
 
     // SAFETY: The module address was just returned from module instantiation in the same store.
+    // 1. The module address was just returned from module instantiation in the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let memory: MemAddr =
         unsafe { store.instance_export(module_addr, "memory", &bytecode_provider) }?
             .as_mem()
