@@ -88,14 +88,14 @@ impl<'b, T: Config> Store<'b, T> {
         let extern_vals = extern_vals.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY:
-        // 1. It was just checked that the `ExternVal`s came from the current store through their
-        //    store ids.
-        // 2. The module was just registered to `self.bytecode_refs`, therefore the association
+        // a. It was just checked that the `ExternVal`s came from the current store through
+        //    their store ids.
+        // b. The module was just registered to `self.bytecode_refs`, therefore the association
         //    between `bytecode_id` and `module.inner` holds.
-        // 3. `self.bytecode_refs.add_bytecode_ref` is only called here in this crate. Therefore it
-        //    maintains an invariant where bytecode_ids correspond to the order of the modules being
-        //    instantiatied. This invariant is sufficient to show that `self.bytecode_refs` is
-        //    consistent with previous instantiations.
+        // c. `self.bytecode_refs.add_bytecode_ref` is only called here in this crate. Therefore
+        //    it maintains an invariant where bytecode_ids correspond to the order of the
+        //    modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
         let instantiation_outcome = unsafe {
             self.inner.module_instantiate(
                 &module.inner,
@@ -124,12 +124,12 @@ impl<'b, T: Config> Store<'b, T> {
         let module_addr = module_addr.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY:
-        // 1. It was just checked that the `ModuleAddr` came from the current store through its
+        // a. It was just checked that the `ModuleAddr` came from the current store through its
         //    store id.
-        // 2. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation. Therefore
-        //    it maintains an invariant where bytecode_ids correspond to the order of the modules
-        //    being instantiatied. This invariant is sufficient to show that `self.bytecode_refs` is
-        //    consistent with previous instantiations.
+        // b. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation.
+        //    Therefore it maintains an invariant where bytecode_ids correspond to the order of
+        //    the modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
         let extern_val = unsafe {
             self.inner
                 .instance_export(module_addr, name, &self.bytecode_refs)
@@ -181,12 +181,12 @@ impl<'b, T: Config> Store<'b, T> {
         let params = params.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY:
-        // 1. It was just checked that the `FuncAddr` and any addresses in the parameters came from
-        //    the current store through their store ids.
-        // 2. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation. Therefore
-        //    it maintains an invariant where bytecode_ids correspond to the order of the modules
-        //    being instantiatied. This invariant is sufficient to show that `self.bytecode_refs` is
-        //    consistent with previous instantiations.
+        // a. It was just checked that the `FuncAddr` and any addresses in the parameters came
+        //    from the current store through their store ids.
+        // b. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation.
+        //    Therefore it maintains an invariant where bytecode_ids correspond to the order of
+        //    the modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
         let run_state = unsafe {
             self.inner
                 .invoke(func_addr, params, maybe_fuel, &self.bytecode_refs)
@@ -492,8 +492,12 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let resumable = resumable.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `Resumable` came from the
-        // current store through its store id.
+        // SAFETY:
+        // a. It was just checked that the `Resumable` came from the current store through its
+        // b. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation.
+        //    Therefore it maintains an invariant where bytecode_ids correspond to the order of
+        //    the modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
         let run_state = unsafe { self.inner.resume(resumable, &self.bytecode_refs) }?;
         // 3. rewrap
         // SAFETY: The `RunState` just came from the current store.
