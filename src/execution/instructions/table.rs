@@ -11,7 +11,7 @@ use crate::{
             instructions,
             modules::indices::{ElemIdx, TableIdx},
         },
-        utils::ToUsizeExt,
+        utils::{BytecodeProvider, ToUsizeExt},
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
@@ -21,7 +21,9 @@ use crate::{
 };
 
 #[inline(always)]
-pub unsafe fn table_get(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn table_get<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid table index
     // next.
     let table_idx = unsafe { TableIdx::decode_unchecked(state.wasm) };
@@ -53,7 +55,9 @@ pub unsafe fn table_get(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn table_set(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn table_set<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be valid table index
     // next.
     let table_idx = unsafe { TableIdx::decode_unchecked(state.wasm) };
@@ -87,8 +91,8 @@ pub unsafe fn table_set(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn table_size(
-    state: State,
+pub unsafe fn table_size<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be valid table
     // index next.
@@ -116,8 +120,8 @@ pub unsafe fn table_size(
 }
 
 #[inline(always)]
-pub unsafe fn table_grow<T: Config>(
-    state: State,
+pub unsafe fn table_grow<T: Config, T2: BytecodeProvider>(
+    state: State<T2>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid
     // table index next.
@@ -181,8 +185,8 @@ pub unsafe fn table_grow<T: Config>(
 }
 
 #[inline(always)]
-pub unsafe fn table_fill<T: Config>(
-    state: State,
+pub unsafe fn table_fill<T: Config, T2: BytecodeProvider>(
+    state: State<T2>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid
     // table index next.
@@ -248,8 +252,8 @@ pub unsafe fn table_fill<T: Config>(
 
 // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
 #[inline(always)]
-pub unsafe fn table_copy<T: Config>(
-    state: State,
+pub unsafe fn table_copy<T: Config, T2: BytecodeProvider>(
+    state: State<T2>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid
     // table index next.
@@ -368,8 +372,8 @@ pub unsafe fn table_copy<T: Config>(
 // in binary format it seems that elemidx is first ???????
 // this is ONLY for passive elements
 #[inline(always)]
-pub unsafe fn table_init_fn<T: Config>(
-    state: State,
+pub unsafe fn table_init_fn<T: Config, T2: BytecodeProvider>(
+    state: State<T2>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid
     // element index next.
@@ -441,8 +445,8 @@ pub unsafe fn table_init_fn<T: Config>(
 }
 
 #[inline(always)]
-pub unsafe fn elem_drop_fn(
-    state: State,
+pub unsafe fn elem_drop_fn<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there a valid element
     // index next.

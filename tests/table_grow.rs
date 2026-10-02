@@ -14,10 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use dlr_wasm_interpreter::{
-    decode_and_validate, ExternAddr, Limits, RefType, RuntimeError, TableType, TrapError,
-};
-use dlr_wasm_interpreter_checked::{Store, StoredRef};
+use dlr_wasm_interpreter::{ExternAddr, Limits, RefType, RuntimeError, TableType, TrapError};
+use dlr_wasm_interpreter_checked::{decode_and_validate, Store, StoredRef};
 use dlr_wasm_interpreter_interop::RefExtern;
 
 #[test_log::test]

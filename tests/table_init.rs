@@ -15,7 +15,8 @@
 # limitations under the License.
 */
 
-use dlr_wasm_interpreter::{decode_and_validate, RuntimeError, TrapError, ValidationError};
+use dlr_wasm_interpreter::{RuntimeError, TrapError, ValidationError};
+use dlr_wasm_interpreter_checked::decode_and_validate;
 use dlr_wasm_interpreter_checked::Store;
 
 #[test_log::test]

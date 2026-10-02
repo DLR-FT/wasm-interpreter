@@ -18,7 +18,13 @@
 //! `examples/function_invocation.rs`):
 //!
 //! ```
-//! # use dlr_wasm_interpreter::{ExternVal, FuncAddr, InstantiationOutcome, Module, Store, Value, decode_and_validate};
+//! # use dlr_wasm_interpreter::{BytecodeProvider, ExternVal, FuncAddr, InstantiationOutcome, Module, Store, Value, decode_and_validate};
+//!struct SingleBytecodeRef<'a>(&'a [u8]);
+//! impl BytecodeProvider for SingleBytecodeRef<'_> {
+//!    fn get_bytecode(&self, _id: usize) -> &[u8] {
+//!        self.0
+//!    }
+//!}
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const WAT_CODE: &str = r#"
 //! (module
@@ -37,19 +43,24 @@
 //! // Create a new empty store
 //! let mut store = Store::new(());
 //!
+//! let bytecode_provider = SingleBytecodeRef(&wasm_bytecode);
 //! // Instantiate the module to create a module instance, returning its address
-//! // SAFETY: There are no extern values.
-//! let module_addr = unsafe { store.module_instantiate(&module, vec![], None) }?.module_addr;
+//! // SAFETY:
+//! // 1. There are no extern values.
+//! // 2. `bytecode_provider` always returns the same bytecode, which is associated with this
+//! //    module.
+//! // 3. There are no previous instantiations.
+//! let module_addr = unsafe { store.module_instantiate(&module, 0, vec![], None, &bytecode_provider) }?.module_addr;
 //!
 //! // Get the function address of the exported add_one function
 //! // SAFETY: The module address was returned from the same store.
-//! let add_one_extern = unsafe { store.instance_export(module_addr, "add_one") }?;
+//! let add_one_extern = unsafe { store.instance_export(module_addr, "add_one", &bytecode_provider) }?;
 //! let add_one = add_one_extern.as_func().ok_or("add_one is not a function")?;
 //!
 //! // Invoke the function
 //! // SAFETY: The function address was returned from the same store. There are also no address
 //! // type parameters.
-//! let return_values = unsafe { store.invoke_simple(add_one, vec![Value::I32(16)]) }?;
+//! let return_values = unsafe { store.invoke_simple(add_one, vec![Value::I32(16)], &bytecode_provider) }?;
 //! assert_eq!(*return_values, [Value::I32(17)]);
 //! # Ok(())
 //! # }
@@ -70,10 +81,12 @@ pub use crate::{
         decoding::{error::DecodingError, modules::custom_section::CustomSection},
         rw_spinlock,
         structure::instructions,
+        structure::modules::{exports::Export, imports::Import},
         structure::types::{
             ExternType, FuncType, GlobalType, Limits, MemType, NumType, RefType, ResultType,
             TableType, ValType,
         },
+        utils::BytecodeProvider,
     },
     execution::{
         config::{stack_memory_bytes_total, Config},

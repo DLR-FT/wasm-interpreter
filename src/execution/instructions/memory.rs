@@ -12,7 +12,7 @@ use crate::{
             modules::indices::{DataIdx, Idx, MemIdx},
             types::MemArg,
         },
-        utils::ToUsizeExt,
+        utils::{BytecodeProvider, ToUsizeExt},
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
@@ -27,7 +27,9 @@ use crate::{
 
 // t.load
 #[inline(always)]
-pub unsafe fn i32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_load<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
     let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
@@ -57,7 +59,9 @@ pub unsafe fn i32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn i64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_load<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
     let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
@@ -87,7 +91,9 @@ pub unsafe fn i64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn f32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_load<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
     let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
@@ -117,7 +123,9 @@ pub unsafe fn f32_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn f64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_load<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
     let relative_address: u32 = unsafe { state.resumable.stack.pop_value() }
@@ -147,7 +155,9 @@ pub unsafe fn f64_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
 }
 
 #[inline(always)]
-pub unsafe fn v128_load(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn v128_load<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
     // store, because it is the only parameter to this function that
@@ -183,8 +193,8 @@ pub unsafe fn v128_load(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 // t.loadN_sx
 
 #[inline(always)]
-pub unsafe fn i32_load8_s(
-    state: State,
+pub unsafe fn i32_load8_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -215,8 +225,8 @@ pub unsafe fn i32_load8_s(
 }
 
 #[inline(always)]
-pub unsafe fn i32_load8_u(
-    state: State,
+pub unsafe fn i32_load8_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -247,8 +257,8 @@ pub unsafe fn i32_load8_u(
 }
 
 #[inline(always)]
-pub unsafe fn i32_load16_s(
-    state: State,
+pub unsafe fn i32_load16_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -279,8 +289,8 @@ pub unsafe fn i32_load16_s(
 }
 
 #[inline(always)]
-pub unsafe fn i32_load16_u(
-    state: State,
+pub unsafe fn i32_load16_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -311,8 +321,8 @@ pub unsafe fn i32_load16_u(
 }
 
 #[inline(always)]
-pub unsafe fn i64_load8_s(
-    state: State,
+pub unsafe fn i64_load8_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -343,8 +353,8 @@ pub unsafe fn i64_load8_s(
 }
 
 #[inline(always)]
-pub unsafe fn i64_load8_u(
-    state: State,
+pub unsafe fn i64_load8_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -375,8 +385,8 @@ pub unsafe fn i64_load8_u(
 }
 
 #[inline(always)]
-pub unsafe fn i64_load16_s(
-    state: State,
+pub unsafe fn i64_load16_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -407,8 +417,8 @@ pub unsafe fn i64_load16_s(
 }
 
 #[inline(always)]
-pub unsafe fn i64_load16_u(
-    state: State,
+pub unsafe fn i64_load16_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -439,8 +449,8 @@ pub unsafe fn i64_load16_u(
 }
 
 #[inline(always)]
-pub unsafe fn i64_load32_s(
-    state: State,
+pub unsafe fn i64_load32_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -471,8 +481,8 @@ pub unsafe fn i64_load32_s(
 }
 
 #[inline(always)]
-pub unsafe fn i64_load32_u(
-    state: State,
+pub unsafe fn i64_load32_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -505,8 +515,8 @@ pub unsafe fn i64_load32_u(
 // v128.loadNxM_sx
 
 #[inline(always)]
-pub unsafe fn v128_load8x8_s(
-    state: State,
+pub unsafe fn v128_load8x8_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -552,8 +562,8 @@ pub unsafe fn v128_load8x8_s(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load8x8_u(
-    state: State,
+pub unsafe fn v128_load8x8_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -598,8 +608,8 @@ pub unsafe fn v128_load8x8_u(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load16x4_s(
-    state: State,
+pub unsafe fn v128_load16x4_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -644,8 +654,8 @@ pub unsafe fn v128_load16x4_s(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load16x4_u(
-    state: State,
+pub unsafe fn v128_load16x4_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -690,8 +700,8 @@ pub unsafe fn v128_load16x4_u(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load32x2_s(
-    state: State,
+pub unsafe fn v128_load32x2_s<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -736,8 +746,8 @@ pub unsafe fn v128_load32x2_s(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load32x2_u(
-    state: State,
+pub unsafe fn v128_load32x2_u<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -784,8 +794,8 @@ pub unsafe fn v128_load32x2_u(
 // v128.loadN_splat
 
 #[inline(always)]
-pub unsafe fn v128_load8_splat(
-    state: State,
+pub unsafe fn v128_load8_splat<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -821,8 +831,8 @@ pub unsafe fn v128_load8_splat(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load16_splat(
-    state: State,
+pub unsafe fn v128_load16_splat<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -858,8 +868,8 @@ pub unsafe fn v128_load16_splat(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load32_splat(
-    state: State,
+pub unsafe fn v128_load32_splat<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -895,8 +905,8 @@ pub unsafe fn v128_load32_splat(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load64_splat(
-    state: State,
+pub unsafe fn v128_load64_splat<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -934,8 +944,8 @@ pub unsafe fn v128_load64_splat(
 // v128.loadN_zero
 
 #[inline(always)]
-pub unsafe fn v128_load32_zero(
-    state: State,
+pub unsafe fn v128_load32_zero<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
@@ -973,8 +983,8 @@ pub unsafe fn v128_load32_zero(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load64_zero(
-    state: State,
+pub unsafe fn v128_load64_zero<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -1013,8 +1023,8 @@ pub unsafe fn v128_load64_zero(
 // v128.loadN_lane
 
 #[inline(always)]
-pub unsafe fn v128_load8_lane(
-    state: State,
+pub unsafe fn v128_load8_lane<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
@@ -1056,8 +1066,8 @@ pub unsafe fn v128_load8_lane(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load16_lane(
-    state: State,
+pub unsafe fn v128_load16_lane<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
@@ -1099,8 +1109,8 @@ pub unsafe fn v128_load16_lane(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load32_lane(
-    state: State,
+pub unsafe fn v128_load32_lane<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
@@ -1142,8 +1152,8 @@ pub unsafe fn v128_load32_lane(
 }
 
 #[inline(always)]
-pub unsafe fn v128_load64_lane(
-    state: State,
+pub unsafe fn v128_load64_lane<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
@@ -1187,7 +1197,9 @@ pub unsafe fn v128_load64_lane(
 // t.store
 
 #[inline(always)]
-pub unsafe fn i32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i32_store<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1225,7 +1237,9 @@ pub unsafe fn i32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn i64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn i64_store<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1263,7 +1277,9 @@ pub unsafe fn i64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn f32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f32_store<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1301,7 +1317,9 @@ pub unsafe fn f32_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn f64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn f64_store<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
     // SAFETY: Validation guarantees that there is a value on the stack.
@@ -1339,8 +1357,8 @@ pub unsafe fn f64_store(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn v128_store(
-    state: State,
+pub unsafe fn v128_store<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
     // SAFETY: The current module address must come from the current
@@ -1383,8 +1401,8 @@ pub unsafe fn v128_store(
 // t.storeN
 
 #[inline(always)]
-pub unsafe fn i32_store8(
-    state: State,
+pub unsafe fn i32_store8<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
@@ -1425,8 +1443,8 @@ pub unsafe fn i32_store8(
 }
 
 #[inline(always)]
-pub unsafe fn i32_store16(
-    state: State,
+pub unsafe fn i32_store16<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
@@ -1467,8 +1485,8 @@ pub unsafe fn i32_store16(
 }
 
 #[inline(always)]
-pub unsafe fn i64_store8(
-    state: State,
+pub unsafe fn i64_store8<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
@@ -1509,8 +1527,8 @@ pub unsafe fn i64_store8(
 }
 
 #[inline(always)]
-pub unsafe fn i64_store16(
-    state: State,
+pub unsafe fn i64_store16<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
@@ -1551,8 +1569,8 @@ pub unsafe fn i64_store16(
 }
 
 #[inline(always)]
-pub unsafe fn i64_store32(
-    state: State,
+pub unsafe fn i64_store32<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let memarg = MemArg::decode(state.wasm).unwrap_validated();
 
@@ -1595,8 +1613,8 @@ pub unsafe fn i64_store32(
 // v128.storeN_lane
 
 #[inline(always)]
-pub unsafe fn v128_store8_lane(
-    state: State,
+pub unsafe fn v128_store8_lane<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
@@ -1637,8 +1655,8 @@ pub unsafe fn v128_store8_lane(
 }
 
 #[inline(always)]
-pub unsafe fn v128_store16_lane(
-    state: State,
+pub unsafe fn v128_store16_lane<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
@@ -1679,8 +1697,8 @@ pub unsafe fn v128_store16_lane(
 }
 
 #[inline(always)]
-pub unsafe fn v128_store32_lane(
-    state: State,
+pub unsafe fn v128_store32_lane<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
@@ -1721,8 +1739,8 @@ pub unsafe fn v128_store32_lane(
 }
 
 #[inline(always)]
-pub unsafe fn v128_store64_lane(
-    state: State,
+pub unsafe fn v128_store64_lane<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees that there is a value on the stack.
     let data: [u8; 16] = unsafe { state.resumable.stack.pop_value() }
@@ -1765,8 +1783,8 @@ pub unsafe fn v128_store64_lane(
 // memory.size
 
 #[inline(always)]
-pub unsafe fn memory_size(
-    state: State,
+pub unsafe fn memory_size<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // Note: This zero byte is reserved for the multiple memories
     // proposal.
@@ -1795,8 +1813,8 @@ pub unsafe fn memory_size(
 
 // memory.grow
 #[inline(always)]
-pub unsafe fn memory_grow<T: Config>(
-    state: State,
+pub unsafe fn memory_grow<T: Config, T2: BytecodeProvider>(
+    state: State<T2>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // Note: This zero byte is reserved for the multiple memories
     // proposal.
@@ -1856,8 +1874,8 @@ pub unsafe fn memory_grow<T: Config>(
 // memory.fill
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
 #[inline(always)]
-pub unsafe fn memory_fill<T: Config>(
-    state: State,
+pub unsafe fn memory_fill<T: Config, T2: BytecodeProvider>(
+    state: State<T2>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     //  mappings:
     //      n => number of bytes to update
@@ -1934,8 +1952,8 @@ pub unsafe fn memory_fill<T: Config>(
 // memory.copy
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
 #[inline(always)]
-pub unsafe fn memory_copy<T: Config>(
-    state: State,
+pub unsafe fn memory_copy<T: Config, T2: BytecodeProvider>(
+    state: State<T2>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     //  mappings:
     //      n => number of bytes to copy
@@ -2027,8 +2045,8 @@ pub unsafe fn memory_copy<T: Config>(
 // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
 // Copy a region from a data segment into memory
 #[inline(always)]
-pub unsafe fn memory_init_fn<T: Config>(
-    state: State,
+pub unsafe fn memory_init_fn<T: Config, T2: BytecodeProvider>(
+    state: State<T2>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     //  mappings:
     //      n => number of bytes to copy
@@ -2106,8 +2124,8 @@ pub unsafe fn memory_init_fn<T: Config>(
 
 // data.drop
 #[inline(always)]
-pub unsafe fn data_drop_fn(
-    state: State,
+pub unsafe fn data_drop_fn<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid
     // data index next.

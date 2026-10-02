@@ -1,7 +1,7 @@
-use crate::ExternVal;
+use crate::{core::decoding::decoder::span::Span, ExternVal};
 
 #[derive(Copy, Clone, Debug)]
-pub struct ExportInst<'wasm> {
-    pub name: &'wasm str,
+pub struct ExportInst {
+    pub name: Span,
     pub value: ExternVal,
 }

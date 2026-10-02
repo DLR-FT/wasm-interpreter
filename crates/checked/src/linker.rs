@@ -1,11 +1,11 @@
 use alloc::{string::String, vec::Vec};
 
-use dlr_wasm_interpreter::{Config, Module, ModuleAddr, RuntimeError};
+use dlr_wasm_interpreter::{Config, ModuleAddr, RuntimeError};
 
 use crate::{
     store::Store,
     stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome},
-    AbstractStored, StoreId,
+    AbstractStored, Module, StoreId,
 };
 
 #[derive(Default)]
@@ -82,8 +82,12 @@ impl Linker {
         // SAFETY: It was just checked that the `ExternVal` came from the store
         // with the same id that is cached in the current linker instance.
         unsafe {
-            self.inner
-                .define_module_instance(store.inner(), module_name, module)
+            self.inner.define_module_instance(
+                store.inner(),
+                &store.bytecode_refs,
+                module_name,
+                module,
+            )
         }?;
         // 4. rewrap
         // result is the unit type.
@@ -117,7 +121,7 @@ impl Linker {
         // linking. We need this special case, so that a `Linker`, that has not
         // yet been associated with some `Store`, can still be used to
         // pre-instantiate modules.
-        if module.imports().len() == 0 {
+        if module.inner.imports(module.wasm).len() == 0 {
             return Some(Vec::new());
         }
         // 1. get or insert `StoreId`
@@ -127,7 +131,7 @@ impl Linker {
         // 2. try unwrap
         // no stored parameters
         // 3. call
-        let extern_vals = self.inner.instantiate_pre(module)?;
+        let extern_vals = self.inner.instantiate_pre(&module.inner, module.wasm)?;
         // 4. rewrap
         // SAFETY: All `ExternVal`s just came from the current `Linker`. Because
         // a Linker can always be used with only one unique `Store`, all
@@ -155,9 +159,15 @@ impl Linker {
         // 3. call
         // SAFETY: It was just checked that the `ExternVal` came from the store
         // with the same id that is cached in the current linker instance.
+        let bytecode_id = store.bytecode_refs.add_bytecode_ref(module.wasm);
         let instantiation_outcome = match unsafe {
-            self.inner
-                .module_instantiate(&mut store.inner, module, maybe_fuel)
+            self.inner.module_instantiate(
+                &mut store.inner,
+                &store.bytecode_refs,
+                bytecode_id,
+                &module.inner,
+                maybe_fuel,
+            )
         } {
             Some(Ok(instantiation_outcome)) => instantiation_outcome,
             Some(Err(err)) => return Some(Err(err)),

@@ -22,9 +22,16 @@
 use std::{error::Error, io};
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, ExternVal, FuncAddr, FuncType, HostCall, InstantiationOutcome, Module,
-    ModuleAddr, NumType, ResultType, RunState, Store, ValType, Value,
+    decode_and_validate, BytecodeProvider, ExternVal, FuncAddr, FuncType, HostCall,
+    InstantiationOutcome, Module, ModuleAddr, NumType, ResultType, RunState, Store, ValType, Value,
 };
+
+struct SingleBytecodeRef<'a>(&'a [u8]);
+impl BytecodeProvider for SingleBytecodeRef<'_> {
+    fn get_bytecode(&self, _id: usize) -> &[u8] {
+        self.0
+    }
+}
 
 /// A Wasm module that sums up two i32s read from stdin, printing the result on stdout
 const WAT_CODE: &str = r#"
@@ -99,16 +106,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     // externals are the host functions we have just allocated. The order of the externvals matter.
     // Since `read_num` was declared first as an import, it precedes `print_num`.
 
-    // SAFETY: The externvals come from this store, as witnessed by The `Store::func_alloc` calls
-    // above.
+    let bytecode_provider = SingleBytecodeRef(&wasm_bytecode);
+    // SAFETY:
+    // 1. The externvals come from this store, as witnessed by The `Store::func_alloc` calls
+    //    above.
+    // 2. `bytecode_provider` always returns the same bytecode, which is associated with this
+    //    module.
+    // 3. There are no previous instantiations.
     let instantiation_outcome: InstantiationOutcome = unsafe {
         store.module_instantiate(
             &module,
+            0,
             vec![
                 ExternVal::Func(host_read_num_addr),
                 ExternVal::Func(host_print_num_addr),
             ],
             None,
+            &bytecode_provider,
         )
     }?;
 
@@ -116,17 +130,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Retrieve the address of the exported native Wasm function, `add_two_nums`.
 
-    // SAFETY: `module_addr`` originates from this store, as witnessed by
-    // `Store::module_instantiate` call above.
+    // SAFETY:
+    // 1. `module_addr`` originates from this store, as witnessed by `Store::module_instantiate`
+    //    call above.
+    // 2. `bytecode_provider` has not changed since last instantiation.
     let add_two_nums_addr: FuncAddr =
-        unsafe { store.instance_export(module_addr, "add_two_nums") }?
+        unsafe { store.instance_export(module_addr, "add_two_nums", &bytecode_provider) }?
             .as_func()
             .ok_or("add_two_nums is not a function")?;
 
     // Invoke `add_two_nums`.
-    // SAFETY: `add_two_nums_addr` originates from this store, as witnessed by
-    // `Store::instance_export` call above.
-    let mut run_state: RunState = unsafe { store.invoke(add_two_nums_addr, Vec::new(), None) }?;
+    // SAFETY:
+    // 1. `add_two_nums_addr` originates from this store, as witnessed by `Store::instance_export`
+    //    call above.
+    // 2. `bytecode_provider` has not changed since last instantiation.
+    let mut run_state: RunState =
+        unsafe { store.invoke(add_two_nums_addr, Vec::new(), None, &bytecode_provider) }?;
 
     // Handling host functions are very similar to handling resumables that are out of fuel (see
     // `examples/fuel.rs`). The only difference here is the `run_state` returned by the invocation
@@ -135,7 +154,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Specifically, there are 3 possibilities, corresponding to the `RunState` enum variants:
     loop {
         match run_state {
-            // 3. RunState::HostCalled{host_call: HostCall { params, hostcode }, resumable}:
+            // 1. RunState::HostCalled{host_call: HostCall { params, hostcode }, resumable}:
             // represents an ongoing function execution made with `Store::invoke`, that is about to
             // execute a host function. The information which host function should be executed is
             // relayed to the developer through `hostcode` field, which holds the hostcode value of
@@ -205,10 +224,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                 resumable,
                 required_fuel: _,
             } => {
-                // SAFETY: the `run_state` variable, which contains `resumable`, is only assigned to
-                // the values produced by this `store`. Therefore the store is always invoked with a
-                // resumable it owns.
-                run_state = unsafe { store.resume_wasm(resumable) }?;
+                // SAFETY:
+                // a. the `run_state` variable, which contains `resumable`, is only assigned to the
+                //    values produced by this `store`. Therefore the store is always invoked with a
+                //    resumable it owns.
+                // b. `bytecode_provider` has not changed since last instantiation.
+                run_state = unsafe { store.resume_wasm(resumable, &bytecode_provider) }?;
             }
 
             // 3. RunState::Finished{values, maybe_remaining_fuel}: represents a completed execution

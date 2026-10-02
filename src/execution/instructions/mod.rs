@@ -19,7 +19,7 @@ use crate::{
             modules::indices::{DataIdx, ElemIdx, MemIdx, TableIdx},
             types::MemArg,
         },
-        utils::ToUsizeExt,
+        utils::{BytecodeProvider, ToUsizeExt},
     },
     execution::{
         numerics::representations::LittleEndianBytes,
@@ -82,15 +82,18 @@ pub enum InterpreterLoopOutcome {
 /// - The current sidetable must be correct for the module of the current module instance.
 /// - The end marker for the current function must point to the end index of the current function in
 ///   the current module's bytecode.
+/// - `bytecode_id` of each [`ModuleInst`] within [`StoreInner`] must correspond to its associated
+///   bytecode reference in `bytecode_provider`
 // TODO possibly improve safety requirements
-pub(crate) struct State<'a, 'sidetable, 'wasm> {
+pub(crate) struct State<'wasm, 'a, 'sidetable, T2: BytecodeProvider> {
     wasm: &'a mut WasmDecoder<'wasm>,
     resumable: &'a mut WasmResumable,
     current_sidetable: &'a mut &'sidetable Sidetable,
     store_inner: &'a mut StoreInner,
-    modules: &'sidetable AddrVec<ModuleAddr, ModuleInst<'wasm>>,
+    modules: &'sidetable AddrVec<ModuleAddr, ModuleInst>,
     current_module: &'a mut ModuleAddr,
     current_function_end_marker: &'a mut usize,
+    bytecode_provider: &'wasm T2,
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps

@@ -10,9 +10,10 @@
 
 use std::error::Error;
 
-use dlr_wasm_interpreter::{decode_and_validate, FuncAddr, Module};
+use dlr_wasm_interpreter::FuncAddr;
 use dlr_wasm_interpreter_checked::{
-    Store, Stored, StoredExternVal, StoredInstantiationOutcome, StoredValue,
+    decode_and_validate, Module, Store, Stored, StoredExternVal, StoredInstantiationOutcome,
+    StoredValue,
 };
 
 const WAT_CODE: &str = r#"
