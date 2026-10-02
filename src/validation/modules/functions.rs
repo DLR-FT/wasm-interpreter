@@ -1,4 +1,4 @@
-use alloc::{collections::btree_set::BTreeSet, vec::Vec};
+use alloc::{boxed::Box, collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::{
     core::{
@@ -55,65 +55,64 @@ pub unsafe fn decode_and_validate_code_section<T2: ValidationConfig>(
     validation_context_refs: &BTreeSet<FuncIdx>,
     sidetable: &mut Sidetable,
     user_data: &mut T2,
-) -> Result<Vec<(Span, usize)>, ValidationError> {
-    let code_block_spans_stps = wasm.decode_vec_enumerate_map(|wasm, idx| {
-        // We need to offset the index by the number of functions that were
-        // imported. Imported functions always live at the start of the index
-        // space.
-        let ty_idx = c_funcs
-            .iter_local_definitions()
-            .nth(idx.into_usize())
-            .ok_or(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths)?;
+) -> Result<Box<[(Span, usize)]>, ValidationError> {
+    wasm.decode_vec()?
+        .enumerate_and_map_and_collect(|wasm, idx| {
+            // We need to offset the index by the number of functions that were
+            // imported. Imported functions always live at the start of the index
+            // space.
+            let ty_idx = c_funcs
+                .iter_local_definitions()
+                .nth(idx.into_usize())
+                .ok_or(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths)?;
 
-        // SAFETY: The caller ensures that all passed `TypeIdx` values,
-        // including this one, are valid in this `IdxVec<TypeIdx, FuncType>`.
-        let func_ty: FuncType = unsafe { fn_types.get(*ty_idx).clone() };
+            // SAFETY: The caller ensures that all passed `TypeIdx` values,
+            // including this one, are valid in this `IdxVec<TypeIdx, FuncType>`.
+            let func_ty: FuncType = unsafe { fn_types.get(*ty_idx).clone() };
 
-        let func_size = wasm.decode_var_u32()?;
-        let func_block = wasm.make_span(func_size.into_usize())?;
-        let previous_pc = wasm.pc;
+            let func_size = wasm.decode_var_u32()?;
+            let func_block = wasm.make_span(func_size.into_usize())?;
+            let previous_pc = wasm.pc;
 
-        let locals: Vec<ValType> = {
-            let params = func_ty.params.valtypes.iter().cloned();
-            let declared_locals = decode_locals(wasm)?;
-            params.chain(declared_locals).collect()
-        };
-        // Note: The specification does not consider the case in which the number of parameters +
-        // the number of locals exceeds 2^32-1. Because this is very likely an error, we can check for it.
-        if locals.len() > u32::MAX.into_usize() {
-            return Err(ValidationError::TooManyParamsAndLocals);
-        }
+            let locals: Vec<ValType> = {
+                let params = func_ty.params.valtypes.iter().cloned();
+                let declared_locals = decode_locals(wasm)?;
+                params.chain(declared_locals).collect()
+            };
+            // Note: The specification does not consider the case in which the number of parameters +
+            // the number of locals exceeds 2^32-1. Because this is very likely an error, we can check for it.
+            if locals.len() > u32::MAX.into_usize() {
+                return Err(ValidationError::TooManyParamsAndLocals);
+            }
 
-        let mut stack = ValidationStack::new_for_func(func_ty);
-        let stp = sidetable.len();
+            let mut stack = ValidationStack::new_for_func(func_ty);
+            let stp = sidetable.len();
 
-        // SAFETY: The caller ensures the same safety requirements for the same
-        // unmodified index values.
-        unsafe {
-            decode_and_validate_expr(
-                wasm,
-                &mut stack,
-                sidetable,
-                &locals,
-                c_globals,
-                fn_types,
-                c_funcs.inner(),
-                c_mems,
-                data_count,
-                c_tables,
-                c_elems,
-                validation_context_refs,
-                user_data,
-            )
-        }?;
+            // SAFETY: The caller ensures the same safety requirements for the same
+            // unmodified index values.
+            unsafe {
+                decode_and_validate_expr(
+                    wasm,
+                    &mut stack,
+                    sidetable,
+                    &locals,
+                    c_globals,
+                    fn_types,
+                    c_funcs.inner(),
+                    c_mems,
+                    data_count,
+                    c_tables,
+                    c_elems,
+                    validation_context_refs,
+                    user_data,
+                )
+            }?;
 
-        // Check if there were unread trailing instructions after the last END
-        if previous_pc + func_size.into_usize() != wasm.pc {
-            return Err(ValidationError::CodeExprHasTrailingInstructions);
-        }
+            // Check if there were unread trailing instructions after the last END
+            if previous_pc + func_size.into_usize() != wasm.pc {
+                return Err(ValidationError::CodeExprHasTrailingInstructions);
+            }
 
-        Ok((func_block, stp))
-    })?;
-
-    code_block_spans_stps.collect()
+            Ok((func_block, stp))
+        })
 }

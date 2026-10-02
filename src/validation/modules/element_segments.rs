@@ -260,7 +260,7 @@ fn decode_and_validate_shortened_initializer_list(
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
-    let function_refs = wasm.decode_vec_map_collect(|w| {
+    let function_refs = wasm.decode_vec()?.map_and_collect(|w| {
         let func_idx = FuncIdx::decode_and_validate(w, c_funcs)?;
         validation_context_refs.insert(func_idx);
         Ok::<_, ValidationError>(func_idx)
@@ -283,7 +283,7 @@ fn decode_and_validate_generic_initializer_list(
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
-    let v_elements = wasm.decode_vec_map_collect(|w| {
+    let v_elements = wasm.decode_vec()?.map_and_collect(|w| {
         let mut valid_stack = ValidationStack::new();
         let (span, seen_func_refs) = decode_and_validate_constant_expression(
             w,

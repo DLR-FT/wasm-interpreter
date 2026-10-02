@@ -1,0 +1,532 @@
+    Checking dlr-wasm-interpreter v0.3.0 (/home/hart_fo/git/DLR-FT/wasm-interpreter)
+error[E0425]: cannot find value `locals` in this scope
+  --> src/core/decoding/modules/code_section.rs:39:12
+   |
+39 |         i: locals,
+   |            ^^^^^^ not found in this scope
+
+error[E0282]: type annotations needed
+  --> src/core/decoding/modules/code_section.rs:15:53
+   |
+15 |     let _dangling_box_ptr = wasm_cloned.decode_vec(|wasm, _i| {
+   |                                                     ^^^^
+16 |         let n = wasm.decode_var_u32()?;
+   |                 ---- type must be known at this point
+   |
+help: consider giving this closure parameter an explicit type
+   |
+15 |     let _dangling_box_ptr = wasm_cloned.decode_vec(|wasm: /* Type */, _i| {
+   |                                                         ++++++++++++
+
+error[E0061]: this method takes 0 arguments but 1 argument was supplied
+   --> src/core/decoding/modules/code_section.rs:15:41
+    |
+ 15 |       let _dangling_box_ptr = wasm_cloned.decode_vec(|wasm, _i| {
+    |  _________________________________________^^^^^^^^^^_-
+ 16 | |         let n = wasm.decode_var_u32()?;
+ 17 | |         let _valtype = ValType::decode(wasm)?;
+...   |
+ 23 | |         Ok(())
+ 24 | |     })?;
+    | |_____- unexpected argument
+    |
+note: method defined here
+   --> src/core/decoding/values.rs:375:12
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |            ^^^^^^^^^^
+help: remove the extra argument
+    |
+ 15 -     let _dangling_box_ptr = wasm_cloned.decode_vec(|wasm, _i| {
+ 16 -         let n = wasm.decode_var_u32()?;
+ 17 -         let _valtype = ValType::decode(wasm)?;
+ 18 - 
+ 19 -         total_number_of_locals = total_number_of_locals
+ 20 -             .checked_add(n)
+ 21 -             .ok_or(DecodingError::TooManyLocals)?;
+ 22 - 
+ 23 -         Ok(())
+ 24 -     })?;
+ 15 +     let _dangling_box_ptr = wasm_cloned.decode_vec()?;
+    |
+
+error[E0107]: method takes 0 generic arguments but 3 generic arguments were supplied
+   --> src/core/decoding/modules/code_section.rs:28:10
+    |
+ 28 |         .decode_vec::<(u32, ValType), _, DecodingError>(|wasm| {
+    |          ^^^^^^^^^^------------------------------------ help: remove the unnecessary generics
+    |          |
+    |          expected 0 generic arguments
+    |
+note: method defined here, with 0 generic parameters
+   --> src/core/decoding/values.rs:375:12
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |            ^^^^^^^^^^
+
+error[E0061]: this method takes 0 arguments but 1 argument was supplied
+   --> src/core/decoding/modules/code_section.rs:28:10
+    |
+ 28 |           .decode_vec::<(u32, ValType), _, DecodingError>(|wasm| {
+    |  __________^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^_-
+ 29 | |             let n = wasm.decode_var_u32().unwrap();
+ 30 | |             let valtype = ValType::decode(wasm).unwrap();
+...   |
+ 33 | |         })
+    | |_________- unexpected argument
+    |
+note: method defined here
+   --> src/core/decoding/values.rs:375:12
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |            ^^^^^^^^^^
+help: remove the extra argument
+    |
+ 28 -         .decode_vec::<(u32, ValType), _, DecodingError>(|wasm| {
+ 29 -             let n = wasm.decode_var_u32().unwrap();
+ 30 -             let valtype = ValType::decode(wasm).unwrap();
+ 31 - 
+ 32 -             Ok((n, valtype))
+ 33 -         })
+ 28 +         .decode_vec::<(u32, ValType), _, DecodingError>()
+    |
+
+error[E0599]: `DecodeVec<'_, '_>` is not an iterator
+   --> src/core/decoding/modules/code_section.rs:35:10
+    |
+ 27 |       let _dangling_box_ptr2 = wasm
+    |  ______________________________-
+ 28 | |         .decode_vec::<(u32, ValType), _, DecodingError>(|wasm| {
+ 29 | |             let n = wasm.decode_var_u32().unwrap();
+ 30 | |             let valtype = ValType::decode(wasm).unwrap();
+...   |
+ 34 | |         .unwrap()
+ 35 | |         .map(Result::unwrap)
+    | |         -^^^ `DecodeVec<'_, '_>` is not an iterator
+    | |_________|
+    |
+    |
+   ::: src/core/decoding/values.rs:381:1
+    |
+381 |   pub struct DecodeVec<'a, 'wasm> {
+    |   ------------------------------- method `map` not found for this struct because it doesn't satisfy `DecodeVec<'_, '_>: Iterator`
+    |
+    = note: the following trait bounds were not satisfied:
+            `DecodeVec<'_, '_>: Iterator`
+            which is required by `&mut DecodeVec<'_, '_>: Iterator`
+note: the trait `Iterator` must be implemented
+   --> /nix/store/fb42yln64bryk4z6m509ya63wifh8q52-rust-default-1.95.0/lib/rustlib/src/rust/library/core/src/iter/traits/iterator.rs:41:1
+    |
+ 41 | pub const trait Iterator {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `map`, perhaps you need to implement it:
+            candidate #1: `Iterator`
+
+error: lifetime may not live long enough
+   --> src/core/decoding/values.rs:443:37
+    |
+386 | impl<'a, 'wasm> DecodeVec<'a, 'wasm> {
+    |      -- lifetime `'a` defined here
+...
+428 |         iter::from_fn(move || {
+    |                       ------- lifetime `'1` represents this closure's body
+...
+443 |                 let next_iterator = read_and_map_element(decoder).into_iter();
+    |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'a`
+    |
+    = note: closure implements `FnMut`, so references to captured variables can't escape the closure
+
+error[E0499]: cannot borrow `*decoder` as mutable more than once at a time
+   --> src/core/decoding/values.rs:443:58
+    |
+386 | impl<'a, 'wasm> DecodeVec<'a, 'wasm> {
+    |      -- lifetime `'a` defined here
+...
+443 |                 let next_iterator = read_and_map_element(decoder).into_iter();
+    |                                     ---------------------^^^^^^^-
+    |                                     |                    |
+    |                                     |                    `*decoder` was mutably borrowed here in the previous iteration of the loop
+    |                                     argument requires that `*decoder` is borrowed for `'a`
+    |
+note: requirement that the value outlives `'a` introduced here
+   --> /nix/store/fb42yln64bryk4z6m509ya63wifh8q52-rust-default-1.95.0/lib/rustlib/src/rust/library/core/src/ops/function.rs:163:37
+    |
+163 | pub const trait FnMut<Args: Tuple>: FnOnce<Args> {
+    |                                     ^^^^^^^^^^^^
+
+error[E0599]: no method named `decode_vec_map_collect` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/core/decoding/types.rs:104:29
+    |
+104 |         let valtypes = wasm.decode_vec_map_collect(ValType::decode)?;
+    |                             ^^^^^^^^^^^^^^^^^^^^^^ method not found in `&mut WasmDecoder<'_>`
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/execution/instructions/control.rs:185:10
+    |
+183 |       let label_vec_len = state
+    |  _________________________-
+184 | |         .wasm
+185 | |         .decode_vec_map::<_, _, DecodingError>(|wasm| {
+    | |_________-^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/execution/instructions/parametric.rs:47:10
+    |
+ 45 | /     state
+ 46 | |         .wasm
+ 47 | |         .decode_vec_map(ValType::decode)
+    | |_________-^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/validation/instructions/expressions.rs:251:22
+    |
+250 |                   let label_vec: Vec<u32> = wasm
+    |  ___________________________________________-
+251 | |                     .decode_vec_map(decode_label_idx)
+    | |_____________________-^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/validation/instructions/expressions.rs:426:22
+    |
+425 |                   let type_vec: Vec<ValType> = wasm
+    |  ______________________________________________-
+426 | |                     .decode_vec_map(ValType::decode)
+    | |_____________________-^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0282]: type annotations needed
+  --> src/validation/modules/data_segments.rs:46:49
+   |
+46 |                 let byte_vec = wasm.decode_vec(|wasm, _i| wasm.decode_u8())?;
+   |                                                 ^^^^      ---- type must be known at this point
+   |
+help: consider giving this closure parameter an explicit type
+   |
+46 |                 let byte_vec = wasm.decode_vec(|wasm: /* Type */, _i| wasm.decode_u8())?;
+   |                                                     ++++++++++++
+
+error[E0061]: this method takes 0 arguments but 1 argument was supplied
+   --> src/validation/modules/data_segments.rs:46:37
+    |
+ 46 |                 let byte_vec = wasm.decode_vec(|wasm, _i| wasm.decode_u8())?;
+    |                                     ^^^^^^^^^^ --------------------------- unexpected argument
+    |
+note: method defined here
+   --> src/core/decoding/values.rs:375:12
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |            ^^^^^^^^^^
+help: remove the extra argument
+    |
+ 46 -                 let byte_vec = wasm.decode_vec(|wasm, _i| wasm.decode_u8())?;
+ 46 +                 let byte_vec = wasm.decode_vec()?;
+    |
+
+error[E0308]: mismatched types
+  --> src/validation/modules/data_segments.rs:54:27
+   |
+54 |                     init: byte_vec,
+   |                           ^^^^^^^^ expected `Box<[u8]>`, found `DecodeVec<'_, '_>`
+   |
+   = note: expected struct `Box<[u8]>`
+              found struct `DecodeVec<'_, '_>`
+
+error[E0061]: this method takes 0 arguments but 1 argument was supplied
+   --> src/validation/modules/data_segments.rs:60:37
+    |
+ 60 |                 let byte_vec = wasm.decode_vec(|wasm, _i| wasm.decode_u8())?;
+    |                                     ^^^^^^^^^^ --------------------------- unexpected argument
+    |
+note: method defined here
+   --> src/core/decoding/values.rs:375:12
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |            ^^^^^^^^^^
+help: remove the extra argument
+    |
+ 60 -                 let byte_vec = wasm.decode_vec(|wasm, _i| wasm.decode_u8())?;
+ 60 +                 let byte_vec = wasm.decode_vec()?;
+    |
+
+error[E0308]: mismatched types
+  --> src/validation/modules/data_segments.rs:64:27
+   |
+64 |                     init: byte_vec,
+   |                           ^^^^^^^^ expected `Box<[u8]>`, found `DecodeVec<'_, '_>`
+   |
+   = note: expected struct `Box<[u8]>`
+              found struct `DecodeVec<'_, '_>`
+
+error[E0061]: this method takes 0 arguments but 1 argument was supplied
+   --> src/validation/modules/data_segments.rs:82:37
+    |
+ 82 |                 let byte_vec = wasm.decode_vec(|wasm, _i| wasm.decode_u8())?;
+    |                                     ^^^^^^^^^^ --------------------------- unexpected argument
+    |
+note: method defined here
+   --> src/core/decoding/values.rs:375:12
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |            ^^^^^^^^^^
+help: remove the extra argument
+    |
+ 82 -                 let byte_vec = wasm.decode_vec(|wasm, _i| wasm.decode_u8())?;
+ 82 +                 let byte_vec = wasm.decode_vec()?;
+    |
+
+error[E0308]: mismatched types
+  --> src/validation/modules/data_segments.rs:89:27
+   |
+89 |                     init: byte_vec,
+   |                           ^^^^^^^^ expected `Box<[u8]>`, found `DecodeVec<'_, '_>`
+   |
+   = note: expected struct `Box<[u8]>`
+              found struct `DecodeVec<'_, '_>`
+
+error[E0061]: this method takes 0 arguments but 1 argument was supplied
+   --> src/validation/modules/element_segments.rs:263:30
+    |
+263 |       let function_refs = wasm.decode_vec(|w| {
+    |  ______________________________^^^^^^^^^^_-
+264 | |         let func_idx = FuncIdx::decode_and_validate(w, c_funcs)?;
+265 | |         validation_context_refs.insert(func_idx);
+266 | |         Ok::<_, ValidationError>(func_idx)
+267 | |     })?;
+    | |_____- unexpected argument of type `{closure@src/validation/modules/element_segments.rs:263:41: 263:44}`
+    |
+note: method defined here
+   --> src/core/decoding/values.rs:375:12
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |            ^^^^^^^^^^
+help: remove the extra argument
+    |
+263 -     let function_refs = wasm.decode_vec(|w| {
+264 -         let func_idx = FuncIdx::decode_and_validate(w, c_funcs)?;
+265 -         validation_context_refs.insert(func_idx);
+266 -         Ok::<_, ValidationError>(func_idx)
+267 -     })?;
+263 +     let function_refs = wasm.decode_vec()?;
+    |
+
+error[E0308]: mismatched types
+   --> src/validation/modules/element_segments.rs:268:28
+    |
+268 |     Ok(ElemItems::RefFuncs(function_refs))
+    |        ------------------- ^^^^^^^^^^^^^ expected `Box<[FuncIdx]>`, found `DecodeVec<'_, '_>`
+    |        |
+    |        arguments to this enum variant are incorrect
+    |
+    = note: expected struct `Box<[FuncIdx]>`
+               found struct `DecodeVec<'_, '_>`
+note: tuple variant defined here
+   --> src/core/structure/modules/element_segments.rs:32:5
+    |
+ 32 |     RefFuncs(Box<[FuncIdx]>),
+    |     ^^^^^^^^
+
+error[E0061]: this method takes 0 arguments but 1 argument was supplied
+   --> src/validation/modules/element_segments.rs:286:27
+    |
+286 |       let v_elements = wasm.decode_vec(|w| {
+    |  ___________________________^^^^^^^^^^_-
+287 | |         let mut valid_stack = ValidationStack::new();
+288 | |         let (span, seen_func_refs) = decode_and_validate_constant_expression(
+289 | |             w,
+...   |
+296 | |         Ok::<_, ValidationError>(span)
+297 | |     })?;
+    | |_____- unexpected argument of type `{closure@src/validation/modules/element_segments.rs:286:38: 286:41}`
+    |
+note: method defined here
+   --> src/core/decoding/values.rs:375:12
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |            ^^^^^^^^^^
+help: remove the extra argument
+    |
+286 -     let v_elements = wasm.decode_vec(|w| {
+287 -         let mut valid_stack = ValidationStack::new();
+288 -         let (span, seen_func_refs) = decode_and_validate_constant_expression(
+289 -             w,
+290 -             &mut valid_stack,
+291 -             imported_global_types,
+292 -             c_funcs,
+293 -         )?;
+294 -         validation_context_refs.extend(seen_func_refs);
+295 -         valid_stack.assert_val_types(&[ValType::RefType(expected_type)], true)?;
+296 -         Ok::<_, ValidationError>(span)
+297 -     })?;
+286 +     let v_elements = wasm.decode_vec()?;
+    |
+
+error[E0308]: mismatched types
+   --> src/validation/modules/element_segments.rs:298:40
+    |
+298 |     Ok(ElemItems::Exprs(expected_type, v_elements))
+    |        ----------------                ^^^^^^^^^^ expected `Box<[Span]>`, found `DecodeVec<'_, '_>`
+    |        |
+    |        arguments to this enum variant are incorrect
+    |
+    = note: expected struct `Box<[Span]>`
+               found struct `DecodeVec<'_, '_>`
+note: tuple variant defined here
+   --> src/core/structure/modules/element_segments.rs:33:5
+    |
+ 33 |     Exprs(RefType, Box<[Span]>),
+    |     ^^^^^
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/validation/mod.rs:109:29
+    |
+109 |         let collected= wasm.decode_vec_map(FuncType::decode).and_then(Iterator::collect)?;
+    |                             ^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/validation/mod.rs:117:29
+    |
+117 |         let elements = wasm.decode_vec_map(|wasm| Import::decode_and_validate(wasm, &types))?;
+    |                             ^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/validation/mod.rs:132:18
+    |
+132 |             wasm.decode_vec_map(|wasm| TypeIdx::decode_and_validate(wasm, &types))
+    |                  ^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0614]: type `TypeIdx` cannot be dereferenced
+   --> src/validation/mod.rs:139:44
+    |
+139 |         ImportDesc::Func(type_idx) => Some(*type_idx),
+    |                                            ^^^^^^^^^ can't be dereferenced
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/validation/mod.rs:153:14
+    |
+153 |         wasm.decode_vec_map(TableType::decode_and_validate)
+    |              ^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/validation/mod.rs:170:14
+    |
+170 |         wasm.decode_vec_map(MemType::decode_and_validate)
+    |              ^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/validation/mod.rs:193:14
+    |
+193 |         wasm.decode_vec_map(|wasm| {
+    |         -----^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/validation/mod.rs:219:18
+    |
+219 |             wasm.decode_vec_map(|wasm| {
+    |             -----^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/validation/mod.rs:264:30
+    |
+264 |         let collected = wasm.decode_vec_map(|wasm| {
+    |                         -----^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `decode_vec_map` found for mutable reference `&mut WasmDecoder<'_>` in the current scope
+   --> src/validation/mod.rs:322:30
+    |
+322 |         let collected = wasm.decode_vec_map(|wasm| {
+    |                         -----^^^^^^^^^^^^^^
+    |
+help: there is a method `decode_vec` with a similar name, but with different arguments
+   --> src/core/decoding/values.rs:375:5
+    |
+375 |     pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src/validation/mod.rs:356:9
+    |
+356 |         func_blocks_stps,
+    |         ^^^^^^^^^^^^^^^^ expected `Vec<(Span, usize)>`, found `Box<[(Span, usize)]>`
+    |
+    = note: expected struct `Vec<(Span, usize)>`
+               found struct `Box<[(Span, usize)]>`
+help: try using a conversion method
+    |
+356 |         func_blocks_stps: func_blocks_stps.to_vec(),
+    |         +++++++++++++++++                 +++++++++
+
+Some errors have detailed explanations: E0061, E0107, E0282, E0308, E0425, E0499, E0599, E0614.
+For more information about an error, try `rustc --explain E0061`.
+error: could not compile `dlr-wasm-interpreter` (lib) due to 35 previous errors

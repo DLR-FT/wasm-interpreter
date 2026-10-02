@@ -5,10 +5,14 @@
 //! Note: If any of these methods return `Err`, they may have consumed some bytes from the [WasmDecoder] object and thus consequent calls may result in unexpected behaviour.
 //! This is due to the fact that these methods read elemental types which cannot be split.
 
+use core::{convert::Infallible, iter};
+
 use alloc::boxed::Box;
 
 use crate::{
-    core::{decoding::decoder::WasmDecoder, utils::ToUsizeExt},
+    core::{
+        decoding::decoder::WasmDecoder, fixed_capacity_vec::FixedCapacityVec, utils::ToUsizeExt,
+    },
     DecodingError,
 };
 
@@ -366,98 +370,115 @@ impl<'wasm> WasmDecoder<'wasm> {
         core::str::from_utf8(utf8_str).map_err(DecodingError::MalformedUtf8)
     }
 
-    /// A version of [`WasmDecoder::decode_vec_map`] that enumerates all elements.
-    pub fn decode_vec_enumerate_map<'a, 'f, T, F, E>(
-        &'a mut self,
-        mut read_element: F,
-    ) -> Result<
-        impl ExactSizeIterator<Item = Result<T, E>> + use<'a, 'wasm, 'f, F, T, E>,
-        DecodingError,
-    >
-    where
-        T: 'wasm,
-        F: FnMut(&mut WasmDecoder<'wasm>, u32) -> Result<T, E> + 'f,
-        E: From<DecodingError>,
-    {
+    /// Starts decoding a vector. The returned [`DecodeVec`] object can be used to further read and
+    /// map vector elements.
+    pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
         let len = self.decode_var_u32()?;
-        let i = (0..len).map(move |n| read_element(self, n));
-
-        Ok(i)
+        Ok(DecodeVec { len, decoder: self })
     }
+}
 
-    /// Decodes a vector and maps every element with the given closure. An iterator with a maximum
-    /// fixed size of [`u32::MAX`] is returned.
-    pub fn decode_vec_map<'a, 'f, T, F, E>(
-        &'a mut self,
-        mut read_element: F,
-    ) -> Result<impl Iterator<Item = Result<T, E>> + use<'a, 'wasm, 'f, F, T, E>, DecodingError>
-    where
-        T: 'wasm,
-        F: FnMut(&mut WasmDecoder<'wasm>) -> Result<T, E> + 'f,
-        E: From<DecodingError>,
-    {
-        let len = self.decode_var_u32()?;
-        let all_elements = (0..len).map(move |_| read_element(self));
+pub struct DecodeVec<'a, 'wasm> {
+    len: u32,
+    decoder: &'a mut WasmDecoder<'wasm>,
+}
 
-        // End the iterator after the first error was been encountered.
-        let mut found_err = false;
-        let elements_until_first_error_inclusive = all_elements.take_while(move |result| {
-            if result.is_err() {
-                if found_err {
-                    false
-                } else {
-                    found_err = true;
-                    true
-                }
-            } else {
-                true
-            }
-        });
-
-        Ok(elements_until_first_error_inclusive)
-    }
-
-    /// Decodes a vector, maps every element with the given closure and collects all the mappings
-    /// into a boxed slice.
-    ///
-    /// If the mapper function panics, all `R`s previously generated will never be dropped.
-    ///
-    /// Note: If we had the `trusted_len` feature, this method would not be needed, as a custom
-    /// collect could then consume the result of [`WasmDecoder::decode_vec_map`].
-    pub fn decode_vec_map_collect<'a, 'f, T, F, E>(
-        &'a mut self,
-        mut read_element: F,
+/// With the trusted_len feature, we could provide individual methods like `enumerate`, `map` and
+/// `collect`. But instead we have to merge them so that we always know the exact length to be
+/// relied on by unsafe code.
+impl<'a, 'wasm> DecodeVec<'a, 'wasm> {
+    pub fn enumerate_and_map_and_collect<F, T, E>(
+        mut self,
+        mut read_and_map_element: F,
     ) -> Result<Box<[T]>, E>
     where
+        F: FnMut(&mut WasmDecoder<'wasm>, u32) -> Result<T, E>,
         T: 'wasm,
-        F: FnMut(&mut WasmDecoder<'wasm>) -> Result<T, E> + 'f,
-        E: From<DecodingError>,
     {
-        let len = self.decode_var_u32()?;
-        let mut elements = Box::new_uninit_slice(len.into_usize());
+        let len = self.len;
+        let mut elements = FixedCapacityVec::with_capacity(len.into_usize());
 
-        for (i, element) in elements.iter_mut().enumerate() {
-            match read_element(self) {
-                Ok(next_element) => {
-                    element.write(next_element);
-                }
-                Err(err) => {
-                    // If the mapper errors, drop all previous initialized elements.
-                    let initialized_elements =
-                        elements.get_mut(0..i).expect("i is always less than len");
-                    for element in initialized_elements {
-                        // SAFETY: All elements in range `0..i` have been initialized already.
-                        unsafe { element.assume_init_drop() };
-                    }
-                    return Err(err);
-                }
-            }
+        for i in 0..len {
+            let next_element = read_and_map_element(&mut self.decoder, i)?;
+
+            debug_assert!(!elements.is_full());
+            // SAFETY: The vector has the capacity `len` and the for loop only iterates up to `len`
+            // times, so there is always space.
+            unsafe { elements.push_unchecked(next_element) };
         }
 
-        // SAFETY: All elements have been initialized in a for-loop over the entire slice.
-        let elements = unsafe { elements.assume_init() };
+        // SAFETY: `len` elements were pushed, therefore the vector with capacity `len` must be
+        // full.
+        let elements = unsafe { elements.into_boxed_slice() };
 
         Ok(elements)
+    }
+
+    pub fn map_and_collect<F, T, E>(self, mut read_and_map_element: F) -> Result<Box<[T]>, E>
+    where
+        F: FnMut(&mut WasmDecoder<'wasm>) -> Result<T, E>,
+        T: 'wasm,
+    {
+        self.enumerate_and_map_and_collect(|wasm, _index| read_and_map_element(wasm))
+    }
+
+    pub fn flat_map<F, U, T>(
+        self,
+        mut read_and_map_element: F,
+    ) -> impl Iterator<Item = T> + use<'a, 'wasm, F, U, T>
+    where
+        F: FnMut(&mut WasmDecoder<'wasm>) -> U,
+        U: IntoIterator<Item = T>,
+        T: 'wasm,
+    {
+        let Self {
+            len: mut num_element_left,
+            decoder,
+        } = self;
+
+        let mut current_iterator: Option<U::IntoIter> = None;
+
+        iter::from_fn(move || {
+            loop {
+                if let Some(current_iterator) = &mut current_iterator {
+                    if let Some(next_element) = current_iterator.next() {
+                        return Some(next_element);
+                    }
+                }
+
+                if num_element_left == 0 {
+                    return None;
+                }
+
+                // If we get to this point, there is no current iterator or it is empty and there
+                // are still elements in this vector left to read.
+                num_element_left -= 1;
+                let next_iterator = read_and_map_element(decoder).into_iter();
+                current_iterator = Some(next_iterator);
+            }
+        })
+    }
+
+    pub fn for_each<F>(self, mut runner: F)
+    where
+        F: FnMut(&mut WasmDecoder<'wasm>),
+    {
+        let result: Result<(), Infallible> = self.try_for_each(|wasm| Ok(runner(wasm)));
+
+        debug_assert!(result.is_ok());
+        // SAFETY: Error type is infallible
+        unsafe { result.unwrap_unchecked() }
+    }
+
+    pub fn try_for_each<F, E>(self, mut runner: F) -> Result<(), E>
+    where
+        F: FnMut(&mut WasmDecoder<'wasm>) -> Result<(), E>,
+    {
+        for _ in 0..self.len {
+            runner(self.decoder)?;
+        }
+
+        Ok(())
     }
 }
 

@@ -19,7 +19,7 @@ use crate::{
         instructions::{do_sidetable_control_transfer, InterpreterLoopOutcome, State},
         runtime_structure::function_instances::FuncInst,
     },
-    unreachable_validated, DecodingError, Ref, RuntimeError, TrapError,
+    unreachable_validated, Ref, RuntimeError, TrapError,
 };
 
 #[inline(always)]
@@ -180,15 +180,15 @@ pub unsafe fn br_if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>,
 
 #[inline(always)]
 pub unsafe fn br_table(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let label_vec_len = state
-        .wasm
-        .decode_vec_map::<_, _, DecodingError>(|wasm| {
-            // SAFETY: Validation guarantees that there is a
-            // valid vec of label indices.
-            Ok(unsafe { decode_label_idx_unchecked(wasm) })
-        })
-        .unwrap()
-        .count();
+    let mut label_vec_len = 0;
+
+    state.wasm.decode_vec().unwrap_validated().for_each(|wasm| {
+        // SAFETY: Validation guarantees that there is a
+        // valid vec of label indices.
+        unsafe { decode_label_idx_unchecked(wasm) };
+
+        label_vec_len += 1;
+    });
 
     // SAFETY: Validation guarantees there to be another label index
     // for the default case.

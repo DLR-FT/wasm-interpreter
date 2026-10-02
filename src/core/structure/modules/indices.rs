@@ -80,13 +80,13 @@ impl<I: Idx, T> IdxVec<I, T> {
     ///
     /// If the number of elements is larger than what can be addressed by a
     /// `u32`, i.e. `u32::MAX`, an error is returned instead.
-    pub fn new(elements: Vec<T>) -> Result<Self, IdxVecOverflowError> {
+    pub fn new(elements: Box<[T]>) -> Result<Self, IdxVecOverflowError> {
         if u32::try_from(elements.len()).is_err() {
             return Err(IdxVecOverflowError);
         }
 
         Ok(Self {
-            inner: elements.into_boxed_slice(),
+            inner: elements,
             _phantom: PhantomData,
         })
     }
@@ -177,14 +177,16 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
     ///
     /// If the number of total elements is larger than what can be addressed by
     /// a `u32`, i.e. `u32::MAX` elements, an error is returned instead.
-    pub fn new(imports: Vec<T>, locals: Vec<T>) -> Result<Self, IdxVecOverflowError> {
+    // TODO `locals` can be a variety of different iterators
+    pub fn new(imports: Vec<T>, locals: Box<[T]>) -> Result<Self, IdxVecOverflowError> {
         let num_imports = u32::try_from(imports.len()).map_err(|_| IdxVecOverflowError)?;
 
         let mut combined = imports;
+        // TODO return error if total length overflows
         combined.extend(locals);
 
         Ok(Self {
-            inner: IdxVec::new(combined)?,
+            inner: IdxVec::new(combined.into_boxed_slice())?,
             num_imports,
         })
     }
@@ -206,7 +208,7 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
     pub fn map<R>(
         &self,
         new_imported_definitions: Vec<R>,
-        new_local_definitions: Vec<R>,
+        new_local_definitions: Box<[R]>,
     ) -> Option<ExtendedIdxVec<I, R>> {
         if new_imported_definitions.len() != self.num_imports.into_usize()
             || u32::try_from(new_local_definitions.len()).ok()? != self.len_local_definitions()

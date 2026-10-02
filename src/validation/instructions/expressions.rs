@@ -1,4 +1,4 @@
-use alloc::{collections::btree_set::BTreeSet, vec::Vec};
+use alloc::{boxed::Box, collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::{
     core::{
@@ -247,9 +247,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                 )?;
             }
             BR_TABLE => {
-                let label_vec: Vec<u32> = wasm
-                    .decode_vec_map(decode_label_idx)
-                    .and_then(Iterator::collect)?;
+                let label_vec: Box<[u32]> = wasm.decode_vec()?.map_and_collect(decode_label_idx)?;
 
                 let max_label_idx = decode_label_idx(wasm)?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -422,9 +420,8 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                 stack.validate_polymorphic_select()?;
             }
             SELECT_T => {
-                let type_vec: Vec<ValType> = wasm
-                    .decode_vec_map(ValType::decode)
-                    .and_then(Iterator::collect)?;
+                let type_vec: Box<[ValType]> =
+                    wasm.decode_vec()?.map_and_collect(ValType::decode)?;
                 if type_vec.len() != 1 {
                     return Err(ValidationError::InvalidSelectTypeVectorLength(
                         type_vec.len(),

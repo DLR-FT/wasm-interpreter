@@ -303,7 +303,7 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: skip step 2 & 8 as it was done in instantiation step 5
 
         // allocation: step 3, 9
-        let table_addrs_local: Vec<TableAddr> = module
+        let table_addrs_local: Box<[TableAddr]> = module
             .tables
             .iter_local_definitions()
             .map(|table_type| {
@@ -313,13 +313,13 @@ impl<'b, T: Config> Store<'b, T> {
             })
             .collect();
         // allocation: step 4, 10
-        let mem_addrs_local: Vec<MemAddr> = module
+        let mem_addrs_local: Box<[MemAddr]> = module
             .memories
             .iter_local_definitions()
             .map(|mem_type| self.alloc_mem(*mem_type))
-            .collect::<Result<Vec<MemAddr>, RuntimeError>>()?;
+            .collect::<Result<Box<[MemAddr]>, RuntimeError>>()?;
         // allocation: step 5, 11
-        let global_addrs_local: Vec<GlobalAddr> = module
+        let global_addrs_local: Box<[GlobalAddr]> = module
             .globals
             .iter_local_definitions()
             .zip(local_globals_init_vals)

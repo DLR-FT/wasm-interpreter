@@ -43,7 +43,7 @@ impl DataSegment {
 
                 valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
 
-                let byte_vec = wasm.decode_vec_map_collect(WasmDecoder::decode_u8)?;
+                let byte_vec = wasm.decode_vec()?.map_and_collect(WasmDecoder::decode_u8)?;
 
                 // WARN: we currently don't take into consideration how we act when we are dealing with globals here
                 DataSegment {
@@ -57,7 +57,7 @@ impl DataSegment {
             1 => {
                 // passive
                 // A passive data segment's contents can be copied into a memory using the `memory.init` instruction
-                let byte_vec = wasm.decode_vec_map_collect(WasmDecoder::decode_u8)?;
+                let byte_vec = wasm.decode_vec()?.map_and_collect(WasmDecoder::decode_u8)?;
 
                 DataSegment {
                     mode: DataMode::Passive,
@@ -79,7 +79,7 @@ impl DataSegment {
 
                 valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
 
-                let byte_vec = wasm.decode_vec_map_collect(WasmDecoder::decode_u8)?;
+                let byte_vec = wasm.decode_vec()?.map_and_collect(WasmDecoder::decode_u8)?;
 
                 DataSegment {
                     mode: DataMode::Active(DataModeActive {

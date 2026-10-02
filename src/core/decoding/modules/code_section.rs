@@ -11,30 +11,28 @@ pub fn decode_locals<'a, 'wasm>(
     // First pass to decode all locals and check if their total number exceeds 2^32-1
     let mut total_number_of_locals = 0_u32;
     let mut wasm_cloned = wasm.clone();
-    wasm_cloned
-        .decode_vec_map(|wasm| {
-            let n = wasm.decode_var_u32()?;
-            let _valtype = ValType::decode(wasm)?;
 
-            total_number_of_locals = total_number_of_locals
-                .checked_add(n)
-                .ok_or(DecodingError::TooManyLocals)?;
+    wasm_cloned.decode_vec()?.try_for_each(|wasm| {
+        let n = wasm.decode_var_u32()?;
+        let _valtype = ValType::decode(wasm)?;
 
-            Ok(())
-        })?
-        .collect::<Result<(), DecodingError>>()?;
+        total_number_of_locals = total_number_of_locals
+            .checked_add(n)
+            .ok_or(DecodingError::TooManyLocals)?;
+
+        Ok(())
+    })?;
 
     // Second pass to flatten locals
     let locals = wasm
-        .decode_vec_map::<(u32, ValType), _, DecodingError>(|wasm| {
+        .decode_vec()
+        .expect("locals were valid during first pass")
+        .flat_map(|wasm| {
             let n = wasm.decode_var_u32().unwrap();
             let valtype = ValType::decode(wasm).unwrap();
 
-            Ok((n, valtype))
-        })
-        .unwrap()
-        .map(Result::unwrap)
-        .flat_map(|res| iter::repeat_n(res.1, res.0.into_usize()));
+            iter::repeat_n(valtype, n.into_usize())
+        });
 
     Ok(WithExactSize {
         i: locals,
