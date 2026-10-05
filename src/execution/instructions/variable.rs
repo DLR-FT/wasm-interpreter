@@ -6,13 +6,18 @@
 use core::ops::ControlFlow;
 
 use crate::{
-    core::structure::modules::indices::{GlobalIdx, LocalIdx},
+    core::{
+        structure::modules::indices::{GlobalIdx, LocalIdx},
+        utils::BytecodeProvider,
+    },
     execution::instructions::{InterpreterLoopOutcome, State},
     RuntimeError,
 };
 
 #[inline(always)]
-pub unsafe fn local_get(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn local_get<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid local index next.
     let local_idx = unsafe { LocalIdx::decode_unchecked(state.wasm) };
     // SAFETY: Validation guarantees that the local index is valid in the current call frame.
@@ -22,7 +27,9 @@ pub unsafe fn local_get(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn local_set(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn local_set<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid local index next.
     let local_idx = unsafe { LocalIdx::decode_unchecked(state.wasm) };
     // SAFETY: Validation guarantees there to be a value on the stack
@@ -34,7 +41,9 @@ pub unsafe fn local_set(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn local_tee(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+pub unsafe fn local_tee<T: BytecodeProvider>(
+    state: State<T>,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid local index next.
     let local_idx = unsafe { LocalIdx::decode_unchecked(state.wasm) };
     // SAFETY: Validation ensures that there is a value on the stack.
@@ -46,8 +55,8 @@ pub unsafe fn local_tee(state: State) -> Result<ControlFlow<InterpreterLoopOutco
 }
 
 #[inline(always)]
-pub unsafe fn global_get(
-    state: State,
+pub unsafe fn global_get<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid global
     // index next.
@@ -71,8 +80,8 @@ pub unsafe fn global_get(
 }
 
 #[inline(always)]
-pub unsafe fn global_set(
-    state: State,
+pub unsafe fn global_set<T: BytecodeProvider>(
+    state: State<T>,
 ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // SAFETY: Validation guarantees there to be a valid global
     // index next.

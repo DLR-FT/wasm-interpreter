@@ -3,16 +3,18 @@
 //! The majority of functions in the [`dlr_wasm_interpreter`] crate is marked as unsafe. While this
 //! is useful in very specialized or resource-constrained environments, usually runtime checks to
 //! ensure these safety conditions suffice. For that, we provide the utility crate
-//! [`dlr_wasm_interpreter_checked`], which provides a safe and checked API.
+//! [`dlr_wasm_interpreter_checked`], which provides a safe and checked API along with a simple
+//! [`BytecodeProvider`] implementation where [`Store`] owns all bytecode references.
 //!
 //! This example is exactly the same as `function_invocation.rs`, except that it uses the checked
 //! API.
 
 use std::error::Error;
 
-use dlr_wasm_interpreter::{decode_and_validate, FuncAddr, Module};
+use dlr_wasm_interpreter::FuncAddr;
 use dlr_wasm_interpreter_checked::{
-    Store, Stored, StoredExternVal, StoredInstantiationOutcome, StoredValue,
+    decode_and_validate, Module, Store, Stored, StoredExternVal, StoredInstantiationOutcome,
+    StoredValue,
 };
 
 const WAT_CODE: &str = r#"

@@ -12,7 +12,8 @@
 use std::error::Error;
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, ExternVal, FuncAddr, InstantiationOutcome, Module, Store, Value,
+    decode_and_validate, BytecodeProvider, ExternVal, FuncAddr, InstantiationOutcome, Module,
+    Store, Value,
 };
 
 /// The Wasm module is defined in the WebAssembly Text Format (WAT). We convert it to the Wasm
@@ -29,6 +30,20 @@ const WAT_CODE: &str = r#"
 )
 "#;
 
+/// A [`BytecodeProvider`] trait is supplied to the user to implement the strategy how the bytecode
+/// of each module is accessed. Here, the user is expected to implement the trait in a way that each
+/// bytecode slice corresponds to a unique id. The [`Store`] and other structs keep a record of
+/// these unique ids in turn and call get_bytecode when necessary.
+///
+/// In this example, since there is only one bytecode slice we are concerned with, the provider
+/// returns the same slice no matter which id is supplied.
+struct SingleBytecodeRef<'a>(&'a [u8]);
+impl BytecodeProvider for SingleBytecodeRef<'_> {
+    fn get_bytecode(&self, _id: usize) -> &[u8] {
+        self.0
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     // Convert WAT to Wasm bytecode
     let wasm_bytecode: Vec<u8> = wat::parse_str(WAT_CODE)?;
@@ -41,6 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // some user data.
     let mut store: Store<()> = Store::new(());
 
+    let bytecode_provider: SingleBytecodeRef<'_> = SingleBytecodeRef(&wasm_bytecode);
     // Now we can instantiate our module in the store. The instantiation process creates a new
     // module instance. The module instance is stored in the store and a module address that
     // uniquely identifies it within this store is returned.
@@ -51,9 +67,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Also, a fuel amount can be set to limit how much Wasm bytecode can be executed if a start
     // function exists.
     //
-    // SAFETY: There are no extern values.
+    // SAFETY:
+    // 1. There are no extern values.
+    // 2. `bytecode_provider` always returns the same bytecode, which is associated with this
+    //    module.
+    // 3. There are no previous instantiations.
     let instantiation_outcome: InstantiationOutcome =
-        unsafe { store.module_instantiate(&module, vec![], None) }?;
+        unsafe { store.module_instantiate(&module, 0, vec![], None, &bytecode_provider) }?;
 
     let InstantiationOutcome {
         // The address identifying the newly created module instance
@@ -65,8 +85,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     // `Store::instance_export` is part of the Embedder API (see also: embedder_api.rs)
     // It allows to lookup extern values exported by a module.
     //
-    // SAFETY: The module address was just returned from module instantiation in the same store.
-    let add_one: ExternVal = unsafe { store.instance_export(module_addr, "add_one") }?;
+    // SAFETY:
+    // 1. The module address was just returned from module instantiation in the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
+    let add_one: ExternVal =
+        unsafe { store.instance_export(module_addr, "add_one", &bytecode_provider) }?;
     // Wasm modules can not only export functions, but also globals, memories and tables. We know
     // add_one is a function.
     let add_one: FuncAddr = add_one.as_func().ok_or("add_one is not a function")?;
@@ -80,9 +103,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // compared to its more powerful, but complex sibling `Store::invoke` (see host_functions.rs or
     // fuel.rs for how to use it).
     //
-    // SAFETY: The function address was just returned from the same store. Also no addresses are
-    // passed as parameters.
-    let return_values: Vec<Value> = unsafe { store.invoke_simple(add_one, parameters) }?;
+    // SAFETY:
+    // 1. The function address was just returned from the same store. Also no addresses are passed
+    //    as parameters.
+    // 2. `bytecode_provider` has not changed since last instantiation.
+    let return_values: Vec<Value> =
+        unsafe { store.invoke_simple(add_one, parameters, &bytecode_provider) }?;
 
     // Now simply destructure the returned values
     let [Value::I32(n)] = *return_values else {

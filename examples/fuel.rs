@@ -17,9 +17,16 @@
 use std::{error::Error, time::Duration};
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, Config, FuncAddr, InstantiationOutcome, MemAddr, Module, RunState, Store,
-    Value,
+    decode_and_validate, BytecodeProvider, Config, FuncAddr, InstantiationOutcome, MemAddr, Module,
+    RunState, Store, Value,
 };
+
+struct SingleBytecodeRef<'a>(&'a [u8]);
+impl BytecodeProvider for SingleBytecodeRef<'_> {
+    fn get_bytecode(&self, _id: usize) -> &[u8] {
+        self.0
+    }
+}
 
 const WAT_CODE: &str = r#"
 (module
@@ -71,24 +78,35 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut store: Store<SlowExecutionConfig> = Store::new(SlowExecutionConfig);
 
-    // SAFETY: There are no extern values.
+    let bytecode_provider: SingleBytecodeRef<'_> = SingleBytecodeRef(&wasm_bytecode);
+    // SAFETY:
+    // 1. There are no extern values.
+    // 2. `bytecode_provider` always returns the same bytecode, which is associated with this
+    //    module.
+    // 3. There are no previous instantiations.
     let instantiation_outcome: InstantiationOutcome =
-        unsafe { store.module_instantiate(&module, vec![], None) }?;
+        unsafe { store.module_instantiate(&module, 0, vec![], None, &bytecode_provider) }?;
 
     let InstantiationOutcome {
         module_addr,
         maybe_remaining_fuel: _,
     } = instantiation_outcome;
 
-    // SAFETY: The module address was just returned from module instantiation in the same store.
-    let fibonacci: FuncAddr = unsafe { store.instance_export(module_addr, "fibonacci") }?
-        .as_func()
-        .ok_or("fibonacci is not a function")?;
+    // SAFETY:
+    // 1. The module address was just returned from module instantiation in the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
+    let fibonacci: FuncAddr =
+        unsafe { store.instance_export(module_addr, "fibonacci", &bytecode_provider) }?
+            .as_func()
+            .ok_or("fibonacci is not a function")?;
 
     // SAFETY: The module address was just returned from module instantiation in the same store.
-    let memory: MemAddr = unsafe { store.instance_export(module_addr, "memory") }?
-        .as_mem()
-        .ok_or("memory is not a memory")?;
+    // 1. The module address was just returned from module instantiation in the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
+    let memory: MemAddr =
+        unsafe { store.instance_export(module_addr, "memory", &bytecode_provider) }?
+            .as_mem()
+            .ok_or("memory is not a memory")?;
 
     let parameters: Vec<Value> = vec![Value::I32(u32::from(N))];
 
@@ -100,9 +118,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     // `RunState` which depends on why execution stopped. In our case, execution can either finish
     // (`RunState::Finished`) or be stopped when fuel is empty (`RunState::Resumable`).
     //
-    // SAFETY: The function address was just returned from the same store. Also, no addresses are
-    // passed as parameters.
-    let mut run_state = unsafe { store.invoke(fibonacci, parameters, Some(FUEL_PER_CYCLE)) }?;
+    // SAFETY:
+    // 1. The function address was just returned from the same store. Also, no addresses are passed
+    //    as parameters.
+    // 2. `bytecode_provider` has not changed since last instantiation.
+    let mut run_state = unsafe {
+        store.invoke(
+            fibonacci,
+            parameters,
+            Some(FUEL_PER_CYCLE),
+            &bytecode_provider,
+        )
+    }?;
 
     let return_values: Vec<Value> = loop {
         match run_state {
@@ -134,8 +161,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 // Continue execution, save its resulting run state and restart the loop.
                 //
-                // SAFETY: The resumable was just returned from the same store.
-                run_state = unsafe { store.resume_wasm(resumable) }?;
+                // SAFETY:
+                // 1. The resumable was just returned from the same store.
+                // 2. `bytecode_provider` has not changed since last instantiation.
+                run_state = unsafe { store.resume_wasm(resumable, &bytecode_provider) }?;
             }
             RunState::HostCalled { .. } => unreachable!("no host functions exist"),
         }

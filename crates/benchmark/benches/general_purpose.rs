@@ -5,7 +5,14 @@ use criterion::{
     PlotConfiguration, Throughput,
 };
 
-use dlr_wasm_interpreter::{decode_and_validate, Store};
+use dlr_wasm_interpreter::{decode_and_validate, BytecodeProvider, Store};
+
+struct SingleBytecodeRef<'b>(&'b [u8]);
+impl<'b> BytecodeProvider for SingleBytecodeRef<'b> {
+    fn get_bytecode(&self, _id: usize) -> &[u8] {
+        self.0
+    }
+}
 
 macro_rules! bench_wasm {
     {
@@ -52,6 +59,7 @@ macro_rules! bench_wasm {
             let plot_config = $plot_config;
             let wasm_bytes = $wasm_bytes;
 
+
             // Our interpreter
             let our_module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
             struct UserData;
@@ -60,12 +68,17 @@ macro_rules! bench_wasm {
                 const MAX_CALL_STACK_SIZE: usize = $call_stack_size;
             }
             let mut store = Store::new(UserData);
-            // SAFETY: Only one store is used. Therefore, this must always be
-            // the correct one.
-            let module = unsafe { store.module_instantiate(&our_module, Vec::new(), None) }.unwrap().module_addr;
-            // SAFETY: Only one store is used. Therefore, this must always be
-            // the correct one.
-            let our_fn = unsafe { store.instance_export(module, $entry_function) }
+            let bytecode_provider = SingleBytecodeRef(&wasm_bytes);
+            // SAFETY:
+            // 1. Only one store is used. Therefore, this must always be the correct one.
+            // 2. `bytecode_provider` always returns the same bytecode, which is associated with
+            //    `our_module`.
+            // 3. There are no previous instantiations.
+            let module = unsafe { store.module_instantiate(&our_module, 0, Vec::new(), None, &bytecode_provider) }.unwrap().module_addr;
+            // SAFETY:
+            // 1. Only one store is used. Therefore, this must always be the correct one.
+            // 2. `bytecode_provider` is unchanged.
+            let our_fn = unsafe { store.instance_export(module, $entry_function, &bytecode_provider ) }
                 .unwrap()
                 .as_func()
                 .unwrap();
@@ -141,9 +154,11 @@ macro_rules! bench_wasm {
                     b.iter_batched(|| {
                         resumable.clone()
                     }, |resumable| {
-                        // SAFETY: Only one store is used. Therefore, this must always be
-                        // the correct one.
-                        unsafe { store.resume_wasm(resumable) }.unwrap()
+                        // SAFETY:
+                        // 1. Only one store is used. Therefore, this must always be the correct
+                        //    one.
+                        // 2. `bytecode_provider` is unchanged.
+                        unsafe { store.resume_wasm(resumable, &bytecode_provider) }.unwrap()
                     }, BatchSize::PerIteration)
                 });
             }

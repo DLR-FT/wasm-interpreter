@@ -1,7 +1,7 @@
 #![allow(clippy::approx_constant)]
 use core::f64;
 
-use dlr_wasm_interpreter::decode_and_validate;
+use dlr_wasm_interpreter_checked::decode_and_validate;
 use dlr_wasm_interpreter_checked::Store;
 
 /// A simple function to test the f64.const implementation

@@ -1,4 +1,4 @@
-use dlr_wasm_interpreter::decode_and_validate;
+use dlr_wasm_interpreter_checked::decode_and_validate;
 use dlr_wasm_interpreter_checked::Store;
 
 const _UNMET_IMPORTS: &str = r#"

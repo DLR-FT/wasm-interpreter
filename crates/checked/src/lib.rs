@@ -25,10 +25,12 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use alloc::vec::Vec;
 
+mod module;
 mod store;
 mod stored_types;
 mod value;
 
+pub use module::*;
 pub use store::*;
 pub use stored_types::*;
 pub use value::*;

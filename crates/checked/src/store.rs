@@ -1,30 +1,53 @@
 use alloc::{sync::Arc, vec::Vec};
 use dlr_wasm_interpreter::{
-    Config, FuncAddr, FuncType, GlobalAddr, GlobalType, HostResumable, Hostcode, MemAddr, MemType,
-    Module, ModuleAddr, RuntimeError, SharedLinearMemory, TableAddr, TableType, WasmResumable,
+    BytecodeProvider, Config, FuncAddr, FuncType, GlobalAddr, GlobalType, HostResumable, Hostcode,
+    MemAddr, MemType, ModuleAddr, RuntimeError, SharedLinearMemory, TableAddr, TableType,
+    WasmResumable,
 };
 
 use crate::{
     stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome, StoredRunState},
-    AbstractStored, StoreId, StoredRef, StoredResumable, StoredValue,
+    AbstractStored, Module, StoreId, StoredRef, StoredResumable, StoredValue,
 };
 
+#[derive(Default)]
+pub(crate) struct BytecodeRefs<'b>(Vec<&'b [u8]>);
+
+impl<'b> BytecodeRefs<'b> {
+    pub(crate) fn new() -> Self {
+        Self::default()
+    }
+
+    pub(crate) fn add_bytecode_ref(&mut self, bytecode: &'b [u8]) -> usize {
+        let id = self.0.len();
+        self.0.push(bytecode);
+        id
+    }
+}
+
+impl<'b> BytecodeProvider for BytecodeRefs<'b> {
+    fn get_bytecode(&self, id: usize) -> &[u8] {
+        self.0[id]
+    }
+}
+
 pub struct Store<'b, T: Config> {
-    pub(crate) inner: dlr_wasm_interpreter::Store<'b, T>,
+    pub(crate) inner: dlr_wasm_interpreter::Store<T>,
 
     /// A unique identifier for this store. This is used to verify that stored objects belong to the
     /// current [`Store`](dlr_wasm_interpreter::Store).
     pub(crate) id: StoreId,
+    pub(crate) bytecode_refs: BytecodeRefs<'b>,
 }
 
 impl<'b, T: Config> Store<'b, T> {
     /// Returns an immutable reference to the raw store.
-    pub fn inner(&self) -> &dlr_wasm_interpreter::Store<'b, T> {
+    pub fn inner(&self) -> &dlr_wasm_interpreter::Store<T> {
         &self.inner
     }
 
     /// Deconstructs this checked store and returns its inner representation.
-    pub fn into_inner(self) -> dlr_wasm_interpreter::Store<'b, T> {
+    pub fn into_inner(self) -> dlr_wasm_interpreter::Store<T> {
         self.inner
     }
 
@@ -47,6 +70,7 @@ impl<'b, T: Config> Store<'b, T> {
         Self {
             inner: dlr_wasm_interpreter::Store::new(user_data),
             id: StoreId::new(),
+            bytecode_refs: BytecodeRefs::new(),
         }
     }
 
@@ -58,14 +82,29 @@ impl<'b, T: Config> Store<'b, T> {
         extern_vals: Vec<StoredExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<StoredInstantiationOutcome, RuntimeError> {
+        let bytecode_id = self.bytecode_refs.add_bytecode_ref(module.wasm);
+
         // 1. try unwrap
         let extern_vals = extern_vals.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `ExternVal`s came from the
-        // current store through their store ids.
+        // SAFETY:
+        // a. It was just checked that the `ExternVal`s came from the current store through
+        //    their store ids.
+        // b. The module was just registered to `self.bytecode_refs`, therefore the association
+        //    between `bytecode_id` and `module.inner` holds.
+        // c. `self.bytecode_refs.add_bytecode_ref` is only called just before
+        //    `dlr_wasm_interpreter::Store::module_instantiate` in this crate. Therefore it maintains
+        //    an invariant where bytecode_ids correspond to the order of the modules being
+        //    instantiatied. This invariant is sufficient to show that `self.bytecode_refs` is
+        //    consistent with previous instantiations.
         let instantiation_outcome = unsafe {
-            self.inner
-                .module_instantiate(module, extern_vals, maybe_fuel)
+            self.inner.module_instantiate(
+                &module.inner,
+                bytecode_id,
+                extern_vals,
+                maybe_fuel,
+                &self.bytecode_refs,
+            )
         }?;
         // 3. rewrap
         // SAFETY: The `InstantiationOutcome` just came from the current store.
@@ -85,9 +124,17 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let module_addr = module_addr.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `ModuleAddr` came from the
-        // current store through its store id.
-        let extern_val = unsafe { self.inner.instance_export(module_addr, name) }?;
+        // SAFETY:
+        // a. It was just checked that the `ModuleAddr` came from the current store through its
+        //    store id.
+        // b. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation.
+        //    Therefore it maintains an invariant where bytecode_ids correspond to the order of
+        //    the modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
+        let extern_val = unsafe {
+            self.inner
+                .instance_export(module_addr, name, &self.bytecode_refs)
+        }?;
         // 3. rewrap
         // SAFETY: The `ExternVal` just came from the current store.
         let stored_extern_val = unsafe { StoredExternVal::from_bare(extern_val, self.id) };
@@ -134,9 +181,17 @@ impl<'b, T: Config> Store<'b, T> {
         let func_addr = func_addr.try_unwrap_into_bare(self.id);
         let params = params.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `FuncAddr` and any addresses in
-        // the parameters came from the current store through their store ids.
-        let run_state = unsafe { self.inner.invoke(func_addr, params, maybe_fuel) }?;
+        // SAFETY:
+        // a. It was just checked that the `FuncAddr` and any addresses in the parameters came
+        //    from the current store through their store ids.
+        // b. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation.
+        //    Therefore it maintains an invariant where bytecode_ids correspond to the order of
+        //    the modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
+        let run_state = unsafe {
+            self.inner
+                .invoke(func_addr, params, maybe_fuel, &self.bytecode_refs)
+        }?;
         // 3. rewrap
         // SAFETY: The `RunState` just came from the current store.
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
@@ -438,9 +493,13 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let resumable = resumable.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `Resumable` came from the
-        // current store through its store id.
-        let run_state = unsafe { self.inner.resume(resumable) }?;
+        // SAFETY:
+        // a. It was just checked that the `Resumable` came from the current store through its
+        // b. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation.
+        //    Therefore it maintains an invariant where bytecode_ids correspond to the order of
+        //    the modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
+        let run_state = unsafe { self.inner.resume(resumable, &self.bytecode_refs) }?;
         // 3. rewrap
         // SAFETY: The `RunState` just came from the current store.
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
@@ -456,9 +515,14 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let resumable = resumable.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `WasmResumable` came from the
-        // current store through its store id.
-        let run_state = unsafe { self.inner.resume_wasm(resumable) }?;
+        // SAFETY:
+        // a. It was just checked that the `WasmResumable` came from the current store through its
+        //    store id
+        // b. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation.
+        //    Therefore it maintains an invariant where bytecode_ids correspond to the order of the
+        //    modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
+        let run_state = unsafe { self.inner.resume_wasm(resumable, &self.bytecode_refs) }?;
         // 3. rewrap
         // SAFETY: The `RunState` just came from the current store.
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
@@ -500,9 +564,17 @@ impl<'b, T: Config> Store<'b, T> {
         let function = function.try_unwrap_into_bare(self.id);
         let params = params.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `FuncAddr` and all `Value`s came
-        // from the current store through their store ids.
-        let return_values = unsafe { self.inner.invoke_simple(function, params) }?;
+        // SAFETY:
+        // a. It was just checked that the `FuncAddr` and all `Value`s came from the current store
+        //    through their store ids.
+        // b. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation.
+        //    Therefore it maintains an invariant where bytecode_ids correspond to the order of the
+        //    modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
+        let return_values = unsafe {
+            self.inner
+                .invoke_simple(function, params, &self.bytecode_refs)
+        }?;
         // 3. rewrap
         // SAFETY: The `Value`s just came from the current store.
         let stored_return_values = unsafe { Vec::from_bare(return_values, self.id) };
@@ -536,13 +608,21 @@ impl<'b, T: Config> Store<'b, T> {
     pub fn instance_exports(
         &self,
         module_addr: Stored<ModuleAddr>,
-    ) -> impl ExactSizeIterator<Item = (&'b str, StoredExternVal)> + '_ {
+    ) -> impl ExactSizeIterator<Item = (&'_ str, StoredExternVal)> {
         // 1. try unwrap
         let module_addr = module_addr.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: We just checked that this module address is valid in the
-        // current store through its store id.
-        let exports = unsafe { self.inner.instance_exports(module_addr) };
+        // SAFETY:
+        // a. We just checked that this module address is valid in the current store through its
+        //    store id.
+        // b. `self.bytecode_refs.add_bytecode_ref` is only called during instantiation.
+        //    Therefore it maintains an invariant where bytecode_ids correspond to the order of the
+        //    modules being instantiatied. This invariant is sufficient to show that
+        //    `self.bytecode_refs` is consistent with previous instantiations.
+        let exports = unsafe {
+            self.inner
+                .instance_exports(module_addr, &self.bytecode_refs)
+        };
         // 3. rewrap
         // 4. return
         exports.map(|(name, externval)| {
