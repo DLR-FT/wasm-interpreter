@@ -11,7 +11,8 @@ use alloc::boxed::Box;
 
 use crate::{
     core::{
-        decoding::decoder::WasmDecoder, fixed_capacity_vec::FixedCapacityVec, utils::ToUsizeExt,
+        decoding::decoder::WasmDecoder, fixed_capacity_vec::FixedCapacityVec,
+        trusted_exact_size_iterator::TrustedExactSizeIterator, utils::ToUsizeExt,
     },
     DecodingError,
 };
@@ -370,11 +371,37 @@ impl<'wasm> WasmDecoder<'wasm> {
         core::str::from_utf8(utf8_str).map_err(DecodingError::MalformedUtf8)
     }
 
-    /// Starts decoding a vector. The returned [`DecodeVec`] object can be used to further read and
-    /// map vector elements.
-    pub fn decode_vec<'a>(&'a mut self) -> Result<DecodeVec<'a, 'wasm>, DecodingError> {
+    /// Starts decoding a vector and lazily reads its elements using the given function via the
+    /// returned iterator. The error must be cloneable because when an error first occurs, it marks
+    /// the iterator as failed and the error is cloned for all remaining vector elements without the
+    /// function being called ever again. This is required to uphold the
+    /// [`TrustedExactSizeIterator`] invariants, but likely optimized out because consumers usually
+    /// drop the iterator when an error is returned for the first time.
+    pub fn decode_vec<'a, F, T, E>(
+        &'a mut self,
+        mut read_element: F,
+    ) -> Result<
+        impl TrustedExactSizeIterator<Item = Result<T, E>> + use<'a, 'wasm, F, T, E>,
+        DecodingError,
+    >
+    where
+        F: FnMut(&mut WasmDecoder<'wasm>, u32) -> Result<T, E>,
+        E: Clone,
+    {
         let len = self.decode_var_u32()?;
-        Ok(DecodeVec { len, decoder: self })
+
+        let mut error: Option<E> = None;
+        let iter = (0..len).map(move |idx| {
+            if let Some(error) = &error {
+                return Err(error.clone());
+            }
+
+            read_element(self, idx).inspect_err(|err| {
+                error = Some(err.clone());
+            })
+        });
+
+        Ok(iter)
     }
 }
 

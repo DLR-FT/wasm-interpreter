@@ -15,8 +15,11 @@ use crate::{
                 data_segments::{DataMode, DataModeActive, DataSegment},
                 element_segments::{ActiveElem, ElemItems, ElemMode, ElemType},
                 exports::ExportDesc,
-                indices::{ElemIdx, IdxVec, TypeIdx},
+                indices::{ElemIdx, ExtendedIdxVec, IdxVec, TypeIdx},
             },
+        },
+        trusted_exact_size_iterator::{
+            CollectIntoBoxedSliceExt, IntoTrustedChainExt, TrustedExactSizeIterator,
         },
         utils::{MapIntoBoxedSlice, ToUsizeExt},
     },
@@ -176,7 +179,7 @@ impl<'b, T: Config> Store<'b, T> {
             // special `moduleinst_init`. Here, we want to use the `IdxVec` type
             // safety, but at the same time only the imports can be populated at
             // this point.
-            global_addrs: IdxVec::new(extern_vals.iter().globals().collect())
+            global_addrs: IdxVec::from_iter(extern_vals.iter().globals().collect())
                 .expect(
                     "that the number of imports and therefore also the number of imported globals is <= u32::MAX",
                 ),
@@ -188,7 +191,7 @@ impl<'b, T: Config> Store<'b, T> {
         };
         let module_addr = self.modules.insert(module_inst);
 
-        let imported_functions = extern_vals.iter().funcs();
+        let imported_functions: Vec<FuncAddr> = extern_vals.iter().funcs().collect();
         let local_func_addrs = module
             .functions
             .iter_local_definitions()
@@ -201,17 +204,15 @@ impl<'b, T: Config> Store<'b, T> {
                 unsafe { self.alloc_func((*ty_idx, (*span, *stp)), module_addr) }
             });
 
-        let func_addrs = module
-            .functions
-            .map(imported_functions.collect(), local_func_addrs.collect())
-            .expect(
-                "that the numbers of imported and local functions always \
-                match the respective numbers in the module. Step 3 and 4 \
-                check if the number of imported functions is correct and the number \
-                of local functions is a direct one-to-one mapping of \
-                `module.func_blocks_stps`",
-            )
-            .into_inner();
+        let func_addrs = {
+            let chained_functions = imported_functions
+                .into_iter()
+                .chain(local_func_addrs)
+                .try_into_trusted()
+                .expect("validation ensures that the number of functions does not exceed u32::MAX and therefore also not usize::MAX (u32 is assumed to be smaller)");
+            IdxVec::from_iter(chained_functions)
+                .expect("validation ensures that the number of functions does not exceed u32::MAX")
+        };
 
         // SAFETY: The module with this module address was just inserted into
         // this `AddrVec`
@@ -1287,7 +1288,9 @@ impl<'b, T: Config> Store<'b, T> {
         wasm_decoder.move_start_to(span).unwrap_validated();
 
         let (locals, bytes_read) = wasm_decoder
-            .measure_num_read_bytes(|wasm| decode_locals(wasm).map(Iterator::collect))
+            .measure_num_read_bytes(|wasm| {
+                decode_locals(wasm).map(CollectIntoBoxedSliceExt::collect_into_boxed_slice)
+            })
             .unwrap_validated();
 
         let code_expr = wasm_decoder

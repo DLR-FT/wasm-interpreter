@@ -3,7 +3,7 @@
     reason = "see `instructions::State` for more information"
 )]
 
-use core::ops::ControlFlow;
+use core::{convert::Infallible, ops::ControlFlow};
 
 use crate::{
     execution::{
@@ -42,9 +42,14 @@ pub unsafe fn select(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>
 #[inline(always)]
 pub unsafe fn select_t(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     // skip past type vec
-    state.wasm.decode_vec().unwrap_validated().for_each(|wasm| {
-        let _ = ValType::decode(wasm).unwrap_validated();
-    });
+    state
+        .wasm
+        .decode_vec(|wasm, _idx| {
+            let _ = ValType::decode(wasm).unwrap_validated();
+            Ok::<(), Infallible>(())
+        })
+        .unwrap_validated()
+        .for_each(|Ok(())| {});
     // SAFETY: Validation guarantees that there is a value on the stack.
     let test_val: i32 = unsafe { state.resumable.stack.pop_value() }
         .try_into()

@@ -1,4 +1,4 @@
-use alloc::vec::Vec;
+use alloc::boxed::Box;
 
 use crate::{
     core::{decoding::decoder::span::Span, structure::modules::indices::TypeIdx},
@@ -16,7 +16,7 @@ pub enum FuncInst {
 pub struct WasmFuncInst {
     pub function_type: FuncType,
     pub _ty: TypeIdx,
-    pub locals: Vec<ValType>,
+    pub locals: Box<[ValType]>,
     pub code_expr: Span,
     ///index of the sidetable corresponding to the beginning of this functions code
     pub stp: usize,

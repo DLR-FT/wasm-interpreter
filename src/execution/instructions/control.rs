@@ -3,7 +3,7 @@
     reason = "see `instructions::State` for more information"
 )]
 
-use core::ops::ControlFlow;
+use core::{convert::Infallible, ops::ControlFlow};
 
 use crate::{
     core::{
@@ -12,6 +12,7 @@ use crate::{
             modules::indices::{FuncIdx, TableIdx, TypeIdx},
             types::BlockType,
         },
+        trusted_exact_size_iterator::TrustedExactSizeIterator,
         utils::ToUsizeExt,
     },
     execution::{
@@ -180,15 +181,15 @@ pub unsafe fn br_if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>,
 
 #[inline(always)]
 pub unsafe fn br_table(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
-    let mut label_vec_len = 0;
-
-    state.wasm.decode_vec().unwrap_validated().for_each(|wasm| {
-        // SAFETY: Validation guarantees that there is a
-        // valid vec of label indices.
-        unsafe { decode_label_idx_unchecked(wasm) };
-
-        label_vec_len += 1;
-    });
+    let label_vec_len = state
+        .wasm
+        .decode_vec(|wasm, _| {
+            // SAFETY: Validation guarantees that there is a valid vec of label indices.
+            unsafe { decode_label_idx_unchecked(wasm) };
+            Ok::<(), Infallible>(())
+        })
+        .unwrap_validated()
+        .len_trusted();
 
     // SAFETY: Validation guarantees there to be another label index
     // for the default case.

@@ -26,6 +26,7 @@ use crate::{
             },
             types::{ExternType, FuncType, GlobalType, MemType, TableType},
         },
+        trusted_exact_size_iterator::TryCollectIntoBoxedSliceExt,
         utils::ToUsizeExt,
     },
     validation::{config::ValidationConfig, modules::functions::decode_and_validate_code_section},
@@ -107,16 +108,16 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
     let types = decode_section_if_ty_matches::<_, DecodingError>(&mut wasm, SectionTy::Type, |wasm, _| {
-        let collected= wasm.decode_vec()?.map_and_collect(FuncType::decode)?;
-        let idx_vec = IdxVec::new(collected).expect("that index space creation never fails because the length of the types vector is encoded as a 32-bit integer in the bytecode");
+        let collected= wasm.decode_vec(|wasm, _| FuncType::decode(wasm))?.try_collect_into_boxed_slice()?;
+        let idx_vec = IdxVec::from_iter(collected).expect("that index space creation never fails because the length of the types vector is encoded as a 32-bit integer in the bytecode");
         Ok(idx_vec)
     })?.unwrap_or_default();
 
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
     let imports = decode_section_if_ty_matches(&mut wasm, SectionTy::Import, |wasm, _| {
-        wasm.decode_vec()?
-            .map_and_collect(|wasm| Import::decode_and_validate(wasm, &types))
+        wasm.decode_vec(|wasm, _| Import::decode_and_validate(wasm, &types))?
+            .try_collect_into_boxed_slice()
     })?
     .unwrap_or_default();
 
@@ -130,8 +131,8 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
     // only after that do the local functions get assigned their indices.
     let local_functions =
         decode_section_if_ty_matches(&mut wasm, SectionTy::Function, |wasm, _| {
-            wasm.decode_vec()?
-                .map_and_collect(|wasm| TypeIdx::decode_and_validate(wasm, &types))
+            wasm.decode_vec(|wasm, _| TypeIdx::decode_and_validate(wasm, &types))?
+                .try_collect_into_boxed_slice()
         })?
         .unwrap_or_default();
 
@@ -150,8 +151,8 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
         _ => None,
     });
     let local_tables = decode_section_if_ty_matches(&mut wasm, SectionTy::Table, |wasm, _| {
-        wasm.decode_vec()?
-            .map_and_collect(TableType::decode_and_validate)
+        wasm.decode_vec(|wasm, _| TableType::decode_and_validate(wasm))?
+            .try_collect_into_boxed_slice()
     })?
     .unwrap_or_default();
 
@@ -166,8 +167,8 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
     });
     // let imported_memories_length = imported_memories.len();
     let local_memories = decode_section_if_ty_matches(&mut wasm, SectionTy::Memory, |wasm, _| {
-        wasm.decode_vec()?
-            .map_and_collect(MemType::decode_and_validate)
+        wasm.decode_vec(|wasm, _| MemType::decode_and_validate(wasm))?
+            .try_collect_into_boxed_slice()
     })?
     .unwrap_or_default();
 
@@ -188,14 +189,15 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
         })
         .collect();
     let local_globals = decode_section_if_ty_matches(&mut wasm, SectionTy::Global, |wasm, _| {
-        wasm.decode_vec()?.map_and_collect(|wasm| {
+        wasm.decode_vec(|wasm, _| {
             Global::decode_and_validate(
                 wasm,
                 &imported_global_types,
                 &mut validation_context_refs,
                 functions.inner(),
             )
-        })
+        })?
+        .try_collect_into_boxed_slice()
     })?
     .unwrap_or_default();
 
@@ -212,7 +214,7 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
 
     let exports: Box<[Export]> =
         decode_section_if_ty_matches(&mut wasm, SectionTy::Export, |wasm, _| {
-            wasm.decode_vec()?.map_and_collect(|wasm| {
+            wasm.decode_vec(|wasm, _| {
                 Export::decode_and_validate(
                     wasm,
                     functions.inner(),
@@ -220,7 +222,8 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
                     memories.inner(),
                     globals.inner(),
                 )
-            })
+            })?
+            .try_collect_into_boxed_slice()
         })?
         .unwrap_or_default();
     validation_context_refs.extend(exports.iter().filter_map(
@@ -255,7 +258,7 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
     let elements = decode_section_if_ty_matches::<_, ValidationError>(&mut wasm, SectionTy::Element, |wasm, _| {
-        let collected = wasm.decode_vec()?.map_and_collect(|wasm| {
+        let collected = wasm.decode_vec(|wasm, _| {
             ElemType::decode_and_validate(
             wasm,
             functions.inner(),
@@ -263,7 +266,7 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
             tables.inner(),
             &imported_global_types,
         )})?;
-        let idx_vec = IdxVec::new(collected).expect("that index space creation never fails because the length of the elements vector is encoded as a 32-bit integer in the bytecode");
+        let idx_vec = IdxVec::try_from_iter(collected).expect("that index space creation never fails because the length of the elements vector is encoded as a 32-bit integer in the bytecode")?;
         Ok(idx_vec)
     })?
     .unwrap_or_default();
@@ -313,9 +316,9 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
     let data_section = decode_section_if_ty_matches::<_, ValidationError>(&mut wasm, SectionTy::Data, |wasm, _| {
-        let collected = wasm.decode_vec()?.map_and_collect(|wasm| {
+        let collected = wasm.decode_vec(|wasm, _| {
             DataSegment::decode_and_validate(wasm, &imported_global_types, functions.inner(), memories.inner())
-        })?;
+        })?.try_collect_into_boxed_slice()?;
         let idx_vec = IdxVec::new(collected).expect("that index space creation never fails because the length of the data segments vector is encoded as a 32-bit integer in the bytecode");
         Ok(idx_vec)
     })?
