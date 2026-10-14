@@ -5,6 +5,8 @@ use core::{
     ptr,
 };
 
+use crate::core::trusted_exact_size_iterator::TrustedExactSizeIterator;
+
 /// The operation would remove more elements than currently present or tries to access an element
 /// when none are present
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -93,12 +95,20 @@ impl<T> FixedCapacityVec<T> {
         self.elements.len()
     }
 
+    pub const fn spare_capacity(&self) -> usize {
+        debug_assert!(self.capacity() >= self.len());
+        // SAFETY: The length can never be larger than the capacity.
+        unsafe { self.capacity().unchecked_sub(self.len()) }
+    }
+
     /// Push a value to the end of [`Self`]
     ///
     /// # Safety
     ///
     /// - Causes UB if [`Self`] is already full.
     /// - Causes UB if [`Self`] has a capacity equal to `usize::MAX`
+    // TODO: Why the requirement for the capacity to not be equal to `usize::MAX`? For Rust, I think
+    // that the limit for allocation sizes is even isize::MAX.
     #[inline(always)]
     pub unsafe fn push_unchecked(&mut self, value: T) {
         debug_assert!(!self.is_full());
@@ -278,6 +288,19 @@ impl<T> FixedCapacityVec<T> {
         // SAFETY: The vector is full, therefore all `capacity` elements must be properly
         // initialized.
         unsafe { elements.assume_init() }
+    }
+
+    /// # Safety
+    ///
+    /// This vector must not overflow when all elements from the given iterator are pushed into it.
+    pub unsafe fn extend_unchecked(&mut self, iter: impl TrustedExactSizeIterator<Item = T>) {
+        debug_assert!(iter.len_trusted() <= self.spare_capacity());
+        for t in iter {
+            debug_assert!(!self.is_full());
+            // SAFETY: The caller ensures that this vector does not overflow when all T's are pushed
+            // into it.
+            unsafe { self.push_unchecked(t) };
+        }
     }
 }
 

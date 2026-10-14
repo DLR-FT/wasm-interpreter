@@ -3,7 +3,7 @@ use core::{convert::Infallible, iter};
 use crate::{
     core::{
         decoding::decoder::WasmDecoder,
-        trusted_exact_size_iterator::{IntoTrustedUncheckedExt, TrustedExactSizeIterator},
+        trusted_exact_size_iterator::{AssumeTrustedExactSize, TrustedExactSizeIterator},
         utils::ToUsizeExt,
     },
     DecodingError, ValType,
@@ -17,7 +17,8 @@ pub fn decode_locals<'a, 'wasm>(
     let mut wasm_cloned = wasm.clone();
 
     wasm_cloned
-        .decode_vec(|wasm, _| {
+        .decode_vec()?
+        .decode_elements_with(|wasm, _| {
             let n = wasm.decode_var_u32()?;
             let _valtype = ValType::decode(wasm)?;
 
@@ -26,21 +27,22 @@ pub fn decode_locals<'a, 'wasm>(
                 .ok_or(DecodingError::TooManyLocals)?;
 
             Ok(())
-        })?
-        .collect::<Result<(), _>>()?;
+        })
+        .collect::<Result<(), DecodingError>>()?;
 
     // Second pass to flatten locals
     let locals_untrusted = wasm
-        .decode_vec(|wasm, _| {
+        .decode_vec()
+        .expect("locals are valid due to first pass")
+        .decode_elements_with(|wasm, _| {
             let n = wasm.decode_var_u32().unwrap();
             let valtype = ValType::decode(wasm).unwrap();
             Ok::<_, Infallible>((n, valtype))
         })
-        .expect("locals were valid during first pass")
         .flat_map(|Ok((n, valtype))| iter::repeat_n(valtype, n.into_usize()));
 
     let locals =
-        unsafe { locals_untrusted.into_trusted_unchecked(total_number_of_locals.into_usize()) };
+        unsafe { locals_untrusted.assume_trusted_exact_size(total_number_of_locals.into_usize()) };
 
     Ok(locals)
 }

@@ -130,8 +130,8 @@ where
     }
 }
 
-pub trait IntoTrustedUncheckedExt: Iterator {
-    unsafe fn into_trusted_unchecked(
+pub trait AssumeTrustedExactSize: Iterator {
+    unsafe fn assume_trusted_exact_size(
         self,
         exact_size: usize,
     ) -> impl TrustedExactSizeIterator<Item = Self::Item>;
@@ -156,8 +156,8 @@ impl<I: Iterator> Iterator for TrustedExactSizeUnchecked<I> {
 
 unsafe impl<I> TrustedExactSizeIterator for TrustedExactSizeUnchecked<I> where Self: Iterator {}
 
-impl<I: Iterator> IntoTrustedUncheckedExt for I {
-    unsafe fn into_trusted_unchecked(
+impl<I: Iterator> AssumeTrustedExactSize for I {
+    unsafe fn assume_trusted_exact_size(
         self,
         exact_size: usize,
     ) -> impl TrustedExactSizeIterator<Item = Self::Item> {

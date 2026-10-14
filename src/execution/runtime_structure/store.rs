@@ -1,5 +1,3 @@
-use core::convert::Infallible;
-
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
 
 use crate::{
@@ -15,13 +13,14 @@ use crate::{
                 data_segments::{DataMode, DataModeActive, DataSegment},
                 element_segments::{ActiveElem, ElemItems, ElemMode, ElemType},
                 exports::ExportDesc,
-                indices::{ElemIdx, ExtendedIdxVec, IdxVec, TypeIdx},
+                indices::{IdxVec, TypeIdx},
             },
         },
         trusted_exact_size_iterator::{
-            CollectIntoBoxedSliceExt, IntoTrustedChainExt, TrustedExactSizeIterator,
+            AssumeTrustedExactSize, CollectIntoBoxedSliceExt, IntoTrustedChainExt,
+            TryCollectIntoBoxedSliceExt,
         },
-        utils::{MapIntoBoxedSlice, ToUsizeExt},
+        utils::ToUsizeExt,
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
@@ -170,6 +169,15 @@ impl<'b, T: Config> Store<'b, T> {
         // module_inst_init is unfortunately circularly defined from parts of module_inst that would be defined in step 11, which uses module_inst_init again implicitly.
         // therefore I am mimicking the reference interpreter code here, I will allocate functions in the store in this step instead of step 11.
         // https://github.com/WebAssembly/spec/blob/8d6792e3d6709e8d3e90828f9c8468253287f7ed/interpreter/exec/eval.ml#L789
+        let imported_global_addrs = {
+            let imported_addrs = extern_vals.iter().globals();
+            let num_imports = module.globals.len_imported_definitions().into_usize();
+            debug_assert_eq!(extern_vals.iter().globals().count(), num_imports);
+            // SAFETY: In instantiation step 3 and 4, we checked that the provided extern values
+            // match the imports from validation. Therefore, the number of globals in this iterator
+            // is known.
+            unsafe { imported_addrs.assume_trusted_exact_size(num_imports) }
+        };
         let module_inst = ModuleInst {
             types: module.types.clone(),
             func_addrs: IdxVec::default(),
@@ -179,10 +187,7 @@ impl<'b, T: Config> Store<'b, T> {
             // special `moduleinst_init`. Here, we want to use the `IdxVec` type
             // safety, but at the same time only the imports can be populated at
             // this point.
-            global_addrs: IdxVec::from_iter(extern_vals.iter().globals().collect())
-                .expect(
-                    "that the number of imports and therefore also the number of imported globals is <= u32::MAX",
-                ),
+            global_addrs: IdxVec::from_iter(imported_global_addrs).unwrap_validated(),
             elem_addrs: IdxVec::default(),
             data_addrs: IdxVec::default(),
             exports: Box::default(),
@@ -214,8 +219,7 @@ impl<'b, T: Config> Store<'b, T> {
                 .expect("validation ensures that the number of functions does not exceed u32::MAX")
         };
 
-        // SAFETY: The module with this module address was just inserted into
-        // this `AddrVec`
+        // SAFETY: The module with this module address was just inserted into this `AddrVec`
         let module_inst = unsafe { self.modules.get_mut(module_addr) };
         module_inst.func_addrs = func_addrs;
 
@@ -246,43 +250,49 @@ impl<'b, T: Config> Store<'b, T> {
 
         // instantiation: this roughly matches step 9,10 and performs allocation
         // step 6,12 already
-        let elem_addrs: IdxVec<ElemIdx, ElemAddr> = module.elements.map(|elem| {
+        let elem_addrs = module.elements.iter().map(|elem| {
             let refs = match &elem.init {
                 // shortcut of evaluation of "ref.func <func_idx>; end;"
                 // validation guarantees corresponding func_idx's existence
                 ElemItems::RefFuncs(ref_funcs) => {
-                    ref_funcs.map_into_boxed_slice(|func_idx| {
-                        // SAFETY: The module with this module address was
-                        // just inserted into this `AddrVec`
-                        let module = unsafe { self.modules.get(module_addr) };
-                        // SAFETY: Both the function index and the module
-                        // instance's `func_addrs` come from the same
-                        // `Module`, i.e. the one passed into this
-                        // function.
-                        let func_addr = unsafe { module.func_addrs.get(*func_idx) };
+                    ref_funcs
+                        .iter()
+                        .map(|func_idx| {
+                            // SAFETY: The module with this module address was
+                            // just inserted into this `AddrVec`
+                            let module = unsafe { self.modules.get(module_addr) };
+                            // SAFETY: Both the function index and the module
+                            // instance's `func_addrs` come from the same
+                            // `Module`, i.e. the one passed into this
+                            // function.
+                            let func_addr = unsafe { module.func_addrs.get(*func_idx) };
 
-                        Ref::Func(*func_addr)
-                    })
+                            Ref::Func(*func_addr)
+                        })
+                        .collect_into_boxed_slice()
                 }
                 ElemItems::Exprs(_, exprs) => {
-                    exprs.try_map_into_boxed_slice(|expr| {
-                        // SAFETY: All requirements are met:
-                        // 1. Validation guarantees that all constant expressions
-                        //    for elements, including this one, are valid.
-                        // 2. The module with this module address was just inserted into
-                        //    this store's `AddrVec`.
-                        let const_expr_result = unsafe {
-                            run_const_span(
-                                module.wasm,
-                                expr,
-                                module_addr,
-                                self,
-                                &mut maybe_reusable_stack,
-                            )
-                        };
-                        const_expr_result
-                            .map(|res| res.unwrap_validated().try_into().unwrap_validated())
-                    })?
+                    exprs
+                        .iter()
+                        .map(|expr| {
+                            // SAFETY: All requirements are met:
+                            // 1. Validation guarantees that all constant expressions
+                            //    for elements, including this one, are valid.
+                            // 2. The module with this module address was just inserted into
+                            //    this store's `AddrVec`.
+                            let const_expr_result = unsafe {
+                                run_const_span(
+                                    module.wasm,
+                                    expr,
+                                    module_addr,
+                                    self,
+                                    &mut maybe_reusable_stack,
+                                )
+                            };
+                            const_expr_result
+                                .map(|res| res.unwrap_validated().try_into().unwrap_validated())
+                        })
+                        .try_collect_into_boxed_slice()?
                 }
             };
 
@@ -292,99 +302,103 @@ impl<'b, T: Config> Store<'b, T> {
             // valid in the current store.
             let elem = unsafe { self.alloc_elem(elem.ty(), refs) };
             Ok::<_, RuntimeError>(elem)
-        })?;
+        });
+        let elem_addrs = IdxVec::try_from_iter(elem_addrs).unwrap_validated()?;
 
         // instantiation: step 11 - module allocation (except function allocation - which was made in step 5)
         // https://webassembly.github.io/spec/core/exec/modules.html#alloc-module
 
         // allocation: begin
+        // allocation: step 1 (parameter setup) is a noop
+        // allocation: step 2 (allocate functions) already done in instantiation step 5
+        // allocation: step 6 (allocate elems) already done
+        // allocation: step 8-13 (concatenations) are noops
+        // allocation: step 14 (combine functions) already done in instantiation step 5
+        // Note: Those steps not mentioned are executed below
 
-        // allocation: step 1 is a noop
+        // allocation: step 7
+        let data_addrs = IdxVec::from_iter(
+            module
+                .data
+                .iter()
+                .map(|data_segment| self.alloc_data(data_segment.init.clone())),
+        )
+        .unwrap_validated();
 
-        // allocation: skip step 2 & 8 as it was done in instantiation step 5
-
-        // allocation: step 3, 9
-        let table_addrs_local: Box<[TableAddr]> = module
-            .tables
-            .iter_local_definitions()
-            .map(|table_type| {
+        let table_addrs = IdxVec::from_iter({
+            // allocation: step 3
+            let table_addrs_local = module.tables.iter_local_definitions().map(|table_type| {
                 // SAFETY: The initial table value is null, which is not an
                 // address type and therefore not invalid in the current store.
                 unsafe { self.alloc_table(*table_type, Ref::Null(table_type.et)) }
-            })
-            .collect();
-        // allocation: step 4, 10
-        let mem_addrs_local: Box<[MemAddr]> = module
-            .memories
-            .iter_local_definitions()
-            .map(|mem_type| self.alloc_mem(*mem_type))
-            .collect::<Result<Box<[MemAddr]>, RuntimeError>>()?;
-        // allocation: step 5, 11
-        let global_addrs_local: Box<[GlobalAddr]> = module
-            .globals
-            .iter_local_definitions()
-            .zip(local_globals_init_vals)
-            .map(|(global, val)| {
-                // SAFETY: The initial values were retrieved by running constant
-                // expressions within the current store context. Therefore,
-                // their results are also valid in the current store.
-                unsafe { self.alloc_global(global.ty, val) }
-            })
-            .collect();
-        // allocation: skip step 6, 12 as it was done in instantiation step 9, 10
+            });
+            // allocation: step 15
+            let imported_addrs = extern_vals.iter().tables();
+            let num_imports = module.tables.len_imported_definitions().into_usize();
+            debug_assert_eq!(extern_vals.iter().tables().count(), num_imports);
+            // SAFETY: In instantiation step 3 and 4, we checked that the provided extern values
+            // match the imports from validation. Therefore, the number of tables in this iterator
+            // is known.
+            let imported_addrs = unsafe { imported_addrs.assume_trusted_exact_size(num_imports) };
+            // allocation: step 15
+            imported_addrs
+                .chain(table_addrs_local)
+                .try_into_trusted()
+                .unwrap_validated()
+        })
+        .unwrap_validated();
 
-        // allocation: step 7, 13
-        let data_addrs = module
-            .data
-            .map::<DataAddr, Infallible>(|data_segment| {
-                Ok(self.alloc_data(data_segment.init.clone()))
-            })
-            .expect("infallible error type to never be constructed");
+        let mem_addrs = IdxVec::try_from_iter({
+            // allocation: step 4
+            let mem_addrs_local = module
+                .memories
+                .iter_local_definitions()
+                .map(|mem_type| self.alloc_mem(*mem_type));
+            // allocation: step 16
+            let imported_addrs = extern_vals.iter().mems();
+            let num_imports = module.memories.len_imported_definitions().into_usize();
+            debug_assert_eq!(extern_vals.iter().mems().count(), num_imports);
+            // SAFETY: In instantiation step 3 and 4, we checked that the provided extern values
+            // match the imports from validation. Therefore, the number of memories in this iterator
+            // is known.
+            let imported_addrs = unsafe { imported_addrs.assume_trusted_exact_size(num_imports) };
+            imported_addrs
+                .map(Ok)
+                .chain(mem_addrs_local)
+                .try_into_trusted()
+                .unwrap_validated()
+        })
+        .unwrap_validated()?;
 
-        // allocation: skip step 14 as it was done in instantiation step 5
+        let global_addrs = IdxVec::from_iter({
+            // allocation: step 5
+            let global_addrs_local = module
+                .globals
+                .iter_local_definitions()
+                .zip(local_globals_init_vals)
+                .map(|(global, val)| {
+                    // SAFETY: The initial values were retrieved by running constant
+                    // expressions within the current store context. Therefore,
+                    // their results are also valid in the current store.
+                    unsafe { self.alloc_global(global.ty, val) }
+                });
+            // allocation: step 17
+            let imported_addrs = extern_vals.iter().globals();
+            let num_imports = module.globals.len_imported_definitions().into_usize();
+            debug_assert_eq!(extern_vals.iter().globals().count(), num_imports);
+            // SAFETY: In instantiation step 3 and 4, we checked that the provided extern values
+            // match the imports from validation. Therefore, the number of globals in this iterator
+            // is known.
+            let imported_addrs = unsafe { imported_addrs.assume_trusted_exact_size(num_imports) };
+            imported_addrs
+                .chain(global_addrs_local)
+                .try_into_trusted()
+                .unwrap_validated()
+        })
+        .unwrap_validated();
 
-        // allocation: step 15
-        let table_addrs = module
-            .tables
-            .map(extern_vals.iter().tables().collect(), table_addrs_local)
-            .expect(
-                "that the numbers of imported and local tables always \
-                match the respective numbers in the module. Step 3 and 4 \
-                check if the number of imported tables is correct and the number \
-                of local tables is produced by iterating through all table \
-                definitions and performing one-to-one mapping on each one.",
-            )
-            .into_inner();
-
-        // allocation: step 16
-        let mem_addrs = module
-            .memories
-            .map(extern_vals.iter().mems().collect(), mem_addrs_local)
-            .expect(
-                "that the number of imported and local memories always \
-            match the respective numbers in the module. Step 3 and 4 \
-            check if the number of imported memories is correct and the number \
-            of local memories is produced by iterating through all memory \
-            definitions and performing one-to-one mapping on each one.",
-            )
-            .into_inner();
-
-        // allocation step 17
-        let global_addrs = module
-            .globals
-            .map(extern_vals.iter().globals().collect(), global_addrs_local)
-            .expect(
-                "that the number of imported and local globals always \
-            match the respective numbers in the module. Step 3 and 4 \
-            check if the number of imported globals is correct and the number \
-            of local globals is produced by iterating through all global \
-            definitions and performing one-to-one mapping on each one.",
-            )
-            .into_inner();
-
-        // allocation: step 18,19
-        // SAFETY: The module with this module address was just inserted
-        // into this `AddrVec`
+        // allocation: step 18, 19
+        // SAFETY: The module with this module address was just inserted into this `AddrVec`
         let module_inst = unsafe { self.modules.get(module_addr) };
         let export_insts = module
             .exports
@@ -432,13 +446,12 @@ impl<'b, T: Config> Store<'b, T> {
                     value,
                 }
             })
-            .collect();
+            .collect_into_boxed_slice();
 
-        // allocation: step 20,21 initialize module (except functions to instantiation step 5, allocation step 14)
-
-        // SAFETY: The module with this module address was
-        // just inserted into this `AddrVec`
+        // allocation: step 20,21 initialize module
+        // SAFETY: The module with this module address was just inserted into this `AddrVec`
         let module_inst = unsafe { self.modules.get_mut(module_addr) };
+        // Types and functions were initialized during step 5
         module_inst.table_addrs = table_addrs;
         module_inst.mem_addrs = mem_addrs;
         module_inst.global_addrs = global_addrs;

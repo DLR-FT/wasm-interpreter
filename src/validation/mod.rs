@@ -11,6 +11,7 @@ use crate::{
             decoder::{span::Span, WasmDecoder},
             modules::sections::{decode_section_if_ty_matches, SectionTy},
         },
+        fixed_capacity_vec::FixedCapacityVec,
         sidetable::Sidetable,
         structure::{
             modules::{
@@ -24,9 +25,11 @@ use crate::{
                     IdxVecOverflowError, MemIdx, TableIdx, TypeIdx,
                 },
             },
-            types::{ExternType, FuncType, GlobalType, MemType, TableType},
+            types::{ExternType, FuncType, MemType, TableType},
         },
-        trusted_exact_size_iterator::TryCollectIntoBoxedSliceExt,
+        trusted_exact_size_iterator::{
+            AssumeTrustedExactSize, TrustedExactSizeIterator, TryCollectIntoBoxedSliceExt,
+        },
         utils::ToUsizeExt,
     },
     validation::{config::ValidationConfig, modules::functions::decode_and_validate_code_section},
@@ -50,6 +53,9 @@ pub mod config;
 pub struct Module<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: IdxVec<TypeIdx, FuncType>,
+    // TODO: Do not allocate for imports. They can be read on demand during instantiation or when
+    // Module::imports is called. Especially, because only the import descriptions are required in
+    // instantiation.
     pub(crate) imports: Box<[Import<'bytecode>]>,
     pub(crate) functions: ExtendedIdxVec<FuncIdx, TypeIdx>,
     pub(crate) tables: ExtendedIdxVec<TableIdx, TableType>,
@@ -108,18 +114,81 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
     let types = decode_section_if_ty_matches::<_, DecodingError>(&mut wasm, SectionTy::Type, |wasm, _| {
-        let collected= wasm.decode_vec(|wasm, _| FuncType::decode(wasm))?.try_collect_into_boxed_slice()?;
-        let idx_vec = IdxVec::from_iter(collected).expect("that index space creation never fails because the length of the types vector is encoded as a 32-bit integer in the bytecode");
+        let func_types= wasm.decode_vec()?.decode_elements_with(|wasm, _| FuncType::decode(wasm));
+        let idx_vec = IdxVec::try_from_iter(func_types).expect("index space creation only fails if there are more than u32::MAX elements, which cannot happen because vector lengths are encoded as a 32-bit integer")?;
         Ok(idx_vec)
     })?.unwrap_or_default();
 
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
+    let mut num_imported_functions: u32 = 0;
+    let mut num_imported_tables: u32 = 0;
+    let mut num_imported_memories: u32 = 0;
+    let mut num_imported_globals: u32 = 0;
     let imports = decode_section_if_ty_matches(&mut wasm, SectionTy::Import, |wasm, _| {
-        wasm.decode_vec(|wasm, _| Import::decode_and_validate(wasm, &types))?
+        wasm.decode_vec()?
+            .decode_elements_with(|wasm, _| {
+                // Decode and validate the import itself
+                let import = Import::decode_and_validate(wasm, &types)?;
+
+                // Additional bookkeeping to count functions/tables/mems/globals
+                let num_imported = match import.desc {
+                    ImportDesc::Func(_) => &mut num_imported_functions,
+                    ImportDesc::Table(_) => &mut num_imported_tables,
+                    ImportDesc::Mem(_) => &mut num_imported_memories,
+                    ImportDesc::Global(_) => &mut num_imported_globals,
+                };
+                *num_imported = num_imported
+                    .checked_add(1)
+                    .expect("the total number of import can never exceed u32::MAX");
+
+                Ok::<Import, ValidationError>(import)
+            })
             .try_collect_into_boxed_slice()
     })?
     .unwrap_or_default();
+
+    // From the results of decoding the import section, we can now create iterators with exact
+    // sizes. These help to determine the exact alloation size required when allocating index spaces
+    // for functions, tables, memories and globals later.
+    let imported_functions = imports.iter().filter_map(|import| {
+        if let ImportDesc::Func(type_idx) = import.desc {
+            Some(type_idx)
+        } else {
+            None
+        }
+    });
+    let imported_tables = imports.iter().filter_map(|import| {
+        if let ImportDesc::Table(table_type) = import.desc {
+            Some(table_type)
+        } else {
+            None
+        }
+    });
+    let imported_memories = imports.iter().filter_map(|import| {
+        if let ImportDesc::Mem(mem_type) = import.desc {
+            Some(mem_type)
+        } else {
+            None
+        }
+    });
+    let imported_globals = imports.iter().filter_map(|import| {
+        if let ImportDesc::Global(global_type) = import.desc {
+            Some(global_type)
+        } else {
+            None
+        }
+    });
+
+    let imported_functions = unsafe {
+        imported_functions.assume_trusted_exact_size(num_imported_functions.into_usize())
+    };
+    let imported_tables =
+        unsafe { imported_tables.assume_trusted_exact_size(num_imported_tables.into_usize()) };
+    let imported_memories =
+        unsafe { imported_memories.assume_trusted_exact_size(num_imported_memories.into_usize()) };
+    let imported_globals =
+        unsafe { imported_globals.assume_trusted_exact_size(num_imported_globals.into_usize()) };
 
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
@@ -129,101 +198,122 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
     //
     // Imported functions are given priority and have the first indicies, and
     // only after that do the local functions get assigned their indices.
-    let local_functions =
-        decode_section_if_ty_matches(&mut wasm, SectionTy::Function, |wasm, _| {
-            wasm.decode_vec(|wasm, _| TypeIdx::decode_and_validate(wasm, &types))?
-                .try_collect_into_boxed_slice()
-        })?
-        .unwrap_or_default();
-
-    let imported_functions = imports.iter().filter_map(|import| match &import.desc {
-        ImportDesc::Func(type_idx) => Some(*type_idx),
-        _ => None,
-    });
-
-    let functions = ExtendedIdxVec::new(imported_functions.collect(), local_functions)
-        .map_err(|IdxVecOverflowError| ValidationError::TooManyFunctions)?;
+    let functions = decode_section_if_ty_matches(&mut wasm, SectionTy::Function, |wasm, _| {
+        let local_functions = wasm
+            .decode_vec()?
+            .decode_elements_with(|wasm, _| TypeIdx::decode_and_validate(wasm, &types));
+        ExtendedIdxVec::try_from_iter(imported_functions.map(Ok), local_functions)
+            .map_err(|IdxVecOverflowError| ValidationError::TooManyFunctions)
+    })?
+    .transpose()?
+    .unwrap_or_default();
 
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
-    let imported_tables = imports.iter().filter_map(|m| match m.desc {
-        ImportDesc::Table(table) => Some(table),
-        _ => None,
-    });
-    let local_tables = decode_section_if_ty_matches(&mut wasm, SectionTy::Table, |wasm, _| {
-        wasm.decode_vec(|wasm, _| TableType::decode_and_validate(wasm))?
-            .try_collect_into_boxed_slice()
+    let tables = decode_section_if_ty_matches(&mut wasm, SectionTy::Table, |wasm, _| {
+        let local_tables = wasm
+            .decode_vec()?
+            .decode_elements_with(|wasm, _| TableType::decode_and_validate(wasm));
+        ExtendedIdxVec::try_from_iter(imported_tables.map(Ok), local_tables)
+            .map_err(|IdxVecOverflowError| ValidationError::TooManyTables)
     })?
+    .transpose()?
     .unwrap_or_default();
-
-    let tables = ExtendedIdxVec::new(imported_tables.collect(), local_tables)
-        .map_err(|IdxVecOverflowError| ValidationError::TooManyTables)?;
 
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
-    let imported_memories = imports.iter().filter_map(|m| match m.desc {
-        ImportDesc::Mem(mem) => Some(mem),
-        _ => None,
-    });
-    // let imported_memories_length = imported_memories.len();
-    let local_memories = decode_section_if_ty_matches(&mut wasm, SectionTy::Memory, |wasm, _| {
-        wasm.decode_vec(|wasm, _| MemType::decode_and_validate(wasm))?
-            .try_collect_into_boxed_slice()
+    let memories = decode_section_if_ty_matches(&mut wasm, SectionTy::Memory, |wasm, _| {
+        let local_memories = wasm
+            .decode_vec()?
+            .decode_elements_with(|wasm, _| MemType::decode_and_validate(wasm));
+        ExtendedIdxVec::try_from_iter(imported_memories.map(Ok), local_memories)
+            .map_err(|IdxVecOverflowError| ValidationError::TooManyMemories)
     })?
+    .transpose()?
     .unwrap_or_default();
 
-    let memories = ExtendedIdxVec::new(imported_memories.collect(), local_memories)
-        .map_err(|IdxVecOverflowError| ValidationError::TooManyMemories)?;
-
+    // Additional validation check
     if memories.inner().len() > 1 {
         return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
     }
 
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
-    let imported_global_types: Vec<GlobalType> = imports
-        .iter()
-        .filter_map(|m| match m.desc {
-            ImportDesc::Global(global) => Some(global),
-            _ => None,
-        })
-        .collect();
-    let local_globals = decode_section_if_ty_matches(&mut wasm, SectionTy::Global, |wasm, _| {
-        wasm.decode_vec(|wasm, _| {
-            Global::decode_and_validate(
-                wasm,
-                &imported_global_types,
+    let globals = decode_section_if_ty_matches(&mut wasm, SectionTy::Global, |wasm, _| {
+        // Decoding and validating the globals section is tricky to do without any excess
+        // allocations. For other Wasm objects we can simply decode and validate each object by
+        // itself and then combine the imported and local objects at the end in a single allocation.
+        //
+        // However, the validation of local globals can depend on imported global types, because
+        // local globals' initializer expressions may reference imported globals.
+        //
+        // In order to use only a single allocation for the final global index space, the following steps are done:
+        // 1. Read number of local globals from the vec's header.
+        // 2. Allocate a FixedCapacityVec with final capacity but only push the imported globals
+        //    into it.
+        // 3. Decode and validate the local globals one by one and then push them into the vector.
+        // 4. Convert the vector into a `Box<[Global]>`.
+
+        let imported_globals = imported_globals.map(|ty| Global {
+            // TODO using a default MAX value for spans that are never executed is not really safe.
+            // Maybe opt for an Option instead.
+            init_expr: Span::new(usize::MAX, 0),
+            ty,
+        });
+
+        // Step 1
+        let (num_local_globals, wasm_vec_elements) =
+            wasm.decode_vec()?.into_inner_len_and_decoder();
+
+        // Step 2
+        let num_globals = num_imported_globals
+            .checked_add(num_local_globals)
+            .ok_or(ValidationError::TooManyGlobals)?;
+        let mut globals = FixedCapacityVec::with_capacity(num_globals.into_usize());
+
+        debug_assert!(globals.spare_capacity() >= imported_globals.len_trusted());
+        // SAFETY: The globals vector is empty enough capacity to fit exactly all imported and local
+        // globals.
+        unsafe { globals.extend_unchecked(imported_globals) };
+
+        for _ in 0..num_local_globals {
+            let imported_globals = globals.get(0..num_imported_globals.into_usize()).expect(
+                "number of imported globals is not larger than it plus the number of local globals",
+            );
+            let next_local_global = Global::decode_and_validate(
+                wasm_vec_elements,
+                &imported_globals,
                 &mut validation_context_refs,
                 functions.inner(),
-            )
-        })?
-        .try_collect_into_boxed_slice()
+            )?;
+
+            globals
+                .push(next_local_global)
+                .expect("globals vector has enough capacity for all imported and local globals");
+        }
+
+        let globals = unsafe { globals.into_boxed_slice() };
+
+        unsafe { ExtendedIdxVec::new(globals, num_imported_globals) }
+            .map_err(|IdxVecOverflowError| ValidationError::TooManyGlobals)
     })?
     .unwrap_or_default();
-
-    let imported_globals = imported_global_types.iter().map(|ty| Global {
-        // TODO using a default MAX value for spans that are never executed is
-        // not really safe. Maybe opt for an Option instead.
-        init_expr: Span::new(usize::MAX, 0),
-        ty: *ty,
-    });
-    let globals = ExtendedIdxVec::new(imported_globals.collect(), local_globals)
-        .map_err(|IdxVecOverflowError| ValidationError::TooManyGlobals)?;
 
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
     let exports: Box<[Export]> =
         decode_section_if_ty_matches(&mut wasm, SectionTy::Export, |wasm, _| {
-            wasm.decode_vec(|wasm, _| {
-                Export::decode_and_validate(
-                    wasm,
-                    functions.inner(),
-                    tables.inner(),
-                    memories.inner(),
-                    globals.inner(),
-                )
-            })?
-            .try_collect_into_boxed_slice()
+            wasm.decode_vec()?
+                .decode_elements_with(|wasm, _| {
+                    Export::decode_and_validate(
+                        wasm,
+                        functions.inner(),
+                        tables.inner(),
+                        memories.inner(),
+                        globals.inner(),
+                    )
+                })
+                .try_collect_into_boxed_slice()
         })?
         .unwrap_or_default();
     validation_context_refs.extend(exports.iter().filter_map(
@@ -258,14 +348,14 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
     let elements = decode_section_if_ty_matches::<_, ValidationError>(&mut wasm, SectionTy::Element, |wasm, _| {
-        let collected = wasm.decode_vec(|wasm, _| {
+        let collected = wasm.decode_vec()?.decode_elements_with(|wasm, _| {
             ElemType::decode_and_validate(
             wasm,
             functions.inner(),
             &mut validation_context_refs,
             tables.inner(),
-            &imported_global_types,
-        )})?;
+            globals.imported_definitions(),
+        )});
         let idx_vec = IdxVec::try_from_iter(collected).expect("that index space creation never fails because the length of the elements vector is encoded as a 32-bit integer in the bytecode")?;
         Ok(idx_vec)
     })?
@@ -316,9 +406,9 @@ pub fn decode_and_validate<'wasm, T: ValidationConfig>(
     read_all_custom_sections(&mut wasm, &mut custom_sections)?;
 
     let data_section = decode_section_if_ty_matches::<_, ValidationError>(&mut wasm, SectionTy::Data, |wasm, _| {
-        let collected = wasm.decode_vec(|wasm, _| {
-            DataSegment::decode_and_validate(wasm, &imported_global_types, functions.inner(), memories.inner())
-        })?.try_collect_into_boxed_slice()?;
+        let collected = wasm.decode_vec()?.decode_elements_with(|wasm, _| {
+            DataSegment::decode_and_validate(wasm, globals.imported_definitions(), functions.inner(), memories.inner())
+        }).try_collect_into_boxed_slice()?;
         let idx_vec = IdxVec::new(collected).expect("that index space creation never fails because the length of the data segments vector is encoded as a 32-bit integer in the bytecode");
         Ok(idx_vec)
     })?

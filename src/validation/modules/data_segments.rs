@@ -1,13 +1,12 @@
 use crate::{
     core::{
         decoding::decoder::WasmDecoder,
-        structure::{
-            modules::{
-                data_segments::{DataMode, DataModeActive, DataSegment},
-                indices::{FuncIdx, IdxVec, MemIdx, TypeIdx},
-            },
-            types::GlobalType,
+        structure::modules::{
+            data_segments::{DataMode, DataModeActive, DataSegment},
+            globals::Global,
+            indices::{FuncIdx, IdxVec, MemIdx, TypeIdx},
         },
+        trusted_exact_size_iterator::TryCollectIntoBoxedSliceExt,
     },
     validation::{
         instructions::constant_expressions::decode_and_validate_constant_expression,
@@ -19,7 +18,7 @@ use crate::{
 impl DataSegment {
     pub fn decode_and_validate(
         wasm: &mut WasmDecoder,
-        imported_global_types: &[GlobalType],
+        imported_globals: &[Global],
         c_funcs: &IdxVec<FuncIdx, TypeIdx>,
         c_mems: &IdxVec<MemIdx, MemType>,
     ) -> Result<Self, ValidationError> {
@@ -36,14 +35,17 @@ impl DataSegment {
                     decode_and_validate_constant_expression(
                         wasm,
                         &mut valid_stack,
-                        imported_global_types,
+                        imported_globals,
                         c_funcs,
                     )?
                 };
 
                 valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
 
-                let byte_vec = wasm.decode_vec()?.map_and_collect(WasmDecoder::decode_u8)?;
+                let byte_vec = wasm
+                    .decode_vec()?
+                    .decode_elements_with(|wasm, _| wasm.decode_u8())
+                    .try_collect_into_boxed_slice()?;
 
                 // WARN: we currently don't take into consideration how we act when we are dealing with globals here
                 DataSegment {
@@ -57,7 +59,10 @@ impl DataSegment {
             1 => {
                 // passive
                 // A passive data segment's contents can be copied into a memory using the `memory.init` instruction
-                let byte_vec = wasm.decode_vec()?.map_and_collect(WasmDecoder::decode_u8)?;
+                let byte_vec = wasm
+                    .decode_vec()?
+                    .decode_elements_with(|wasm, _| wasm.decode_u8())
+                    .try_collect_into_boxed_slice()?;
 
                 DataSegment {
                     mode: DataMode::Passive,
@@ -72,14 +77,17 @@ impl DataSegment {
                     decode_and_validate_constant_expression(
                         wasm,
                         &mut valid_stack,
-                        imported_global_types,
+                        imported_globals,
                         c_funcs,
                     )?
                 };
 
                 valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
 
-                let byte_vec = wasm.decode_vec()?.map_and_collect(WasmDecoder::decode_u8)?;
+                let byte_vec = wasm
+                    .decode_vec()?
+                    .decode_elements_with(|wasm, _| wasm.decode_u8())
+                    .try_collect_into_boxed_slice()?;
 
                 DataSegment {
                     mode: DataMode::Active(DataModeActive {

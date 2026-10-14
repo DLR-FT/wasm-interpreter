@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, collections::btree_set::BTreeSet, vec::Vec};
+use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::{
     core::{
@@ -15,6 +15,7 @@ use crate::{
             },
             types::{BlockType, FuncType, MemArg, MemType, NumType, TableType, ValType},
         },
+        trusted_exact_size_iterator::{TrustedExactSizeIterator, TryCollectIntoBoxedSliceExt},
         utils::ToUsizeExt,
     },
     validation::{
@@ -247,15 +248,19 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                 )?;
             }
             BR_TABLE => {
-                let label_vec: Box<[u32]> = wasm.decode_vec()?.map_and_collect(decode_label_idx)?;
+                let labels = wasm
+                    .decode_vec()?
+                    .decode_elements_with(|wasm, _| decode_label_idx(wasm))
+                    .try_collect_into_boxed_slice()?;
 
-                let max_label_idx = decode_label_idx(wasm)?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-                for label_idx in &label_vec {
+                for label_idx in &labels {
                     validate_branch_and_generate_sidetable_entry(
                         wasm, *label_idx, stack, sidetable, false,
                     )?;
                 }
+
+                let max_label_idx = decode_label_idx(wasm)?;
 
                 validate_branch_and_generate_sidetable_entry(
                     wasm,
@@ -279,7 +284,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                     .unwrap()
                     .label_types()
                     .len();
-                for label_idx in &label_vec {
+                for label_idx in &labels {
                     let label_idx_as_usize = label_idx.into_usize();
                     let label_arity = stack
                         .ctrl_stack
@@ -420,17 +425,23 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                 stack.validate_polymorphic_select()?;
             }
             SELECT_T => {
-                let type_vec: Box<[ValType]> =
-                    wasm.decode_vec()?.map_and_collect(ValType::decode)?;
-                if type_vec.len() != 1 {
+                let mut types = wasm
+                    .decode_vec()?
+                    .decode_elements_with(|wasm, _| ValType::decode(wasm));
+                if types.len_trusted() != 1 {
                     return Err(ValidationError::InvalidSelectTypeVectorLength(
-                        type_vec.len(),
+                        types.len_trusted(),
                     ));
                 }
+                let Some(ty) = types.next() else {
+                    unreachable!("iterator length is 1")
+                };
+                let ty = ty?;
+
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-                stack.assert_pop_val_type(type_vec[0])?;
-                stack.assert_pop_val_type(type_vec[0])?;
-                stack.push_valtype(type_vec[0]);
+                stack.assert_pop_val_type(ty)?;
+                stack.assert_pop_val_type(ty)?;
+                stack.push_valtype(ty);
             }
             // local.get: [] -> [t]
             LOCAL_GET => {

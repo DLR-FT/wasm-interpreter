@@ -17,6 +17,7 @@ use crate::{
                 VecType,
             },
         },
+        trusted_exact_size_iterator::TryCollectIntoBoxedSliceExt,
     },
     DecodingError,
 };
@@ -101,7 +102,10 @@ impl ResultType {
     /// [^binary-format]: [WebAssembly Specification 2.0 - 5.3.5. Result Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#binary-resulttype).
     /// [^always-valid]: [WebAssembly Specification 2.0 - 3.2. Types](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#types%E2%91%A4).
     pub fn decode(wasm: &mut WasmDecoder) -> Result<Self, DecodingError> {
-        let valtypes = wasm.decode_vec()?.map_and_collect(ValType::decode)?;
+        let valtypes = wasm
+            .decode_vec()?
+            .decode_elements_with(|wasm, _| ValType::decode(wasm))
+            .try_collect_into_boxed_slice()?;
 
         Ok(ResultType { valtypes })
     }

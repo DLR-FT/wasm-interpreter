@@ -31,12 +31,11 @@
 //! See: WebAssembly Specification - 2.5.1 - Indices
 
 use alloc::boxed::Box;
-use core::marker::PhantomData;
+use core::{convert::Infallible, marker::PhantomData, slice};
 
 use crate::core::{
     trusted_exact_size_iterator::{
-        CollectIntoBoxedSliceExt, IntoTrustedChainExt, TrustedExactSizeIterator,
-        TryCollectIntoBoxedSliceExt,
+        IntoTrustedChainExt, TrustedExactSizeIterator, TryCollectIntoBoxedSliceExt,
     },
     utils::ToUsizeExt,
 };
@@ -101,23 +100,21 @@ impl<I: Idx, T> IdxVec<I, T> {
     ///
     /// If the number of elements is larger than what can be addressed by a
     /// `u32`, i.e. `u32::MAX`, an error is returned instead.
+    #[inline]
     pub fn from_iter(
         elements: impl TrustedExactSizeIterator<Item = T>,
     ) -> Result<Self, IdxVecOverflowError> {
-        if u32::try_from(elements.len_trusted()).is_err() {
-            return Err(IdxVecOverflowError);
-        }
-
-        Ok(Self {
-            inner: elements.collect_into_boxed_slice(),
-            _phantom: PhantomData,
-        })
+        // TODO: use into_ok instead of the hack for unwrapping the Result<_, Infallible> when the
+        // never type is stabilized.
+        Self::try_from_iter(elements.map(Ok::<T, Infallible>))
+            .map(|result| result.unwrap_or_else(|infallible| match infallible {}))
     }
 
     /// Creates a new [`IdxVec`] from the given iterator's elements which can also be errors.
     ///
     /// If the number of elements is larger than what can be addressed by a
     /// `u32`, i.e. `u32::MAX`, an error is returned instead.
+    #[inline]
     pub fn try_from_iter<E>(
         elements: impl TrustedExactSizeIterator<Item = Result<T, E>>,
     ) -> Result<Result<Self, E>, IdxVecOverflowError> {
@@ -160,6 +157,12 @@ impl<I: Idx, T> IdxVec<I, T> {
         )
     }
 
+    #[inline]
+    pub fn iter(&self) -> slice::Iter<'_, T> {
+        self.inner.iter()
+    }
+
+    #[inline]
     pub fn iter_enumerated(&self) -> impl Iterator<Item = (I, &T)> {
         self.inner.iter().enumerate().map(|(index, t)| {
             (
@@ -169,19 +172,6 @@ impl<I: Idx, T> IdxVec<I, T> {
                 ),
                 t,
             )
-        })
-    }
-
-    /// Creates an equivalent index space for one that already exists while
-    /// allowing elements to be mapped.
-    pub fn map<R, E>(&self, mapper: impl FnMut(&T) -> Result<R, E>) -> Result<IdxVec<I, R>, E> {
-        Ok(IdxVec {
-            inner: self
-                .inner
-                .iter()
-                .map(mapper)
-                .collect::<Result<Box<[R]>, E>>()?,
-            _phantom: PhantomData,
         })
     }
 }
@@ -212,15 +202,43 @@ impl<I: Idx, T: Clone> Clone for ExtendedIdxVec<I, T> {
 }
 
 impl<I: Idx, T> ExtendedIdxVec<I, T> {
+    // # Safety
+    //
+    // `num_imports` must not be larger than `0..elements.len()`
+    pub unsafe fn new(elements: Box<[T]>, num_imports: u32) -> Result<Self, IdxVecOverflowError> {
+        debug_assert!(num_imports.into_usize() <= elements.len());
+        Ok(Self {
+            inner: IdxVec::new(elements)?,
+            num_imports,
+        })
+    }
     /// Creates a new [`IdxVec`] with the given imported and local elements in
     /// it.
     ///
     /// If the number of total elements is larger than what can be addressed by
     /// a `u32`, i.e. `u32::MAX` elements, an error is returned instead.
-    pub fn new(
+    #[inline]
+    pub fn from_iter(
         imports: impl TrustedExactSizeIterator<Item = T>,
         locals: impl TrustedExactSizeIterator<Item = T>,
     ) -> Result<Self, IdxVecOverflowError> {
+        Self::try_from_iter(
+            imports.map(Ok::<T, Infallible>),
+            locals.map(Ok::<T, Infallible>),
+        )
+        .map(|result| result.unwrap_or_else(|infallible| match infallible {}))
+    }
+
+    /// Creates a new [`IdxVec`] with the given imported and local elements in
+    /// it.
+    ///
+    /// If the number of total elements is larger than what can be addressed by
+    /// a `u32`, i.e. `u32::MAX` elements, an error is returned instead.
+    #[inline]
+    pub fn try_from_iter<E>(
+        imports: impl TrustedExactSizeIterator<Item = Result<T, E>>,
+        locals: impl TrustedExactSizeIterator<Item = Result<T, E>>,
+    ) -> Result<Result<Self, E>, IdxVecOverflowError> {
         let imports_len = u32::try_from(imports.len_trusted()).map_err(|_| IdxVecOverflowError)?;
         let locals_len = u32::try_from(locals.len_trusted()).map_err(|_| IdxVecOverflowError)?;
 
@@ -234,10 +252,16 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
         // Therefore, chaining both iterators does not overflow the upper size bound.
         let chained = unsafe { chained_untrusted.try_into_trusted().unwrap_unchecked() };
 
-        Ok(Self {
-            inner: IdxVec::from_iter(chained)?,
+        let maybe_inner = IdxVec::try_from_iter(chained)?;
+
+        Ok(maybe_inner.map(|inner| Self {
+            inner,
             num_imports: imports_len,
-        })
+        }))
+    }
+
+    pub fn len_imported_definitions(&self) -> u32 {
+        self.num_imports
     }
 
     /// Returns the length of the locally-defined definitions part of this index
@@ -249,20 +273,26 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
             .expect("that the number of imports is never larger than the total length of self")
     }
 
-    pub fn iter_imported_definitions(&self) -> core::slice::Iter<'_, T> {
+    pub fn imported_definitions(&self) -> &[T] {
         self.inner
             .inner
             .get(..self.num_imports.into_usize())
             .expect("the imports length to never be larger than the total length")
-            .iter()
     }
 
-    pub fn iter_local_definitions(&self) -> core::slice::Iter<'_, T> {
+    pub fn local_definitions(&self) -> &[T] {
         self.inner
             .inner
             .get(self.num_imports.into_usize()..)
             .expect("the imports length to never be larger than the total length")
-            .iter()
+    }
+
+    pub fn iter_imported_definitions(&self) -> core::slice::Iter<'_, T> {
+        self.imported_definitions().iter()
+    }
+
+    pub fn iter_local_definitions(&self) -> core::slice::Iter<'_, T> {
+        self.local_definitions().iter()
     }
 
     pub fn inner(&self) -> &IdxVec<I, T> {

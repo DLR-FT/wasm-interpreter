@@ -3,9 +3,9 @@ use alloc::vec::Vec;
 use crate::{
     core::{
         decoding::decoder::{span::Span, WasmDecoder},
-        structure::{
-            modules::indices::{FuncIdx, IdxVec, TypeIdx},
-            types::GlobalType,
+        structure::modules::{
+            globals::Global,
+            indices::{FuncIdx, IdxVec, TypeIdx},
         },
         utils::ToUsizeExt,
     },
@@ -100,7 +100,7 @@ pub fn decode_and_validate_constant_expression(
     //
     //  Globals, however, are not recursive and not accessible within constant expressions when they are defined locally. The effect of defining the limited context C'
     //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
-    imported_globals: &[GlobalType],
+    imported_globals: &[Global],
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
 ) -> Result<(Span, Vec<FuncIdx>), ValidationError> {
     let start_pc = wasm.pc;
@@ -128,11 +128,11 @@ pub fn decode_and_validate_constant_expression(
                     .get(imported_global_idx.into_usize())
                     .ok_or(ValidationError::InvalidGlobalIdx(imported_global_idx))?;
 
-                if global.is_mut {
+                if global.ty.is_mut {
                     return Err(ValidationError::MutGlobalInConstGlobalGet);
                 }
 
-                stack.push_valtype(global.ty);
+                stack.push_valtype(global.ty.ty);
             }
             I32_CONST => {
                 let _num = wasm.decode_var_i32()?;

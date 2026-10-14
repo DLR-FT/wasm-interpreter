@@ -17,6 +17,7 @@ use crate::{
             },
             types::{FuncType, MemType, TableType, ValType},
         },
+        trusted_exact_size_iterator::TryCollectIntoBoxedSliceExt,
         utils::ToUsizeExt,
     },
     validation::{
@@ -57,7 +58,7 @@ pub unsafe fn decode_and_validate_code_section<T2: ValidationConfig>(
     user_data: &mut T2,
 ) -> Result<Box<[(Span, usize)]>, ValidationError> {
     wasm.decode_vec()?
-        .enumerate_and_map_and_collect(|wasm, idx| {
+        .decode_elements_with(|wasm, idx| {
             // We need to offset the index by the number of functions that were
             // imported. Imported functions always live at the start of the index
             // space.
@@ -115,4 +116,5 @@ pub unsafe fn decode_and_validate_code_section<T2: ValidationConfig>(
 
             Ok((func_block, stp))
         })
+        .try_collect_into_boxed_slice()
 }

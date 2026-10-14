@@ -18,14 +18,14 @@ use crate::{
 impl Global {
     pub fn decode_and_validate(
         wasm: &mut WasmDecoder,
-        imported_global_types: &[GlobalType],
+        imported_globals: &[Global],
         validation_context_refs: &mut BTreeSet<FuncIdx>,
         c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     ) -> Result<Self, ValidationError> {
         let ty = GlobalType::decode(wasm)?;
         let stack = &mut ValidationStack::new();
         let (init_expr, seen_func_idxs) =
-            decode_and_validate_constant_expression(wasm, stack, imported_global_types, c_funcs)?;
+            decode_and_validate_constant_expression(wasm, stack, imported_globals, c_funcs)?;
 
         stack.assert_val_types(&[ty.ty], true)?;
         validation_context_refs.extend(seen_func_idxs);

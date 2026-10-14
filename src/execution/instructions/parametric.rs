@@ -44,11 +44,12 @@ pub unsafe fn select_t(state: State) -> Result<ControlFlow<InterpreterLoopOutcom
     // skip past type vec
     state
         .wasm
-        .decode_vec(|wasm, _idx| {
+        .decode_vec()
+        .unwrap_validated()
+        .decode_elements_with(|wasm, _| {
             let _ = ValType::decode(wasm).unwrap_validated();
             Ok::<(), Infallible>(())
         })
-        .unwrap_validated()
         .for_each(|Ok(())| {});
     // SAFETY: Validation guarantees that there is a value on the stack.
     let test_val: i32 = unsafe { state.resumable.stack.pop_value() }

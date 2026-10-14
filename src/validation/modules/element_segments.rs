@@ -8,14 +8,16 @@ use crate::{
         },
         structure::modules::{
             element_segments::{ActiveElem, ElemItems, ElemMode, ElemType},
+            globals::Global,
             indices::{FuncIdx, IdxVec, TableIdx, TypeIdx},
         },
+        trusted_exact_size_iterator::TryCollectIntoBoxedSliceExt,
     },
     validation::{
         instructions::constant_expressions::decode_and_validate_constant_expression,
         validation_stack::ValidationStack,
     },
-    GlobalType, NumType, RefType, TableType, ValType, ValidationError,
+    NumType, RefType, TableType, ValType, ValidationError,
 };
 
 impl ElemType {
@@ -31,7 +33,7 @@ impl ElemType {
         c_funcs: &IdxVec<FuncIdx, TypeIdx>,
         validation_context_refs: &mut BTreeSet<FuncIdx>,
         c_tables: &IdxVec<TableIdx, TableType>,
-        imported_global_types: &[GlobalType],
+        imported_globals: &[Global],
     ) -> Result<Self, ValidationError> {
         let prop = wasm.decode_var_u32()?;
 
@@ -42,7 +44,7 @@ impl ElemType {
                 // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Active{0, e}} here
                 let e = decode_and_validate_active_segment_offset_expr(
                     wasm,
-                    imported_global_types,
+                    imported_globals,
                     c_funcs,
                     validation_context_refs,
                 )?;
@@ -77,7 +79,7 @@ impl ElemType {
                 let x = TableIdx::decode_and_validate(wasm, c_tables)?;
                 let e = decode_and_validate_active_segment_offset_expr(
                     wasm,
-                    imported_global_types,
+                    imported_globals,
                     c_funcs,
                     validation_context_refs,
                 )?;
@@ -112,14 +114,14 @@ impl ElemType {
                 // which is equivalent to ElemType{init: ElemItems::Exprs(funcref, el*), mode: ElemMode::Active{0, e}}
                 let e = decode_and_validate_active_segment_offset_expr(
                     wasm,
-                    imported_global_types,
+                    imported_globals,
                     c_funcs,
                     validation_context_refs,
                 )?;
                 let init = decode_and_validate_generic_initializer_list(
                     wasm,
                     RefType::FuncRef,
-                    imported_global_types,
+                    imported_globals,
                     c_funcs,
                     validation_context_refs,
                 )?;
@@ -137,7 +139,7 @@ impl ElemType {
                 let init = decode_and_validate_generic_initializer_list(
                     wasm,
                     et,
-                    imported_global_types,
+                    imported_globals,
                     c_funcs,
                     validation_context_refs,
                 )?;
@@ -151,7 +153,7 @@ impl ElemType {
                 let x = TableIdx::decode_and_validate(wasm, c_tables)?;
                 let e = decode_and_validate_active_segment_offset_expr(
                     wasm,
-                    imported_global_types,
+                    imported_globals,
                     c_funcs,
                     validation_context_refs,
                 )?;
@@ -159,7 +161,7 @@ impl ElemType {
                 let init = decode_and_validate_generic_initializer_list(
                     wasm,
                     et,
-                    imported_global_types,
+                    imported_globals,
                     c_funcs,
                     validation_context_refs,
                 )?;
@@ -177,7 +179,7 @@ impl ElemType {
                 let init = decode_and_validate_generic_initializer_list(
                     wasm,
                     et,
-                    imported_global_types,
+                    imported_globals,
                     c_funcs,
                     validation_context_refs,
                 )?;
@@ -231,17 +233,13 @@ impl ElemType {
 /// - `Ok(Span)` of the expr validated to be of type I32 if parsing & validating succeeds, `Err(_)` otherwise.
 fn decode_and_validate_active_segment_offset_expr(
     wasm: &mut WasmDecoder,
-    imported_global_types: &[GlobalType],
+    imported_globals: &[Global],
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<Span, ValidationError> {
     let mut valid_stack = ValidationStack::new();
-    let (span, seen_func_refs) = decode_and_validate_constant_expression(
-        wasm,
-        &mut valid_stack,
-        imported_global_types,
-        c_funcs,
-    )?;
+    let (span, seen_func_refs) =
+        decode_and_validate_constant_expression(wasm, &mut valid_stack, imported_globals, c_funcs)?;
     validation_context_refs.extend(seen_func_refs);
     valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
     Ok(span)
@@ -260,11 +258,14 @@ fn decode_and_validate_shortened_initializer_list(
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
-    let function_refs = wasm.decode_vec()?.map_and_collect(|w| {
-        let func_idx = FuncIdx::decode_and_validate(w, c_funcs)?;
-        validation_context_refs.insert(func_idx);
-        Ok::<_, ValidationError>(func_idx)
-    })?;
+    let function_refs = wasm
+        .decode_vec()?
+        .decode_elements_with(|w, _| {
+            let func_idx = FuncIdx::decode_and_validate(w, c_funcs)?;
+            validation_context_refs.insert(func_idx);
+            Ok::<_, ValidationError>(func_idx)
+        })
+        .try_collect_into_boxed_slice()?;
     Ok(ElemItems::RefFuncs(function_refs))
 }
 
@@ -279,21 +280,24 @@ fn decode_and_validate_shortened_initializer_list(
 fn decode_and_validate_generic_initializer_list(
     wasm: &mut WasmDecoder,
     expected_type: RefType,
-    imported_global_types: &[GlobalType],
+    imported_globals: &[Global],
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
-    let v_elements = wasm.decode_vec()?.map_and_collect(|w| {
-        let mut valid_stack = ValidationStack::new();
-        let (span, seen_func_refs) = decode_and_validate_constant_expression(
-            w,
-            &mut valid_stack,
-            imported_global_types,
-            c_funcs,
-        )?;
-        validation_context_refs.extend(seen_func_refs);
-        valid_stack.assert_val_types(&[ValType::RefType(expected_type)], true)?;
-        Ok::<_, ValidationError>(span)
-    })?;
+    let v_elements = wasm
+        .decode_vec()?
+        .decode_elements_with(|w, _| {
+            let mut valid_stack = ValidationStack::new();
+            let (span, seen_func_refs) = decode_and_validate_constant_expression(
+                w,
+                &mut valid_stack,
+                imported_globals,
+                c_funcs,
+            )?;
+            validation_context_refs.extend(seen_func_refs);
+            valid_stack.assert_val_types(&[ValType::RefType(expected_type)], true)?;
+            Ok::<_, ValidationError>(span)
+        })
+        .try_collect_into_boxed_slice()?;
     Ok(ElemItems::Exprs(expected_type, v_elements))
 }

@@ -183,12 +183,13 @@ pub unsafe fn br_if(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>,
 pub unsafe fn br_table(state: State) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
     let label_vec_len = state
         .wasm
-        .decode_vec(|wasm, _| {
+        .decode_vec()
+        .unwrap_validated()
+        .decode_elements_with(|wasm, _| {
             // SAFETY: Validation guarantees that there is a valid vec of label indices.
             unsafe { decode_label_idx_unchecked(wasm) };
             Ok::<(), Infallible>(())
         })
-        .unwrap_validated()
         .len_trusted();
 
     // SAFETY: Validation guarantees there to be another label index
