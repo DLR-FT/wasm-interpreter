@@ -1,5 +1,5 @@
 use dlr_wasm_interpreter::{
-    ExternAddr, FuncAddr, Ref, RefType, Value, ValueTypeMismatchError, F32, F64,
+    ExternAddr, F32, F64, FuncAddr, Ref, RefType, Value, ValueTypeMismatchError,
 };
 
 use crate::stored_types::Stored;

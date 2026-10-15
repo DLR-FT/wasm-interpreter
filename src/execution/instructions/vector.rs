@@ -9,11 +9,11 @@ use core::{
 };
 
 use crate::{
+    F32, F64, RuntimeError, Value,
     execution::{
         assert_validated::UnwrapValidatedExt,
-        instructions::{from_lanes, to_lanes, InterpreterLoopOutcome, State},
+        instructions::{InterpreterLoopOutcome, State, from_lanes, to_lanes},
     },
-    RuntimeError, Value, F32, F64,
 };
 
 // v128.const
@@ -1326,11 +1326,7 @@ pub unsafe fn f32x4_pmin(
     let result: [F32; 4] = array::from_fn(|i| {
         let v1 = lanes1[i];
         let v2 = lanes2[i];
-        if v2 < v1 {
-            v2
-        } else {
-            v1
-        }
+        if v2 < v1 { v2 } else { v1 }
     });
     state
         .resumable
@@ -1356,11 +1352,7 @@ pub unsafe fn f64x2_pmin(
     let result: [F64; 2] = array::from_fn(|i| {
         let v1 = lanes1[i];
         let v2 = lanes2[i];
-        if v2 < v1 {
-            v2
-        } else {
-            v1
-        }
+        if v2 < v1 { v2 } else { v1 }
     });
     state
         .resumable
@@ -1386,11 +1378,7 @@ pub unsafe fn f32x4_pmax(
     let result: [F32; 4] = array::from_fn(|i| {
         let v1 = lanes1[i];
         let v2 = lanes2[i];
-        if v1 < v2 {
-            v2
-        } else {
-            v1
-        }
+        if v1 < v2 { v2 } else { v1 }
     });
     state
         .resumable
@@ -1416,11 +1404,7 @@ pub unsafe fn f64x2_pmax(
     let result: [F64; 2] = array::from_fn(|i| {
         let v1 = lanes1[i];
         let v2 = lanes2[i];
-        if v1 < v2 {
-            v2
-        } else {
-            v1
-        }
+        if v1 < v2 { v2 } else { v1 }
     });
     state
         .resumable

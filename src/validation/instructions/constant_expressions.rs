@@ -1,8 +1,9 @@
 use alloc::vec::Vec;
 
 use crate::{
+    NumType, RefType, ValType, ValidationError,
     core::{
-        decoding::decoder::{span::Span, WasmDecoder},
+        decoding::decoder::{WasmDecoder, span::Span},
         structure::{
             modules::indices::{FuncIdx, IdxVec, TypeIdx},
             types::GlobalType,
@@ -10,7 +11,6 @@ use crate::{
         utils::ToUsizeExt,
     },
     validation::validation_stack::ValidationStack,
-    NumType, RefType, ValType, ValidationError,
 };
 
 /// Decodes a constant expression[^binary-format] and validates it[^validation].

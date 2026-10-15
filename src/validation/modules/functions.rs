@@ -1,9 +1,10 @@
 use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::{
+    ValidationError,
     core::{
         decoding::{
-            decoder::{span::Span, WasmDecoder},
+            decoder::{WasmDecoder, span::Span},
             modules::code_section::decode_locals,
         },
         sidetable::Sidetable,
@@ -23,7 +24,6 @@ use crate::{
         config::ValidationConfig, instructions::expressions::decode_and_validate_expr,
         validation_stack::ValidationStack,
     },
-    ValidationError,
 };
 
 /// Decodes a code section[^binary-format] and validates it[^validation].

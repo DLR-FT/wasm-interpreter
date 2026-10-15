@@ -1,11 +1,11 @@
 use alloc::vec::Vec;
 
 use crate::{
+    RefType,
     core::{
         decoding::decoder::span::Span,
         structure::modules::indices::{FuncIdx, TableIdx},
     },
-    RefType,
 };
 
 #[derive(Clone, Debug)]

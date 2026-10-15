@@ -1,11 +1,11 @@
 use std::time::Duration;
 
 use criterion::{
-    criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
-    PlotConfiguration, Throughput,
+    AxisScale, BatchSize, BenchmarkId, Criterion, PlotConfiguration, Throughput, criterion_group,
+    criterion_main,
 };
 
-use dlr_wasm_interpreter::{decode_and_validate, Store};
+use dlr_wasm_interpreter::{Store, decode_and_validate};
 
 macro_rules! bench_wasm {
     {

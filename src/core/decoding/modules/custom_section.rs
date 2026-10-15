@@ -1,6 +1,6 @@
 use crate::{
-    core::decoding::decoder::{span::Span, WasmDecoder},
     DecodingError,
+    core::decoding::decoder::{WasmDecoder, span::Span},
 };
 
 #[derive(Debug, Clone)]

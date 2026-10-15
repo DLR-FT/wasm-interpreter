@@ -1,4 +1,4 @@
-use dlr_wasm_interpreter::{decode_and_validate, GlobalType, NumType, ValType};
+use dlr_wasm_interpreter::{GlobalType, NumType, ValType, decode_and_validate};
 use dlr_wasm_interpreter_checked::{Store, StoredValue};
 
 /// The WASM program has one mutable global initialized with a constant 3.

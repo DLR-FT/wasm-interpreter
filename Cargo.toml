@@ -5,7 +5,7 @@ resolver = "2"
 [workspace.package]
 version = "0.3.0"
 rust-version = "1.87.0" # Keep this in sync with the requirements!
-edition = "2021"
+edition = "2024"
 repository = "https://github.com/DLR-FT/wasm-interpreter"
 license = "MIT OR Apache-2.0"
 authors = ["Florian Hartung <florian.hartung@dlr.de>"]

@@ -121,8 +121,8 @@ impl Config for () {}
 /// Value-Stack).
 pub const fn stack_memory_bytes_total<T: Config>() -> usize {
     use crate::{
-        execution::runtime_structure::value_stack::{CallFrame, Stack},
         Value,
+        execution::runtime_structure::value_stack::{CallFrame, Stack},
     };
 
     let value_stack_size = <T as Config>::MAX_VALUE_STACK_SIZE * core::mem::size_of::<Value>();
@@ -135,8 +135,8 @@ pub const fn stack_memory_bytes_total<T: Config>() -> usize {
 #[cfg(test)]
 mod test {
     use crate::{
-        execution::runtime_structure::value_stack::{CallFrame, Stack},
         Value,
+        execution::runtime_structure::value_stack::{CallFrame, Stack},
     };
 
     use super::*;

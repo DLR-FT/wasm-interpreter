@@ -1,6 +1,6 @@
 use crate::{
-    core::structure::types::ExternTypeRef, execution::runtime_structure::memory_instances::MemInst,
-    Config, FuncAddr, GlobalAddr, MemAddr, Store, TableAddr,
+    Config, FuncAddr, GlobalAddr, MemAddr, Store, TableAddr, core::structure::types::ExternTypeRef,
+    execution::runtime_structure::memory_instances::MemInst,
 };
 
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#external-values>

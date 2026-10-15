@@ -6,6 +6,7 @@
 use core::ops::ControlFlow;
 
 use crate::{
+    DecodingError, Ref, RuntimeError, TrapError,
     core::{
         decoding::modules::indices::decode_label_idx_unchecked,
         structure::{
@@ -16,10 +17,10 @@ use crate::{
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
-        instructions::{do_sidetable_control_transfer, InterpreterLoopOutcome, State},
+        instructions::{InterpreterLoopOutcome, State, do_sidetable_control_transfer},
         runtime_structure::function_instances::FuncInst,
     },
-    unreachable_validated, DecodingError, Ref, RuntimeError, TrapError,
+    unreachable_validated,
 };
 
 #[inline(always)]

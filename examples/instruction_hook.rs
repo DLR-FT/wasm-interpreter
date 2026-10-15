@@ -11,7 +11,7 @@
 use std::{collections::HashMap, error::Error, fmt};
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, Config, FuncAddr, Module, ModuleAddr, Store, Value,
+    Config, FuncAddr, Module, ModuleAddr, Store, Value, decode_and_validate,
 };
 
 // This is the same Wasm code as in the fuel example

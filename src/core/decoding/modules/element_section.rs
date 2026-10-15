@@ -1,4 +1,4 @@
-use crate::{core::decoding::decoder::WasmDecoder, DecodingError};
+use crate::{DecodingError, core::decoding::decoder::WasmDecoder};
 
 pub struct ElemKind;
 

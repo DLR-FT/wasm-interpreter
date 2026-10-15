@@ -6,6 +6,7 @@
 use core::{num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
+    Config, Ref, RuntimeError, TrapError, Value,
     core::{
         structure::{
             instructions,
@@ -15,9 +16,8 @@ use crate::{
     },
     execution::{
         assert_validated::UnwrapValidatedExt,
-        instructions::{elem_drop, table_init, InterpreterLoopOutcome, State},
+        instructions::{InterpreterLoopOutcome, State, elem_drop, table_init},
     },
-    Config, Ref, RuntimeError, TrapError, Value,
 };
 
 #[inline(always)]

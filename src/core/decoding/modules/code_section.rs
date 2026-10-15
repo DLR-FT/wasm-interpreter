@@ -1,8 +1,8 @@
 use core::iter;
 
 use crate::{
-    core::{decoding::decoder::WasmDecoder, utils::ToUsizeExt},
     DecodingError, ValType,
+    core::{decoding::decoder::WasmDecoder, utils::ToUsizeExt},
 };
 
 pub fn decode_locals<'a, 'wasm>(

@@ -22,8 +22,8 @@
 use std::{error::Error, io};
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, ExternVal, FuncAddr, FuncType, HostCall, InstantiationOutcome, Module,
-    ModuleAddr, NumType, ResultType, RunState, Store, ValType, Value,
+    ExternVal, FuncAddr, FuncType, HostCall, InstantiationOutcome, Module, ModuleAddr, NumType,
+    ResultType, RunState, Store, ValType, Value, decode_and_validate,
 };
 
 /// A Wasm module that sums up two i32s read from stdin, printing the result on stdout

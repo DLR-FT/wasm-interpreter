@@ -1,4 +1,5 @@
 use crate::{
+    AddrVec, Config, ModuleAddr, RuntimeError, Store, WasmResumable,
     core::{decoding::decoder::WasmDecoder, sidetable::Sidetable, utils::ToUsizeExt},
     execution::{
         assert_validated::UnwrapValidatedExt,
@@ -7,7 +8,6 @@ use crate::{
             function_instances::FuncInst, module_instances::ModuleInst, store::StoreInner,
         },
     },
-    AddrVec, Config, ModuleAddr, RuntimeError, Store, WasmResumable,
 };
 
 type InstructionHandlerFn<T> = for<'wasm, 'modules> unsafe extern "rust-preserve-none" fn(
@@ -249,15 +249,15 @@ mod wrappers {
     use core::ops::ControlFlow;
 
     use crate::{
+        Config, RuntimeError,
         core::{decoding::decoder::WasmDecoder, sidetable::Sidetable},
         execution::{
             instructions::{
-                decrement_fuel,
+                InterpreterLoopOutcome, State, decrement_fuel,
                 dispatch::{
                     for_all_instructions, for_all_instructions_fc, for_all_instructions_fd,
                     tail_calls::dispatch,
                 },
-                InterpreterLoopOutcome, State,
             },
             resumable::WasmResumable,
             runtime_structure::{
@@ -266,7 +266,6 @@ mod wrappers {
                 store::StoreInner,
             },
         },
-        Config, RuntimeError,
     };
 
     macro_rules! define_wrappers {

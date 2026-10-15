@@ -10,6 +10,7 @@
 use alloc::vec::Vec;
 
 use crate::{
+    DecodingError,
     core::{
         decoding::decoder::WasmDecoder,
         structure::{
@@ -20,7 +21,6 @@ use crate::{
             },
         },
     },
-    DecodingError,
 };
 
 impl NumType {

@@ -1,9 +1,9 @@
 use core::fmt::{Display, Formatter};
 
 use crate::{
+    DecodingError, RefType,
     core::structure::{modules::indices::FuncIdx, types::ValType},
     validation::validation_stack::ValidationStackEntry,
-    DecodingError, RefType,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -199,15 +199,19 @@ mod test {
 
     #[test]
     fn fmt_invalid_magic() {
-        assert!(DecodingError::InvalidMagic
-            .to_string()
-            .contains("magic number"));
+        assert!(
+            DecodingError::InvalidMagic
+                .to_string()
+                .contains("magic number")
+        );
     }
 
     #[test]
     fn fmt_invalid_version() {
-        assert!(DecodingError::InvalidBinaryFormatVersion
-            .to_string()
-            .contains("version"));
+        assert!(
+            DecodingError::InvalidBinaryFormatVersion
+                .to_string()
+                .contains("version")
+        );
     }
 }

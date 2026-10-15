@@ -1,11 +1,11 @@
 use crate::{
+    DecodingError,
     core::{
         decoding::decoder::WasmDecoder,
         structure::modules::indices::{
             DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, LocalIdx, MemIdx, TableIdx, TypeIdx,
         },
     },
-    DecodingError,
 };
 
 impl TypeIdx {

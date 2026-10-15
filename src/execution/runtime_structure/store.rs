@@ -3,9 +3,12 @@ use core::convert::Infallible;
 use alloc::{boxed::Box, sync::Arc, vec, vec::Vec};
 
 use crate::{
+    AddrVec, Config, DataAddr, ElemAddr, ExternVal, FuncAddr, FuncType, GlobalAddr, GlobalType,
+    HostCall, HostResumable, MemAddr, MemType, Module, ModuleAddr, Ordering, Ref, RefType,
+    Resumable, RunState, RuntimeError, TableAddr, TableType, Value, WasmResumable,
     core::{
         decoding::{
-            decoder::{span::Span, WasmDecoder},
+            decoder::{WasmDecoder, span::Span},
             modules::code_section::decode_locals,
         },
         structure::{
@@ -22,8 +25,8 @@ use crate::{
     execution::{
         assert_validated::UnwrapValidatedExt,
         instructions::{
-            self, const_interpreter_loop::run_const_span, data_drop, elem_drop, memory_init,
-            table_init, InterpreterLoopOutcome,
+            self, InterpreterLoopOutcome, const_interpreter_loop::run_const_span, data_drop,
+            elem_drop, memory_init, table_init,
         },
         runtime_structure::{
             data_instances::DataInst,
@@ -33,17 +36,14 @@ use crate::{
             function_instances::{FuncInst, HostFuncInst, WasmFuncInst},
             global_instances::GlobalInst,
             memory_instances::{
-                linear_memory::LinearMemory, shared_linear_memory::SharedLinearMemory, MemInst,
-                SharedMemInst, UnsharedMemInst, DEFAULT_PAGE_SIZE,
+                DEFAULT_PAGE_SIZE, MemInst, SharedMemInst, UnsharedMemInst,
+                linear_memory::LinearMemory, shared_linear_memory::SharedLinearMemory,
             },
             module_instances::ModuleInst,
             table_instances::TableInst,
             value_stack::Stack,
         },
     },
-    AddrVec, Config, DataAddr, ElemAddr, ExternVal, FuncAddr, FuncType, GlobalAddr, GlobalType,
-    HostCall, HostResumable, MemAddr, MemType, Module, ModuleAddr, Ordering, Ref, RefType,
-    Resumable, RunState, RuntimeError, TableAddr, TableType, Value, WasmResumable,
 };
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It

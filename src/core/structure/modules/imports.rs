@@ -1,4 +1,4 @@
-use crate::{core::structure::modules::indices::TypeIdx, GlobalType, MemType, TableType};
+use crate::{GlobalType, MemType, TableType, core::structure::modules::indices::TypeIdx};
 
 #[derive(Debug, Clone)]
 pub struct Import<'wasm> {

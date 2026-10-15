@@ -579,10 +579,12 @@ pub fn f32_sqrt() {
         1.4142135_f32,
         store.invoke_simple_typed(function, 2.0_f32).unwrap()
     );
-    assert!(store
-        .invoke_simple_typed::<f32, f32>(function, -f32::NAN)
-        .unwrap()
-        .is_nan());
+    assert!(
+        store
+            .invoke_simple_typed::<f32, f32>(function, -f32::NAN)
+            .unwrap()
+            .is_nan()
+    );
 }
 
 const WAT_2_ARGS_RETURN_F32: &str = r#"
@@ -742,14 +744,18 @@ pub fn f32_div() {
             .invoke_simple_typed(function, (2.0_f32, -2.0_f32))
             .unwrap()
     );
-    assert!(store
-        .invoke_simple_typed::<(f32, f32), f32>(function, (1.0_f32, 0.0_f32))
-        .unwrap()
-        .is_infinite());
-    assert!(store
-        .invoke_simple_typed::<(f32, f32), f32>(function, (0.0_f32, 0.0_f32))
-        .unwrap()
-        .is_nan());
+    assert!(
+        store
+            .invoke_simple_typed::<(f32, f32), f32>(function, (1.0_f32, 0.0_f32))
+            .unwrap()
+            .is_infinite()
+    );
+    assert!(
+        store
+            .invoke_simple_typed::<(f32, f32), f32>(function, (0.0_f32, 0.0_f32))
+            .unwrap()
+            .is_nan()
+    );
 }
 
 /// A simple function to test the f32.min implementation
@@ -821,10 +827,12 @@ pub fn f32_min() {
             .invoke_simple_typed(function, (0.0_f32, -0.0_f32))
             .unwrap()
     );
-    assert!(store
-        .invoke_simple_typed::<(f32, f32), f32>(function, (f32::NAN, 1.0_f32))
-        .unwrap()
-        .is_nan());
+    assert!(
+        store
+            .invoke_simple_typed::<(f32, f32), f32>(function, (f32::NAN, 1.0_f32))
+            .unwrap()
+            .is_nan()
+    );
 }
 
 /// A simple function to test the f32.max implementation
@@ -897,10 +905,12 @@ pub fn f32_max() {
             .invoke_simple_typed(function, (0.0_f32, -0.0_f32))
             .unwrap()
     );
-    assert!(store
-        .invoke_simple_typed::<(f32, f32), f32>(function, (f32::NAN, 1.0_f32))
-        .unwrap()
-        .is_nan());
+    assert!(
+        store
+            .invoke_simple_typed::<(f32, f32), f32>(function, (f32::NAN, 1.0_f32))
+            .unwrap()
+            .is_nan()
+    );
 }
 
 /// A simple function to test the f32.copysign implementation

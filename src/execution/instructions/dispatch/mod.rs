@@ -11,7 +11,7 @@
 //! dispatch mechanism to use can be configured via [`Config::DISPATCH_MECHANISM`].
 
 use crate::{
-    execution::instructions::InterpreterLoopOutcome, Config, RuntimeError, Store, WasmResumable,
+    Config, RuntimeError, Store, WasmResumable, execution::instructions::InterpreterLoopOutcome,
 };
 
 pub(crate) mod loop_call;

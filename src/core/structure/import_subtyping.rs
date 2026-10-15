@@ -1,4 +1,4 @@
-use crate::{core::structure::types::ExternTypeRef, ExternType, Limits};
+use crate::{ExternType, Limits, core::structure::types::ExternTypeRef};
 
 //https://webassembly.github.io/spec/core/valid/types.html#import-subtyping
 pub trait ImportSubTypeRelation {

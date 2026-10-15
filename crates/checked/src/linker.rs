@@ -3,9 +3,9 @@ use alloc::{string::String, vec::Vec};
 use dlr_wasm_interpreter::{Config, Module, ModuleAddr, RuntimeError};
 
 use crate::{
+    AbstractStored, StoreId,
     store::Store,
     stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome},
-    AbstractStored, StoreId,
 };
 
 #[derive(Default)]

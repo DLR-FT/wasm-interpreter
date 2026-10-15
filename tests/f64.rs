@@ -658,10 +658,12 @@ pub fn f64_sqrt() {
         1.4142135623730951_f64,
         store.invoke_simple_typed(function, 2.0_f64).unwrap()
     );
-    assert!(store
-        .invoke_simple_typed::<f64, f64>(function, -f64::NAN)
-        .unwrap()
-        .is_nan());
+    assert!(
+        store
+            .invoke_simple_typed::<f64, f64>(function, -f64::NAN)
+            .unwrap()
+            .is_nan()
+    );
 }
 
 /// A simple function to test the f64.add implementation
@@ -844,14 +846,18 @@ pub fn f64_div() {
             .invoke_simple_typed(function, (2.0_f64, -2.0_f64))
             .unwrap()
     );
-    assert!(store
-        .invoke_simple_typed::<(f64, f64), f64>(function, (1.0_f64, 0.0_f64))
-        .unwrap()
-        .is_infinite());
-    assert!(store
-        .invoke_simple_typed::<(f64, f64), f64>(function, (0.0_f64, 0.0_f64))
-        .unwrap()
-        .is_nan());
+    assert!(
+        store
+            .invoke_simple_typed::<(f64, f64), f64>(function, (1.0_f64, 0.0_f64))
+            .unwrap()
+            .is_infinite()
+    );
+    assert!(
+        store
+            .invoke_simple_typed::<(f64, f64), f64>(function, (0.0_f64, 0.0_f64))
+            .unwrap()
+            .is_nan()
+    );
 }
 
 /// A simple function to test the f64.min implementation
@@ -931,10 +937,12 @@ pub fn f64_min() {
             .invoke_simple_typed(function, (0.0_f64, -0.0_f64))
             .unwrap()
     );
-    assert!(store
-        .invoke_simple_typed::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
-        .unwrap()
-        .is_nan());
+    assert!(
+        store
+            .invoke_simple_typed::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
+            .unwrap()
+            .is_nan()
+    );
 }
 
 /// A simple function to test the f64.max implementation
@@ -1015,10 +1023,12 @@ pub fn f64_max() {
             .invoke_simple_typed(function, (0.0_f64, -0.0_f64))
             .unwrap()
     );
-    assert!(store
-        .invoke_simple_typed::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
-        .unwrap()
-        .is_nan());
+    assert!(
+        store
+            .invoke_simple_typed::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
+            .unwrap()
+            .is_nan()
+    );
 }
 
 /// A simple function to test the f64.copysign implementation

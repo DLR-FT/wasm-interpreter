@@ -1,6 +1,7 @@
 use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::{
+    RefType, ValidationError,
     core::{
         decoding::{decoder::WasmDecoder, modules::indices::decode_label_idx},
         sidetable::{Sidetable, SidetableEntry},
@@ -21,7 +22,6 @@ use crate::{
         config::ValidationConfig,
         validation_stack::{LabelInfo, ValidationStack},
     },
-    RefType, ValidationError,
 };
 
 /// Validates a specific branch to some label by its index `label_idx`.
@@ -339,8 +339,8 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                         // the last end instruction will handle the return to callee during execution
                         stps_to_backpatch.iter().for_each(|i| {
                             sidetable[*i].pc = wasm.pc - 1; // minus 1 is important!
-                                                            // during execution we check at every END instruction whether the function body is finished
-                                                            // Therefore only for function scope we jump before the END instruction
+                            // during execution we check at every END instruction whether the function body is finished
+                            // Therefore only for function scope we jump before the END instruction
                             sidetable[*i].stp = stp_here;
                         });
                     }
@@ -1196,7 +1196,7 @@ pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
                         return Err(ValidationError::InvalidMultiByteInstr(
                             first_instr_byte,
                             second_instr,
-                        ))
+                        ));
                     }
                 }
             }

@@ -151,7 +151,10 @@ fn generate_file_delta_assert<'r>(
             })
         })
         .collect_vec();
-    ensure!(pairs.len() == old.len() && pairs.len() == new.len(), "reports for {filepath} contains different asserts. make sure that the same testsuite is used for both runs");
+    ensure!(
+        pairs.len() == old.len() && pairs.len() == new.len(),
+        "reports for {filepath} contains different asserts. make sure that the same testsuite is used for both runs"
+    );
 
     let mut now_passing = Vec::new();
     let mut now_failing = Vec::new();

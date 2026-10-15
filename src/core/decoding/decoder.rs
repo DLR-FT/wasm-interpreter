@@ -1,4 +1,4 @@
-use crate::{core::decoding::decoder::span::Span, DecodingError};
+use crate::{DecodingError, core::decoding::decoder::span::Span};
 
 /// A struct for decoding Wasm bytecode
 #[derive(Clone)]

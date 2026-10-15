@@ -1,4 +1,4 @@
-use dlr_wasm_interpreter::{decode_and_validate, ValidationError};
+use dlr_wasm_interpreter::{ValidationError, decode_and_validate};
 use dlr_wasm_interpreter_checked::Store;
 
 const FUNCTION_CALL: &str = r#"

@@ -1,11 +1,11 @@
 use alloc::{fmt::Debug, vec, vec::Vec};
 use dlr_wasm_interpreter::{
-    Config, FuncAddr, FuncType, Hostcode, NumType, RefType, ResultType, RuntimeError, ValType,
-    ValueTypeMismatchError, F32, F64,
+    Config, F32, F64, FuncAddr, FuncType, Hostcode, NumType, RefType, ResultType, RuntimeError,
+    ValType, ValueTypeMismatchError,
 };
 use dlr_wasm_interpreter_interop::RefExtern;
 
-use crate::{stored_types::Stored, Store, StoredRef, StoredValue};
+use crate::{Store, StoredRef, StoredValue, stored_types::Stored};
 
 /// A stored variant of [`InteropValue`](dlr_wasm_interpreter_interop::InteropValue)
 pub trait StoredInteropValue

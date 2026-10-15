@@ -1,17 +1,16 @@
 use core::ops::ControlFlow;
 
 use crate::{
+    Config, RuntimeError, Store, WasmResumable,
     core::{decoding::decoder::WasmDecoder, sidetable::Sidetable, structure::instructions},
     execution::{
         assert_validated::UnwrapValidatedExt,
         instructions::{
-            decrement_fuel,
+            InterpreterLoopOutcome, State, decrement_fuel,
             dispatch::{for_all_instructions, for_all_instructions_fc, for_all_instructions_fd},
-            InterpreterLoopOutcome, State,
         },
         runtime_structure::function_instances::FuncInst,
     },
-    Config, RuntimeError, Store, WasmResumable,
 };
 
 /// Interprets Wasm bytecode using a loop-match construct.

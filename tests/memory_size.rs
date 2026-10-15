@@ -15,7 +15,7 @@ use log::info;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use dlr_wasm_interpreter::{decode_and_validate, ValidationError};
+use dlr_wasm_interpreter::{ValidationError, decode_and_validate};
 use dlr_wasm_interpreter_checked::Store;
 
 #[test_log::test]

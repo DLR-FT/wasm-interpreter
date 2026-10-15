@@ -1,6 +1,7 @@
 use alloc::boxed::Box;
 
 use crate::{
+    DataAddr, ElemAddr, FuncAddr, FuncType, GlobalAddr, MemAddr, TableAddr,
     core::{
         sidetable::Sidetable,
         structure::modules::indices::{
@@ -8,7 +9,6 @@ use crate::{
         },
     },
     execution::runtime_structure::export_instances::ExportInst,
-    DataAddr, ElemAddr, FuncAddr, FuncType, GlobalAddr, MemAddr, TableAddr,
 };
 
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>/

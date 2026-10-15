@@ -12,6 +12,8 @@ use alloc::vec::Vec;
 use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
+    AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, RuntimeError, TableAddr, TrapError,
+    Value, WasmResumable,
     core::{
         decoding::decoder::WasmDecoder,
         sidetable::Sidetable,
@@ -33,8 +35,6 @@ use crate::{
             value_stack::Stack,
         },
     },
-    AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, RuntimeError, TableAddr, TrapError,
-    Value, WasmResumable,
 };
 
 mod control;

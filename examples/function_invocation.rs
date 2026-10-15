@@ -12,7 +12,7 @@
 use std::error::Error;
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, ExternVal, FuncAddr, InstantiationOutcome, Module, Store, Value,
+    ExternVal, FuncAddr, InstantiationOutcome, Module, Store, Value, decode_and_validate,
 };
 
 /// The Wasm module is defined in the WebAssembly Text Format (WAT). We convert it to the Wasm

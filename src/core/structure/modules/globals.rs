@@ -1,4 +1,4 @@
-use crate::{core::decoding::decoder::span::Span, GlobalType};
+use crate::{GlobalType, core::decoding::decoder::span::Span};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Global {

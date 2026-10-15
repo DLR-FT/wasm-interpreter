@@ -10,7 +10,7 @@
 
 use std::error::Error;
 
-use dlr_wasm_interpreter::{decode_and_validate, FuncAddr, Module};
+use dlr_wasm_interpreter::{FuncAddr, Module, decode_and_validate};
 use dlr_wasm_interpreter_checked::{
     Store, Stored, StoredExternVal, StoredInstantiationOutcome, StoredValue,
 };
