@@ -3,6 +3,7 @@
 //! TODO write description for this module
 
 use crate::{
+    DecodingError, FuncType, Limits, MemType, RefType, TableType, ValType, ValidationError,
     core::{
         decoding::decoder::WasmDecoder,
         structure::{
@@ -11,7 +12,6 @@ use crate::{
         },
     },
     execution::assert_validated::UnwrapValidatedExt,
-    DecodingError, FuncType, Limits, MemType, RefType, TableType, ValType, ValidationError,
 };
 
 impl BlockType {

@@ -17,7 +17,7 @@
 
 use std::error::Error;
 
-use dlr_wasm_interpreter::{RefType, F32, F64};
+use dlr_wasm_interpreter::{F32, F64, RefType};
 use dlr_wasm_interpreter_checked::{StoredRef, StoredValue};
 use wast::core::{AbstractHeapType, HeapType, NanPattern, V128Const, WastRetCore};
 

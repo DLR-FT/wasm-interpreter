@@ -8,8 +8,8 @@
 use std::error::Error;
 
 use dlr_wasm_interpreter::{
-    GlobalAddr, GlobalType, Limits, MemAddr, MemType, NumType, Ref, RefType, Store, TableAddr,
-    TableType, ValType, Value, F64,
+    F64, GlobalAddr, GlobalType, Limits, MemAddr, MemType, NumType, Ref, RefType, Store, TableAddr,
+    TableType, ValType, Value,
 };
 
 fn main() -> Result<(), Box<dyn Error>> {

@@ -76,7 +76,7 @@ pub use crate::{
         },
     },
     execution::{
-        config::{stack_memory_bytes_total, Config},
+        config::{Config, stack_memory_bytes_total},
         error::{RuntimeError, TrapError},
         instructions::dispatch::DispatchMechanism,
         resumable::*,
@@ -85,10 +85,10 @@ pub use crate::{
             external_values::ExternVal,
             memory_instances::shared_linear_memory::{Ordering, SharedLinearMemory},
             store::{Hostcode, InstantiationOutcome, Store},
-            values::{ExternAddr, Ref, Value, ValueTypeMismatchError, F32, F64},
+            values::{ExternAddr, F32, F64, Ref, Value, ValueTypeMismatchError},
         },
     },
-    validation::{config::ValidationConfig, decode_and_validate, error::ValidationError, Module},
+    validation::{Module, config::ValidationConfig, decode_and_validate, error::ValidationError},
 };
 
 pub(crate) mod core;
@@ -121,7 +121,7 @@ impl From<RuntimeError> for Error {
 
 #[cfg(test)]
 mod test {
-    use crate::{core::decoding::error::DecodingError, Error, RuntimeError, ValidationError};
+    use crate::{Error, RuntimeError, ValidationError, core::decoding::error::DecodingError};
 
     #[test]
     fn error_conversion_validation_error() {

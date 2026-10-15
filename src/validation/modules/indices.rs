@@ -1,11 +1,11 @@
 use crate::{
+    FuncType, ValType, ValidationError,
     core::{
         decoding::decoder::WasmDecoder,
         structure::modules::indices::{
             DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, IdxVec, LocalIdx, MemIdx, TableIdx, TypeIdx,
         },
     },
-    FuncType, ValType, ValidationError,
 };
 
 impl TypeIdx {

@@ -1,5 +1,5 @@
 use dlr_wasm_interpreter::{
-    decode_and_validate, ExternType, FuncType, GlobalType, NumType, ResultType, ValType,
+    ExternType, FuncType, GlobalType, NumType, ResultType, ValType, decode_and_validate,
 };
 
 #[test_log::test]

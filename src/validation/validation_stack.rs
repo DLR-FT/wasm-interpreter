@@ -2,11 +2,11 @@ use alloc::{vec, vec::Vec};
 use core::iter;
 
 use crate::{
+    ValidationError,
     core::{
         structure::types::{FuncType, NumType, RefType, ValType},
         utils::ToUsizeExt,
     },
-    ValidationError,
 };
 
 #[derive(Debug, PartialEq, Eq)]

@@ -6,6 +6,7 @@
 use core::{array, num::NonZeroU64, ops::ControlFlow};
 
 use crate::{
+    Config, F32, F64, Ordering, RuntimeError, Value,
     core::{
         structure::{
             instructions,
@@ -17,12 +18,11 @@ use crate::{
     execution::{
         assert_validated::UnwrapValidatedExt,
         instructions::{
-            calculate_mem_address, data_drop, from_lanes, memory_init, to_lanes,
-            InterpreterLoopOutcome, State,
+            InterpreterLoopOutcome, State, calculate_mem_address, data_drop, from_lanes,
+            memory_init, to_lanes,
         },
         runtime_structure::memory_instances::MemInst,
     },
-    Config, Ordering, RuntimeError, Value, F32, F64,
 };
 
 // t.load

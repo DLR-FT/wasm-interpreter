@@ -5,8 +5,8 @@ use dlr_wasm_interpreter::{
 };
 
 use crate::{
-    stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome, StoredRunState},
     AbstractStored, StoreId, StoredRef, StoredResumable, StoredValue,
+    stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome, StoredRunState},
 };
 
 pub struct Store<'b, T: Config> {

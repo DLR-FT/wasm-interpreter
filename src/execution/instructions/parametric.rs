@@ -6,11 +6,11 @@
 use core::ops::ControlFlow;
 
 use crate::{
+    RuntimeError, ValType,
     execution::{
         assert_validated::UnwrapValidatedExt,
         instructions::{InterpreterLoopOutcome, State},
     },
-    RuntimeError, ValType,
 };
 
 #[inline(always)]

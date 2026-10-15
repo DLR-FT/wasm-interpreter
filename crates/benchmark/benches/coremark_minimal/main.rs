@@ -1,6 +1,6 @@
 use dlr_wasm_interpreter::{
-    decode_and_validate, Config, DispatchMechanism, ExternVal, FuncType, NumType, ResultType,
-    RunState, Store, ValType, Value,
+    Config, DispatchMechanism, ExternVal, FuncType, NumType, ResultType, RunState, Store, ValType,
+    Value, decode_and_validate,
 };
 use envconfig::Envconfig;
 use std::{str::FromStr, time::UNIX_EPOCH};

@@ -6,7 +6,7 @@
 
 use std::error::Error;
 
-use dlr_wasm_interpreter::{instructions, Config, Store};
+use dlr_wasm_interpreter::{Config, Store, instructions};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let _store: Store<MyCustomFuelConfig> = Store::new(MyCustomFuelConfig);

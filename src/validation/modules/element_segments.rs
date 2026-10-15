@@ -1,9 +1,10 @@
 use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 
 use crate::{
+    GlobalType, NumType, RefType, TableType, ValType, ValidationError,
     core::{
         decoding::{
-            decoder::{span::Span, WasmDecoder},
+            decoder::{WasmDecoder, span::Span},
             modules::element_section::ElemKind,
         },
         structure::modules::{
@@ -15,7 +16,6 @@ use crate::{
         instructions::constant_expressions::decode_and_validate_constant_expression,
         validation_stack::ValidationStack,
     },
-    GlobalType, NumType, RefType, TableType, ValType, ValidationError,
 };
 
 impl ElemType {

@@ -4,8 +4,8 @@ use alloc::vec::Vec;
 use core::num::NonZeroU64;
 
 use crate::{
-    execution::runtime_structure::{store::Hostcode, value_stack::Stack},
     FuncAddr, Value,
+    execution::runtime_structure::{store::Hostcode, value_stack::Stack},
 };
 
 /// A [`WasmResumable`] is an object used to resume execution of Wasm code.

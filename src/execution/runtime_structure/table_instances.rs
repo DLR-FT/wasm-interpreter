@@ -2,7 +2,7 @@ use core::iter;
 
 use alloc::vec::Vec;
 
-use crate::{core::utils::ToUsizeExt, Config, Limits, Ref, RuntimeError, TableType};
+use crate::{Config, Limits, Ref, RuntimeError, TableType, core::utils::ToUsizeExt};
 
 #[derive(Debug)]
 pub struct TableInst {

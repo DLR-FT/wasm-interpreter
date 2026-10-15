@@ -1,15 +1,16 @@
 use alloc::vec::Vec;
 
 use crate::{
+    Config, F32, F64, ModuleAddr, Ref, RefType, RuntimeError, Store, Value,
     core::{
-        decoding::decoder::{span::Span, WasmDecoder},
+        decoding::decoder::{WasmDecoder, span::Span},
         structure::{
             modules::indices::{FuncIdx, GlobalIdx},
             types::FuncType,
         },
     },
     execution::{assert_validated::UnwrapValidatedExt, runtime_structure::value_stack::Stack},
-    unreachable_validated, Config, ModuleAddr, Ref, RefType, RuntimeError, Store, Value, F32, F64,
+    unreachable_validated,
 };
 
 // TODO update this documentation

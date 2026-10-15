@@ -17,8 +17,8 @@
 use std::{error::Error, time::Duration};
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, Config, FuncAddr, InstantiationOutcome, MemAddr, Module, RunState, Store,
-    Value,
+    Config, FuncAddr, InstantiationOutcome, MemAddr, Module, RunState, Store, Value,
+    decode_and_validate,
 };
 
 const WAT_CODE: &str = r#"

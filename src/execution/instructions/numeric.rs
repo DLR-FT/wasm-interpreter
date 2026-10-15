@@ -6,11 +6,11 @@
 use core::ops::ControlFlow;
 
 use crate::{
+    F32, F64, RuntimeError, TrapError,
     execution::{
         assert_validated::UnwrapValidatedExt,
         instructions::{InterpreterLoopOutcome, State},
     },
-    RuntimeError, TrapError, F32, F64,
 };
 
 // t.const

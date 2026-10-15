@@ -6,8 +6,8 @@
 //! This is due to the fact that these methods read elemental types which cannot be split.
 
 use crate::{
-    core::{decoding::decoder::WasmDecoder, utils::ToUsizeExt},
     DecodingError,
+    core::{decoding::decoder::WasmDecoder, utils::ToUsizeExt},
 };
 
 /// Wasm encodes integers according to the LEB128 format, which specifies that

@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 
 use crate::{
+    DecodingError, MemType, ValidationError,
     core::{
         decoding::decoder::WasmDecoder,
         structure::{
@@ -15,7 +16,6 @@ use crate::{
         instructions::constant_expressions::decode_and_validate_constant_expression,
         validation_stack::ValidationStack,
     },
-    DecodingError, MemType, ValidationError,
 };
 
 impl DataSegment {
@@ -105,7 +105,7 @@ impl DataSegment {
                 // In the current version of WebAssembly, at most one memory may be defined or imported in a single module, so all valid active data segments have a memory value of 0
             }
             invalid_mode @ 3.. => {
-                return Err(ValidationError::InvalidDataSegmentMode(invalid_mode))
+                return Err(ValidationError::InvalidDataSegmentMode(invalid_mode));
             }
         };
 

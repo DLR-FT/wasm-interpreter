@@ -1,9 +1,9 @@
 use crate::{
+    DecodingError,
     core::{
-        decoding::decoder::{span::Span, WasmDecoder},
+        decoding::decoder::{WasmDecoder, span::Span},
         utils::ToUsizeExt,
     },
-    DecodingError,
 };
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]

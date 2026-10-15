@@ -6,12 +6,12 @@
 use core::ops::ControlFlow;
 
 use crate::{
+    Ref, RefType, RuntimeError, Value,
     core::structure::modules::indices::FuncIdx,
     execution::{
         assert_validated::UnwrapValidatedExt,
         instructions::{InterpreterLoopOutcome, State},
     },
-    Ref, RefType, RuntimeError, Value,
 };
 
 #[inline(always)]

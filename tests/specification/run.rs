@@ -6,8 +6,8 @@ use std::panic::UnwindSafe;
 use bumpalo::Bump;
 use dlr_wasm_interpreter::ExternAddr;
 use dlr_wasm_interpreter::{
-    decode_and_validate, GlobalType, Limits, MemType, ModuleAddr, NumType, RefType, RuntimeError,
-    TableType, TrapError, ValType, F32, F64,
+    F32, F64, GlobalType, Limits, MemType, ModuleAddr, NumType, RefType, RuntimeError, TableType,
+    TrapError, ValType, decode_and_validate,
 };
 use dlr_wasm_interpreter_checked::{
     Linker, Store, Stored, StoredExternVal, StoredRef, StoredValue,

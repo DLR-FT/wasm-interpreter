@@ -6,9 +6,9 @@
 use core::ops::ControlFlow;
 
 use crate::{
+    RuntimeError,
     core::structure::modules::indices::{GlobalIdx, LocalIdx},
     execution::instructions::{InterpreterLoopOutcome, State},
-    RuntimeError,
 };
 
 #[inline(always)]

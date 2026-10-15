@@ -46,7 +46,9 @@ pub enum WastError {
     UnrepresentedRuntimeError,
     #[error("{0}")]
     Io(#[from] std::io::Error),
-    #[error("Some directive either referenced a non-existing Wasm module by its id or it did not specify an id at all and there was no other module defined prior to this directive.")]
+    #[error(
+        "Some directive either referenced a non-existing Wasm module by its id or it did not specify an id at all and there was no other module defined prior to this directive."
+    )]
     UnknownModuleReferenced,
     #[error("An directive referenced a non-existing function export")]
     UnknownFunctionReferenced,

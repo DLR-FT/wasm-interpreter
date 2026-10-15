@@ -5,10 +5,11 @@ use alloc::{
 use core::iter::Map;
 
 use crate::{
+    CustomSection, DecodingError, ValidationError,
     core::{
         decoding::{
-            decoder::{span::Span, WasmDecoder},
-            modules::sections::{decode_section_if_ty_matches, SectionTy},
+            decoder::{WasmDecoder, span::Span},
+            modules::sections::{SectionTy, decode_section_if_ty_matches},
         },
         sidetable::Sidetable,
         structure::{
@@ -28,7 +29,6 @@ use crate::{
         utils::ToUsizeExt,
     },
     validation::{config::ValidationConfig, modules::functions::decode_and_validate_code_section},
-    CustomSection, DecodingError, ValidationError,
 };
 
 pub mod error;

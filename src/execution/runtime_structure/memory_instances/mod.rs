@@ -3,11 +3,11 @@ use core::num::NonZeroUsize;
 use alloc::sync::Arc;
 
 use crate::{
+    Config, Limits, MemType, Ordering, RuntimeError,
     core::utils::ToUsizeExt,
     execution::runtime_structure::memory_instances::{
         linear_memory::LinearMemory, shared_linear_memory::SharedLinearMemory,
     },
-    Config, Limits, MemType, Ordering, RuntimeError,
 };
 
 pub mod linear_memory;

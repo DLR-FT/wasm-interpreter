@@ -8,12 +8,12 @@ use core::{
 use alloc::vec::Vec;
 
 use crate::{
+    Config, RuntimeError, TrapError,
     execution::{
         numerics::representations::LittleEndianBytes,
         runtime_structure::memory_instances::DEFAULT_PAGE_SIZE,
     },
     rw_spinlock::{ReadLockGuard, RwSpinLock, WriteLockGuard},
-    Config, RuntimeError, TrapError,
 };
 
 /// Implementation of a shared linear memory, as defined in the threads proposal[^threads-proposal].

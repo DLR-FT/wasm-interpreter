@@ -2,12 +2,12 @@ use alloc::vec::Vec;
 use core::mem::MaybeUninit;
 
 use crate::{
+    Config, FuncAddr, FuncType, RuntimeError, ValType, Value,
     core::{
         fixed_capacity_vec::FixedCapacityVec, structure::modules::indices::LocalIdx,
         utils::ToUsizeExt,
     },
     execution::assert_validated::UnwrapValidatedExt,
-    Config, FuncAddr, FuncType, RuntimeError, ValType, Value,
 };
 
 /// The stack at runtime containing
@@ -288,7 +288,7 @@ impl Stack {
         return_stp: usize,
     ) -> Result<(), RuntimeError> {
         debug_assert!(
-            self.values.len()>= func_ty.params.valtypes.len(),
+            self.values.len() >= func_ty.params.valtypes.len(),
             "when pushing a new call frame, at least as many values need to be on the stack as required by the new call frames's function"
         );
 

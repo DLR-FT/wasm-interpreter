@@ -11,7 +11,7 @@
 
 use std::error::Error;
 
-use dlr_wasm_interpreter::{decode_and_validate, FuncAddr, Module, ModuleAddr, Store, Value};
+use dlr_wasm_interpreter::{FuncAddr, Module, ModuleAddr, Store, Value, decode_and_validate};
 use dlr_wasm_interpreter_linker::Linker;
 
 const MAIN_WAT_CODE: &str = r#"

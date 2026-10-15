@@ -1,4 +1,4 @@
-use dlr_wasm_interpreter::{decode_and_validate, RunState, Store, Value};
+use dlr_wasm_interpreter::{RunState, Store, Value, decode_and_validate};
 use dlr_wasm_interpreter_interop::StoreTypedInvocationExt;
 
 #[test_log::test]

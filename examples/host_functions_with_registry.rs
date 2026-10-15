@@ -16,7 +16,7 @@ use std::{
     io::{self, Write},
 };
 
-use dlr_wasm_interpreter::{decode_and_validate, FuncAddr, Module, ModuleAddr};
+use dlr_wasm_interpreter::{FuncAddr, Module, ModuleAddr, decode_and_validate};
 use dlr_wasm_interpreter_checked::{
     Store, Stored, StoredExternVal, StoredInstantiationOutcome, StoredRunState,
 };

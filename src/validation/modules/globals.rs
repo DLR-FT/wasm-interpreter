@@ -1,6 +1,7 @@
 use alloc::collections::btree_set::BTreeSet;
 
 use crate::{
+    GlobalType, ValidationError,
     core::{
         decoding::decoder::WasmDecoder,
         structure::modules::{
@@ -12,7 +13,6 @@ use crate::{
         instructions::constant_expressions::decode_and_validate_constant_expression,
         validation_stack::ValidationStack,
     },
-    GlobalType, ValidationError,
 };
 
 impl Global {

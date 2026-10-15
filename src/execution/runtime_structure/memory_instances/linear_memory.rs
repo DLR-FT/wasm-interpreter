@@ -3,11 +3,11 @@ use core::{iter, num::NonZeroUsize};
 use alloc::{vec, vec::Vec};
 
 use crate::{
+    Config, RuntimeError, TrapError,
     execution::{
         numerics::representations::LittleEndianBytes,
         runtime_structure::memory_instances::DEFAULT_PAGE_SIZE,
     },
-    Config, RuntimeError, TrapError,
 };
 
 /// A linear memory is the backing data structure for a memory instance[^memory-instances].

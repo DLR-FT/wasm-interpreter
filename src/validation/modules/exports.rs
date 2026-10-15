@@ -1,4 +1,5 @@
 use crate::{
+    DecodingError, ExternType, MemType, Module, TableType, ValidationError,
     core::{
         decoding::decoder::WasmDecoder,
         structure::modules::{
@@ -7,7 +8,6 @@ use crate::{
             indices::{FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
         },
     },
-    DecodingError, ExternType, MemType, Module, TableType, ValidationError,
 };
 
 impl<'wasm> Export<'wasm> {
