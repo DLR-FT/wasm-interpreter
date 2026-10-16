@@ -121,8 +121,8 @@
 <a href=#121 id=121 data-nosnippet>121</a>/// Value-Stack).
 <a href=#122 id=122 data-nosnippet>122</a></span><span class="kw">pub const fn </span>stack_memory_bytes_total&lt;T: Config&gt;() -&gt; usize {
 <a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">use </span>crate::{
-<a href=#124 id=124 data-nosnippet>124</a>        execution::runtime_structure::value_stack::{CallFrame, Stack},
-<a href=#125 id=125 data-nosnippet>125</a>        Value,
+<a href=#124 id=124 data-nosnippet>124</a>        Value,
+<a href=#125 id=125 data-nosnippet>125</a>        execution::runtime_structure::value_stack::{CallFrame, Stack},
 <a href=#126 id=126 data-nosnippet>126</a>    };
 <a href=#127 id=127 data-nosnippet>127</a>
 <a href=#128 id=128 data-nosnippet>128</a>    <span class="kw">let </span>value_stack_size = &lt;T <span class="kw">as </span>Config&gt;::MAX_VALUE_STACK_SIZE * core::mem::size_of::&lt;Value&gt;();
@@ -135,8 +135,8 @@
 <a href=#135 id=135 data-nosnippet>135</a><span class="attr">#[cfg(test)]
 <a href=#136 id=136 data-nosnippet>136</a></span><span class="kw">mod </span>test {
 <a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">use </span>crate::{
-<a href=#138 id=138 data-nosnippet>138</a>        execution::runtime_structure::value_stack::{CallFrame, Stack},
-<a href=#139 id=139 data-nosnippet>139</a>        Value,
+<a href=#138 id=138 data-nosnippet>138</a>        Value,
+<a href=#139 id=139 data-nosnippet>139</a>        execution::runtime_structure::value_stack::{CallFrame, Stack},
 <a href=#140 id=140 data-nosnippet>140</a>    };
 <a href=#141 id=141 data-nosnippet>141</a>
 <a href=#142 id=142 data-nosnippet>142</a>    <span class="kw">use </span>super::<span class="kw-2">*</span>;

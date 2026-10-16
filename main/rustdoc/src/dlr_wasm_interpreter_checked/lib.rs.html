@@ -50,10 +50,10 @@
 <a href=#50 id=50 data-nosnippet>50</a><span class="kw">impl </span>StoreId {
 <a href=#51 id=51 data-nosnippet>51</a>    <span class="doccomment">/// Creates a new unique [`StoreId`]
 <a href=#52 id=52 data-nosnippet>52</a>    </span><span class="attr">#[allow(clippy::new_without_default)] </span><span class="comment">// reason = "StoreId::default() might be misunderstood to be some
-<a href=#53 id=53 data-nosnippet>53</a>                                          // default value. However, a default value does not exist in that
-<a href=#54 id=54 data-nosnippet>54</a>                                          // sense because every newly created StoreId must be unique. Also
-<a href=#55 id=55 data-nosnippet>55</a>                                          // we don't want to allow the user to create new instances of
-<a href=#56 id=56 data-nosnippet>56</a>                                          // this object."
+<a href=#53 id=53 data-nosnippet>53</a>    // default value. However, a default value does not exist in that
+<a href=#54 id=54 data-nosnippet>54</a>    // sense because every newly created StoreId must be unique. Also
+<a href=#55 id=55 data-nosnippet>55</a>    // we don't want to allow the user to create new instances of
+<a href=#56 id=56 data-nosnippet>56</a>    // this object."
 <a href=#57 id=57 data-nosnippet>57</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
 <a href=#58 id=58 data-nosnippet>58</a>        <span class="kw">static </span>NEXT_STORE_ID: AtomicU64 = AtomicU64::new(<span class="number">0</span>);
 <a href=#59 id=59 data-nosnippet>59</a>

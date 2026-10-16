@@ -5,30 +5,30 @@
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>core::iter::Map;
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>crate::{
-<a href=#8 id=8 data-nosnippet>8</a>    core::{
-<a href=#9 id=9 data-nosnippet>9</a>        decoding::{
-<a href=#10 id=10 data-nosnippet>10</a>            decoder::{span::Span, WasmDecoder},
-<a href=#11 id=11 data-nosnippet>11</a>            modules::sections::{decode_section_if_ty_matches, SectionTy},
-<a href=#12 id=12 data-nosnippet>12</a>        },
-<a href=#13 id=13 data-nosnippet>13</a>        sidetable::Sidetable,
-<a href=#14 id=14 data-nosnippet>14</a>        structure::{
-<a href=#15 id=15 data-nosnippet>15</a>            modules::{
-<a href=#16 id=16 data-nosnippet>16</a>                data_segments::DataSegment,
-<a href=#17 id=17 data-nosnippet>17</a>                element_segments::ElemType,
-<a href=#18 id=18 data-nosnippet>18</a>                exports::{Export, ExportDesc},
-<a href=#19 id=19 data-nosnippet>19</a>                globals::Global,
-<a href=#20 id=20 data-nosnippet>20</a>                imports::{Import, ImportDesc},
-<a href=#21 id=21 data-nosnippet>21</a>                indices::{
-<a href=#22 id=22 data-nosnippet>22</a>                    DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec,
-<a href=#23 id=23 data-nosnippet>23</a>                    IdxVecOverflowError, MemIdx, TableIdx, TypeIdx,
-<a href=#24 id=24 data-nosnippet>24</a>                },
-<a href=#25 id=25 data-nosnippet>25</a>            },
-<a href=#26 id=26 data-nosnippet>26</a>            types::{ExternType, FuncType, GlobalType, MemType, TableType},
-<a href=#27 id=27 data-nosnippet>27</a>        },
-<a href=#28 id=28 data-nosnippet>28</a>        utils::ToUsizeExt,
-<a href=#29 id=29 data-nosnippet>29</a>    },
-<a href=#30 id=30 data-nosnippet>30</a>    validation::{config::ValidationConfig, modules::functions::decode_and_validate_code_section},
-<a href=#31 id=31 data-nosnippet>31</a>    CustomSection, DecodingError, ValidationError,
+<a href=#8 id=8 data-nosnippet>8</a>    CustomSection, DecodingError, ValidationError,
+<a href=#9 id=9 data-nosnippet>9</a>    core::{
+<a href=#10 id=10 data-nosnippet>10</a>        decoding::{
+<a href=#11 id=11 data-nosnippet>11</a>            decoder::{WasmDecoder, span::Span},
+<a href=#12 id=12 data-nosnippet>12</a>            modules::sections::{SectionTy, decode_section_if_ty_matches},
+<a href=#13 id=13 data-nosnippet>13</a>        },
+<a href=#14 id=14 data-nosnippet>14</a>        sidetable::Sidetable,
+<a href=#15 id=15 data-nosnippet>15</a>        structure::{
+<a href=#16 id=16 data-nosnippet>16</a>            modules::{
+<a href=#17 id=17 data-nosnippet>17</a>                data_segments::DataSegment,
+<a href=#18 id=18 data-nosnippet>18</a>                element_segments::ElemType,
+<a href=#19 id=19 data-nosnippet>19</a>                exports::{Export, ExportDesc},
+<a href=#20 id=20 data-nosnippet>20</a>                globals::Global,
+<a href=#21 id=21 data-nosnippet>21</a>                imports::{Import, ImportDesc},
+<a href=#22 id=22 data-nosnippet>22</a>                indices::{
+<a href=#23 id=23 data-nosnippet>23</a>                    DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec,
+<a href=#24 id=24 data-nosnippet>24</a>                    IdxVecOverflowError, MemIdx, TableIdx, TypeIdx,
+<a href=#25 id=25 data-nosnippet>25</a>                },
+<a href=#26 id=26 data-nosnippet>26</a>            },
+<a href=#27 id=27 data-nosnippet>27</a>            types::{ExternType, FuncType, GlobalType, MemType, TableType},
+<a href=#28 id=28 data-nosnippet>28</a>        },
+<a href=#29 id=29 data-nosnippet>29</a>        utils::ToUsizeExt,
+<a href=#30 id=30 data-nosnippet>30</a>    },
+<a href=#31 id=31 data-nosnippet>31</a>    validation::{config::ValidationConfig, modules::functions::decode_and_validate_code_section},
 <a href=#32 id=32 data-nosnippet>32</a>};
 <a href=#33 id=33 data-nosnippet>33</a>
 <a href=#34 id=34 data-nosnippet>34</a><span class="kw">pub mod </span>error;

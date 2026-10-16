@@ -76,7 +76,7 @@
 <a href=#76 id=76 data-nosnippet>76</a>        },
 <a href=#77 id=77 data-nosnippet>77</a>    },
 <a href=#78 id=78 data-nosnippet>78</a>    execution::{
-<a href=#79 id=79 data-nosnippet>79</a>        config::{stack_memory_bytes_total, Config},
+<a href=#79 id=79 data-nosnippet>79</a>        config::{Config, stack_memory_bytes_total},
 <a href=#80 id=80 data-nosnippet>80</a>        error::{RuntimeError, TrapError},
 <a href=#81 id=81 data-nosnippet>81</a>        instructions::dispatch::DispatchMechanism,
 <a href=#82 id=82 data-nosnippet>82</a>        resumable::<span class="kw-2">*</span>,
@@ -85,10 +85,10 @@
 <a href=#85 id=85 data-nosnippet>85</a>            external_values::ExternVal,
 <a href=#86 id=86 data-nosnippet>86</a>            memory_instances::shared_linear_memory::{Ordering, SharedLinearMemory},
 <a href=#87 id=87 data-nosnippet>87</a>            store::{Hostcode, InstantiationOutcome, Store},
-<a href=#88 id=88 data-nosnippet>88</a>            values::{ExternAddr, Ref, Value, ValueTypeMismatchError, F32, F64},
+<a href=#88 id=88 data-nosnippet>88</a>            values::{ExternAddr, F32, F64, Ref, Value, ValueTypeMismatchError},
 <a href=#89 id=89 data-nosnippet>89</a>        },
 <a href=#90 id=90 data-nosnippet>90</a>    },
-<a href=#91 id=91 data-nosnippet>91</a>    validation::{config::ValidationConfig, decode_and_validate, error::ValidationError, Module},
+<a href=#91 id=91 data-nosnippet>91</a>    validation::{Module, config::ValidationConfig, decode_and_validate, error::ValidationError},
 <a href=#92 id=92 data-nosnippet>92</a>};
 <a href=#93 id=93 data-nosnippet>93</a>
 <a href=#94 id=94 data-nosnippet>94</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>core;
@@ -121,7 +121,7 @@
 <a href=#121 id=121 data-nosnippet>121</a>
 <a href=#122 id=122 data-nosnippet>122</a><span class="attr">#[cfg(test)]
 <a href=#123 id=123 data-nosnippet>123</a></span><span class="kw">mod </span>test {
-<a href=#124 id=124 data-nosnippet>124</a>    <span class="kw">use </span>crate::{core::decoding::error::DecodingError, Error, RuntimeError, ValidationError};
+<a href=#124 id=124 data-nosnippet>124</a>    <span class="kw">use </span>crate::{Error, RuntimeError, ValidationError, core::decoding::error::DecodingError};
 <a href=#125 id=125 data-nosnippet>125</a>
 <a href=#126 id=126 data-nosnippet>126</a>    <span class="attr">#[test]
 <a href=#127 id=127 data-nosnippet>127</a>    </span><span class="kw">fn </span>error_conversion_validation_error() {

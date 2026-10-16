@@ -2,12 +2,12 @@
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span>core::mem::MaybeUninit;
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>crate::{
-<a href=#5 id=5 data-nosnippet>5</a>    core::{
-<a href=#6 id=6 data-nosnippet>6</a>        fixed_capacity_vec::FixedCapacityVec, structure::modules::indices::LocalIdx,
-<a href=#7 id=7 data-nosnippet>7</a>        utils::ToUsizeExt,
-<a href=#8 id=8 data-nosnippet>8</a>    },
-<a href=#9 id=9 data-nosnippet>9</a>    execution::assert_validated::UnwrapValidatedExt,
-<a href=#10 id=10 data-nosnippet>10</a>    Config, FuncAddr, FuncType, RuntimeError, ValType, Value,
+<a href=#5 id=5 data-nosnippet>5</a>    Config, FuncAddr, FuncType, RuntimeError, ValType, Value,
+<a href=#6 id=6 data-nosnippet>6</a>    core::{
+<a href=#7 id=7 data-nosnippet>7</a>        fixed_capacity_vec::FixedCapacityVec, structure::modules::indices::LocalIdx,
+<a href=#8 id=8 data-nosnippet>8</a>        utils::ToUsizeExt,
+<a href=#9 id=9 data-nosnippet>9</a>    },
+<a href=#10 id=10 data-nosnippet>10</a>    execution::assert_validated::UnwrapValidatedExt,
 <a href=#11 id=11 data-nosnippet>11</a>};
 <a href=#12 id=12 data-nosnippet>12</a>
 <a href=#13 id=13 data-nosnippet>13</a><span class="doccomment">/// The stack at runtime containing
@@ -288,7 +288,7 @@
 <a href=#288 id=288 data-nosnippet>288</a>        return_stp: usize,
 <a href=#289 id=289 data-nosnippet>289</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
 <a href=#290 id=290 data-nosnippet>290</a>        <span class="macro">debug_assert!</span>(
-<a href=#291 id=291 data-nosnippet>291</a>            <span class="self">self</span>.values.len()&gt;= func_ty.params.valtypes.len(),
+<a href=#291 id=291 data-nosnippet>291</a>            <span class="self">self</span>.values.len() &gt;= func_ty.params.valtypes.len(),
 <a href=#292 id=292 data-nosnippet>292</a>            <span class="string">"when pushing a new call frame, at least as many values need to be on the stack as required by the new call frames's function"
 <a href=#293 id=293 data-nosnippet>293</a>        </span>);
 <a href=#294 id=294 data-nosnippet>294</a>
