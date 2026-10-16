@@ -29,7 +29,7 @@ pub(crate) unsafe fn run_const<'wasm, T: Config>(
     wasm: &mut WasmDecoder<'wasm>,
     stack: &mut Stack,
     module: ModuleAddr,
-    store: &Store<'wasm, T>,
+    store: &Store<T>,
 ) -> Result<(), RuntimeError> {
     use crate::core::structure::instructions::*;
     loop {
@@ -113,7 +113,7 @@ struct State<'a, 'wasm, T: Config> {
     wasm: &'a mut WasmDecoder<'wasm>,
     stack: &'a mut Stack,
     module: ModuleAddr,
-    store: &'a Store<'wasm, T>,
+    store: &'a Store<T>,
 }
 
 macro_rules! define_instruction {

@@ -12,9 +12,9 @@ use crate::{
     DecodingError, ExternType, FuncType, GlobalType, MemType, Module, TableType, ValidationError,
 };
 
-impl<'wasm> Import<'wasm> {
+impl Import {
     pub fn decode_and_validate(
-        wasm: &mut WasmDecoder<'wasm>,
+        wasm: &mut WasmDecoder,
         c_types: &IdxVec<TypeIdx, FuncType>,
     ) -> Result<Self, ValidationError> {
         let module_name = wasm.decode_name()?;

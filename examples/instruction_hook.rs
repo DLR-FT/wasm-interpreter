@@ -11,8 +11,15 @@
 use std::{collections::HashMap, error::Error, fmt};
 
 use dlr_wasm_interpreter::{
-    decode_and_validate, Config, FuncAddr, Module, ModuleAddr, Store, Value,
+    decode_and_validate, BytecodeProvider, Config, FuncAddr, Module, ModuleAddr, Store, Value,
 };
+
+struct SingleBytecodeRef<'a>(&'a [u8]);
+impl BytecodeProvider for SingleBytecodeRef<'_> {
+    fn get_bytecode(&self, _id: usize) -> &[u8] {
+        self.0
+    }
+}
 
 // This is the same Wasm code as in the fuel example
 const WAT_CODE: &str = r#"
@@ -57,18 +64,30 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut store: Store<MyHookConfig> = Store::new(MyHookConfig::default());
 
-    // SAFETY: There are no extern values.
+    let bytecode_provider: SingleBytecodeRef<'_> = SingleBytecodeRef(&wasm_bytecode);
+    // SAFETY:
+    // 1. There are no extern values.
+    // 2. `bytecode_provider` always returns the same bytecode, which is associated with this
+    //    module.
+    // 3. There are no previous instantiations.
     let module_addr: ModuleAddr =
-        unsafe { store.module_instantiate(&module, vec![], None) }?.module_addr;
+        unsafe { store.module_instantiate(&module, 0, vec![], None, &bytecode_provider) }?
+            .module_addr;
 
-    // SAFETY: The module address was just returned from module instantiation in the same store.
-    let fibonacci: FuncAddr = unsafe { store.instance_export(module_addr, "fibonacci") }?
-        .as_func()
-        .ok_or("fibonacci is not a function")?;
+    // SAFETY:
+    // 1. The module address was just returned from module instantiation in the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
+    let fibonacci: FuncAddr =
+        unsafe { store.instance_export(module_addr, "fibonacci", &bytecode_provider) }?
+            .as_func()
+            .ok_or("fibonacci is not a function")?;
 
-    // SAFETY: The function address was just returned from the same store. Also, no addresses are
-    // passed as parameters.
-    let return_values: Vec<Value> = unsafe { store.invoke_simple(fibonacci, vec![Value::I32(3)]) }?;
+    // SAFETY:
+    // 1. The function address was just returned from the same store. Also, no addresses are
+    //    passed as parameters.
+    // 2. `bytecode_provider` has not changed since last instantiation.
+    let return_values: Vec<Value> =
+        unsafe { store.invoke_simple(fibonacci, vec![Value::I32(3)], &bytecode_provider) }?;
 
     let [Value::I32(nth_fibonacci)] = *return_values else {
         return Err("expected one i32 as a return value".into());

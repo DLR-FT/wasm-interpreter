@@ -17,7 +17,8 @@
 use dlr_wasm_interpreter_checked::Store;
 use dlr_wasm_interpreter_interop::RefExtern;
 
-use dlr_wasm_interpreter::{decode_and_validate, ExternAddr, RuntimeError, TrapError};
+use dlr_wasm_interpreter::{ExternAddr, RuntimeError, TrapError};
+use dlr_wasm_interpreter_checked::decode_and_validate;
 
 #[test_log::test]
 fn table_fill_test() {

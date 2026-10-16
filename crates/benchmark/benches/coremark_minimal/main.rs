@@ -1,11 +1,18 @@
 use dlr_wasm_interpreter::{
-    decode_and_validate, Config, DispatchMechanism, ExternVal, FuncType, NumType, ResultType,
-    RunState, Store, ValType, Value,
+    decode_and_validate, BytecodeProvider, Config, DispatchMechanism, ExternVal, FuncType, NumType,
+    ResultType, RunState, Store, ValType, Value,
 };
 use envconfig::Envconfig;
 use std::{str::FromStr, time::UNIX_EPOCH};
 
 const COREMARK_MINIMAL_BYTECODE: &[u8] = include_bytes!("coremark-minimal.wasm");
+
+struct SingleBytecodeRef<'b>(&'b [u8]);
+impl<'b> BytecodeProvider for SingleBytecodeRef<'b> {
+    fn get_bytecode(&self, _id: usize) -> &[u8] {
+        self.0
+    }
+}
 
 #[derive(Debug, Clone, Default)]
 enum OutputFormat {
@@ -66,21 +73,37 @@ pub fn run<T: Config>(interpreter_config: T) -> f32 {
         0, // Use arbitrary host code, as there is only one host function
     );
 
-    // SAFETY: This function address was just returned from a function allocation in the same store.
+    let bytecode_provider = SingleBytecodeRef(COREMARK_MINIMAL_BYTECODE);
+    // SAFETY:
+    // 1. This function address was just returned from a function allocation in the same store.
+    // 2. `bytecode_provider` always returns the same bytecode reference, which is associated with
+    //    this module.
+    // 3. There are no previous instantiation calls.
     let module = unsafe {
-        store.module_instantiate(&module, vec![ExternVal::Func(env_clock_ms_function)], None)
+        store.module_instantiate(
+            &module,
+            0,
+            vec![ExternVal::Func(env_clock_ms_function)],
+            None,
+            &bytecode_provider,
+        )
     }
     .unwrap()
     .module_addr;
 
-    // SAFETY: This module address was just returned from module instantiation in the same store.
-    let run_function = unsafe { store.instance_export(module, "run") }
+    // SAFETY:
+    // 1. This module address was just returned from module instantiation in the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
+    let run_function = unsafe { store.instance_export(module, "run", &bytecode_provider) }
         .unwrap()
         .as_func()
         .unwrap();
 
-    // SAFETY: This function address was just returned from the same store.
-    let mut run_state = unsafe { store.invoke(run_function, Vec::new(), None) }.unwrap();
+    // SAFETY:
+    // 1. This function address was just returned from the same store.
+    // 2. `bytecode_provider` has not changed since last instantiation.
+    let mut run_state =
+        unsafe { store.invoke(run_function, Vec::new(), None, &bytecode_provider) }.unwrap();
     loop {
         match run_state {
             RunState::Finished { values, .. } => {
@@ -90,9 +113,10 @@ pub fn run<T: Config>(interpreter_config: T) -> f32 {
                 return score.0;
             }
             RunState::Resumable { resumable, .. } => {
-                // SAFETY: This resumable was just returned by a function invocation in the same
-                // store.
-                run_state = unsafe { store.resume_wasm(resumable) }.unwrap();
+                // SAFETY:
+                // 1. This resumable was just returned by a function invocation in the same store.
+                // 2. `bytecode_provider` has not changed since last instantiation.
+                run_state = unsafe { store.resume_wasm(resumable, &bytecode_provider) }.unwrap();
             }
             RunState::HostCalled { resumable, .. } => {
                 let clock_ms = clock_ms();

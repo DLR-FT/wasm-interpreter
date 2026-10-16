@@ -15,7 +15,8 @@
 # limitations under the License.
 */
 
-use dlr_wasm_interpreter::{decode_and_validate, ExternAddr, RuntimeError, TrapError};
+use dlr_wasm_interpreter::{ExternAddr, RuntimeError, TrapError};
+use dlr_wasm_interpreter_checked::decode_and_validate;
 use dlr_wasm_interpreter_checked::{Store, StoredRefFunc};
 use dlr_wasm_interpreter_interop::RefExtern;
 

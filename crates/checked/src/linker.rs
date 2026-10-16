@@ -1,11 +1,11 @@
 use alloc::{string::String, vec::Vec};
 
-use dlr_wasm_interpreter::{Config, Module, ModuleAddr, RuntimeError};
+use dlr_wasm_interpreter::{Config, ModuleAddr, RuntimeError};
 
 use crate::{
     store::Store,
     stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome},
-    AbstractStored, StoreId,
+    AbstractStored, Module, StoreId,
 };
 
 #[derive(Default)]
@@ -79,11 +79,19 @@ impl Linker {
         // 2. try unwrap
         let module = module.try_unwrap_into_bare(linker_store_id);
         // 3. call
-        // SAFETY: It was just checked that the `ExternVal` came from the store
-        // with the same id that is cached in the current linker instance.
+        // SAFETY:
+        // a. It was just checked that the `ExternVal` came from the store with the same id that is
+        //    cached in the current linker instance.
+        // b. `store.module_instantiate` maintains an invariant for store.bytecode_refs where
+        //    bytecode_id's of modules correspond to their initialization order. This invariant
+        //    ensures store.bytecode_refs is consistent with previous instantiations.
         unsafe {
-            self.inner
-                .define_module_instance(store.inner(), module_name, module)
+            self.inner.define_module_instance(
+                store.inner(),
+                module_name,
+                module,
+                &store.bytecode_refs,
+            )
         }?;
         // 4. rewrap
         // result is the unit type.
@@ -117,7 +125,7 @@ impl Linker {
         // linking. We need this special case, so that a `Linker`, that has not
         // yet been associated with some `Store`, can still be used to
         // pre-instantiate modules.
-        if module.imports().len() == 0 {
+        if module.inner.imports(module.wasm).len() == 0 {
             return Some(Vec::new());
         }
         // 1. get or insert `StoreId`
@@ -127,7 +135,7 @@ impl Linker {
         // 2. try unwrap
         // no stored parameters
         // 3. call
-        let extern_vals = self.inner.instantiate_pre(module)?;
+        let extern_vals = self.inner.instantiate_pre(&module.inner, module.wasm)?;
         // 4. rewrap
         // SAFETY: All `ExternVal`s just came from the current `Linker`. Because
         // a Linker can always be used with only one unique `Store`, all
@@ -153,11 +161,25 @@ impl Linker {
         // 2. try unwrap
         // no stored parameters
         // 3. call
-        // SAFETY: It was just checked that the `ExternVal` came from the store
-        // with the same id that is cached in the current linker instance.
+        let bytecode_id = store.bytecode_refs.add_bytecode_ref(module.wasm);
+        // SAFETY:
+        // a. It was just checked that the `ExternVal` came from the store with the same id that is
+        // cached in the current linker instance.
+        // b. The module was just registered to `store.bytecode_refs`, therefore the association
+        //    between `bytecode_id` and `module.inner` holds.
+        // c. `store.bytecode_refs.add_bytecode_ref` is only called just before
+        //    `dlr_wasm_interpreter::Store::module_instantiate` in this crate. Therefore it
+        //    maintains an invariant where bytecode_ids correspond to the order of the modules being
+        //    instantiatied. This invariant is sufficient to show that `store.bytecode_refs` is
+        //    consistent with previous instantiations.
         let instantiation_outcome = match unsafe {
-            self.inner
-                .module_instantiate(&mut store.inner, module, maybe_fuel)
+            self.inner.module_instantiate(
+                &mut store.inner,
+                bytecode_id,
+                &module.inner,
+                maybe_fuel,
+                &store.bytecode_refs,
+            )
         } {
             Some(Ok(instantiation_outcome)) => instantiation_outcome,
             Some(Err(err)) => return Some(Err(err)),

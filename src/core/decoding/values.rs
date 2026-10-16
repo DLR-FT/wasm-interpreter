@@ -6,7 +6,10 @@
 //! This is due to the fact that these methods read elemental types which cannot be split.
 
 use crate::{
-    core::{decoding::decoder::WasmDecoder, utils::ToUsizeExt},
+    core::{
+        decoding::decoder::{span::Span, WasmDecoder},
+        utils::ToUsizeExt,
+    },
     DecodingError,
 };
 
@@ -351,17 +354,12 @@ impl<'wasm> WasmDecoder<'wasm> {
     }
 
     /// Note: If `Err`, the [WasmDecoder] object is no longer guaranteed to be in a valid state
-    pub fn decode_name(&mut self) -> Result<&'wasm str, DecodingError> {
+    pub fn decode_name(&mut self) -> Result<Span, DecodingError> {
         let len = self.decode_var_u32()?.into_usize();
-
-        let utf8_str = &self
-            .full_wasm_binary
-            .get(self.pc..(self.pc + len))
-            .ok_or(DecodingError::Eof)?;
-
-        self.pc += len;
-
-        core::str::from_utf8(utf8_str).map_err(DecodingError::MalformedUtf8)
+        let result = self.make_span(len)?;
+        core::str::from_utf8(&self[result]).map_err(DecodingError::MalformedUtf8)?;
+        self.pc += result.len();
+        Ok(result)
     }
 
     /// A version of [`WasmDecoder::decode_vec_map`] that enumerates all elements.

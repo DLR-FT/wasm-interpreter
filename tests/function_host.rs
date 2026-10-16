@@ -1,9 +1,7 @@
 use log::info;
 
-use dlr_wasm_interpreter::{
-    decode_and_validate, FuncType, NumType, ResultType, RuntimeError, ValType, F32, F64,
-};
-use dlr_wasm_interpreter_checked::{Store, StoredExternVal, StoredValue};
+use dlr_wasm_interpreter::{FuncType, NumType, ResultType, RuntimeError, ValType, F32, F64};
+use dlr_wasm_interpreter_checked::{decode_and_validate, Store, StoredExternVal, StoredValue};
 use dlr_wasm_interpreter_registry::Registry;
 
 #[test_log::test]

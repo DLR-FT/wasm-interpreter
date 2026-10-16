@@ -1,5 +1,5 @@
-use dlr_wasm_interpreter::decode_and_validate;
 use dlr_wasm_interpreter::{RuntimeError, TrapError};
+use dlr_wasm_interpreter_checked::decode_and_validate;
 use dlr_wasm_interpreter_checked::Store;
 const REM_S_WAT: &str = r#"
     (module

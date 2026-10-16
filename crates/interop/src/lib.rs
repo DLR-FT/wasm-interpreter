@@ -13,8 +13,8 @@
 extern crate alloc;
 
 use dlr_wasm_interpreter::{
-    Config, ExternAddr, FuncAddr, FuncType, Hostcode, NumType, Ref, RefType, ResultType,
-    RuntimeError, Store, ValType, Value, ValueTypeMismatchError,
+    BytecodeProvider, Config, ExternAddr, FuncAddr, FuncType, Hostcode, NumType, Ref, RefType,
+    ResultType, RuntimeError, Store, ValType, Value, ValueTypeMismatchError,
 };
 
 use alloc::{fmt::Debug, vec, vec::Vec};
@@ -257,17 +257,24 @@ pub trait StoreTypedInvocationExt<T: Config> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the given [`FuncAddr`] and any
-    /// [`FuncAddr`] or [`ExternAddr`] values contained in the parameter values
-    /// came from the current [`Store`] object.
-    unsafe fn invoke_simple_typed<Params: InteropValueList, Returns: InteropValueList>(
+    /// 1. The caller has to guarantee that the given [`FuncAddr`] and any [`FuncAddr`] or
+    ///    [`ExternAddr`] values contained in the parameter values came from the current [`Store`]
+    ///    object.
+    /// 2. `bytecode_provider` should satisfy the safety guarantees of all previous
+    ///    `module_instantiate` calls.
+    unsafe fn invoke_simple_typed<
+        Params: InteropValueList,
+        Returns: InteropValueList,
+        B: BytecodeProvider,
+    >(
         &mut self,
         function: FuncAddr,
         params: Params,
+        bytecode_provider: &B,
     ) -> Result<Returns, RuntimeError>;
 }
 
-impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
+impl<T: Config> StoreTypedInvocationExt<T> for Store<T> {
     fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
         hostcode: Hostcode,
@@ -283,15 +290,22 @@ impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
         self.func_alloc(func_type, hostcode)
     }
 
-    unsafe fn invoke_simple_typed<Params: InteropValueList, Returns: InteropValueList>(
+    unsafe fn invoke_simple_typed<
+        Params: InteropValueList,
+        Returns: InteropValueList,
+        B: BytecodeProvider,
+    >(
         &mut self,
         function: FuncAddr,
         params: Params,
+        bytecode_provider: &B,
     ) -> Result<Returns, RuntimeError> {
         let params = params.into_values();
-        // SAFETY: The caller ensures that the function address and any
-        // addresses in the parameters are valid in the current store.
-        let returns = unsafe { self.invoke_simple(function, params) }?;
+        // SAFETY:
+        // 1. The caller ensures that the function address and any addresses in the parameters are
+        //    valid in the current store.
+        // 2. The caller ensures that bytecode_provider is consistent with previous instantiations.
+        let returns = unsafe { self.invoke_simple(function, params, bytecode_provider) }?;
         Returns::try_from_values(returns.into_iter())
             .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
     }
