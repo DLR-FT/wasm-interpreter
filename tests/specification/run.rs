@@ -1,9 +1,9 @@
 use std::any::Any;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::panic::AssertUnwindSafe;
 use std::panic::UnwindSafe;
 
-use bumpalo::Bump;
 use dlr_wasm_interpreter::ExternAddr;
 use dlr_wasm_interpreter::{
     F32, F64, GlobalType, Limits, MemType, ModuleAddr, NumType, RefType, RuntimeError, TableType,
@@ -65,13 +65,12 @@ fn encode(modulee: &mut wast::QuoteWat) -> Result<Vec<u8>, WastError> {
 
 fn validate_instantiate<'a, 'b: 'a>(
     store: &'a mut Store<'b, ()>,
-    bytes: &'b [u8],
+    bytes: Cow<'b, [u8]>,
     linker: &mut Linker,
     last_instantiated_module: &mut Option<Stored<ModuleAddr>>,
 ) -> Result<Stored<ModuleAddr>, WastError> {
-    let module =
-        catch_unwind_and_suppress_panic_handler(|| decode_and_validate(bytes.into(), &mut ()))
-            .map_err(WastError::Panic)??;
+    let module = catch_unwind_and_suppress_panic_handler(|| decode_and_validate(bytes, &mut ()))
+        .map_err(WastError::Panic)??;
 
     let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
         linker.module_instantiate(store, &module, None)
@@ -93,7 +92,6 @@ fn validate_instantiate<'a, 'b: 'a>(
 /// such a way the script cannot continue running.
 pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     // -=-= Initialization =-=-
-    let arena = bumpalo::Bump::new();
     debug!("{}", filepath);
 
     let contents = std::fs::read_to_string(filepath).map_err(|err| {
@@ -140,7 +138,6 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
 
         let directive_result = run_directive(
             directive,
-            &arena,
             &mut store,
             &contents,
             filepath,
@@ -161,7 +158,6 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
 #[allow(clippy::too_many_arguments)] // reason = "this testsuite runner module needs a redesign anyway"
 fn run_directive<'a>(
     wast_directive: WastDirective,
-    arena: &'a Bump,
     store: &mut Store<'a, ()>,
     contents: &str,
     filepath: &str,
@@ -183,21 +179,17 @@ fn run_directive<'a>(
                     get_command(contents, quoted.span()),
                 )
             })?;
-
-            // re-allocate the wasm bytecode into an arena backed allocation, gifting it a
-            // lifetime of the outermost scope in the current function
-            let wasm_bytes = arena.alloc_slice_clone(&wasm_bytes) as &[u8];
-
-            let module = validate_instantiate(store, wasm_bytes, linker, last_instantiated_module)
-                .map_err(|err| {
-                    ScriptError::new(
-                        filepath,
-                        err,
-                        "Module directive (WAT) failed in validation or instantiation.",
-                        get_linenum(contents, quoted.span()),
-                        get_command(contents, quoted.span()),
-                    )
-                })?;
+            let module =
+                validate_instantiate(store, wasm_bytes.into(), linker, last_instantiated_module)
+                    .map_err(|err| {
+                        ScriptError::new(
+                            filepath,
+                            err,
+                            "Module directive (WAT) failed in validation or instantiation.",
+                            get_linenum(contents, quoted.span()),
+                            get_command(contents, quoted.span()),
+                        )
+                    })?;
 
             // retain information of the id of the current wast
             match quoted {
@@ -240,7 +232,6 @@ fn run_directive<'a>(
             message,
         } => {
             let result = execute(
-                arena,
                 visible_modules,
                 store,
                 exec,
@@ -293,8 +284,7 @@ fn run_directive<'a>(
             let line_number = get_linenum(contents, span);
             let cmd = get_command(contents, span);
             let result = encode(&mut modulee).and_then(|bytes| {
-                let bytes = arena.alloc_slice_clone(&bytes);
-                validate_instantiate(store, bytes, linker, last_instantiated_module)
+                validate_instantiate(store, bytes.into(), linker, last_instantiated_module)
             });
 
             let maybe_assert_error = match result {
@@ -359,19 +349,19 @@ fn run_directive<'a>(
             let cmd = get_command(contents, span);
 
             // if it can't be parsed, then the test itself must be written incorrectly, thus the unwrap
-            let bytes: &[u8] = arena.alloc_slice_clone(&module.encode().unwrap());
+            let bytes = module.encode().unwrap();
 
-            let result = match validate_instantiate(store, bytes, linker, last_instantiated_module)
-            {
-                // module shouldn't have instantiated
-                Err(
-                    WastError::WasmRuntimeError(
-                        RuntimeError::ModuleNotFound | RuntimeError::InvalidImportType,
-                    )
-                    | WastError::FailedToLink,
-                ) => Ok(()),
-                _ => Err(WastError::AssertUnlinkableButLinked),
-            };
+            let result =
+                match validate_instantiate(store, bytes.into(), linker, last_instantiated_module) {
+                    // module shouldn't have instantiated
+                    Err(
+                        WastError::WasmRuntimeError(
+                            RuntimeError::ModuleNotFound | RuntimeError::InvalidImportType,
+                        )
+                        | WastError::FailedToLink,
+                    ) => Ok(()),
+                    _ => Err(WastError::AssertUnlinkableButLinked),
+                };
 
             Ok(Some(AssertOutcome {
                 line_number,
@@ -385,7 +375,6 @@ fn run_directive<'a>(
             message,
         } => {
             let execution_result = execute(
-                arena,
                 visible_modules,
                 store,
                 wast::WastExecute::Invoke(call),
@@ -592,7 +581,6 @@ fn execute_assert_return(
 }
 
 fn execute<'a>(
-    arena: &'a bumpalo::Bump,
     visible_modules: &HashMap<String, Stored<ModuleAddr>>,
     store: &mut Store<'a, ()>,
     exec: wast::WastExecute,
@@ -639,9 +627,10 @@ fn execute<'a>(
             global: _,
         } => todo!("`get` directive inside `assert_trap`"),
         wast::WastExecute::Wat(Wat::Module(mut module)) => {
-            let bytecode: &[u8] = arena.alloc_slice_clone(&module.encode()?);
+            let bytecode = module.encode()?;
 
-            let _module = validate_instantiate(store, bytecode, linker, last_instantiated_module)?;
+            let _module =
+                validate_instantiate(store, bytecode.into(), linker, last_instantiated_module)?;
 
             Ok(())
         }
