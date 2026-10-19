@@ -15,7 +15,7 @@ fn empty() {
     )
     .unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -52,7 +52,7 @@ fn branch() {
     )
     .unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -99,7 +99,7 @@ fn branch2() {
     let wat = String::from(BRANCH23_WAT).replace("{{LABEL}}", "$outer_block");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -120,7 +120,7 @@ fn branch3() {
     let wat = String::from(BRANCH23_WAT).replace("{{LABEL}}", "$outer_outer_block");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -154,7 +154,7 @@ fn param_and_result() {
     )
     .unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -203,7 +203,7 @@ fn return_out_of_block() {
     let wat = String::from(RETURN_OUT_OF_BLOCK).replace("{{RETURN}}", "return");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -224,7 +224,7 @@ fn br_return_out_of_block() {
     let wat = String::from(RETURN_OUT_OF_BLOCK).replace("{{RETURN}}", "br 1");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -244,7 +244,7 @@ fn return_out_of_block2() {
     let wat = String::from(RETURN_OUT_OF_BLOCK2).replace("{{RETURN}}", "return");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -265,7 +265,7 @@ fn br_return_out_of_block2() {
     let wat = String::from(RETURN_OUT_OF_BLOCK2).replace("{{RETURN}}", "br 1");
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -304,7 +304,7 @@ fn branch_if() {
     )
     .unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -374,7 +374,7 @@ fn recursive_fibonacci() {
     )
     .unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -427,7 +427,7 @@ fn switch_case() {
     )
     .unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -469,7 +469,9 @@ fn br_table_label_typecheck1() {
     .unwrap();
 
     assert_eq!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidLabelIdx(0)
     );
 }
@@ -498,7 +500,7 @@ fn polymorphic_select_validation1() {
         .replace("{{NUM_OR_VEC_INSTR1}}", "i32.eqz")
         .replace("{{NUM_OR_VEC_INSTR2}}", "i64.eqz");
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
 }
 
 #[test_log::test]
@@ -507,5 +509,5 @@ fn polymorphic_select_validation2() {
         .replace("{{NUM_OR_VEC_INSTR1}}", "i64.eqz")
         .replace("{{NUM_OR_VEC_INSTR2}}", "i32.eqz");
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
 }

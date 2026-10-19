@@ -50,7 +50,7 @@ fn table_init_1_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -188,7 +188,7 @@ fn table_init_2_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -339,7 +339,7 @@ fn table_init_3_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -461,7 +461,7 @@ fn table_init_4_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -614,7 +614,7 @@ fn table_init_5_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -715,7 +715,7 @@ fn table_init_6_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert_eq!(
-        decode_and_validate(&wasm_bytes, &mut ()).err(),
+        decode_and_validate(wasm_bytes.into(), &mut ()).err(),
         Some(ValidationError::InvalidElemIdx(0))
     );
 }
@@ -730,7 +730,7 @@ fn table_init_7_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert_eq!(
-        decode_and_validate(&wasm_bytes, &mut ()).err(),
+        decode_and_validate(wasm_bytes.into(), &mut ()).err(),
         Some(ValidationError::InvalidTableIdx(0))
     );
 }
@@ -747,7 +747,7 @@ fn table_init_8_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert_eq!(
-        decode_and_validate(&wasm_bytes, &mut ()).err(),
+        decode_and_validate(wasm_bytes.into(), &mut ()).err(),
         Some(ValidationError::InvalidElemIdx(4))
     );
 }
@@ -764,7 +764,7 @@ fn table_init_9_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert_eq!(
-        decode_and_validate(&wasm_bytes, &mut ()).err(),
+        decode_and_validate(wasm_bytes.into(), &mut ()).err(),
         Some(ValidationError::InvalidTableIdx(0))
     );
 }
@@ -797,7 +797,7 @@ fn table_init_10_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -841,7 +841,7 @@ fn table_init_11_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -890,7 +890,7 @@ fn table_init_12_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -934,7 +934,7 @@ fn table_init_13_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -978,7 +978,7 @@ fn table_init_14_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1027,7 +1027,7 @@ fn table_init_15_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1076,7 +1076,7 @@ fn table_init_16_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1125,7 +1125,7 @@ fn table_init_17_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1174,7 +1174,7 @@ fn table_init_18_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1218,7 +1218,7 @@ fn table_init_19_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1267,7 +1267,7 @@ fn table_init_20_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1311,7 +1311,7 @@ fn table_init_21_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1360,7 +1360,7 @@ fn table_init_22_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1404,7 +1404,7 @@ fn table_init_23_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1453,7 +1453,7 @@ fn table_init_24_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1502,7 +1502,7 @@ fn table_init_25_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1546,7 +1546,7 @@ fn table_init_26_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1595,7 +1595,7 @@ fn table_init_27_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1639,7 +1639,7 @@ fn table_init_28_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1688,7 +1688,7 @@ fn table_init_29_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1732,7 +1732,7 @@ fn table_init_30_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -1766,7 +1766,9 @@ fn table_init_31_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1784,7 +1786,9 @@ fn table_init_32_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1802,7 +1806,9 @@ fn table_init_33_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1820,7 +1826,9 @@ fn table_init_34_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1838,7 +1846,9 @@ fn table_init_35_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1856,7 +1866,9 @@ fn table_init_36_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1874,7 +1886,9 @@ fn table_init_37_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1892,7 +1906,9 @@ fn table_init_38_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1910,7 +1926,9 @@ fn table_init_39_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1928,7 +1946,9 @@ fn table_init_40_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1946,7 +1966,9 @@ fn table_init_41_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1964,7 +1986,9 @@ fn table_init_42_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -1982,7 +2006,9 @@ fn table_init_43_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2000,7 +2026,9 @@ fn table_init_44_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2018,7 +2046,9 @@ fn table_init_45_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2036,7 +2066,9 @@ fn table_init_46_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2054,7 +2086,9 @@ fn table_init_47_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2072,7 +2106,9 @@ fn table_init_48_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2090,7 +2126,9 @@ fn table_init_49_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2108,7 +2146,9 @@ fn table_init_50_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2126,7 +2166,9 @@ fn table_init_51_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2144,7 +2186,9 @@ fn table_init_52_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2162,7 +2206,9 @@ fn table_init_53_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2180,7 +2226,9 @@ fn table_init_54_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2198,7 +2246,9 @@ fn table_init_55_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2216,7 +2266,9 @@ fn table_init_56_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2234,7 +2286,9 @@ fn table_init_57_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2252,7 +2306,9 @@ fn table_init_58_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2270,7 +2326,9 @@ fn table_init_59_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2288,7 +2346,9 @@ fn table_init_60_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2306,7 +2366,9 @@ fn table_init_61_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2324,7 +2386,9 @@ fn table_init_62_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2342,7 +2406,9 @@ fn table_init_63_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2360,7 +2426,9 @@ fn table_init_64_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2378,7 +2446,9 @@ fn table_init_65_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2396,7 +2466,9 @@ fn table_init_66_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2414,7 +2486,9 @@ fn table_init_67_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2432,7 +2506,9 @@ fn table_init_68_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2450,7 +2526,9 @@ fn table_init_69_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2468,7 +2546,9 @@ fn table_init_70_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2486,7 +2566,9 @@ fn table_init_71_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2504,7 +2586,9 @@ fn table_init_72_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2522,7 +2606,9 @@ fn table_init_73_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2540,7 +2626,9 @@ fn table_init_74_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2558,7 +2646,9 @@ fn table_init_75_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2576,7 +2666,9 @@ fn table_init_76_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2594,7 +2686,9 @@ fn table_init_77_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2612,7 +2706,9 @@ fn table_init_78_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2630,7 +2726,9 @@ fn table_init_79_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2648,7 +2746,9 @@ fn table_init_80_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2666,7 +2766,9 @@ fn table_init_81_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2684,7 +2786,9 @@ fn table_init_82_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2702,7 +2806,9 @@ fn table_init_83_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2720,7 +2826,9 @@ fn table_init_84_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2738,7 +2846,9 @@ fn table_init_85_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2756,7 +2866,9 @@ fn table_init_86_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2774,7 +2886,9 @@ fn table_init_87_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2792,7 +2906,9 @@ fn table_init_88_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2810,7 +2926,9 @@ fn table_init_89_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2828,7 +2946,9 @@ fn table_init_90_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2846,7 +2966,9 @@ fn table_init_91_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2864,7 +2986,9 @@ fn table_init_92_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2882,7 +3006,9 @@ fn table_init_93_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::InvalidValidationStackValType(_)
     ));
 }
@@ -2921,7 +3047,7 @@ fn table_init_94_test() {
           "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -2988,7 +3114,7 @@ fn table_init_95_test() {
           "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -3055,7 +3181,7 @@ fn table_init_96_test() {
           "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -3122,7 +3248,7 @@ fn table_init_97_test() {
           "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -3189,7 +3315,7 @@ fn table_init_98_test() {
           "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -3257,7 +3383,7 @@ fn table_init_99_test() {
           "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -3318,7 +3444,7 @@ fn table_init_100_test() {
           "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let _module = store
         .module_instantiate(&module, Vec::new(), None)

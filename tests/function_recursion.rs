@@ -20,7 +20,7 @@ const FUNCTION_CALL: &str = r#"
 fn simple_function_call() {
     let wasm_bytes = wat::parse_str(FUNCTION_CALL).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -58,7 +58,7 @@ fn recursion_valid() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -98,7 +98,7 @@ fn recursion_busted_stack() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     assert_eq!(
-        decode_and_validate(&wasm_bytes, &mut ()).err(),
+        decode_and_validate(wasm_bytes.into(), &mut ()).err(),
         Some(ValidationError::EndInvalidValueStack),
         "validation incorrectly passed"
     );
@@ -122,7 +122,7 @@ fn multivalue_call() {
     )
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)

@@ -29,7 +29,7 @@ fn memory_size_1() {
 )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -66,7 +66,7 @@ fn memory_size_2() {
 )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -103,7 +103,7 @@ fn memory_size_3() {
 )
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -144,7 +144,7 @@ fn memory_size_4() {
 )
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -196,7 +196,7 @@ fn memory_size_5() {
             info!("{info_str}");
         }
     }
-    let module = decode_and_validate(&wasm_bytes, &mut ());
+    let module = decode_and_validate(wasm_bytes.into(), &mut ());
     assert_eq!(module.err(), Some(ValidationError::EndInvalidValueStack));
 }
 
@@ -221,6 +221,6 @@ fn memory_size_6() {
             info!("{info_str}");
         }
     }
-    let module = decode_and_validate(&wasm_bytes, &mut ());
+    let module = decode_and_validate(wasm_bytes.into(), &mut ());
     assert_eq!(module.err(), Some(ValidationError::EndInvalidValueStack));
 }

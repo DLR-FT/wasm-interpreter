@@ -125,7 +125,7 @@ impl Linker {
         // linking. We need this special case, so that a `Linker`, that has not
         // yet been associated with some `Store`, can still be used to
         // pre-instantiate modules.
-        if module.inner.imports(module.wasm).len() == 0 {
+        if module.inner.imports(&module.wasm).len() == 0 {
             return Some(Vec::new());
         }
         // 1. get or insert `StoreId`
@@ -135,7 +135,7 @@ impl Linker {
         // 2. try unwrap
         // no stored parameters
         // 3. call
-        let extern_vals = self.inner.instantiate_pre(&module.inner, module.wasm)?;
+        let extern_vals = self.inner.instantiate_pre(&module.inner, &module.wasm)?;
         // 4. rewrap
         // SAFETY: All `ExternVal`s just came from the current `Linker`. Because
         // a Linker can always be used with only one unique `Store`, all
@@ -161,7 +161,7 @@ impl Linker {
         // 2. try unwrap
         // no stored parameters
         // 3. call
-        let bytecode_id = store.bytecode_refs.add_bytecode_ref(module.wasm);
+        let bytecode_id = store.bytecode_refs.add_bytecode_ref(module.wasm.clone());
         // SAFETY:
         // a. It was just checked that the `ExternVal` came from the store with the same id that is
         // cached in the current linker instance.
