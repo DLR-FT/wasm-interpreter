@@ -82,7 +82,7 @@ pub fn unmet_imports() {
 #[test_log::test]
 pub fn compile_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module_env = store
         .module_instantiate(&module, Vec::new(), None)
@@ -92,7 +92,7 @@ pub fn compile_simple_import() {
     let get_one = store.instance_export(module_env, "get_one").unwrap();
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let _module_base = store
         .module_instantiate(&module, vec![get_one], None)
         .expect("Successful instantiation");
@@ -105,7 +105,7 @@ pub fn compile_simple_import() {
 #[test_log::test]
 pub fn run_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module_env = store
         .module_instantiate(&module, Vec::new(), None)
@@ -115,7 +115,7 @@ pub fn run_simple_import() {
     let get_one = store.instance_export(module_env, "get_one").unwrap();
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let module_base = store
         .module_instantiate(&module, vec![get_one], None)
         .unwrap()
@@ -141,7 +141,7 @@ pub fn run_simple_import() {
 #[test_log::test]
 pub fn run_call_indirect() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module_env = store
         .module_instantiate(&module, Vec::new(), None)
@@ -151,7 +151,7 @@ pub fn run_call_indirect() {
     let get_one = store.instance_export(module_env, "get_one").unwrap();
 
     let wasm_bytes = wat::parse_str(CALL_INDIRECT_BASE).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let module_base = store
         .module_instantiate(&module, vec![get_one], None)
         .expect("Successful instantiation")

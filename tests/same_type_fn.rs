@@ -19,7 +19,7 @@ fn same_type_fn() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)

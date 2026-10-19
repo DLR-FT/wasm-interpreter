@@ -27,7 +27,7 @@ fn valid_global() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -70,7 +70,7 @@ fn global_invalid_value_stack() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    if decode_and_validate(&wasm_bytes, &mut ()).is_ok() {
+    if decode_and_validate(wasm_bytes.into(), &mut ()).is_ok() {
         panic!("validation succeeded")
     }
 }
@@ -95,7 +95,7 @@ fn imported_globals() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -142,7 +142,7 @@ fn global_invalid_instr() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    if decode_and_validate(&wasm_bytes, &mut ()).is_ok() {
+    if decode_and_validate(wasm_bytes.into(), &mut ()).is_ok() {
         panic!("validation succeeded")
     }
 }
@@ -157,7 +157,7 @@ fn embedder_interface() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)

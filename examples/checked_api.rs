@@ -29,7 +29,7 @@ const WAT_CODE: &str = r#"
 
 fn main() -> Result<(), Box<dyn Error>> {
     let wasm_bytecode: Vec<u8> = wat::parse_str(WAT_CODE)?;
-    let module: Module = decode_and_validate(&wasm_bytecode, &mut ())?;
+    let module: Module = decode_and_validate(wasm_bytecode.into(), &mut ())?;
 
     // Note: This is a `dlr_wasm_interpreter_checked::Store`, not a `dlr_wasm_interpreter::Store`
     let mut store: Store<()> = Store::new(());

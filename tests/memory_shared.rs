@@ -35,7 +35,7 @@ fn memory_basic() {
 
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
-        let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+        let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
         let mut store = Store::new(());
         store.module_instantiate(&module, Vec::new(), None).unwrap();
     });
@@ -53,7 +53,7 @@ fn memory_min_greater_than_max() {
 
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
-        let module = decode_and_validate(&wasm_bytes, &mut ());
+        let module = decode_and_validate(wasm_bytes.into(), &mut ());
         assert_eq!(
             module.err().unwrap(),
             ValidationError::LimitsMinLargerThanMax { min: 1, max: 0 },
@@ -78,7 +78,7 @@ fn memory_size_must_be_at_most_4gib() {
 
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
-        let module = decode_and_validate(&wasm_bytes, &mut ());
+        let module = decode_and_validate(wasm_bytes.into(), &mut ());
         assert_eq!(
             module.err().unwrap(),
             ValidationError::LimitsNotWithinRange(2u32.pow(16))
@@ -178,7 +178,7 @@ fn i32_and_i64_loads() {
       "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -387,7 +387,7 @@ fn memory_test_exporting_rand_globals_doesnt_change_a_memory_s_semantics() {
     )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)

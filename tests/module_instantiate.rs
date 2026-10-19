@@ -12,7 +12,7 @@ fn use_incorrect_number_of_extern_vals() {
     "#;
 
     let wasm_bytes = wat::parse_str(MODULE_WITH_IMPORTS).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
 
     let mut store = Store::new(());
 

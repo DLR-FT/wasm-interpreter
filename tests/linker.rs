@@ -22,10 +22,12 @@ const SIMPLE_IMPORT_ADDON: &str = r#"
 #[test_log::test]
 pub fn compile_simple_import() {
     let wasm_bytes_addon = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
-    let module_addon = decode_and_validate(&wasm_bytes_addon, &mut ()).expect("validation failed");
+    let module_addon =
+        decode_and_validate(wasm_bytes_addon.into(), &mut ()).expect("validation failed");
 
     let wasm_bytes_base = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
-    let module_base = decode_and_validate(&wasm_bytes_base, &mut ()).expect("validation failed");
+    let module_base =
+        decode_and_validate(wasm_bytes_base.into(), &mut ()).expect("validation failed");
 
     let mut store = Store::new(());
     let mut linker = Linker::new();
@@ -77,7 +79,7 @@ pub fn compile_simple_import() {
 fn define_duplicate_extern_value() {
     const MODULE_WITH_EMPTY_FUNCTION: &str = r#"(module (func (export "foo") nop))"#;
     let wasm_bytes = wat::parse_str(MODULE_WITH_EMPTY_FUNCTION).unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).unwrap();
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).unwrap();
 
     let mut store = Store::new(());
 

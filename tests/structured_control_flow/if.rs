@@ -23,7 +23,7 @@ fn odd_with_if_else() {
 )"#,
     )
     .unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -61,7 +61,7 @@ fn odd_with_if() {
 )"#,
     )
     .unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -121,7 +121,7 @@ fn odd_with_if_else_recursive() {
 )"#,
     )
     .unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -171,7 +171,7 @@ fn recursive_fibonacci_if_else() {
 )"#,
     )
     .unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -204,7 +204,7 @@ fn if_without_else_type_check1() {
 )"#,
     )
     .unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -236,7 +236,9 @@ fn if_without_else_type_check2() {
     )
     .unwrap();
     assert_eq!(
-        decode_and_validate(&wasm_bytes, &mut ()).err().unwrap(),
+        decode_and_validate(wasm_bytes.into(), &mut ())
+            .err()
+            .unwrap(),
         ValidationError::IfWithoutMatchingElse
     );
 }
@@ -253,7 +255,7 @@ fn if_without_else_type_check3() {
 )"#,
     )
     .unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)
@@ -283,7 +285,7 @@ fn if_without_else_type_check4() {
 )"#,
     )
     .unwrap();
-    let module = decode_and_validate(&wasm_bytes, &mut ()).expect("validation failed");
+    let module = decode_and_validate(wasm_bytes.into(), &mut ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&module, Vec::new(), None)

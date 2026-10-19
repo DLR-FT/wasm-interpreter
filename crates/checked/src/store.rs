@@ -1,4 +1,4 @@
-use alloc::{sync::Arc, vec::Vec};
+use alloc::{borrow::Cow, sync::Arc, vec::Vec};
 use dlr_wasm_interpreter::{
     BytecodeProvider, Config, FuncAddr, FuncType, GlobalAddr, GlobalType, HostResumable, Hostcode,
     MemAddr, MemType, ModuleAddr, RuntimeError, SharedLinearMemory, TableAddr, TableType,
@@ -11,14 +11,14 @@ use crate::{
 };
 
 #[derive(Default)]
-pub(crate) struct BytecodeRefs<'b>(Vec<&'b [u8]>);
+pub(crate) struct BytecodeRefs<'b>(Vec<Cow<'b, [u8]>>);
 
 impl<'b> BytecodeRefs<'b> {
     pub(crate) fn new() -> Self {
         Self::default()
     }
 
-    pub(crate) fn add_bytecode_ref(&mut self, bytecode: &'b [u8]) -> usize {
+    pub(crate) fn add_bytecode_ref(&mut self, bytecode: Cow<'b, [u8]>) -> usize {
         let id = self.0.len();
         self.0.push(bytecode);
         id
@@ -27,7 +27,7 @@ impl<'b> BytecodeRefs<'b> {
 
 impl<'b> BytecodeProvider for BytecodeRefs<'b> {
     fn get_bytecode(&self, id: usize) -> &[u8] {
-        self.0[id]
+        &self.0[id]
     }
 }
 
@@ -82,7 +82,7 @@ impl<'b, T: Config> Store<'b, T> {
         extern_vals: Vec<StoredExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<StoredInstantiationOutcome, RuntimeError> {
-        let bytecode_id = self.bytecode_refs.add_bytecode_ref(module.wasm);
+        let bytecode_id = self.bytecode_refs.add_bytecode_ref(module.wasm.clone());
 
         // 1. try unwrap
         let extern_vals = extern_vals.try_unwrap_into_bare(self.id);
