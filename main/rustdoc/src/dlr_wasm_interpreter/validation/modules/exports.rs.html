@@ -10,9 +10,9 @@
 <a href=#10 id=10 data-nosnippet>10</a>    },
 <a href=#11 id=11 data-nosnippet>11</a>};
 <a href=#12 id=12 data-nosnippet>12</a>
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">impl</span>&lt;<span class="lifetime">'wasm</span>&gt; Export&lt;<span class="lifetime">'wasm</span>&gt; {
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">impl </span>Export {
 <a href=#14 id=14 data-nosnippet>14</a>    <span class="kw">pub fn </span>decode_and_validate(
-<a href=#15 id=15 data-nosnippet>15</a>        wasm: <span class="kw-2">&amp;mut </span>WasmDecoder&lt;<span class="lifetime">'wasm</span>&gt;,
+<a href=#15 id=15 data-nosnippet>15</a>        wasm: <span class="kw-2">&amp;mut </span>WasmDecoder,
 <a href=#16 id=16 data-nosnippet>16</a>        c_funcs: <span class="kw-2">&amp;</span>IdxVec&lt;FuncIdx, TypeIdx&gt;,
 <a href=#17 id=17 data-nosnippet>17</a>        c_tables: <span class="kw-2">&amp;</span>IdxVec&lt;TableIdx, TableType&gt;,
 <a href=#18 id=18 data-nosnippet>18</a>        c_mems: <span class="kw-2">&amp;</span>IdxVec&lt;MemIdx, MemType&gt;,

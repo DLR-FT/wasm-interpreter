@@ -18,7 +18,7 @@
 <a href=#18 id=18 data-nosnippet>18</a>/// All indices contained in a module instance must be valid in their associated
 <a href=#19 id=19 data-nosnippet>19</a>/// index vectors from the same module instance.
 <a href=#20 id=20 data-nosnippet>20</a></span><span class="attr">#[derive(Debug)]
-<a href=#21 id=21 data-nosnippet>21</a></span><span class="kw">pub struct </span>ModuleInst&lt;<span class="lifetime">'b</span>&gt; {
+<a href=#21 id=21 data-nosnippet>21</a></span><span class="kw">pub struct </span>ModuleInst {
 <a href=#22 id=22 data-nosnippet>22</a>    <span class="kw">pub </span>types: IdxVec&lt;TypeIdx, FuncType&gt;,
 <a href=#23 id=23 data-nosnippet>23</a>    <span class="kw">pub </span>func_addrs: IdxVec&lt;FuncIdx, FuncAddr&gt;,
 <a href=#24 id=24 data-nosnippet>24</a>    <span class="kw">pub </span>table_addrs: IdxVec&lt;TableIdx, TableAddr&gt;,
@@ -26,10 +26,10 @@
 <a href=#26 id=26 data-nosnippet>26</a>    <span class="kw">pub </span>global_addrs: IdxVec&lt;GlobalIdx, GlobalAddr&gt;,
 <a href=#27 id=27 data-nosnippet>27</a>    <span class="kw">pub </span>elem_addrs: IdxVec&lt;ElemIdx, ElemAddr&gt;,
 <a href=#28 id=28 data-nosnippet>28</a>    <span class="kw">pub </span>data_addrs: IdxVec&lt;DataIdx, DataAddr&gt;,
-<a href=#29 id=29 data-nosnippet>29</a>    <span class="kw">pub </span>exports: Box&lt;[ExportInst&lt;<span class="lifetime">'b</span>&gt;]&gt;,
+<a href=#29 id=29 data-nosnippet>29</a>    <span class="kw">pub </span>exports: Box&lt;[ExportInst]&gt;,
 <a href=#30 id=30 data-nosnippet>30</a>
 <a href=#31 id=31 data-nosnippet>31</a>    <span class="comment">// TODO the bytecode is not in the spec, but required for re-parsing
-<a href=#32 id=32 data-nosnippet>32</a>    </span><span class="kw">pub </span>wasm_bytecode: <span class="kw-2">&amp;</span><span class="lifetime">'b </span>[u8],
+<a href=#32 id=32 data-nosnippet>32</a>    </span><span class="kw">pub </span>bytecode_id: usize,
 <a href=#33 id=33 data-nosnippet>33</a>
 <a href=#34 id=34 data-nosnippet>34</a>    <span class="comment">// sidetable is not in the spec, but required for control flow
 <a href=#35 id=35 data-nosnippet>35</a>    </span><span class="kw">pub </span>sidetable: Sidetable,

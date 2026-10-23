@@ -2,7 +2,7 @@
     wasm: &amp;mut <a class="struct" href="../../../core/decoding/decoder/struct.WasmDecoder.html" title="struct dlr_wasm_interpreter::core::decoding::decoder::WasmDecoder">WasmDecoder</a>&lt;'wasm&gt;,
     stack: &amp;mut <a class="struct" href="../../runtime_structure/value_stack/struct.Stack.html" title="struct dlr_wasm_interpreter::execution::runtime_structure::value_stack::Stack">Stack</a>,
     module: <a class="struct" href="../../../struct.ModuleAddr.html" title="struct dlr_wasm_interpreter::ModuleAddr">ModuleAddr</a>,
-    store: &amp;<a class="struct" href="../../../struct.Store.html" title="struct dlr_wasm_interpreter::Store">Store</a>&lt;'wasm, T&gt;,
+    store: &amp;<a class="struct" href="../../../struct.Store.html" title="struct dlr_wasm_interpreter::Store">Store</a>&lt;T&gt;,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.95.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.95.0/core/primitive.unit.html">()</a>, <a class="enum" href="../../../enum.RuntimeError.html" title="enum dlr_wasm_interpreter::RuntimeError">RuntimeError</a>&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Execute a validated constant expression. These type of expressions are used
 for initializing global variables, data and element segments.</p>
 <h2 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h2>

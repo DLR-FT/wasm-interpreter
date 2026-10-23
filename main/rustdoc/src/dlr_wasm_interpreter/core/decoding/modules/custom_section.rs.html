@@ -4,16 +4,16 @@
 <a href=#4 id=4 data-nosnippet>4</a>};
 <a href=#5 id=5 data-nosnippet>5</a>
 <a href=#6 id=6 data-nosnippet>6</a><span class="attr">#[derive(Debug, Clone)]
-<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">pub struct </span>CustomSection&lt;<span class="lifetime">'wasm</span>&gt; {
-<a href=#8 id=8 data-nosnippet>8</a>    <span class="kw">pub </span>name: <span class="kw-2">&amp;</span><span class="lifetime">'wasm </span>str,
-<a href=#9 id=9 data-nosnippet>9</a>    <span class="kw">pub </span>contents: <span class="kw-2">&amp;</span><span class="lifetime">'wasm </span>[u8],
+<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">pub struct </span>CustomSection {
+<a href=#8 id=8 data-nosnippet>8</a>    <span class="kw">pub </span>name: Span,
+<a href=#9 id=9 data-nosnippet>9</a>    <span class="kw">pub </span>contents: Span,
 <a href=#10 id=10 data-nosnippet>10</a>}
 <a href=#11 id=11 data-nosnippet>11</a>
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">impl</span>&lt;<span class="lifetime">'wasm</span>&gt; CustomSection&lt;<span class="lifetime">'wasm</span>&gt; {
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">impl </span>CustomSection {
 <a href=#13 id=13 data-nosnippet>13</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>decode(
-<a href=#14 id=14 data-nosnippet>14</a>        wasm: <span class="kw-2">&amp;mut </span>WasmDecoder&lt;<span class="lifetime">'wasm</span>&gt;,
+<a href=#14 id=14 data-nosnippet>14</a>        wasm: <span class="kw-2">&amp;mut </span>WasmDecoder,
 <a href=#15 id=15 data-nosnippet>15</a>        section_contents: Span,
-<a href=#16 id=16 data-nosnippet>16</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;CustomSection&lt;<span class="lifetime">'wasm</span>&gt;, DecodingError&gt; {
+<a href=#16 id=16 data-nosnippet>16</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;CustomSection, DecodingError&gt; {
 <a href=#17 id=17 data-nosnippet>17</a>        <span class="comment">// customsec ::= section_0(custom)
 <a href=#18 id=18 data-nosnippet>18</a>        // custom ::= name byte*
 <a href=#19 id=19 data-nosnippet>19</a>        // name ::= b*:vec(byte) =&gt; name (if utf8(name) = b*)
@@ -26,14 +26,14 @@
 <a href=#26 id=26 data-nosnippet>26</a>            .checked_add(section_contents.len())
 <a href=#27 id=27 data-nosnippet>27</a>            .ok_or(DecodingError::SectionSizeMismatch)<span class="question-mark">?</span>;
 <a href=#28 id=28 data-nosnippet>28</a>
-<a href=#29 id=29 data-nosnippet>29</a>        <span class="kw">let </span>contents = wasm
-<a href=#30 id=30 data-nosnippet>30</a>            .full_wasm_binary
-<a href=#31 id=31 data-nosnippet>31</a>            .get(section_start..section_end)
-<a href=#32 id=32 data-nosnippet>32</a>            .ok_or(DecodingError::SectionSizeMismatch)<span class="question-mark">?</span>;
-<a href=#33 id=33 data-nosnippet>33</a>
-<a href=#34 id=34 data-nosnippet>34</a>        <span class="kw">let </span>section_len = section_end
-<a href=#35 id=35 data-nosnippet>35</a>            .checked_sub(section_start)
-<a href=#36 id=36 data-nosnippet>36</a>            .expect(<span class="string">"section start &lt;= section end always"</span>);
+<a href=#29 id=29 data-nosnippet>29</a>        <span class="kw">let </span>section_len = section_end
+<a href=#30 id=30 data-nosnippet>30</a>            .checked_sub(section_start)
+<a href=#31 id=31 data-nosnippet>31</a>            .ok_or(DecodingError::SectionSizeMismatch)<span class="question-mark">?</span>;
+<a href=#32 id=32 data-nosnippet>32</a>
+<a href=#33 id=33 data-nosnippet>33</a>        <span class="kw">let </span>contents = Span {
+<a href=#34 id=34 data-nosnippet>34</a>            from: section_start,
+<a href=#35 id=35 data-nosnippet>35</a>            len: section_len,
+<a href=#36 id=36 data-nosnippet>36</a>        };
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a>        wasm.skip(section_len)<span class="question-mark">?</span>;
 <a href=#39 id=39 data-nosnippet>39</a>

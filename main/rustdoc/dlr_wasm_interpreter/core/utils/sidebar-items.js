@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["ToUsizeExt"]};
+window.SIDEBAR_ITEMS = {"trait":["BytecodeProvider","ToUsizeExt"]};

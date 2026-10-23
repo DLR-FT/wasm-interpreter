@@ -12,9 +12,9 @@
 <a href=#12 id=12 data-nosnippet>12</a>    },
 <a href=#13 id=13 data-nosnippet>13</a>};
 <a href=#14 id=14 data-nosnippet>14</a>
-<a href=#15 id=15 data-nosnippet>15</a><span class="kw">impl</span>&lt;<span class="lifetime">'wasm</span>&gt; Import&lt;<span class="lifetime">'wasm</span>&gt; {
+<a href=#15 id=15 data-nosnippet>15</a><span class="kw">impl </span>Import {
 <a href=#16 id=16 data-nosnippet>16</a>    <span class="kw">pub fn </span>decode_and_validate(
-<a href=#17 id=17 data-nosnippet>17</a>        wasm: <span class="kw-2">&amp;mut </span>WasmDecoder&lt;<span class="lifetime">'wasm</span>&gt;,
+<a href=#17 id=17 data-nosnippet>17</a>        wasm: <span class="kw-2">&amp;mut </span>WasmDecoder,
 <a href=#18 id=18 data-nosnippet>18</a>        c_types: <span class="kw-2">&amp;</span>IdxVec&lt;TypeIdx, FuncType&gt;,
 <a href=#19 id=19 data-nosnippet>19</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ValidationError&gt; {
 <a href=#20 id=20 data-nosnippet>20</a>        <span class="kw">let </span>module_name = wasm.decode_name()<span class="question-mark">?</span>;
